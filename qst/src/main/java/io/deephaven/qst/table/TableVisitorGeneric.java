@@ -93,6 +93,11 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        accept(rangeJoinTable);
+    }
+
+    @Override
     public void visit(ViewTable viewTable) {
         accept(viewTable);
     }

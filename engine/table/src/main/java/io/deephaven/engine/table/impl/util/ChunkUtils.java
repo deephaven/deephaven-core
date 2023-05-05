@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
@@ -14,6 +15,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -499,24 +501,46 @@ public class ChunkUtils {
     }
 
     /**
-     * Fill inOrderChunk with consecutive integers from 0..size() - 1.
+     * Fill {@code inOrderChunk} with consecutive integers from 0..size() - 1.
      *
      * @param inOrderChunk the chunk to fill
      */
-    public static <T extends Any> void fillInOrder(WritableIntChunk<T> inOrderChunk) {
-        for (int ii = 0; ii < inOrderChunk.size(); ++ii) {
+    public static <T extends Any> void fillInOrder(@NotNull final WritableIntChunk<T> inOrderChunk) {
+        final int size = inOrderChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
             inOrderChunk.set(ii, ii);
         }
     }
 
     /**
-     * Fill inOrderChunk with consecutive integers from 0..size() - 1.
+     * Fill {@code inOrderChunk} with consecutive integers from 0..size() - 1.
      *
      * @param inOrderChunk the chunk to fill
      */
-    public static <T extends Any> void fillInOrder(WritableLongChunk<T> inOrderChunk) {
-        for (int ii = 0; ii < inOrderChunk.size(); ++ii) {
+    public static <T extends Any> void fillInOrder(@NotNull final WritableLongChunk<T> inOrderChunk) {
+        final int size = inOrderChunk.size();
+        for (int ii = 0; ii < size; ++ii) {
             inOrderChunk.set(ii, ii);
         }
+    }
+
+    /**
+     * Fill {@code inOrderChunk} with the positions of {@code validity} that hold {@code true}, and set its size to the
+     * number of positions filled.
+     *
+     * @param inOrderChunk the chunk to fill
+     * @param validity the valid positions to fill from
+     */
+    public static void fillWithValidPositions(
+            @NotNull final WritableIntChunk<? super ChunkPositions> inOrderChunk,
+            @NotNull final BooleanChunk<? extends Any> validity) {
+        final int validitySize = validity.size();
+        int outputIndex = 0;
+        for (int vi = 0; vi < validitySize; ++vi) {
+            if (validity.get(vi)) {
+                inOrderChunk.set(outputIndex++, vi);
+            }
+        }
+        inOrderChunk.setSize(outputIndex);
     }
 }

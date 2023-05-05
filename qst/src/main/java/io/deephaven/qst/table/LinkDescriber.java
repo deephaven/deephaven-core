@@ -75,6 +75,12 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        consumer.link(rangeJoinTable.left(), "left");
+        consumer.link(rangeJoinTable.right(), "right");
+    }
+
+    @Override
     public void visit(WhereInTable whereInTable) {
         consumer.link(whereInTable.left(), "left");
         consumer.link(whereInTable.right(), "right");

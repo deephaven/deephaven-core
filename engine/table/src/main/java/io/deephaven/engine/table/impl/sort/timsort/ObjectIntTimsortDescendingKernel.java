@@ -218,7 +218,7 @@ public class ObjectIntTimsortDescendingKernel {
         if (rhs == null) {
             return -1;
         }
-        //noinspection unchecked
+        //noinspection unchecked,rawtypes
         return ((Comparable)rhs).compareTo(lhs);
     }
     // endregion comparison functions

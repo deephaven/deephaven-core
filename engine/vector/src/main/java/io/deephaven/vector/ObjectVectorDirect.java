@@ -18,6 +18,11 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
 
     public static final ObjectVector<?> ZERO_LENGTH_VECTOR = new ObjectVectorDirect<>();
 
+    public static <COMPONENT_TYPE> ObjectVector<COMPONENT_TYPE> empty() {
+        // noinspection unchecked
+        return (ObjectVector<COMPONENT_TYPE>) ZERO_LENGTH_VECTOR;
+    }
+
     private final COMPONENT_TYPE[] data;
     private final Class<COMPONENT_TYPE> componentType;
 

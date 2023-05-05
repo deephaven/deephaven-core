@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -58,7 +57,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
      * @param changedIndices indices in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedIndices) {
+    public void prepareForParallelPopulation(RowSequence changedIndices) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
@@ -696,8 +695,8 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
 
         @Override
-        public void prepareForParallelPopulation(RowSet rowSet) {
-            BooleanArraySource.this.prepareForParallelPopulation(rowSet);
+        public void prepareForParallelPopulation(RowSequence rowSequence) {
+            BooleanArraySource.this.prepareForParallelPopulation(rowSequence);
         }
 
         @Override

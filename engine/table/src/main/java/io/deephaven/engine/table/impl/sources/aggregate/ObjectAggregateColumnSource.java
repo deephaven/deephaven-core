@@ -18,11 +18,12 @@ import org.jetbrains.annotations.NotNull;
  * {@link ColumnSource} implementation for aggregation result Object columns.
  */
 public final class ObjectAggregateColumnSource<COMPONENT_TYPE>
-        extends BaseAggregateColumnSource<ObjectVector, COMPONENT_TYPE> {
+        extends BaseAggregateColumnSource<ObjectVector<COMPONENT_TYPE>, COMPONENT_TYPE> {
 
     ObjectAggregateColumnSource(@NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
-        super(ObjectVector.class, aggregatedSource, groupRowSetSource);
+        //noinspection unchecked,rawtypes
+        super((Class<ObjectVector<COMPONENT_TYPE>>)(Class)ObjectVector.class, aggregatedSource, groupRowSetSource);
     }
 
     @Override

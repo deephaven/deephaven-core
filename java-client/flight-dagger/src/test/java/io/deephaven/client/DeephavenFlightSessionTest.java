@@ -11,7 +11,6 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.UpdateByTable;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -60,7 +59,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     @Test
     public void updateBy() throws Exception {
         final int size = 100;
-        final UpdateByTable spec = TableSpec.empty(size)
+        final TableSpec spec = TableSpec.empty(size)
                 .view("I=i")
                 .updateBy(UpdateByOperation.CumSum("I"));
         try (

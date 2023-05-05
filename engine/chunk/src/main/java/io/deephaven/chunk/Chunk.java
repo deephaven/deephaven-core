@@ -144,7 +144,6 @@ public interface Chunk<ATTR extends Any> {
 
     default CharChunk<ATTR> asCharChunk() {
         return (CharChunk<ATTR>) this;
-
     }
 
     default ShortChunk<ATTR> asShortChunk() {

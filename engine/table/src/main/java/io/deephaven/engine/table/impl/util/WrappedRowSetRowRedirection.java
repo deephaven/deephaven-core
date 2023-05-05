@@ -15,20 +15,15 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-public class WrappedRowSetWritableRowRedirection implements WritableRowRedirection {
+public class WrappedRowSetRowRedirection implements RowRedirection {
 
     /**
      * {@link TrackingRowSet} used to map from outer key (position in the RowSet) to inner key.
      */
     private final TrackingRowSet wrappedRowSet;
 
-    public WrappedRowSetWritableRowRedirection(final TrackingRowSet wrappedRowSet) {
+    public WrappedRowSetRowRedirection(final TrackingRowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
-    }
-
-    @Override
-    public synchronized long put(long outerRowKey, long innerRowKey) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -140,7 +135,7 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
     }
 
     /* @formatter:off
-     * TODO: Uncomment and test this if we ever start using WrappedRowSetWritableRowRedirection for unordered reads.
+     * TODO: Uncomment and test this if we ever start using WrappedRowSetRowRedirection for unordered reads.
      * @Override
      * public void fillChunkUnordered(
      *         @NotNull final ChunkSource.FillContext fillContext,
@@ -202,16 +197,6 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
      * }
      * @formatter:on
      */
-
-    @Override
-    public void startTrackingPrevValues() {
-        // Deliberately left blank. Nothing to do here.
-    }
-
-    @Override
-    public synchronized long remove(long outerRowKey) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public String toString() {

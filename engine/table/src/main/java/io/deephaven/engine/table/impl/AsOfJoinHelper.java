@@ -55,6 +55,8 @@ public class AsOfJoinHelper {
 
     static Table asOfJoin(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
+
         if (columnsToMatch.length == 0) {
             throw new IllegalArgumentException("aj() requires at least one column to match!");
         }
@@ -601,7 +603,7 @@ public class AsOfJoinHelper {
         }
 
         // we will close them now, but the listener is able to resurrect them as needed
-        SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
+        SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
                 rightKeysForLeft);
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
@@ -866,7 +868,7 @@ public class AsOfJoinHelper {
                     }
                 }
 
-                SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
+                SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
                         rightKeyIndices, rightKeysForLeft);
 
                 downstream.modified = modifiedBuilder.build();
@@ -940,7 +942,7 @@ public class AsOfJoinHelper {
         final SsaFactory rightSsaFactory = new SsaFactory() {
             @Override
             public void close() {
-                SafeCloseable.closeArray(rightStampFillContext, rightStampValues, rightStampKeys);
+                SafeCloseable.closeAll(rightStampFillContext, rightStampValues, rightStampKeys);
             }
 
             @Override
@@ -961,7 +963,7 @@ public class AsOfJoinHelper {
         final SsaFactory leftSsaFactory = new SsaFactory() {
             @Override
             public void close() {
-                SafeCloseable.closeArray(sortKernel, leftStampFillContext, leftStampValues, leftStampKeys);
+                SafeCloseable.closeAll(sortKernel, leftStampFillContext, leftStampValues, leftStampKeys);
             }
 
             @Override

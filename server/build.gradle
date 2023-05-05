@@ -27,7 +27,9 @@ dependencies {
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
     implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':open-api-lang-tools')
+    api(project(':open-api-lang-tools')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     api(project(':log-factory')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
