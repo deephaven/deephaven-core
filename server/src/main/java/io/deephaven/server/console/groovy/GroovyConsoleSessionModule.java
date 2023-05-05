@@ -5,19 +5,15 @@ package io.deephaven.server.console.groovy;
 
 import dagger.Module;
 import dagger.Provides;
-import dagger.multibindings.ElementsIntoSet;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.lang.completion.CustomCompletion;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collections;
-import java.util.Set;
 
 @Module(includes = InitScriptsModule.ServiceLoader.class)
 public class GroovyConsoleSessionModule {
@@ -36,11 +32,5 @@ public class GroovyConsoleSessionModule {
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    @Provides
-    @ElementsIntoSet
-    Set<CustomCompletion.Factory> primeCustomCompletions() {
-        return Collections.emptySet();
     }
 }
