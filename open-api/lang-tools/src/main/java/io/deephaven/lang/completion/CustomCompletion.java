@@ -15,7 +15,6 @@ import java.util.function.Consumer;
  */
 public interface CustomCompletion {
 
-
     /**
      * Factory interface for CustomCompletion instances, allowing the autocomplete internals to manage scope directly of
      * CustomCompletion instances. By implementing the Factory interface, scope of dependencies can be managed, but any
@@ -26,7 +25,7 @@ public interface CustomCompletion {
     }
 
     /**
-     * User's cursor is within the method arguments.
+     * User's cursor is within the method arguments, provide autocomplete suggestions for cursor position.
      */
     default void methodArgumentCompletion(ChunkerInvoke node,
             Node replaceNode,
@@ -35,14 +34,14 @@ public interface CustomCompletion {
             Consumer<CompletionItem.Builder> results) {}
 
     /**
-     * Return the type of the scoped value if known, otherwise null.
+     * Return the type of the scoped value if known.
      */
     default Optional<Class<?>> resolveScopeType(IsScope scope) {
         return Optional.empty();
     }
 
     /**
-     * Returns the definition of the table that would be created by the method call if known, otherwise null.
+     * Returns the definition of the table that would be created by the method call if known.
      */
     default Optional<TableDefinition> resolveTableDefinition(ChunkerInvoke invoke, CompletionRequest result) {
         return Optional.empty();

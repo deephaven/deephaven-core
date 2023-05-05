@@ -8,7 +8,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionLookups;
 import io.deephaven.lang.completion.CustomCompletion;
-import io.deephaven.lang.completion.DelegatingCustomCompletion;
 import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
@@ -18,9 +17,7 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
-import org.jpy.PyObject;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -177,8 +174,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
         final ScriptSession scriptSession = exportedConsole.get();
         final VariableProvider vars = scriptSession.getVariableProvider();
         final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-        final CompletionLookups h =
-                CompletionLookups.preload(scriptSession, () -> new DelegatingCustomCompletion(customCompletionFactory));
+        final CompletionLookups h = CompletionLookups.preload(scriptSession, customCompletionFactory);
         // The only stateful part of a completer is the CompletionLookups, which are already
         // once-per-session-cached
         // so, we'll just create a new completer for each request. No need to hang onto these guys.

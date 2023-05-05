@@ -50,7 +50,7 @@ public class ChunkerCompleter implements CompletionHandler {
     private ParsedDocument doc;
 
     public ChunkerCompleter(final Logger log, VariableProvider variables) {
-        this(log, variables, new CompletionLookups(() -> new CustomCompletion() {}));
+        this(log, variables, new CompletionLookups(Collections.emptySet()));
     }
 
     public ChunkerCompleter(final Logger log, VariableProvider variables, CompletionLookups lookups) {

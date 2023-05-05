@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * Creates all specified implementation, and sends all queries to each as necessary.
+ */
 public class DelegatingCustomCompletion implements CustomCompletion {
     private final List<CustomCompletion> delegates;
 

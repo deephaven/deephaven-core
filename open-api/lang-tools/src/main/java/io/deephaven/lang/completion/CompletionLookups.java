@@ -11,10 +11,10 @@ import io.deephaven.engine.util.ScriptSession;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
-import java.util.function.Supplier;
 
 /**
  * A lookup object for various values that the {@link ChunkerCompleter} might be interested in.
@@ -30,11 +30,11 @@ public class CompletionLookups {
     private final Map<String, TableDefinition> referencedTables;
     private final Lazy<CustomCompletion> customCompletions;
 
-    public CompletionLookups(Supplier<CustomCompletion> customCompletionSupplier) {
+    public CompletionLookups(Set<CustomCompletion.Factory> customCompletionFactory) {
         final QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
         statics = new Lazy<>(ql::getStaticImports);
         referencedTables = new ConcurrentHashMap<>();
-        customCompletions = new Lazy<>(customCompletionSupplier);
+        customCompletions = new Lazy<>(() -> new DelegatingCustomCompletion(customCompletionFactory));
 
         // This can be slow, so lets start it on a background thread right away.
         final ForkJoinPool pool = ForkJoinPool.commonPool();
@@ -42,8 +42,8 @@ public class CompletionLookups {
     }
 
     public static CompletionLookups preload(ScriptSession session,
-            Supplier<CustomCompletion> customCompletionSupplier) {
-        return lookups.computeIfAbsent(session, s -> new CompletionLookups(customCompletionSupplier));
+            Set<CustomCompletion.Factory> customCompletionFactory) {
+        return lookups.computeIfAbsent(session, s -> new CompletionLookups(customCompletionFactory));
     }
 
     public Collection<Class<?>> getStatics() {
