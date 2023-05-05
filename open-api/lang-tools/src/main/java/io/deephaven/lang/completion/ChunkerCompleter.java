@@ -985,7 +985,7 @@ public class ChunkerCompleter implements CompletionHandler {
                 break;
         }
         // Try to delegate to another implementation
-        lookups.getCustomCompletions().methodArgumentCompletion(node, replaceNode, request, direction, results::add);
+        lookups.getCustomCompletions().methodArgumentCompletion(this, node, replaceNode, request, direction, results);
 
         if (node.getEndIndex() < request.getOffset()) {
             // user's cursor is actually past the end of our method...
