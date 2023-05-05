@@ -3,17 +3,17 @@
  */
 #include "deephaven/client/impl/client_impl.h"
 
+#include <memory>
 #include <stdexcept>
 #include "deephaven/client/impl/table_handle_manager_impl.h"
-#include "deephaven/client/utility/utility.h"
-#include "deephaven/client/utility/callbacks.h"
+#include "deephaven/dhcore/utility/callbacks.h"
 
 using io::deephaven::proto::backplane::grpc::HandshakeResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleResponse;
 using deephaven::client::impl::TableHandleManagerImpl;
 using deephaven::client::server::Server;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::SFCallback;
+using deephaven::dhcore::utility::SFCallback;
 
 namespace deephaven::client {
 namespace impl {

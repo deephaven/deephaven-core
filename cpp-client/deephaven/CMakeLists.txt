@@ -19,7 +19,11 @@ install(DIRECTORY client/include/public/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     )
 
-install(TARGETS client
+install(DIRECTORY dhcore/include/public/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    )
+
+install(TARGETS client dhcore
     EXPORT deephavenConfig
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

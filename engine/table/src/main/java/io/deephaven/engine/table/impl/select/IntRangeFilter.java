@@ -21,12 +21,27 @@ import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class IntRangeFilter extends AbstractRangeFilter {
+    public static IntRangeFilter lt(String columnName, int x) {
+        return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, false);
+    }
+
+    public static IntRangeFilter leq(String columnName, int x) {
+        return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, true);
+    }
+
+    public static IntRangeFilter gt(String columnName, int x) {
+        return new IntRangeFilter(columnName, x, QueryConstants.MAX_INT, false, true);
+    }
+
+    public static IntRangeFilter geq(String columnName, int x) {
+        return new IntRangeFilter(columnName, x, QueryConstants.MAX_INT, true, true);
+    }
+
     final int upper;
     final int lower;
 
     public IntRangeFilter(String columnName, int val1, int val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(IntComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -39,13 +54,13 @@ public class IntRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeIntRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.NULL_INT, true, false);
+                return lt(columnName, RangeConditionFilter.parseIntFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.NULL_INT, true, true);
+                return leq(columnName, RangeConditionFilter.parseIntFilter(value));
             case GREATER_THAN:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.MAX_INT, false, true);
+                return gt(columnName, RangeConditionFilter.parseIntFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.MAX_INT, true, true);
+                return geq(columnName, RangeConditionFilter.parseIntFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

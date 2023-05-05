@@ -20,8 +20,8 @@ _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JFilterAnd = jpy.get_type("io.deephaven.api.filter.FilterAnd")
 _JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
-_JPatternFilter = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter")
-_JPatternMode = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter$Mode")
+_JFilterPattern = jpy.get_type("io.deephaven.api.filter.FilterPattern")
+_JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
@@ -130,6 +130,8 @@ def is_not_null(col: str) -> Filter:
 
 
 class PatternMode(Enum):
+    """The regex mode to use"""
+
     MATCHES = _JPatternMode.MATCHES
     """Matches the entire input against the pattern"""
 
@@ -141,18 +143,20 @@ def pattern(
     mode: PatternMode,
     col: str,
     regex: str,
-    invert_pattern: bool = False,
+    invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 
     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
     the regex pattern.
 
+    This filter will never match {@code null} values.
+
     Args:
         mode (PatternMode): the mode
         col (str): the column name
         regex (str): the regex pattern
-        invert_pattern (bool): if the pattern match should be inverted
+        invert_pattern (bool): if the pattern matching logic should be inverted
 
     Returns:
         a new pattern filter
@@ -160,10 +164,9 @@ def pattern(
     Raises:
         DHError
     """
-    # Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
     try:
         return Filter(
-            j_filter=_JPatternFilter(
+            j_filter=_JFilterPattern.of(
                 _JColumnName.of(col),
                 _JPattern.compile(regex),
                 mode.value,

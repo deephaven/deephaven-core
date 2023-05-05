@@ -3,7 +3,6 @@
  */
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
-#include "deephaven/client/utility/utility.h"
 
 namespace deephaven::client::tests {
 // TODO(kosak): This test is currently disabled (by membership in the [.] test group, because we
