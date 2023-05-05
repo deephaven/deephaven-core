@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
+import java.util.function.Supplier;
 
 /**
  * A lookup object for various values that the {@link ChunkerCompleter} might be interested in.
@@ -27,19 +28,22 @@ public class CompletionLookups {
 
     private final Lazy<Collection<Class<?>>> statics;
     private final Map<String, TableDefinition> referencedTables;
+    private final Lazy<CustomCompletion> customCompletions;
 
-    public CompletionLookups() {
+    public CompletionLookups(Supplier<CustomCompletion> customCompletionSupplier) {
         final QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
         statics = new Lazy<>(ql::getStaticImports);
         referencedTables = new ConcurrentHashMap<>();
+        customCompletions = new Lazy<>(customCompletionSupplier);
 
         // This can be slow, so lets start it on a background thread right away.
         final ForkJoinPool pool = ForkJoinPool.commonPool();
         pool.execute(statics::get);
     }
 
-    public static CompletionLookups preload(ScriptSession session) {
-        return lookups.computeIfAbsent(session, s -> new CompletionLookups());
+    public static CompletionLookups preload(ScriptSession session,
+            Supplier<CustomCompletion> customCompletionSupplier) {
+        return lookups.computeIfAbsent(session, s -> new CompletionLookups(customCompletionSupplier));
     }
 
     public Collection<Class<?>> getStatics() {
@@ -48,5 +52,9 @@ public class CompletionLookups {
 
     public Map<String, TableDefinition> getReferencedTables() {
         return referencedTables;
+    }
+
+    public CustomCompletion getCustomCompletions() {
+        return customCompletions.get();
     }
 }
