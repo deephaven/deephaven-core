@@ -212,40 +212,40 @@ public class QueryTableRangeJoinTest {
         // @formatter:off
         CHAR("char", "io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR",
                 new char[]{NULL_CHAR, '?', 'B', 'D', 'F', 'H', 'J'},
-                new char[]{NULL_CHAR, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'}),
+                new char[]{NULL_CHAR, 'A', 'B', 'C', 'E', 'F', 'G', 'H', 'I'}),
         BYTE("byte", "io.deephaven.vector.ByteVectorDirect.ZERO_LENGTH_VECTOR",
                 new byte[]{NULL_BYTE, -1, 1, 3, 5, 7, 9},
-                new byte[]{NULL_BYTE, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
+                new byte[]{NULL_BYTE, 0, 1, 2, 4, 5, 6, 7, 8}),
         SHORT("short", "io.deephaven.vector.ShortVectorDirect.ZERO_LENGTH_VECTOR",
                 new short[]{NULL_SHORT, -1, 1, 3, 5, 7, 9},
-                new short[]{NULL_SHORT, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
+                new short[]{NULL_SHORT, 0, 1, 2, 4, 5, 6, 7, 8}),
         INT("int", "io.deephaven.vector.IntVectorDirect.ZERO_LENGTH_VECTOR",
                 new int[]{NULL_INT, -1, 1, 3, 5, 7, 9 },
-                new int[]{NULL_INT, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
+                new int[]{NULL_INT, 0, 1, 2, 4, 5, 6, 7, 8}),
         LONG("long", "io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR",
                 new long[]{NULL_LONG, -1, 1, 3, 5, 7, 9},
-                new long[]{NULL_LONG, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
+                new long[]{NULL_LONG, 0, 1, 2, 4, 5, 6, 7, 8}),
         FLOAT("float", "io.deephaven.vector.FloatVectorDirect.ZERO_LENGTH_VECTOR",
                 new float[]{NULL_FLOAT, -1, 1, 3, 5, 7, 9, Float.NaN},
-                new float[]{NULL_FLOAT, 0, 1, 2, 3, 4, 5, 6, 7, 8, Float.NaN}),
+                new float[]{NULL_FLOAT, 0, 1, 2, 4, 5, 6, 7, 8, Float.NaN}),
         DOUBLE("double", "io.deephaven.vector.DoubleVectorDirect.ZERO_LENGTH_VECTOR",
                 new double[]{NULL_DOUBLE, -1, 1, 3, 5, 7, 9, Double.NaN},
-                new double[]{NULL_DOUBLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, Double.NaN}),
+                new double[]{NULL_DOUBLE, 0, 1, 2, 4, 5, 6, 7, 8, Double.NaN}),
         TIMESTAMP( "DateTime", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new DateTime[]{null, minus(NOW, 1), plus(NOW, 1), plus(NOW, 3), plus(NOW, 5), plus(NOW, 7),
                         plus(NOW, 9)},
-                new DateTime[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 3), plus(NOW, 4), plus(NOW, 5),
+                new DateTime[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 4), plus(NOW, 5),
                         plus(NOW, 6), plus(NOW, 7), plus(NOW, 8)}),
         STRING("String", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new String[]{null, ">?@", "DEF", "IJK", "OPQ", "UVW", "[\\]"},
-                new String[]{null, "ABC", "DEF", "FGH", "IJK", "LMN", "OPQ", "RST", "UVW", "XYZ"});
+                new String[]{null, "ABC", "DEF", "FGH", "LMN", "OPQ", "RST", "UVW", "XYZ"});
 
-        private static final int[] EXPECTED_LT     = new int[] {1, 1,     3, 5, 7, 9, EMPTY, NULL_INT};
-        private static final int[] EXPECTED_LEQ    = new int[] {1, 1,     2, 4, 6, 8, EMPTY, NULL_INT};
-        private static final int[] EXPECTED_LEQAP  = new int[] {1, 1,     2, 4, 6, 8, 9,     NULL_INT};
-        private static final int[] EXPECTED_GT     = new int[] {9, EMPTY, 1, 3, 5, 7, 9,     NULL_INT};
-        private static final int[] EXPECTED_GEQ    = new int[] {9, EMPTY, 2, 4, 6, 8, 9,     NULL_INT};
-        private static final int[] EXPECTED_GEQAF  = new int[] {9, 1,     2, 4, 6, 8, 9,     NULL_INT};
+        private static final int[] EXPECTED_LT     = new int[] {1, 1,     3, 4, 6, 8, EMPTY, NULL_INT};
+        private static final int[] EXPECTED_LEQ    = new int[] {1, 1,     2, 4, 5, 7, EMPTY, NULL_INT};
+        private static final int[] EXPECTED_LEQAP  = new int[] {1, 1,     2, 3, 5, 7, 8,     NULL_INT};
+        private static final int[] EXPECTED_GT     = new int[] {8, EMPTY, 1, 3, 4, 6, 8,     NULL_INT};
+        private static final int[] EXPECTED_GEQ    = new int[] {8, EMPTY, 2, 3, 5, 7, 8,     NULL_INT};
+        private static final int[] EXPECTED_GEQAF  = new int[] {8, 1,     2, 4, 5, 7, 8,     NULL_INT};
         // @formatter:on
 
         private final String className;
