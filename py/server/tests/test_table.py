@@ -1011,7 +1011,7 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
 
         with self.assertRaises(DHError):
-            time_table("00:00:00:001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
 
 
 if __name__ == "__main__":

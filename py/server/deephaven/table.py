@@ -1422,7 +1422,7 @@ class Table(JObjectWrapper):
             on = to_sequence(on)
             aggs = to_sequence(aggs)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return Table(j_table=self.j_table.rangeJoin(table.j_table, on, j_agg_list))
+            return Table(j_table=self.j_table.rangeJoin(table.j_table, ",".join(on), j_agg_list))
         except Exception as e:
             raise DHError(e, message="table range_join operation failed.") from e
 
