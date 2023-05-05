@@ -25,7 +25,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Compute an exponential moving standard deviation for a float column source.  The output is expressed as a double
  * value and is computed using the following formula:
  *
- * variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+ * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
  *
  * This function is described in the following document:
  *

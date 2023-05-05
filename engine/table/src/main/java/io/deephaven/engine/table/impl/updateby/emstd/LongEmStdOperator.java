@@ -24,7 +24,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Compute an exponential moving standard deviation for a long column source.  The output is expressed as a double
  * value and is computed using the following formula:
  *
- * variance = alpha * (prevVariance + (1 â alpha) * (x â prevEma)^2)
+ * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
  *
  * This function is described in the following document:
  *
@@ -69,7 +69,7 @@ public class LongEmStdOperator extends BasePrimitiveEmStdOperator {
                             curVariance = 0.0;
                             curVal = Double.NaN;
                         } else {
-                            //  incremental variance = alpha * (prevVariance + (1 â alpha) * (x â prevEma)^2)
+                            //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                             curVariance = opAlpha * (curVariance + opOneMinusAlpha * Math.pow(input - curEma, 2.0));
 
                             final double decayedEmaVal = curEma * opAlpha;
@@ -109,7 +109,7 @@ public class LongEmStdOperator extends BasePrimitiveEmStdOperator {
                             oneMinusAlpha = 1.0 - alpha;
                             lastDt = dt;
                         }
-                        //  incremental variance = alpha * (prevVariance + (1 â alpha) * (x â prevEma)^2)
+                        //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                         curVariance = alpha * (curVariance + oneMinusAlpha * Math.pow(input - curEma, 2.0));
 
                         final double decayedEmaVal = curEma * alpha;
