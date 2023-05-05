@@ -1323,7 +1323,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
-    def range_join(self, table: Table, on: Union[str, List[str]], aggs: List[Aggregation]) -> Table:
+    def range_join(self, table: Table, on: Union[str, List[str]], aggs: Union[Aggregation, List[Aggregation]]) -> Table:
         """The range_join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing aggregated data from the right table. For columns appended to the
         left table (joins), cell values equal aggregations over vectors of values from the right table.
@@ -1422,7 +1422,7 @@ class Table(JObjectWrapper):
             on = to_sequence(on)
             aggs = to_sequence(aggs)
             j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
-            return Table(j_table=self.j_table.rangeJoin(table.j_table, ",".join(on), j_agg_list))
+            return Table(j_table=self.j_table.rangeJoin(table.j_table, j_array_list(on), j_agg_list))
         except Exception as e:
             raise DHError(e, message="table range_join operation failed.") from e
 

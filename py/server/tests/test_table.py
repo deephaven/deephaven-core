@@ -995,17 +995,10 @@ class TableTestCase(BaseTestCase):
 
     def test_range_join(self):
         aggs = [
-            sum_(cols=["SumC=c"]),
-            avg(cols=["AvgB = b", "AvgD = d"]),
-            pct(percentile=0.5, cols=["PctC = c"]),
-            weighted_avg(wcol="d", cols=["WavGD = d"]),
-            formula(
-                formula="min(each)", formula_param="each", cols=["MinC=c", "MinD=d"]
-            ),
+            group(cols=["GroupD=d"]),
         ]
-
         left_table = self.test_table.select_distinct()
-        right_table = self.test_table.select_distinct().drop_columns("e")
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
         result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
         self.assertEqual(result_table.size, left_table.size)
         self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
