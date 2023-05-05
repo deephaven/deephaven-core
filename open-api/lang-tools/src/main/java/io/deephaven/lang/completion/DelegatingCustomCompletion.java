@@ -6,10 +6,10 @@ import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.Node;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -23,10 +23,11 @@ public class DelegatingCustomCompletion implements CustomCompletion {
     }
 
     @Override
-    public void methodArgumentCompletion(ChunkerInvoke node, Node replaceNode, CompletionRequest request,
-            ChunkerCompleter.SearchDirection direction, Consumer<CompletionItem.Builder> results) {
+    public void methodArgumentCompletion(ChunkerCompleter completer, ChunkerInvoke node, Node replaceNode,
+            CompletionRequest request,
+            ChunkerCompleter.SearchDirection direction, Collection<CompletionItem.Builder> results) {
         for (CustomCompletion delegate : delegates) {
-            delegate.methodArgumentCompletion(node, replaceNode, request, direction, results);
+            delegate.methodArgumentCompletion(completer, node, replaceNode, request, direction, results);
         }
     }
 

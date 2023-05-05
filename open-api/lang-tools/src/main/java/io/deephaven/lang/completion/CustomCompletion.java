@@ -6,6 +6,7 @@ import io.deephaven.lang.generated.ChunkerInvoke;
 import io.deephaven.lang.generated.Node;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -27,11 +28,12 @@ public interface CustomCompletion {
     /**
      * User's cursor is within the method arguments, provide autocomplete suggestions for cursor position.
      */
-    default void methodArgumentCompletion(ChunkerInvoke node,
+    default void methodArgumentCompletion(ChunkerCompleter completer,
+            ChunkerInvoke node,
             Node replaceNode,
             CompletionRequest request,
             ChunkerCompleter.SearchDirection direction,
-            Consumer<CompletionItem.Builder> results) {}
+            Collection<CompletionItem.Builder> results) {}
 
     /**
      * Return the type of the scoped value if known.
