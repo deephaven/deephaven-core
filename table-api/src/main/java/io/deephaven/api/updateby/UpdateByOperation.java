@@ -616,7 +616,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param tickDecay the decay rate in ticks
@@ -636,7 +638,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
@@ -658,7 +662,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
@@ -679,7 +685,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
@@ -702,7 +710,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
@@ -723,7 +733,9 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ems_next = a * ems_last + value
+     *     ema = a * prevEma + value
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     std = sqrt(variance)
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See

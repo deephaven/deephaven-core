@@ -26,6 +26,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
+/***
+ * Compute an exponential moving standard deviation for a double column source.  The output is expressed as a double
+ * value and is computed using the following formula:
+ *
+ * variance = alpha * (prevVariance + (1 â alpha) * (x â prevEma)^2)
+ *
+ * This function is described in the following document:
+ *
+ * "Incremental calculation of weighted mean and variance"
+ * Tony Finch, University of Cambridge Computing Service (February 2009)
+ * https://web.archive.org/web/20181222175223/http://people.ds.cam.ac.uk/fanf2/hermes/doc/antiforgery/stats.pdf
+ *
+ * NOTE: `alpha` as used in the paper has been replaced with `1 - alpha` per the convention adopted by Deephaven.
+ */
 public class DoubleEmStdOperator extends BasePrimitiveEmStdOperator {
     public final ColumnSource<?> valueSource;
     // region extra-fields
