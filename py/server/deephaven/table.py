@@ -878,7 +878,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table select operation failed.") from e
 
     def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> Table:
-        """The select_distinct method creates a new table containing all of the unique values for a set of key
+        """The select_distinct method creates a new table containing all the unique values for a set of key
         columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
         the selected columns.
 
@@ -1404,7 +1404,6 @@ class Table(JObjectWrapper):
             and left end column values are null, the range is unbounded, and all rows will be included.
 
         Note: At this time, implementations only support static tables. This operation remains under active development.
-
 
         Args:
             table (Table): the right table of the join
