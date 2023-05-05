@@ -5,9 +5,14 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -19,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.opentest4j.AssertionFailedError;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -39,6 +45,8 @@ import static org.assertj.core.api.Assertions.*;
 public class QueryTableRangeJoinTest {
 
     private static final boolean PRINT_EXPECTED_EXCEPTIONS = false;
+    private static final int VERIFY_CHUNK_SIZE = 1024;
+    private static final int EMPTY = -1;
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -202,48 +210,45 @@ public class QueryTableRangeJoinTest {
 
     private enum Type {
         // @formatter:off
-        CHAR(ChunkType.Char, "char", "CharVector", "io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR",
+        CHAR("char", "io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR",
                 new char[]{NULL_CHAR, '?', 'B', 'D', 'F', 'H', 'J'},
                 new char[]{NULL_CHAR, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'}),
-        BYTE(ChunkType.Byte, "byte", "ByteVector", "io.deephaven.vector.ByteVectorDirect.ZERO_LENGTH_VECTOR",
+        BYTE("byte", "io.deephaven.vector.ByteVectorDirect.ZERO_LENGTH_VECTOR",
                 new byte[]{NULL_BYTE, -1, 1, 3, 5, 7, 9},
                 new byte[]{NULL_BYTE, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
-        SHORT(ChunkType.Short, "short", "ShortVector", "io.deephaven.vector.ShortVectorDirect.ZERO_LENGTH_VECTOR",
+        SHORT("short", "io.deephaven.vector.ShortVectorDirect.ZERO_LENGTH_VECTOR",
                 new short[]{NULL_SHORT, -1, 1, 3, 5, 7, 9},
                 new short[]{NULL_SHORT, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
-        INT(ChunkType.Int, "int", "IntVector", "io.deephaven.vector.IntVectorDirect.ZERO_LENGTH_VECTOR",
+        INT("int", "io.deephaven.vector.IntVectorDirect.ZERO_LENGTH_VECTOR",
                 new int[]{NULL_INT, -1, 1, 3, 5, 7, 9 },
                 new int[]{NULL_INT, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
-        LONG(ChunkType.Long, "long", "LongVector", "io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR",
+        LONG("long", "io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR",
                 new long[]{NULL_LONG, -1, 1, 3, 5, 7, 9},
                 new long[]{NULL_LONG, 0, 1, 2, 3, 4, 5, 6, 7, 8}),
-        FLOAT(ChunkType.Float, "float", "FloatVector", "io.deephaven.vector.FloatVectorDirect.ZERO_LENGTH_VECTOR",
+        FLOAT("float", "io.deephaven.vector.FloatVectorDirect.ZERO_LENGTH_VECTOR",
                 new float[]{NULL_FLOAT, -1, 1, 3, 5, 7, 9, Float.NaN},
                 new float[]{NULL_FLOAT, 0, 1, 2, 3, 4, 5, 6, 7, 8, Float.NaN}),
-        DOUBLE(ChunkType.Double, "double", "DoubleVector", "io.deephaven.vector.DoubleVectorDirect.ZERO_LENGTH_VECTOR",
+        DOUBLE("double", "io.deephaven.vector.DoubleVectorDirect.ZERO_LENGTH_VECTOR",
                 new double[]{NULL_DOUBLE, -1, 1, 3, 5, 7, 9, Double.NaN},
                 new double[]{NULL_DOUBLE, 0, 1, 2, 3, 4, 5, 6, 7, 8, Double.NaN}),
-        TIMESTAMP(ChunkType.Object, "DateTime", "ObjectVector", "io.deephaven.vector.ObjectVectorDirect.empty()",
+        TIMESTAMP( "DateTime", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new DateTime[]{null, minus(NOW, 1), plus(NOW, 1), plus(NOW, 3), plus(NOW, 5), plus(NOW, 7),
                         plus(NOW, 9)},
                 new DateTime[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 3), plus(NOW, 4), plus(NOW, 5),
                         plus(NOW, 6), plus(NOW, 7), plus(NOW, 8)}),
-        STRING(ChunkType.Object, "String", "ObjectVector", "io.deephaven.vector.ObjectVectorDirect.empty()",
+        STRING("String", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new String[]{null, ">?@", "DEF", "IJK", "OPQ", "UVW", "[\\]"},
                 new String[]{null, "ABC", "DEF", "FGH", "IJK", "LMN", "OPQ", "RST", "UVW", "XYZ"});
 
-        private static final int[] LEFT_OFFSETS    = new int[] {0, 1,        2, 3, 4, 5, 6,        7       };
-        private static final int[] EXPECTED_LT     = new int[] {0, 1,        3, 5, 7, 9, NULL_INT, NULL_INT};
-        private static final int[] EXPECTED_LEQ    = new int[] {0, 1,        2, 4, 6, 8, NULL_INT, NULL_INT};
-        private static final int[] EXPECTED_LEQAP  = new int[] {0, 0,        2, 4, 6, 8, 9,        NULL_INT};
-        private static final int[] EXPECTED_GT     = new int[] {9, NULL_INT, 1, 3, 5, 7, 9,        NULL_INT};
-        private static final int[] EXPECTED_GEQ    = new int[] {9, NULL_INT, 2, 4, 6, 8, 9,        NULL_INT};
-        private static final int[] EXPECTED_GEQAF  = new int[] {9, 1,        2, 4, 6, 8, 9,        NULL_INT};
+        private static final int[] EXPECTED_LT     = new int[] {1, 1,     3, 5, 7, 9, EMPTY, NULL_INT};
+        private static final int[] EXPECTED_LEQ    = new int[] {1, 1,     2, 4, 6, 8, EMPTY, NULL_INT};
+        private static final int[] EXPECTED_LEQAP  = new int[] {1, 1,     2, 4, 6, 8, 9,     NULL_INT};
+        private static final int[] EXPECTED_GT     = new int[] {9, EMPTY, 1, 3, 5, 7, 9,     NULL_INT};
+        private static final int[] EXPECTED_GEQ    = new int[] {9, EMPTY, 2, 4, 6, 8, 9,     NULL_INT};
+        private static final int[] EXPECTED_GEQAF  = new int[] {9, 1,     2, 4, 6, 8, 9,     NULL_INT};
         // @formatter:on
 
-        private final ChunkType chunkType;
         private final String className;
-        private final String vectorName;
         private final String emptyVector;
 
         private final Object uniqueLeftValues;
@@ -251,43 +256,87 @@ public class QueryTableRangeJoinTest {
         private final Object uniqueRightValues;
         private final int uniqueRightCount;
 
-        Type(@NotNull final ChunkType chunkType,
-                @NotNull final String className,
-                @NotNull final String vectorName,
+        Type(@NotNull final String className,
                 @NotNull final String emptyVector,
                 @NotNull final Object uniqueLeftValues,
                 @NotNull final Object uniqueRightValues) {
-            this.chunkType = chunkType;
             this.className = className;
-            this.vectorName = vectorName;
             this.emptyVector = emptyVector;
             this.uniqueLeftValues = uniqueLeftValues;
             uniqueLeftCount = Array.getLength(uniqueLeftValues);
             this.uniqueRightValues = uniqueRightValues;
             uniqueRightCount = Array.getLength(uniqueRightValues);
         }
+    }
 
-        private Object repeat(@NotNull final Object values, final int targetSize, final boolean sort) {
-            final int valuesLength = Array.getLength(values);
-            final int nCopies = (targetSize + valuesLength - 1) / valuesLength;
-            final int resultSize = nCopies * valuesLength;
-            final Object repeated = Array.newInstance(values.getClass().getComponentType(), resultSize;
-            for (int ii = 0; ii < nCopies; ++ii) {
-                // noinspection SuspiciousSystemArraycopy
-                System.arraycopy(values, 0, repeated, ii * valuesLength, valuesLength);
+    @Test
+    public void testRangeJoinStaticEmptyRight() {
+        // This just makes sure we properly handle an entirely empty right table, and always uses the double kernel. We
+        // have plenty of coverage for all kernels with empty right groups in other tests.
+        for (final Type type : Type.values()) {
+            if (!type.uniqueLeftValues.getClass().getComponentType().isPrimitive()) {
+                // We don't really need coverage for ObjectVector here, so don't bother adding more complexity to Type
+                continue;
             }
-            if (sort) {
-                //noinspection resource
-                chunkType.writableChunkWrap(repeated, 0, resultSize).sort();
-            }
-            return repeated;
+            final Table lt = emptyTable(20_000).update("BB=i % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
+            final Table rt = emptyTable(0).update("II=(" + type.className + ") ii", "BB=i % 5", "RRV=ii / 0.3");
+            final Table rj = lt.rangeJoin(rt, List.of("BB", "LSV <= RRV <= LEV"), List.of(AggGroup("II")));
+            TstUtils.assertTableEquals(rj, lt.update("II=" + type.emptyVector));
         }
     }
 
     @Test
-    public void testLtGt() {
-        QueryScope.addParam("expectedStartIndices", Type.EXPECTED_LT);
-        QueryScope.addParam("expectedEndIndices", Type.EXPECTED_GT);
+    public void testRangeJoinStaticLtGt() {
+        testRangeJoinStatic(Type.EXPECTED_LT, Type.EXPECTED_GT, "LSV < RRV < LEV", true);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqGt() {
+        testRangeJoinStatic(Type.EXPECTED_LEQ, Type.EXPECTED_GT, "LSV <= RRV < LEV", true);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqapGt() {
+        testRangeJoinStatic(Type.EXPECTED_LEQAP, Type.EXPECTED_GT, "<- LSV <= RRV < LEV", true);
+    }
+
+    @Test
+    public void testRangeJoinStaticLtGeq() {
+        testRangeJoinStatic(Type.EXPECTED_LT, Type.EXPECTED_GEQ, "LSV < RRV <= LEV", true);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqGeq() {
+        testRangeJoinStatic(Type.EXPECTED_LEQ, Type.EXPECTED_GEQ, "LSV <= RRV <= LEV", false);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqapGeq() {
+        testRangeJoinStatic(Type.EXPECTED_LEQAP, Type.EXPECTED_GEQ, "<- LSV <= RRV <= LEV", false);
+    }
+
+    @Test
+    public void testRangeJoinStaticLtGeqaf() {
+        testRangeJoinStatic(Type.EXPECTED_LT, Type.EXPECTED_GEQAF, "LSV < RRV <= LEV ->", true);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqGeqaf() {
+        testRangeJoinStatic(Type.EXPECTED_LEQ, Type.EXPECTED_GEQAF, "LSV <= RRV <= LEV ->", false);
+    }
+
+    @Test
+    public void testRangeJoinStaticLeqapGeqaf() {
+        testRangeJoinStatic(Type.EXPECTED_LEQAP, Type.EXPECTED_GEQAF, "<- LSV <= RRV <= LEV ->", false);
+    }
+
+    private static void testRangeJoinStatic(
+            @NotNull final int[] leftIndexToExpectedRangeStartIndex,
+            @NotNull final int[] leftIndexToExpectedRangeEndIndex,
+            @NotNull final String rangeMatch,
+            final boolean anySideExclusive) {
+        QueryScope.addParam("expectedStartIndices", leftIndexToExpectedRangeStartIndex);
+        QueryScope.addParam("expectedEndIndices", leftIndexToExpectedRangeEndIndex);
         for (final Type type : Type.values()) {
             QueryScope.addParam("ulCount", type.uniqueLeftCount);
             QueryScope.addParam("ulValues", type.uniqueLeftValues);
@@ -296,50 +345,122 @@ public class QueryTableRangeJoinTest {
             final Table lt = emptyTable(200_000L).updateView(
                     // 160 buckets, 100 size 1, 20 size 100, and 40 sized a little under 5000
                     "BB=ii < 100 ? ii : ii < 2100 ? ii % 20 + 100 : ii % 40 + 110",
-                    "LSI=ii % ulCount",
+                    "LSI=i % ulCount",
                     "LSV=ulValues[LSI]",
-                    "ExpectedFirstIndex=expectedStartIndices[LSI]",
-                    "LEI=(ii * 2 + ii % 2) % ulCount",
+                    "LEI=(i * 2 + i % 2) % ulCount",
                     "LEV=ulValues[LEI]",
-                    "ExpectedLastIndex=expectedEndIndices[LSI]");
-            final Table ltSparse = sparsify(lt, 2);
+                    anySideExclusive
+                            ? "ExpectedFirstRRI=!isNull(LEV) && !isNull(LSV) && LSV >= LEV ? NULL_INT : expectedStartIndices[LSI]"
+                            : "ExpectedFirstRRI=!isNull(LEV) && !isNull(LSV) && LSV > LEV ? NULL_INT : expectedStartIndices[LSI]",
+                    anySideExclusive
+                            ? "ExpectedLastRRI=!isNull(LEV) && !isNull(LSV) && LSV >= LEV ? NULL_INT : expectedEndIndices[LEI]"
+                            : "ExpectedLastRRI=!isNull(LEV) && !isNull(LSV) && LSV > LEV ? NULL_INT : expectedEndIndices[LEI]");
+
+            // A few patterns of sorted right data
             final Table rtSingles = emptyTable(160L * type.uniqueRightCount).updateView(
                     // All unique right values, repeated once per bucket
-                    "BB=ii / urCount",
-                    "RRI=ii % urCount",
+                    "BB=(long) (ii / urCount)",
+                    "RRI=i % urCount",
                     "RRV=urValues[RRI]");
             final Table rtDoublesAndEmpties = emptyTable(160L * type.uniqueRightCount).updateView(
                     // All unique right values, repeated twice per even bucket, odd buckets all null and thus empty
-                    "BB=ii / (2 * urCount)",
-                    "RRI=BB % 2 == 0 ? (ii / 2) % urCount : 0",
+                    "BB=(long) (ii / (2 * urCount))",
+                    "RRI=(int) (BB % 2 == 0 ? (i / 2) % urCount : 0)",
                     "RRV=urValues[RRI]");
             final Table rtGrowing = emptyTable((20L * 2 + 140L * 20) * type.uniqueRightCount).updateView(
                     // All unique right values, repeated twice for early buckets and twenty times for later buckets
-                    "BB=ii < (20 * 2 * urCount) ? ii / (2 * urCount) : ii / (20 * urCount) + 20",
-                    "RRI=BB < 20 ? (ii / 2) % urCount : (ii / 20) % urCount",
+                    "BB=(long) (ii < 20 * 2 * urCount ? ii / (2 * urCount) : ii / (20 * urCount) + 20)",
+                    "RRI=(int) (BB < 20 ? (i / 2) % urCount : (i / 20) % urCount)",
                     "RRV=urValues[RRI]");
+
+            // Dense lefts
+            joinAndVerify(type, lt, rtSingles, rangeMatch);
+            joinAndVerify(type, lt, rtDoublesAndEmpties, rangeMatch);
+            joinAndVerify(type, lt, rtGrowing, rangeMatch);
+
+            // Sparse lefts
+            final Table ltSparse = sparsify(lt, 2);
+            joinAndVerify(type, ltSparse, rtSingles, rangeMatch);
+            joinAndVerify(type, ltSparse, rtDoublesAndEmpties, rangeMatch);
+            joinAndVerify(type, ltSparse, rtGrowing, rangeMatch);
         }
     }
 
-    @Test
-    public void testEmptyRight() {
-        for (final Type type : Type.values()) {
-            final Table lt = emptyTable(20_000).update("BB=i % 5", "LSV=ii / 0.7", "LEV=ii / 0.1");
-            final Table rt = emptyTable(0).update("II=(" + type.className + ") ii", "BB=i % 5", "RRV=ii / 0.3");
-            final Table rj = lt.rangeJoin(rt, List.of("BB", "LSV <= RRV <= LEV"), List.of(AggGroup("II")));
-            TstUtils.assertTableEquals(rj, lt.update("II=" + type.emptyVector));
+    private static void joinAndVerify(
+            @NotNull final Type type,
+            @NotNull final Table left,
+            @NotNull final Table right,
+            @NotNull final String rangeMatch) {
+        final String rrvFilter = type == Type.DOUBLE || type == Type.FLOAT
+                ? "!isNaN(RRV) && !isNull(RRV)"
+                : "!isNull(RRV)";
+        final Table result = left.rangeJoin(right, List.of("BB", rangeMatch), List.of(AggGroup("RRI", "RRV")))
+                .update("FirstRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(0)",
+                        "LastRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(RRI.size() - 1)")
+                .naturalJoin(right.where(rrvFilter).countBy("RightCount", "BB"), "BB", "RightCount");
+        final ColumnSource<Integer> expectedFirstsSource = result.getColumnSource("ExpectedFirstRRI", int.class);
+        final ColumnSource<Integer> expectedLastsSource = result.getColumnSource("ExpectedLastRRI", int.class);
+        final ColumnSource<Integer> actualFirstsSource = result.getColumnSource("FirstRRI", int.class);
+        final ColumnSource<Integer> actualLastsSource = result.getColumnSource("LastRRI", int.class);
+        final ColumnSource<Long> rightCountsSource = result.getColumnSource("RightCount", long.class);
+        long rowPosition = 0;
+        // @formatter:off
+        try (final RowSequence.Iterator rowsIterator = result.getRowSet().getRowSequenceIterator();
+             final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final ChunkSource.GetContext expectedFirstsGetContext = expectedFirstsSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext expectedLastsGetContext = expectedLastsSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext actualFirstsGetContext = actualFirstsSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext actualLastsGetContext = actualLastsSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext rightCountsGetContext = rightCountsSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext)) {
+            // @formatter:on
+            while (rowsIterator.hasMore()) {
+                final RowSequence rowsSlice = rowsIterator.getNextRowSequenceWithLength(VERIFY_CHUNK_SIZE);
+                final IntChunk<? extends Values> expectedFirstsChunk = expectedFirstsSource
+                        .getChunk(expectedFirstsGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> expectedLastsChunk = expectedLastsSource
+                        .getChunk(expectedLastsGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> actualFirstsChunk = actualFirstsSource
+                        .getChunk(actualFirstsGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> actualLastsChunk = actualLastsSource
+                        .getChunk(actualLastsGetContext, rowsSlice).asIntChunk();
+                final LongChunk<? extends Values> rightCountsChunk = rightCountsSource
+                        .getChunk(rightCountsGetContext, rowsSlice).asLongChunk();
+
+                final int sliceSize = rowsSlice.intSize();
+                for (int ii = 0; ii < sliceSize; ++ii) {
+                    final int expectedFirst = expectedFirstsChunk.get(ii);
+                    final int expectedLast = expectedLastsChunk.get(ii);
+                    final int actualFirst = actualFirstsChunk.get(ii);
+                    final int actualLast = actualLastsChunk.get(ii);
+                    final long rightSize = rightCountsChunk.get(ii);
+
+                    try {
+                        if (expectedFirst == NULL_INT || expectedLast == NULL_INT) {
+                            assertThat(actualFirst).isEqualTo(NULL_INT);
+                            assertThat(actualLast).isEqualTo(NULL_INT);
+                        } else if (rightSize == 0 || rightSize == NULL_LONG) {
+                            assertThat(actualFirst).isEqualTo(EMPTY);
+                            assertThat(actualLast).isEqualTo(EMPTY);
+                        } else if (expectedFirst == EMPTY || expectedLast == EMPTY) {
+                            assertThat(actualFirst).isEqualTo(EMPTY);
+                            assertThat(actualLast).isEqualTo(EMPTY);
+                        } else {
+                            assertThat(actualFirst).isEqualTo(expectedFirst);
+                            assertThat(actualLast).isEqualTo(expectedLast);
+                        }
+                    } catch (AssertionFailedError e) {
+                        throw new AssertionFailedError(String.format("Failure for type %s at row position %s",
+                                type, rowPosition), e);
+                    }
+                    ++rowPosition;
+                    sharedContext.reset();
+                }
+            }
         }
     }
-
-    // TODO:
-    // 1. Test all types
-    // 2. Test NaN filtering for floats and doubles
-    // 3. Test empty rights
-    // 4. Test re-sizing lefts
-    // 5. Test re-sizing rights
-    // 6. Test all start rules
-    // 7. Test all end rules
-    // 8. Test singleton and multiple timestamps
-
-
 }

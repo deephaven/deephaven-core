@@ -972,7 +972,7 @@ public class TstUtils {
             // Using multiplyExact here allows us to throw an ArithmeticException if we'll overflow
             final long expectedLastRowKey = Math.multiplyExact(inputRowSet.lastRowKey(), sparsityFactor);
             inputRowSet.forAllRowKeys((final long rowKey) -> builder.appendKey(rowKey * sparsityFactor));
-            //noinspection resource
+            // noinspection resource
             outputRowSet = builder.build();
             Assert.eq(expectedLastRowKey, "expectedLastRowKey", outputRowSet.lastRowKey(), "outputRowSet.lastRowKey()");
         }
@@ -982,11 +982,10 @@ public class TstUtils {
                     new ViewColumnSource<>(Long.class, new DensifyRowKeysFormula(sparsityFactor), true));
             outputColumnSources = table.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     (Function<Map.Entry<String, ? extends ColumnSource<?>>, String>) Map.Entry::getKey,
-                    (final Map.Entry<String, ? extends ColumnSource<?>> entry) ->
-                            RedirectedColumnSource.maybeRedirect(densifyingRedirection, entry.getValue()),
+                    (final Map.Entry<String, ? extends ColumnSource<?>> entry) -> RedirectedColumnSource
+                            .maybeRedirect(densifyingRedirection, entry.getValue()),
                     Assert::neverInvoked,
-                    LinkedHashMap::new
-            ));
+                    LinkedHashMap::new));
         }
         return new QueryTable(outputRowSet.toTracking(), outputColumnSources);
     }

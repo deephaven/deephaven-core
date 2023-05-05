@@ -462,7 +462,8 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
 
     @Override
     public void prepareForParallelPopulation(RowSequence rowSequence) {
-        // nothing to do
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
     // region reinterpretation
