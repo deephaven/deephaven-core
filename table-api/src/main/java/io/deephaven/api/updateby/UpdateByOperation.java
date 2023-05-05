@@ -616,8 +616,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
@@ -638,8 +638,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
@@ -662,8 +662,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
@@ -685,8 +685,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
@@ -710,8 +710,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
@@ -733,8 +733,8 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ema = a * prevEma + value
      *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
      *     std = sqrt(variance)
      * </pre>
      *
