@@ -79,7 +79,7 @@ public abstract class TableBase implements TableSpec {
         return whereIn(rightTable, columnsToMatch, true);
     }
 
-    private WhereInTable whereIn(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    private TableSpec whereIn(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
             boolean inverted) {
         return WhereInTable.builder()
                 .left(this)
@@ -136,7 +136,6 @@ public abstract class TableBase implements TableSpec {
                 .addAllMatches(columnsToMatch).addAllAdditions(columnsToAdd).rule(reverseAsOfJoinRule)
                 .build();
     }
-
 
     @Override
     public TableSpec rangeJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,

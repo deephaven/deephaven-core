@@ -534,7 +534,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public Proxy rangeJoin(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> exactMatches,
+    public PartitionedTable.Proxy rangeJoin(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> exactMatches,
             RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
         return complexTransform(rightTable, (ct, ot) -> ct.rangeJoin(ot, exactMatches, rangeMatch, aggregations),
                 exactMatches);
