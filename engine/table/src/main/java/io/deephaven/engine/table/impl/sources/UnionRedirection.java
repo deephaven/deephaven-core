@@ -38,7 +38,7 @@ public class UnionRedirection {
     /**
      * Number of table slots to allocate initially.
      */
-    private static final int MINIMUM_ARRAY_SIZE = 8;
+    private static final int MIN_NUM_TABLES = 7;
 
     /**
      * Redirection size threshold after which we use {@link #priorCurrSlot} and {@link #priorPrevSlot} to resume slot
@@ -85,7 +85,7 @@ public class UnionRedirection {
     UnionRedirection(final int initialNumTables, final boolean refreshing) {
         checkCapacity(initialNumTables);
         final int initialArraySize = refreshing
-                ? Math.max(MINIMUM_ARRAY_SIZE, 1 << MathUtil.ceilLog2(initialNumTables + 1))
+                ? computeCapacity(Math.max(MIN_NUM_TABLES, initialNumTables))
                 : initialNumTables + 1;
         currFirstRowKeys = new long[initialArraySize];
         prevFirstRowKeys = refreshing ? new long[initialArraySize] : currFirstRowKeys;
@@ -265,17 +265,21 @@ public class UnionRedirection {
         prevSize = currSize;
     }
 
-    private void checkCapacity(final int numTables) {
+    private static void checkCapacity(final int numTables) {
         if (numTables > MAX_ARRAY_SIZE - 1) {
             throw new UnsupportedOperationException(
                     "Requested capacity " + numTables + " exceeds maximum of " + (MAX_ARRAY_SIZE - 1));
         }
     }
 
+    private static int computeCapacity(final int numTables) {
+        return (int) Math.min(MAX_ARRAY_SIZE, 1L << MathUtil.ceilLog2(numTables + 1));
+    }
+
     private void ensureCapacity(final int numTables) {
         checkCapacity(numTables);
         if (currFirstRowKeys.length <= numTables + 1) {
-            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, 1 << MathUtil.ceilLog2(numTables + 1));
+            currFirstRowKeys = Arrays.copyOf(currFirstRowKeys, computeCapacity(numTables));
         }
     }
 

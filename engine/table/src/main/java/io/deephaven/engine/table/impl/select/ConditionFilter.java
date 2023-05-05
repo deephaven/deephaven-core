@@ -361,7 +361,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
                 }
-                SafeCloseable.closeArray(sourceContexts);
+                SafeCloseable.closeAll(sourceContexts);
                 if (sharedContext != null) {
                     sharedContext.close();
                 }

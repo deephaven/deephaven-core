@@ -97,7 +97,7 @@ public class CompositeGenerator<T> implements TestDataGenerator<T, T> {
             }
         }
 
-        SafeCloseable.closeArray(boxerKernel);
+        SafeCloseable.closeAll(boxerKernel);
 
         return ObjectChunk.chunkWrap(result);
     }

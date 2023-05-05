@@ -39,6 +39,8 @@ public class ReplicateSourcesAndChunks {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/SlicedCharAggregateColumnSource.java");
         charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/RangeAggregateColumnSourceChar.java");
+        charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
@@ -591,6 +593,8 @@ public class ReplicateSourcesAndChunks {
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicationUtils.removeRegion(classLines, "BufferImports");
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
         FileUtils.writeLines(classFile, classLines);
     }
 
@@ -1493,8 +1497,8 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public void prepareForParallelPopulation(RowSet rowSet) {",
-                "           wrapped.prepareForParallelPopulation(rowSet);",
+                "        public void prepareForParallelPopulation(RowSequence rowSequence) {",
+                "           wrapped.prepareForParallelPopulation(rowSequence);",
                 "        }",
                 "    }"));
         FileUtils.writeLines(booleanFile, lines);

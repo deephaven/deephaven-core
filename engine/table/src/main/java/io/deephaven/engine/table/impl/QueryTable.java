@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -40,6 +41,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
@@ -117,7 +119,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             public final T resultNode;
             public final TableUpdateListener resultListener; // may be null if parent is non-ticking
 
-            public Result(final @NotNull T resultNode) {
+            public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
@@ -128,7 +130,7 @@ public class QueryTable extends BaseTable<QueryTable> {
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
              */
-            public Result(final @NotNull T resultNode,
+            public Result(@NotNull final T resultNode,
                     final @Nullable TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
@@ -745,6 +747,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private Table headOrTailBy(long nRows, boolean head, String... groupByColumns) {
+        checkInitiateOperation();
+
         Require.gtZero(nRows, "nRows");
 
         Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
@@ -1939,12 +1943,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table join(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
+    public Table join(
+            @NotNull final Table rightTable,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
         return memoizeResult(
-                MemoizedOperationKey.crossJoin(rightTableCandidate, columnsToMatch, columnsToAdd,
+                MemoizedOperationKey.crossJoin(rightTable, columnsToMatch, columnsToAdd,
                         numRightBitsToReserve),
-                () -> joinNoMemo(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+                () -> joinNoMemo(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve));
     }
 
     private Table joinNoMemo(
@@ -2012,6 +2019,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                 });
     }
 
+    @Override
+    public Table rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> exactMatches,
+            @NotNull final RangeJoinMatch rangeMatch,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        return getResult(new RangeJoinOperation(this, rightTable, exactMatches, rangeMatch, aggregations));
+    }
+
     /**
      * The triggerColumns are the column sources for the snapshot-triggering table. The baseColumns are the column
      * sources for the table being snapshotted. The triggerRowSet refers to snapshots that we want to take. Typically
@@ -2066,7 +2082,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {
-        checkInitiateOperation();
+        checkInitiateBinaryOperation(this, baseTable);
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
         final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
@@ -2223,10 +2239,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table snapshotIncrementalInternal(final Table base, final boolean doInitialSnapshot,
             final String... stampColumns) {
-        checkInitiateOperation();
+        checkInitiateBinaryOperation(this, base);
 
         final QueryTable baseTable = (QueryTable) (base instanceof UncoalescedTable ? base.coalesce() : base);
-        baseTable.checkInitiateOperation();
 
         // Use the given columns (if specified); otherwise an empty array means all of my columns
         final String[] useStampColumns = stampColumns.length == 0
@@ -3384,13 +3399,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private void checkInitiateOperation() {
-        if (isRefreshing()) {
+        checkInitiateOperation(this);
+    }
+
+    public static void checkInitiateOperation(@NotNull final Table table) {
+        if (table.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
 
-    static void checkInitiateOperation(Table other) {
-        if (other.isRefreshing()) {
+    public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
+        if (first.isRefreshing() || second.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }

@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRedirection {
+public class InverseWrappedRowSetRowRedirection implements RowRedirection {
 
     /**
      * {@link RowSet} used to map from outer row key (row key in {@code wrappedRowSet}) to inner row key (row position
@@ -28,18 +28,13 @@ public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRe
      *
      * @param wrappedRowSet the RowSet (or TrackingRowSet) to use as the redirection source
      */
-    public InverseWrappedRowSetWritableRowRedirection(final RowSet wrappedRowSet) {
+    public InverseWrappedRowSetRowRedirection(final RowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
     }
 
     @Override
     public boolean ascendingMapping() {
         return true;
-    }
-
-    @Override
-    public synchronized long put(long key, long index) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -59,17 +54,19 @@ public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRe
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext fillContext,
+    public void fillChunk(
+            @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
         final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
-        try (final RowSequence.Iterator okit = wrappedRowSet.getRowSequenceIterator()) {
-            doMapping(mappedKeysOutTyped, keysToMap, okit);
+        try (final RowSequence.Iterator rsIt = wrappedRowSet.getRowSequenceIterator()) {
+            doMapping(mappedKeysOutTyped, keysToMap, rsIt);
         }
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext fillContext,
+    public void fillPrevChunk(
+            @NotNull final FillContext fillContext,
             @NotNull final WritableChunk<? super RowKeys> mappedKeysOut,
             @NotNull final RowSequence keysToMap) {
         final WritableLongChunk<? super RowKeys> mappedKeysOutTyped = mappedKeysOut.asWritableLongChunk();
@@ -79,12 +76,14 @@ public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRe
         }
     }
 
-    private void doMapping(@NotNull WritableLongChunk<? super RowKeys> mappedKeysOut, @NotNull RowSequence keysToMap,
-            RowSequence.Iterator okit) {
+    private void doMapping(
+            @NotNull final WritableLongChunk<? super RowKeys> mappedKeysOut,
+            @NotNull final RowSequence keysToMap,
+            @NotNull final RowSequence.Iterator rsIt) {
         final MutableLong currentPosition = new MutableLong(0);
         mappedKeysOut.setSize(0);
         keysToMap.forEachRowKeyRange((start, end) -> {
-            final long positionDelta = okit.advanceAndGetPositionDistance(start);
+            final long positionDelta = rsIt.advanceAndGetPositionDistance(start);
             final long rangeStartPosition = currentPosition.addAndGet(positionDelta);
             // handle start to end - 1, where we must increment
             for (long keyToMap = start; keyToMap <= end; ++keyToMap) {
@@ -92,16 +91,6 @@ public class InverseWrappedRowSetWritableRowRedirection implements WritableRowRe
             }
             return true;
         });
-    }
-
-    @Override
-    public void startTrackingPrevValues() {
-        // Deliberately left blank. Nothing to do here.
-    }
-
-    @Override
-    public synchronized long remove(long leftIndex) {
-        throw new UnsupportedOperationException();
     }
 
     @Override

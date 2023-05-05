@@ -14,7 +14,6 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -166,8 +165,8 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(underlyingContexts);
-            SafeCloseable.closeArray(boxers);
+            SafeCloseable.closeAll(underlyingContexts);
+            SafeCloseable.closeAll(boxers);
         }
     }
 

@@ -57,6 +57,7 @@ import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
+import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
@@ -92,6 +93,7 @@ import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.RangeJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
@@ -376,7 +378,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AsOfJoinTable aj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setLeftId(ref(aj.left())).setRightId(ref(aj.right()))
+                    .setResultId(ticket)
+                    .setLeftId(ref(aj.left()))
+                    .setRightId(ref(aj.right()))
                     .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
                             ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
                             : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
@@ -392,7 +396,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ReverseAsOfJoinTable raj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setLeftId(ref(raj.left())).setRightId(ref(raj.right()))
+                    .setResultId(ticket)
+                    .setLeftId(ref(raj.left()))
+                    .setRightId(ref(raj.right()))
                     .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
                             ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
                             : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
@@ -403,6 +409,62 @@ class BatchTableRequestBuilder {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
             out = op(Builder::setAsOfJoin, builder.build());
+        }
+
+        @Override
+        public void visit(RangeJoinTable rangeJoinTable) {
+            RangeJoinTablesRequest.Builder builder = RangeJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(ref(rangeJoinTable.left()))
+                    .setRightId(ref(rangeJoinTable.right()));
+
+            for (JoinMatch exactMatch : rangeJoinTable.exactMatches()) {
+                builder.addExactMatchColumns(Strings.of(exactMatch));
+            }
+
+            builder.setLeftStartColumn(Strings.of(rangeJoinTable.rangeMatch().leftStartColumn()));
+            final RangeJoinTablesRequest.RangeStartRule rangeStartRule;
+            switch (rangeJoinTable.rangeMatch().rangeStartRule()) {
+                case LESS_THAN:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN;
+                    break;
+                case LESS_THAN_OR_EQUAL:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL;
+                    break;
+                case LESS_THAN_OR_EQUAL_ALLOW_PRECEDING:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("Unrecognized range start rule %s for range join",
+                            rangeJoinTable.rangeMatch().rangeStartRule()));
+            }
+            builder.setRangeStartRule(rangeStartRule);
+            builder.setRightRangeColumn(Strings.of(rangeJoinTable.rangeMatch().rightRangeColumn()));
+            final RangeJoinTablesRequest.RangeEndRule rangeEndRule;
+            switch (rangeJoinTable.rangeMatch().rangeEndRule()) {
+                case GREATER_THAN:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN;
+                    break;
+                case GREATER_THAN_OR_EQUAL:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL;
+                    break;
+                case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("Unrecognized range end rule %s for range join",
+                            rangeJoinTable.rangeMatch().rangeEndRule()));
+            }
+            builder.setRangeEndRule(rangeEndRule);
+            builder.setLeftEndColumn(Strings.of(rangeJoinTable.rangeMatch().leftEndColumn()));
+
+            for (Aggregation aggregation : rangeJoinTable.aggregations()) {
+                for (io.deephaven.proto.backplane.grpc.Aggregation adapted : AggregationBuilder.adapt(aggregation)) {
+                    builder.addAggregations(adapted);
+                }
+            }
+
+            out = op(Builder::setRangeJoin, builder.build());
         }
 
         @Override

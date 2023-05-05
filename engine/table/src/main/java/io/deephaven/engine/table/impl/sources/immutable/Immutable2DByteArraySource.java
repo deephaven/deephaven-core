@@ -14,7 +14,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -338,8 +337,9 @@ public class Immutable2DByteArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        // nothing to do
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
     // region reinterpretation

@@ -261,105 +261,105 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public long getUngroupedSize(long columnIndex) {
-        return asUngroupableSource().getUngroupedSize(getColumnIndex(columnIndex));
+    public long getUngroupedSize(long groupRowKey) {
+        return asUngroupableSource().getUngroupedSize(getColumnIndex(groupRowKey));
     }
 
     @Override
-    public long getUngroupedPrevSize(long columnIndex) {
-        return asUngroupableSource().getUngroupedPrevSize(getPrevColumnIndex(columnIndex));
+    public long getUngroupedPrevSize(long groupRowKey) {
+        return asUngroupableSource().getUngroupedPrevSize(getPrevColumnIndex(groupRowKey));
     }
 
     @Override
-    public T getUngrouped(long columnIndex, int arrayIndex) {
+    public T getUngrouped(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) asUngroupableSource().getUngrouped(getColumnIndex(columnIndex), arrayIndex);
+        return (T) asUngroupableSource().getUngrouped(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public T getUngroupedPrev(long columnIndex, int arrayIndex) {
+    public T getUngroupedPrev(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) asUngroupableSource().getUngroupedPrev(getPrevColumnIndex(columnIndex), arrayIndex);
+        return (T) asUngroupableSource().getUngroupedPrev(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedBoolean(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedBoolean(getColumnIndex(columnIndex), arrayIndex);
+    public Boolean getUngroupedBoolean(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedBoolean(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevBoolean(getPrevColumnIndex(columnIndex), arrayIndex);
+    public Boolean getUngroupedPrevBoolean(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevBoolean(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public double getUngroupedDouble(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedDouble(getColumnIndex(columnIndex), arrayIndex);
+    public double getUngroupedDouble(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedDouble(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public double getUngroupedPrevDouble(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevDouble(getPrevColumnIndex(columnIndex), arrayIndex);
+    public double getUngroupedPrevDouble(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevDouble(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public float getUngroupedFloat(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedFloat(getColumnIndex(columnIndex), arrayIndex);
+    public float getUngroupedFloat(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedFloat(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public float getUngroupedPrevFloat(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevFloat(getPrevColumnIndex(columnIndex), arrayIndex);
+    public float getUngroupedPrevFloat(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevFloat(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public byte getUngroupedByte(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedByte(getColumnIndex(columnIndex), arrayIndex);
+    public byte getUngroupedByte(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedByte(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public byte getUngroupedPrevByte(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevByte(getPrevColumnIndex(columnIndex), arrayIndex);
+    public byte getUngroupedPrevByte(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevByte(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public char getUngroupedChar(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedChar(getColumnIndex(columnIndex), arrayIndex);
+    public char getUngroupedChar(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedChar(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public char getUngroupedPrevChar(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevChar(getPrevColumnIndex(columnIndex), arrayIndex);
+    public char getUngroupedPrevChar(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevChar(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public short getUngroupedShort(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedShort(getColumnIndex(columnIndex), arrayIndex);
+    public short getUngroupedShort(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedShort(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public short getUngroupedPrevShort(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevShort(getPrevColumnIndex(columnIndex), arrayIndex);
+    public short getUngroupedPrevShort(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevShort(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public int getUngroupedInt(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedInt(getColumnIndex(columnIndex), arrayIndex);
+    public int getUngroupedInt(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedInt(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public int getUngroupedPrevInt(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevInt(getPrevColumnIndex(columnIndex), arrayIndex);
+    public int getUngroupedPrevInt(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevInt(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public long getUngroupedLong(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedLong(getColumnIndex(columnIndex), arrayIndex);
+    public long getUngroupedLong(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedLong(getColumnIndex(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public long getUngroupedPrevLong(long columnIndex, int arrayIndex) {
-        return asUngroupableSource().getUngroupedPrevLong(getPrevColumnIndex(columnIndex), arrayIndex);
+    public long getUngroupedPrevLong(long groupRowKey, int offsetInGroup) {
+        return asUngroupableSource().getUngroupedPrevLong(getPrevColumnIndex(groupRowKey), offsetInGroup);
     }
 
     private UngroupableColumnSource asUngroupableSource() {

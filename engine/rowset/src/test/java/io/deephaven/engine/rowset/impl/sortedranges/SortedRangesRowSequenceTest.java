@@ -8,8 +8,8 @@ import static org.junit.Assert.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
-import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                 throw new IllegalStateException();
             }
         }
-        return new TrackingWritableRowSetImpl(sar);
+        return new WritableRowSetImpl(sar);
     }
 
     @Test
@@ -151,7 +151,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                     final String m2 = m + " && accum==" + accum;
                     final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
                     final RowSet expected =
-                            new TrackingWritableRowSetImpl(sr.ixSubindexByPosOnNew(accum, accum + step));
+                            new WritableRowSetImpl(sr.ixSubindexByPosOnNew(accum, accum + step));
                     final RowSet fromOk = rs.asRowSet();
                     assertEquals(m2, expected.size(), fromOk.size());
                     assertTrue(m2, expected.subsetOf(fromOk));

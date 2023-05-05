@@ -25,7 +25,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -85,7 +84,7 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
      * @param changedRows row set in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedRows) {
+    public void prepareForParallelPopulation(RowSequence changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");

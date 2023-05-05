@@ -737,7 +737,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             downstream.shifted = leftRecorder.getShifted();
         }
 
-        SafeCloseable.closeArray(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
+        SafeCloseable.closeAll(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
                 rightSsaFactory);
 
         downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());
