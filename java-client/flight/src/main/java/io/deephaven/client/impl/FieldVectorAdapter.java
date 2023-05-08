@@ -21,16 +21,7 @@ import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.StringType;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.BigIntVector;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.Float4Vector;
-import org.apache.arrow.vector.Float8Vector;
-import org.apache.arrow.vector.IntVector;
-import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampNanoTZVector;
-import org.apache.arrow.vector.TinyIntVector;
-import org.apache.arrow.vector.UInt2Vector;
-import org.apache.arrow.vector.VarCharVector;
+import org.apache.arrow.vector.*;
 import org.apache.arrow.vector.types.pojo.Field;
 
 import java.time.Instant;
@@ -118,9 +109,8 @@ public class FieldVectorAdapter implements Array.Visitor, PrimitiveArray.Visitor
 
     @Override
     public void visit(BooleanArray booleanArray) {
-        // TODO(deephaven-core#43): Do not reinterpret bool as byte
         Field field = FieldAdapter.booleanField(name);
-        TinyIntVector vector = new TinyIntVector(field, allocator);
+        BitVector vector = new BitVector(field, allocator);
         VectorHelper.fill(vector, booleanArray.values(), 0, booleanArray.size());
         out = vector;
     }
