@@ -39,86 +39,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     private long nanos;
 
-    //TODO: group constructors
-
-    //TODO: Remove -- redundant?
-    /**
-     * Create a new date time from an {@link Instant}.
-     *
-     * @param instant instant in time.
-     * @return the date time.
-     */
-    public static DateTime of(Instant instant) {
-        return new DateTime(DateTimeUtils.epochNanos(instant));
-    }
-
-    //TODO: Remove -- redundant?
-    /**
-     * Create a new date time via {@link Clock#currentTimeNanos()}.
-     *
-     * <p>
-     * Equivalent to {@code new DateTime(clock.currentTimeNanos())}.
-     *
-     * <p>
-     * If nanosecond resolution is not necessary, consider using {@link #ofMillis(Clock)}.
-     *
-     * @param clock the clock
-     * @return the date time
-     */
-    public static DateTime of(Clock clock) {
-        return new DateTime(clock.currentTimeNanos());
-    }
-
-    //TODO: Remove -- redundant?
-    /**
-     * Create a new date time via {@link Clock#currentTimeMillis()}.
-     *
-     * <p>
-     * Equivalent to {@code new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000))}.
-     *
-     * @param clock the clock
-     * @return the date time
-     */
-    public static DateTime ofMillis(Clock clock) {
-        return new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000));
-    }
-
-    //TODO: ofMicros
-    //TODO: ofNanos
-
-    //TODO: Remove -- redundant?
-    /**
-     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
-     * {@code of(Clock.system())}.
-     *
-     * <p>
-     * The precision of DateTime is nanoseconds, but the resolution of the this method depends on the JVM.
-     *
-     * <p>
-     * If you don't need nanosecond resolution, it may be preferable to use {@link #nowMillis()}.
-     *
-     * <p>
-     * Note: overflow checking is not performed - this method will overflow in the year 2262.
-     *
-     * @return a new DateTime initialized to the current time.
-     */
-    public static DateTime now() {
-        return of(Clock.system());
-    }
-
-    //TODO: Remove -- redundant?
-    /**
-     * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
-     * {@code ofMillis(Clock.system())}.
-     *
-     * <p>
-     * The resolution will be in milliseconds.
-     *
-     * @return a new DateTime initialized to the current time.
-     */
-    public static DateTime nowMillis() {
-        return ofMillis(Clock.system());
-    }
+    // region Constructors
 
     /**
      * Create a new DateTime initialized to the epoch.
@@ -135,6 +56,69 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     public DateTime(long nanos) {
         this.nanos = nanos;
     }
+
+    /**
+     * Create a new date time from an {@link Instant}.
+     *
+     * @param instant instant in time.
+     * @return the date time.
+     */
+    public static DateTime of(Instant instant) {
+        return new DateTime(DateTimeUtils.epochNanos(instant));
+    }
+
+    /**
+     * Create a new date from a {@link Clock}.
+     *
+     * If nanosecond resolution is not necessary, consider using {@link #ofMillis(Clock)}.
+     *
+     * @param clock the clock
+     * @return the date time
+     * @see #ofMillis(Clock)
+     */
+    public static DateTime of(Clock clock) {
+        return new DateTime(clock.currentTimeNanos());
+    }
+
+    /**
+     * Create a new date time with millisecond resolution from a {@link Clock}.
+     *
+     * @param clock the clock
+     * @return the date time
+     * @see #of(Clock)
+     */
+    public static DateTime ofMillis(Clock clock) {
+        return new DateTime(Math.multiplyExact(clock.currentTimeMillis(), 1_000_000));
+    }
+
+    /**
+     * Create a new DateTime initialized to the current system time.
+     *
+     * The precision of DateTime is nanoseconds, but the resolution of this method depends on the time resolution
+     * provided by the JVM.
+     *
+     * If nanosecond resolution is not necessary, consider using {@link #nowMillis()}.
+     *
+     * @return the date time initialized to the current system time.
+     * @see #of(Clock)
+     * @see Clock#system()
+     */
+    public static DateTime now() {
+        return of(Clock.system());
+    }
+
+    /**
+     * Create a new DateTime initialized to the current system time with millisecond resolution.
+     *
+     * @return the date time initialized to the current system time with millisecond resolution.
+     * @see #ofMillis(Clock)
+     * @see Clock#system()
+     */
+    public static DateTime nowMillis() {
+        return ofMillis(Clock.system());
+    }
+
+    // endregion
 
     // region Object hashing / comparison
 
