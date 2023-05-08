@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.time.*;
+import java.time.zone.ZoneRulesException;
 import java.util.Date;
 
 //import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -187,6 +188,194 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     // endregion
 
+    // region Time conversions
+
+    /**
+     * Convert this DateTime to an {@link Instant}.
+     *
+     * @return an instant in time
+     */
+    @NotNull
+    public Instant toInstant() {
+        return Instant.ofEpochSecond(0, nanos);
+    }
+
+    /**
+     * Convert this DateTime to a {@link ZonedDateTime} with the system default time zone.
+     *
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime() {
+        return toZonedDateTime(TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
+     *
+     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return a {@link ZonedDateTime}
+     * @see ZoneId
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final String timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toZonedDateTime(ZoneId.of(timeZone));
+    }
+
+    /**
+     * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final TimeZone timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toZonedDateTime(timeZone.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final ZoneId timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return ZonedDateTime.ofInstant(toInstant(), timeZone);
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalDate} with the system default time zone.
+     *
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate() {
+        return toLocalDate(TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalDate} with the specified time zone.
+     *
+     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return the {@link LocalDate}
+     * @see ZoneId
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final String timeZone) {
+        return toLocalDate(ZoneId.of(timeZone));
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalDate} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final TimeZone timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toLocalDate(timeZone.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalDate} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final ZoneId timeZone) {
+        return toZonedDateTime(timeZone).toLocalDate();
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalTime} with the system default time zone.
+     *
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime() {
+        return toLocalTime(TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalTime} with the specified time zone.
+     *
+     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return the {@link LocalTime}
+     * @see ZoneId
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final String timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toLocalTime(ZoneId.of(timeZone));
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalTime} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final TimeZone timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toLocalTime(timeZone.getZoneId());
+    }
+
+    /**
+     * Convert this DateTime to a {@link LocalTime} with the specified time zone.
+     *
+     * @param timeZone time zone.
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final ZoneId timeZone) {
+        return toZonedDateTime(timeZone).toLocalTime();
+    }
+
+    /**
+     * Convert this DateTime to a {@link Date}.  The date time will be truncated to millisecond resolution.
+     *
+     * @return a {@link Date}
+     * @deprecated use {@link #toZonedDateTime()} instead.
+     */
+    @Deprecated
+    @NotNull
+    public Date getDate() {
+        return new Date(getMillis());
+    }
+
+    // endregion
+
     //TODO: fix regions
 
     // region Mutations to other DateTime types
@@ -218,157 +407,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     @Deprecated
     public org.joda.time.DateTime getJodaDateTime(TimeZone timeZone) {
         return new org.joda.time.DateTime(getMillis(), timeZone.getTimeZone());
-    }
-
-    // endregion
-
-    // region Java DateTime flavors
-
-    /**
-     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the {@link ZoneId#systemDefault() system default}
-     * time zone.
-     *
-     * @return a {@link ZonedDateTime}
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime() {
-        return toZonedDateTime(ZoneId.systemDefault());
-    }
-
-    /**
-     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
-     *
-     * @return a {@link ZonedDateTime}
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime(@NotNull final String zone) {
-        return toZonedDateTime(ZoneId.of(zone));
-    }
-
-    /**
-     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
-     *
-     * @return a {@link ZonedDateTime}
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime(@NotNull final TimeZone zone) {
-        return toZonedDateTime(zone.getZoneId());
-    }
-
-    /**
-     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
-     *
-     * @return a {@link ZonedDateTime}
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime(@NotNull final ZoneId zone) {
-        return ZonedDateTime.ofInstant(getInstant(), zone);
-    }
-
-    /**
-     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the {@link ZoneId#systemDefault()
-     * system default} time zone.
-     *
-     * @return the {@link LocalDate}
-     */
-    @NotNull
-    public LocalDate toLocalDate() {
-        return toLocalDate(ZoneId.systemDefault());
-    }
-
-    /**
-     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalDate}
-     */
-    @NotNull
-    public LocalDate toLocalDate(@NotNull final String zone) {
-        return toLocalDate(ZoneId.of(zone));
-    }
-
-    /**
-     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalDate}
-     */
-    @NotNull
-    public LocalDate toLocalDate(@NotNull final TimeZone zone) {
-        return toLocalDate(zone.getZoneId());
-    }
-
-    /**
-     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalDate}
-     */
-    @NotNull
-    public LocalDate toLocalDate(@NotNull final ZoneId zone) {
-        return toZonedDateTime(zone).toLocalDate();
-    }
-
-    /**
-     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the
-     * {@link ZoneId#systemDefault() system default} time zone.
-     *
-     * @return the {@link LocalTime}
-     */
-    @NotNull
-    public LocalTime toLocalTime() {
-        return toLocalTime(ZoneId.systemDefault());
-    }
-
-    /**
-     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalTime}
-     */
-    @NotNull
-    public LocalTime toLocalTime(@NotNull final String zone) {
-        return toLocalTime(ZoneId.of(zone));
-    }
-
-    /**
-     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalTime}
-     */
-    @NotNull
-    public LocalTime toLocalTime(@NotNull final TimeZone zone) {
-        return toLocalTime(zone.getZoneId());
-    }
-
-    /**
-     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
-     *
-     * @return the {@link LocalTime}
-     */
-    @NotNull
-    public LocalTime toLocalTime(@NotNull final ZoneId zone) {
-        return toZonedDateTime(zone).toLocalTime();
-    }
-
-    /**
-     * Convert this DateTime to a Java Date.
-     *
-     * This DateTime will be truncated to milliseconds.
-     *
-     * @return a Java Date representing this DateTime
-     * @deprecated use {@link #toZonedDateTime()} instead.
-     */
-    @Deprecated
-    @NotNull
-    public Date getDate() {
-        return new Date(getMillis());
-    }
-
-    /**
-     * Convert this DateTime to a Java Instant.
-     *
-     * @return a Java Instant representing this DateTime
-     */
-    @NotNull
-    public Instant getInstant() {
-        return Instant.ofEpochSecond(0, nanos);
     }
 
     // endregion

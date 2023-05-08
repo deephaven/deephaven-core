@@ -83,12 +83,12 @@ public class SimulationClock implements Clock {
 
     @Override
     public Instant instantNanos() {
-        return now.getInstant();
+        return now.toInstant();
     }
 
     @Override
     public Instant instantMillis() {
-        return now.getInstant();
+        return now.toInstant();
     }
 
     /**

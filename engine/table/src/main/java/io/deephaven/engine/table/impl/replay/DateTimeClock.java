@@ -26,11 +26,11 @@ abstract class DateTimeClock implements Clock {
 
     @Override
     public Instant instantNanos() {
-        return currentDateTime().getInstant();
+        return currentDateTime().toInstant();
     }
 
     @Override
     public Instant instantMillis() {
-        return currentDateTime().getInstant();
+        return currentDateTime().toInstant();
     }
 }

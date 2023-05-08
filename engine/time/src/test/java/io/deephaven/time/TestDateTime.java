@@ -5,7 +5,6 @@ package io.deephaven.time;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
-import org.joda.time.DateTimeZone;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -48,10 +47,10 @@ public class TestDateTime extends BaseArrayTestCase {
         DateTime dateTime2 = new DateTime(nanos);
 
         java.time.Instant target1 = java.time.Instant.ofEpochMilli(jodaDateTime.getMillis());
-        TestCase.assertEquals(target1, dateTime1.getInstant());
+        TestCase.assertEquals(target1, dateTime1.toInstant());
 
         java.time.Instant target2 = java.time.Instant.ofEpochSecond(jodaDateTime.getMillis() / 1000, 999123456);
-        TestCase.assertEquals(target2, dateTime2.getInstant());
+        TestCase.assertEquals(target2, dateTime2.toInstant());
     }
 
     private long getMillisFromDateStr(SimpleDateFormat format, String dateStr) {

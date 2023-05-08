@@ -93,7 +93,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         @Override
         public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
-            return toAppendTo.append(formatter.format(new DateTime(number).getInstant()));
+            return toAppendTo.append(formatter.format(new DateTime(number).toInstant()));
         }
 
         @Override

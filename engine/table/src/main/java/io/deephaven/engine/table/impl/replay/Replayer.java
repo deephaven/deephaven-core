@@ -341,11 +341,11 @@ public class Replayer implements ReplayerInterface, Runnable {
         @Override
         public Instant instantNanos() {
             if (deltaNanos == Long.MAX_VALUE) {
-                return startTime.getInstant();
+                return startTime.toInstant();
             }
             final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
             if (resultNanos >= endTime.getNanos()) {
-                return endTime.getInstant();
+                return endTime.toInstant();
             }
             return Instant.ofEpochSecond(0, resultNanos);
         }

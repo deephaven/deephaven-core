@@ -43,7 +43,7 @@ public class DateTimeFormatter {
 
     public String format(DateTime dateTime, TimeZone tz) {
         final ZoneId zone = tz.getTimeZone().toTimeZone().toZoneId();
-        return dateTime.getInstant().atZone(zone).format(getFormatter(tz));
+        return dateTime.toInstant().atZone(zone).format(getFormatter(tz));
     }
 
     public String format(DateTime dateTime) {

@@ -653,6 +653,7 @@ public class DateTimeUtils {
         return epochNanosToDateTime(secondsToNanos(seconds));
     }
 
+    //TODO: remove dateTime from name??
     /**
      * Converts a {@link DateTime} to an Excel time represented as a double.
      *
@@ -1120,7 +1121,7 @@ public class DateTimeUtils {
      * Converts a {@link ZonedDateTime} to a {@link DateTime}.
      *
      * @param zonedDateTime {@link ZonedDateTime} to convert.
-     * @return {@link DateTime} , or null if zonedDateTime is null.
+     * @return {@link DateTime}, or null if zonedDateTime is null.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
     @ScriptApi
@@ -1990,7 +1991,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.getInstant(), timeZone))
+        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone))
                 + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
@@ -2025,7 +2026,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.getInstant(), timeZone));
+        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone));
     }
 
     /**
