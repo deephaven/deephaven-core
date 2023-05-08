@@ -38,6 +38,7 @@ public class DateTimeUtils {
     //TODO: test coverage
     //TODO: review function subsections for consistency
     //TODO: review function subsections for missing functions
+    //TODO: methods to use ZoneId instead of just TimeZone
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
