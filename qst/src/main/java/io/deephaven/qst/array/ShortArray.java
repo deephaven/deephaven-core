@@ -68,6 +68,11 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_SHORT;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

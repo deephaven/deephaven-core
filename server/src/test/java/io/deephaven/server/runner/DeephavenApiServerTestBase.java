@@ -79,9 +79,6 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 

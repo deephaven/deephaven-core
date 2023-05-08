@@ -50,7 +50,15 @@ public interface PrimitiveArray<T> extends Array<T> {
         return builder(type, data.size()).add(data).build();
     }
 
+    /**
+     * @return the boxed value at {@code index}
+     */
     T value(int index);
+
+    /**
+     * @return whether the value at {@code index} is {@code null}
+     */
+    boolean isNull(int index);
 
     PrimitiveType<T> componentType();
 

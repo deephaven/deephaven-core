@@ -68,6 +68,11 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_CHAR;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

@@ -68,6 +68,11 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_DOUBLE;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

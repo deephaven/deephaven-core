@@ -68,6 +68,11 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_INT;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

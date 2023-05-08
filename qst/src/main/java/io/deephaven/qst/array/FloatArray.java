@@ -68,6 +68,11 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_FLOAT;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

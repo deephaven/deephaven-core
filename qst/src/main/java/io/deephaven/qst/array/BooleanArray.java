@@ -68,6 +68,11 @@ public final class BooleanArray extends PrimitiveArrayBase<Boolean> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

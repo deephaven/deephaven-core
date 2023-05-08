@@ -68,6 +68,11 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_LONG;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }

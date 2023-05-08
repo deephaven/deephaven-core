@@ -68,6 +68,11 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
     }
 
     @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_BYTE;
+    }
+
+    @Override
     public final int size() {
         return values().length;
     }
