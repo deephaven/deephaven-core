@@ -4,7 +4,6 @@
 package io.deephaven.time;
 
 import io.deephaven.base.clock.Clock;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +40,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     private long nanos;
 
     //TODO: group constructors
-    
+
     //TODO: Remove -- redundant?
     /**
      * Create a new date time from an {@link Instant}.
@@ -401,12 +400,12 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Converts this DateTime into a String using the provided {@link TimeZone}.
+     * Converts this DateTime into a String using the provided time zone.
      *
      * The date time will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
      * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
      *
-     * @param timeZone the timezone for formatting the string
+     * @param timeZone the time zone for formatting the string
      * @return a string representation of this DateTime
      * @see DateTimeUtils#formatDateTime(DateTime, TimeZone)
      */
@@ -421,12 +420,51 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Converts this DateTime into a date String using the default {@link TimeZone}.
+     * Converts this DateTime into a String using the provided time zone.
+     *
+     * The date time will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
+     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
+     *
+     * @param timeZone the time zone for formatting the string
+     * @return a string representation of this DateTime
+     * @see DateTimeUtils#formatDateTime(DateTime, ZoneId)
+     */
+    @NotNull
+    public String toString(@NotNull final ZoneId timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+
+        return DateTimeUtils.formatDateTime(this, timeZone);
+    }
+
+    /**
+     * Converts this DateTime into a String using the provided time zone.
+     *
+     * The date time will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
+     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
+     *
+     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return a string representation of this DateTime
+     * @see ZoneId
+     */
+    @NotNull
+    public String toString(@NotNull final String timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+
+        return toString(ZoneId.of(timeZone));
+    }
+
+    /**
+     * Converts this DateTime into a date String using the default time zone.
      *
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
-     * @return a date string representation of this DateTime in the default {@link TimeZone}.
-     * @see DateTimeUtils#formatDate(DateTime, TimeZone)
+     * @return a date string representation of this DateTime in the default time zone.
      */
     @NotNull
     public String toDateString() {
@@ -434,12 +472,12 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Converts this DateTime into a date String using the provided {@link TimeZone}.
+     * Converts this DateTime into a date String using the provided time zone.
      *
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
-     * @param timeZone the timezone for formatting the string
-     * @return a date string representation of this DateTime in the provided {@link TimeZone}.
+     * @param timeZone the time zone for formatting the string
+     * @return a date string representation of this DateTime in the provided time zone.
      * @see DateTimeUtils#formatDate(DateTime, TimeZone)
      */
     @NotNull
@@ -453,28 +491,13 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Converts this DateTime into a date String using the provided {@link ZoneId}.
+     * Converts this DateTime into a date String using the provided time zone.
      *
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
-     * @param timeZone the timezone for formatting the string.  The timezone string must be a valid value specified in {@link ZoneId}.
-     * @return a date string representation of this DateTime in the provided {@link ZoneId}.
-     * @see DateTimeUtils#formatDate(DateTime, TimeZone)
-     * @see ZoneId
-     */
-    @NotNull
-    public String toDateString(@NotNull final String timeZone) {
-        return toDateString(ZoneId.of(timeZone));
-    }
-
-    /**
-     * Converts this DateTime into a date String using the provided {@link ZoneId}.
-     *
-     * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
-     *
-     * @param timeZone the timezone for formatting the string
-     * @return a date string representation of this DateTime in the provided {@link ZoneId}.
-     * @see DateTimeUtils#formatDate(DateTime, TimeZone)
+     * @param timeZone the time zone for formatting the string
+     * @return a date string representation of this DateTime in the provided time zone.
+     * @see DateTimeUtils#formatDate(DateTime, ZoneId)
      */
     @NotNull
     public String toDateString(@NotNull final ZoneId timeZone) {
@@ -482,7 +505,25 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(getInstant(), timeZone));
+        return DateTimeUtils.formatDate(this, timeZone);
+    }
+
+    /**
+     * Converts this DateTime into a date String using the provided time zone.
+     *
+     * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
+     *
+     * @param timeZone the time zone for formatting the string.  The timezone string must be a valid value specified in {@link ZoneId}.
+     * @return a date string representation of this DateTime in the provided {@link ZoneId}.
+     * @see ZoneId
+     */
+    @NotNull
+    public String toDateString(@NotNull final String timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return toDateString(ZoneId.of(timeZone));
     }
 
     // endregion

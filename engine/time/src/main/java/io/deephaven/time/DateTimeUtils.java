@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 
 /**
  * Functions for working with time.
@@ -1976,6 +1977,24 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.getInstant(), timeZone))
+                + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
+    }
+
+    /**
      * Returns a DateTime formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
@@ -1990,6 +2009,23 @@ public class DateTimeUtils {
         }
 
         return JODA_DATE_FORMAT.withZone(timeZone.getTimeZone()).print(dateTime.getMillis());
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.getInstant(), timeZone));
     }
 
     /**
