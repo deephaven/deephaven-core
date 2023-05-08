@@ -472,6 +472,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         return true;
     }
+
     protected void doWakeup() {
         registrar.requestRefresh();
     }

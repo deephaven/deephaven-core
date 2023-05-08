@@ -64,5 +64,3 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
 artifacts {
     combinedJavadoc allJavadoc
 }
-sourceCompatibility = JavaVersion.VERSION_19
-targetCompatibility = JavaVersion.VERSION_19
