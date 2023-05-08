@@ -177,12 +177,19 @@ public class MultiplexedWebsocketTransport implements Transport {
                     }
                 }
             });
+            webSocket.addEventListener("close", event -> {
+                // socket is closed, make room for another to be created
+                activeSockets.remove(key);
+            });
         }
 
         private void retain() {
             activeCount++;
         }
 
+        /**
+         * May be called once per transport
+         */
         private void release() {
             activeCount--;
             if (activeCount == 0 && closing) {
@@ -191,7 +198,7 @@ public class MultiplexedWebsocketTransport implements Transport {
         }
     }
 
-    private final ActiveTransport transport;
+    private ActiveTransport transport;
     private final int streamId = nextStreamId++;
     private final List<QueuedEntry> sendQueue = new ArrayList<>();
     private final TransportOptions options;
@@ -305,7 +312,11 @@ public class MultiplexedWebsocketTransport implements Transport {
         cleanup.run();
         cleanup = JsRunnable.doNothing();
 
-        transport.release();
+        if (transport != null) {
+            // release our reference to the transport, last one out will close the socket (if needed)
+            transport.release();
+            transport = null;
+        }
     }
 
     private void onClose(Event event) {

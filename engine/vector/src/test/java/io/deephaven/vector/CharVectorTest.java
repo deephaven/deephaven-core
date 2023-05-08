@@ -3,126 +3,253 @@
  */
 package io.deephaven.vector;
 
-import junit.framework.TestCase;
+// region IteratorTypeImport
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
+// endregion IteratorTypeImport
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+// region NullConstantImport
+import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
+// endregion NullConstantImport
+import static junit.framework.TestCase.*;
 
-public class CharVectorTest extends TestCase {
+/**
+ * Unit tests for various permutations of {@link CharVector}.
+ */
+public abstract class CharVectorTest {
 
-    public void testVectorDirect() {
-        CharVector vector = new CharVectorDirect((char)10, (char)20, (char)30);
+    protected abstract CharVector makeTestVector(@NotNull final char... data);
+
+    @Test
+    public void testVector() {
+        final CharVector vector = makeTestVector((char) 10, (char) 20, (char) 30);
+        validateIterator(vector);
         assertEquals(3, vector.size());
-        assertEquals((char)10, vector.get(0));
-        assertEquals((char)20, vector.get(1));
-        assertEquals((char)30, vector.get(2));
-        assertEquals(NULL_CHAR,vector.get(3));
-        assertEquals(NULL_CHAR,vector.get(-1));
+        assertEquals((char) 10, vector.get(0));
+        assertEquals((char) 20, vector.get(1));
+        assertEquals((char) 30, vector.get(2));
+        assertEquals(NULL_CHAR, vector.get(3));
+        assertEquals(NULL_CHAR, vector.get(-1));
+
         char[] chars = vector.toArray();
-        assertEquals((char)10, chars[0]);
-        assertEquals((char)20, chars[1]);
-        assertEquals((char)30, chars[2]);
+        assertEquals(vector, new CharVectorDirect(chars));
+        assertEquals(vector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals((char) 10, chars[0]);
+        assertEquals((char) 20, chars[1]);
+        assertEquals((char) 30, chars[2]);
         assertEquals(3, chars.length);
-        assertEquals(0, vector.subVector(0, 0).size());
-        assertEquals(0, vector.subVector(0, 0).toArray().length);
-        assertEquals(NULL_CHAR,vector.subVector(0, 0).get(0));
-        assertEquals(NULL_CHAR,vector.subVector(0, 0).get(-1));
 
-        assertEquals(1, vector.subVector(0, 1).size());
-        char[] chars3 = vector.subVector(0, 1).toArray();
-        assertEquals(1,chars3.length);
-        assertEquals((char)10,chars3[0]);
+        CharVector subVector = vector.subVector(0, 0);
+        validateIterator(subVector);
+        assertEquals(0, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(NULL_CHAR, subVector.get(0));
+        assertEquals(NULL_CHAR, subVector.get(-1));
 
-        assertEquals(NULL_CHAR,vector.subVector(0, 1).get(1));
-        assertEquals(NULL_CHAR,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(0, 1);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(1, chars.length);
+        assertEquals((char) 10, chars[0]);
+        assertEquals(NULL_CHAR, subVector.get(1));
+        assertEquals(NULL_CHAR, subVector.get(-1));
 
-        assertEquals(1, vector.subVector(1, 2).size());
-        char[] chars1 = vector.subVector(1, 2).toArray();
-        assertEquals(1,chars1.length);
-        assertEquals((char)20,chars1[0]);
-        assertEquals(NULL_CHAR,vector.subVector(0, 1).get(1));
-        assertEquals(NULL_CHAR,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(2, 3);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(1, chars.length);
+        assertEquals((char) 30, chars[0]);
+        assertEquals(NULL_CHAR, subVector.get(1));
+        assertEquals(NULL_CHAR, subVector.get(-1));
 
-        assertEquals(2, vector.subVector(1, 3).size());
-        char[] chars2 = vector.subVector(1, 3).toArray();
-        assertEquals(2,chars2.length);
-        assertEquals((char)20,chars2[0]);
-        assertEquals((char)30,chars2[1]);
-        assertEquals(NULL_CHAR,vector.subVector(1, 3).get(2));
-        assertEquals(NULL_CHAR,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(1, 3);
+        validateIterator(subVector);
+        assertEquals(2, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(2, chars.length);
+        assertEquals((char) 20, chars[0]);
+        assertEquals((char) 30, chars[1]);
+        assertEquals(NULL_CHAR, subVector.get(2));
+        assertEquals(NULL_CHAR, subVector.get(-1));
+
+        subVector = vector.subVectorByPositions(new long[] {-1, 1, 2, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(4, chars.length);
+        assertEquals(NULL_CHAR, chars[0]);
+        assertEquals((char) 20, chars[1]);
+        assertEquals((char) 30, chars[2]);
+        assertEquals(NULL_CHAR, chars[3]);
+        assertEquals(NULL_CHAR, subVector.get(-1));
+        assertEquals(NULL_CHAR, subVector.get(4));
+
+        subVector = subVector.subVectorByPositions(new long[] {-1, 0, 1, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        chars = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(chars));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(chars).hashCode());
+        assertEquals(4, chars.length);
+        assertEquals(NULL_CHAR, chars[0]);
+        assertEquals(NULL_CHAR, chars[1]);
+        assertEquals((char) 20, chars[2]);
+        assertEquals(NULL_CHAR, chars[3]);
+        assertEquals(NULL_CHAR, subVector.get(-1));
+        assertEquals(NULL_CHAR, subVector.get(4));
+
+        subVector = subVector.subVector(0, 2);
+        validateIterator(subVector);
+
+        subVector = subVector.subVectorByPositions(new long[] {0, 1, 2});
+        validateIterator(subVector);
     }
 
-    public void testSubArray() {
-        CharVector vector = new CharVectorDirect((char) 10, (char) 20, (char) 30);
+    @Test
+    public void testLarge() {
+        final char[] data = new char[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = (char) ei;
+        }
+        final CharVector vector = makeTestVector(data);
+        assertEquals(vector, new CharVectorDirect(vector.toArray()));
+        validateIterator(vector, -data.length, data.length * 2);
+        validateIterator(vector, -5, data.length / 2);
+        validateIterator(vector, -5, data.length);
+        validateIterator(vector, data.length / 2, data.length);
+        validateIterator(vector, data.length / 2, data.length + 5);
+        validateIterator(vector, data.length, data.length + 5);
+    }
 
-        for (int start=-4; start<=4; start++){
-            for (int end=-1; end<=7; end++){
-                if (start>end){
+    @Test
+    public void testSubVector() {
+        CharVector vector = makeTestVector((char) 10, (char) 20, (char) 30);
+        validateIterator(vector);
+
+        for (int start = -4; start <= 4; start++) {
+            for (int end = -1; end <= 7; end++) {
+                if (start > end) {
                     continue;
                 }
 
-                char result[]=new char[end-start];
+                final char[] result = new char[end - start];
 
-                for (int i=start; i<end; i++){
-                    result[i-start] =(i<0 || i>=vector.size()) ? NULL_CHAR : vector.get(i);
+                for (int ei = start; ei < end; ei++) {
+                    result[ei - start] = (ei < 0 || ei >= vector.size()) ? NULL_CHAR : vector.get(ei);
                 }
 
-                checkSubArray(vector, start, end, result);
+                checkSubVector(vector, start, end, result);
             }
         }
 
-        for (int start=-4; start<=4; start++){
-            for (int end=-1; end<=7; end++){
-                for (int start2=-4; start2<=4; start2++){
-                    for (int end2=-1; end2<=7; end2++){
-                        if (start>end || start2>end2){
+        for (int start = -4; start <= 4; start++) {
+            for (int end = -1; end <= 7; end++) {
+                for (int start2 = -4; start2 <= 4; start2++) {
+                    for (int end2 = -1; end2 <= 7; end2++) {
+                        if (start > end || start2 > end2) {
                             continue;
                         }
 
-                        char result[]=new char[end-start];
+                        final char[] result = new char[end - start];
 
-                        for (int i=start; i<end; i++){
-                            result[i-start] =(i<0 || i>=vector.size()) ? NULL_CHAR : vector.get(i);
+                        for (int ei = start; ei < end; ei++) {
+                            result[ei - start] = (ei < 0 || ei >= vector.size()) ? NULL_CHAR : vector.get(ei);
                         }
 
-                        char result2[]=new char[end2-start2];
+                        final char[] result2 = new char[end2 - start2];
 
-                        for (int i=start2; i<end2; i++){
-                            result2[i-start2] =(i<0 || i>=result.length) ? NULL_CHAR : result[i];
+                        for (int ei = start2; ei < end2; ei++) {
+                            result2[ei - start2] = (ei < 0 || ei >= result.length) ? NULL_CHAR : result[ei];
                         }
 
-                        checkDoubleSubArray(vector, start, end, start2, end2, result2);
+                        checkDoubleSubVector(vector, start, end, start2, end2, result2);
                     }
                 }
             }
         }
     }
 
+    @Test
     public void testType() {
+        // region TestType
         assertEquals(CharVector.type().clazz(), CharVector.class);
+        // endregion TestType
     }
 
-    private void checkSubArray(CharVector vector, int start, int end, char result[]){
-        CharVector subArray = vector.subVector(start, end);
-        char array[] = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+    private static void checkSubVector(
+            final CharVector vector,
+            final int start,
+            final int end,
+            final char[] result) {
+        final CharVector subVector = vector.subVector(start, end);
+        validateIterator(subVector);
+        final char[] array = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(array));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
-        for (int i=0; i<result.length; i++){
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subVector.get(ei));
+            assertEquals(result[ei], array[ei]);
         }
     }
 
-    private void checkDoubleSubArray(CharVector vector, int start, int end, int start2, int end2, char result[]){
-        CharVector subArray = vector.subVector(start, end);
-        subArray = subArray.subVector(start2, end2);
-        char array[] = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+    private static void checkDoubleSubVector(
+            final CharVector vector,
+            final int start,
+            final int end,
+            final int start2,
+            final int end2,
+            final char[] result) {
+        CharVector subVector = vector.subVector(start, end);
+        subVector = subVector.subVector(start2, end2);
+        validateIterator(subVector);
+        final char[] array = subVector.toArray();
+        assertEquals(subVector, new CharVectorDirect(array));
+        assertEquals(subVector.hashCode(), new CharVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
-        for (int i=0; i<result.length; i++){
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subVector.get(ei));
+            assertEquals(result[ei], array[ei]);
+        }
+    }
+
+    private static void validateIterator(@NotNull final CharVector vector) {
+        for (long si = -2; si < vector.size() + 2; ++si) {
+            for (long ei = si; ei < vector.size() + 2; ++ei) {
+                validateIterator(vector, si, ei);
+            }
+        }
+    }
+
+    private static void validateIterator(
+            @NotNull final CharVector vector,
+            final long startIndexInclusive,
+            final long endIndexExclusive) {
+        try (final CloseablePrimitiveIteratorOfChar iterator =
+                vector.iterator(startIndexInclusive, endIndexExclusive)) {
+            for (long vi = startIndexInclusive; vi < endIndexExclusive; ++vi) {
+                assertEquals(vector.get(vi), iterator.nextChar());
+            }
+            assertFalse(iterator.hasNext());
         }
     }
 }

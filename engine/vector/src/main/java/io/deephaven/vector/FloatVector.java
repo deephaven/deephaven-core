@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -17,7 +19,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface FloatVector extends Vector<FloatVector> {
+/**
+ * A {@link Vector} of primitive floats.
+ */
+public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
 
     long serialVersionUID = -1373264425081841175L;
 
@@ -25,23 +30,65 @@ public interface FloatVector extends Vector<FloatVector> {
         return PrimitiveVectorType.of(FloatVector.class, FloatType.instance());
     }
 
-    float get(long i);
+    /**
+     * Get the element of this FloatVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_FLOAT null float}.
+     *
+     * @param index An offset into this FloatVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_FLOAT null float}
+     */
+    float get(long index);
 
     @Override
-    FloatVector subVector(long fromIndex, long toIndex);
+    FloatVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    FloatVector subVectorByPositions(long [] positions);
+    FloatVector subVectorByPositions(long[] positions);
 
     @Override
     float[] toArray();
 
     @Override
-    long size();
+    float[] copyToArray();
+
+    @Override
+    FloatVector getDirect();
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default CloseablePrimitiveIteratorOfFloat iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfFloat() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public float nextFloat() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
+
+    @Override
+    @FinalDefault
+    default Class<?> getComponentType() {
         return float.class;
     }
 
@@ -51,12 +98,8 @@ public interface FloatVector extends Vector<FloatVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
-    @Override
-    FloatVector getDirect();
-
     static String floatValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveFloatValToString((Float)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveFloatValToString((Float) val);
     }
 
     static String primitiveFloatValToString(final float val) {
@@ -66,21 +109,22 @@ public interface FloatVector extends Vector<FloatVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The FloatVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The FloatVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final FloatVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final FloatVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveFloatValToString(array.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveFloatValToString(array.get(ei)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        try (final CloseablePrimitiveIteratorOfFloat iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveFloatValToString(iterator.nextFloat()));
+            iterator.forEachRemaining(
+                    (final float value) -> builder.append(',').append(primitiveFloatValToString(value)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,44 +135,55 @@ public interface FloatVector extends Vector<FloatVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a FloatVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a FloatVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final FloatVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final FloatVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof FloatVector)) {
+        if (!(bObj instanceof FloatVector)) {
             return false;
         }
-        final FloatVector bArray = (FloatVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final FloatVector bVector = (FloatVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (Float.floatToIntBits(aArray.get(ei)) != Float.floatToIntBits(bArray.get(ei))) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfFloat aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfFloat bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                // region ElementEquals
+                if (Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())) {
+                    return false;
+                }
+                // endregion ElementEquals
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(float[])}.
      *
-     * @param array The FloatVector to hash
+     * @param vector The FloatVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final FloatVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final FloatVector vector) {
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Float.hashCode(array.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfFloat iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Float.hashCode(iterator.nextFloat());
+            }
         }
         return result;
     }
@@ -138,7 +193,22 @@ public interface FloatVector extends Vector<FloatVector> {
      */
     abstract class Indirect implements FloatVector {
 
-        private static final long serialVersionUID = 1L;
+        @Override
+        public float[] toArray() {
+            final int size = intSize("FloatVector.toArray");
+            final float[] result = new float[size];
+            try (final CloseablePrimitiveIteratorOfFloat iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextFloat();
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public float[] copyToArray() {
+            return toArray();
+        }
 
         @Override
         public FloatVector getDirect() {
@@ -162,7 +232,7 @@ public interface FloatVector extends Vector<FloatVector> {
         }
 
         protected final Object writeReplace() {
-            return new FloatVectorDirect(toArray());
+            return getDirect();
         }
     }
 }

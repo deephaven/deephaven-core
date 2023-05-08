@@ -28,7 +28,9 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MetaTableRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SeekRowRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
@@ -42,6 +44,7 @@ import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
+import java.lang.Override;
 import java.util.List;
 
 /**
@@ -346,6 +349,17 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
+     * Authorize a request to RangeJoinTables.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke RangeJoinTables
+     */
+    void checkPermissionRangeJoinTables(AuthContext authContext, RangeJoinTablesRequest request,
+            List<Table> sourceTables);
+
+    /**
      * Authorize a request to ComboAggregate.
      *
      * @param authContext the authentication context of the request
@@ -466,310 +480,239 @@ public interface TableServiceContextualAuthWiring {
     void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
             List<Table> sourceTables);
 
-    class AllowAll implements TableServiceContextualAuthWiring {
-        public void checkPermissionGetExportedTableCreationResponse(AuthContext authContext,
-                Ticket request, List<Table> sourceTables) {}
+    /**
+     * Authorize a request to MetaTable.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke MetaTable
+     */
+    void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
+            List<Table> sourceTables);
 
-        public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
-                List<Table> sourceTables) {}
+    /**
+     * A default implementation that funnels all requests to invoke {@code checkPermission}.
+     */
+    abstract class DelegateAll implements TableServiceContextualAuthWiring {
+        protected abstract void checkPermission(AuthContext authContext, List<Table> sourceTables);
 
-        public void checkPermissionApplyPreviewColumns(AuthContext authContext,
-                ApplyPreviewColumnsRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionEmptyTable(AuthContext authContext, EmptyTableRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionTimeTable(AuthContext authContext, TimeTableRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionDropColumns(AuthContext authContext, DropColumnsRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionUpdate(AuthContext authContext, SelectOrUpdateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionLazyUpdate(AuthContext authContext, SelectOrUpdateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionView(AuthContext authContext, SelectOrUpdateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionUpdateView(AuthContext authContext, SelectOrUpdateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionSelect(AuthContext authContext, SelectOrUpdateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionUpdateBy(AuthContext authContext, UpdateByRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionSelectDistinct(AuthContext authContext,
-                SelectDistinctRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionFilter(AuthContext authContext, FilterTableRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionUnstructuredFilter(AuthContext authContext,
-                UnstructuredFilterTableRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionSort(AuthContext authContext, SortTableRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionHead(AuthContext authContext, HeadOrTailRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionTail(AuthContext authContext, HeadOrTailRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionHeadBy(AuthContext authContext, HeadOrTailByRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionTailBy(AuthContext authContext, HeadOrTailByRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionUngroup(AuthContext authContext, UngroupRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionMergeTables(AuthContext authContext, MergeTablesRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionCrossJoinTables(AuthContext authContext,
-                CrossJoinTablesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionNaturalJoinTables(AuthContext authContext,
-                NaturalJoinTablesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionExactJoinTables(AuthContext authContext,
-                ExactJoinTablesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionLeftJoinTables(AuthContext authContext,
-                LeftJoinTablesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionAsOfJoinTables(AuthContext authContext,
-                AsOfJoinTablesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionComboAggregate(AuthContext authContext,
-                ComboAggregateRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionSnapshotWhen(AuthContext authContext,
-                SnapshotWhenTableRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionRunChartDownsample(AuthContext authContext,
-                RunChartDownsampleRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionCreateInputTable(AuthContext authContext,
-                CreateInputTableRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionWhereIn(AuthContext authContext, WhereInRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionExportedTableUpdates(AuthContext authContext,
-                ExportedTableUpdatesRequest request, List<Table> sourceTables) {}
-
-        public void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
-                List<Table> sourceTables) {}
-    }
-
-    class DenyAll implements TableServiceContextualAuthWiring {
         public void checkPermissionGetExportedTableCreationResponse(AuthContext authContext,
                 Ticket request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionFetchTable(AuthContext authContext, FetchTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionApplyPreviewColumns(AuthContext authContext,
                 ApplyPreviewColumnsRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionEmptyTable(AuthContext authContext, EmptyTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionTimeTable(AuthContext authContext, TimeTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionDropColumns(AuthContext authContext, DropColumnsRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionUpdate(AuthContext authContext, SelectOrUpdateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionLazyUpdate(AuthContext authContext, SelectOrUpdateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionView(AuthContext authContext, SelectOrUpdateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionUpdateView(AuthContext authContext, SelectOrUpdateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSelect(AuthContext authContext, SelectOrUpdateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionUpdateBy(AuthContext authContext, UpdateByRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSelectDistinct(AuthContext authContext,
                 SelectDistinctRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionFilter(AuthContext authContext, FilterTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionUnstructuredFilter(AuthContext authContext,
                 UnstructuredFilterTableRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSort(AuthContext authContext, SortTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionHead(AuthContext authContext, HeadOrTailRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionTail(AuthContext authContext, HeadOrTailRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionHeadBy(AuthContext authContext, HeadOrTailByRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionTailBy(AuthContext authContext, HeadOrTailByRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionUngroup(AuthContext authContext, UngroupRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionMergeTables(AuthContext authContext, MergeTablesRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionCrossJoinTables(AuthContext authContext,
                 CrossJoinTablesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionNaturalJoinTables(AuthContext authContext,
                 NaturalJoinTablesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionExactJoinTables(AuthContext authContext,
                 ExactJoinTablesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionLeftJoinTables(AuthContext authContext,
                 LeftJoinTablesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionAsOfJoinTables(AuthContext authContext,
                 AsOfJoinTablesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
+        }
+
+        @Override
+        public void checkPermissionRangeJoinTables(AuthContext authContext, RangeJoinTablesRequest request,
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionComboAggregate(AuthContext authContext,
                 ComboAggregateRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionAggregateAll(AuthContext authContext, AggregateAllRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionAggregate(AuthContext authContext, AggregateRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSnapshot(AuthContext authContext, SnapshotTableRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSnapshotWhen(AuthContext authContext,
                 SnapshotWhenTableRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionFlatten(AuthContext authContext, FlattenRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionRunChartDownsample(AuthContext authContext,
                 RunChartDownsampleRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionCreateInputTable(AuthContext authContext,
                 CreateInputTableRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionWhereIn(AuthContext authContext, WhereInRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionExportedTableUpdates(AuthContext authContext,
                 ExportedTableUpdatesRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
                 List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
+        public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+    }
+
+    /**
+     * A default implementation that allows all requests.
+     */
+    class AllowAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {}
+    }
+
+    /**
+     * A default implementation that denies all requests.
+     */
+    class DenyAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }
@@ -966,6 +909,14 @@ public interface TableServiceContextualAuthWiring {
             }
         }
 
+        @Override
+        public void checkPermissionRangeJoinTables(AuthContext authContext, RangeJoinTablesRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionRangeJoinTables(authContext, request, sourceTables);
+            }
+        }
+
         public void checkPermissionComboAggregate(AuthContext authContext,
                 ComboAggregateRequest request, List<Table> sourceTables) {
             if (delegate != null) {
@@ -1040,6 +991,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSeekRow(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionMetaTable(authContext, request, sourceTables);
             }
         }
     }

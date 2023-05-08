@@ -19,8 +19,15 @@ void doit(const TableHandleManager &manager);
 }  // namespace
 
 // This example shows how to use the Arrow Flight client to make a simple table.
-int main() {
+int main(int argc, char *argv[]) {
   const char *server = "localhost:10000";
+  if (argc > 1) {
+    if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
+      std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+      std::exit(1);
+    }
+    server = argv[1];
+  }
 
   try {
     auto client = Client::connect(server);

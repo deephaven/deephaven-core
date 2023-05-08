@@ -9,8 +9,10 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * {@link WritableRowRedirection} implementation that wraps a {@link WritableColumnSource} of {@code longs}.
@@ -19,53 +21,54 @@ public final class LongColumnSourceWritableRowRedirection
         extends LongColumnSourceRowRedirection<WritableColumnSource<Long>>
         implements WritableRowRedirection {
 
-    public LongColumnSourceWritableRowRedirection(WritableColumnSource<Long> columnSource) {
+    public LongColumnSourceWritableRowRedirection(@NotNull final WritableColumnSource<Long> columnSource) {
         super(columnSource);
     }
 
     @Override
-    public long put(long outerRowKey, long innerRowKey) {
+    public long put(final long outerRowKey, final long innerRowKey) {
         final long previous = columnSource.getLong(outerRowKey);
 
         columnSource.set(outerRowKey, innerRowKey);
 
-        return previous == QueryConstants.NULL_LONG ? RowSequence.NULL_ROW_KEY : previous;
+        return previous == NULL_LONG ? NULL_ROW_KEY : previous;
     }
 
     @Override
-    public void putVoid(long outerRowKey, long innerRowKey) {
+    public void putVoid(final long outerRowKey, final long innerRowKey) {
         columnSource.set(outerRowKey, innerRowKey);
     }
 
     @Override
-    public long remove(long outerRowKey) {
+    public long remove(final long outerRowKey) {
         final long previous = columnSource.getLong(outerRowKey);
-        if (previous == QueryConstants.NULL_LONG) {
-            return RowSequence.NULL_ROW_KEY;
+        if (previous == NULL_LONG) {
+            return NULL_ROW_KEY;
         }
         columnSource.setNull(outerRowKey);
         return previous;
     }
 
     @Override
-    public void removeVoid(long outerRowKey) {
+    public void removeVoid(final long outerRowKey) {
         columnSource.setNull(outerRowKey);
     }
 
     @Override
-    public void removeAll(final RowSequence rowSequence) {
+    public void removeAll(@NotNull final RowSequence rowSequence) {
         columnSource.setNull(rowSequence);
     }
 
     @Override
-    public void removeAllUnordered(LongChunk<RowKeys> outerRowKeys) {
-        for (int ii = 0; ii < outerRowKeys.size(); ++ii) {
+    public void removeAllUnordered(@NotNull final LongChunk<RowKeys> outerRowKeys) {
+        final int size = outerRowKeys.size();
+        for (int ii = 0; ii < size; ++ii) {
             columnSource.setNull(outerRowKeys.get(ii));
         }
     }
 
     @Override
-    public ChunkSink.FillFromContext makeFillFromContext(int chunkCapacity) {
+    public ChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
         return columnSource.makeFillFromContext(chunkCapacity);
     }
 

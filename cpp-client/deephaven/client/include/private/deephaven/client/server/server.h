@@ -12,9 +12,8 @@
 #include <cstdint>
 #include <arrow/flight/client.h>
 
-#include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/proto/ticket.pb.h"
 #include "deephaven/proto/ticket.grpc.pb.h"
 #include "deephaven/proto/application.pb.h"
@@ -47,7 +46,7 @@ public:
 template<typename Response>
 struct ServerResponseHolder final : public CompletionQueueCallback {
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
 
 public:
   ServerResponseHolder(std::chrono::system_clock::time_point sendTime,
@@ -92,7 +91,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:

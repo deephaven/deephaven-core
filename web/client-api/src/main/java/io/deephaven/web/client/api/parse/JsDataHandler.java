@@ -34,11 +34,11 @@ import org.gwtproject.nio.TypedArrayHelper;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static io.deephaven.web.client.api.subscription.QueryConstants.FALSE_BOOLEAN_AS_BYTE;
 import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BOOLEAN_AS_BYTE;
@@ -56,6 +56,50 @@ import static io.deephaven.web.client.api.subscription.QueryConstants.TRUE_BOOLE
  */
 public enum JsDataHandler {
     STRING(Type.Utf8, "java.lang.String", "string") {
+        class AppendableBuffer {
+            private final List<ByteBuffer> buffers = new ArrayList<>();
+
+            public AppendableBuffer() {
+                buffers.add(ByteBuffer.allocate(1 << 16));
+            }
+
+            public void append(byte[] bytes) {
+                int bytesWritten = 0;
+                int remaining = bytes.length;
+                while (remaining > 0) {
+                    ByteBuffer current = buffers.get(buffers.size() - 1);
+                    int toWrite = Math.min(remaining, current.remaining());
+                    current.put(bytes, bytesWritten, toWrite);
+
+                    if (current.remaining() == 0) {
+                        buffers.add(ByteBuffer.allocate(1 << 16));
+                    }
+
+                    bytesWritten += toWrite;
+                    remaining -= toWrite;
+                }
+                assert remaining == 0;
+            }
+
+            public Uint8Array build() {
+                // See how much has been written to each.
+                // We haven't flipped these, so "position" is the really the limit
+                int totalSize = buffers.stream().mapToInt(ByteBuffer::position).sum();
+                Uint8Array payload = makeBuffer(totalSize);
+
+                int position = 0;
+                for (int i = 0; i < buffers.size(); i++) {
+                    ByteBuffer bb = buffers.get(i);
+                    Uint8Array buffer = new Uint8Array(TypedArrayHelper.unwrap(bb).buffer, 0, bb.position());
+                    payload.set(buffer, position);
+                    position += buffer.length;
+                }
+
+                buffers.clear();
+                return payload;
+            }
+        }
+
         @Override
         public double writeType(Builder builder) {
             return Utf8.createUtf8(builder);
@@ -67,10 +111,7 @@ public enum JsDataHandler {
             int nullCount = 0;
             BitSet validity = new BitSet(data.length);
             Int32Array positions = makeBuffer(data.length + 1, 4, Int32Array::new);
-            // work out the total length we'll need for the payload, plus padding
-            int payloadLength =
-                    Arrays.stream(data).filter(Objects::nonNull).map(Object::toString).mapToInt(String::length).sum();
-            Uint8Array payload = makeBuffer(payloadLength);
+            AppendableBuffer payload = new AppendableBuffer();
 
             int lastOffset = 0;
             for (int i = 0; i < data.length; i++) {
@@ -83,7 +124,7 @@ public enum JsDataHandler {
                 String str = data[i].toString();
                 positions.setAt(i, (double) lastOffset);
                 byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-                payload.set(Js.<double[]>uncheckedCast(bytes), lastOffset);
+                payload.append(bytes);
                 lastOffset += bytes.length;
             }
             positions.setAt(data.length, (double) lastOffset);
@@ -91,7 +132,7 @@ public enum JsDataHandler {
             // validity, positions, payload
             addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
             addBuffer.apply(new Uint8Array(positions.buffer));
-            addBuffer.apply(payload);
+            addBuffer.apply(payload.build());
 
             addNode.apply(new Node(data.length, nullCount));
         }

@@ -22,9 +22,9 @@ class TableHandleManagerImpl {
   typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
 
   template<typename... Args>
-  using Callback = deephaven::client::utility::Callback<Args...>;
+  using Callback = deephaven::dhcore::utility::Callback<Args...>;
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:

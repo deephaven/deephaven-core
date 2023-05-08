@@ -1,13 +1,16 @@
 package io.deephaven.web.client.api;
 
-import jsinterop.annotations.JsOverlay;
-import jsinterop.annotations.JsPackage;
+import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.JsPropertyMap;
 
-@JsType(namespace = JsPackage.GLOBAL, name = "Object", isNative = true)
+@JsType(namespace = "dh")
 public class LoginCredentials {
 
-    @JsOverlay
+    @JsIgnore
     public static LoginCredentials reconnect(String token) {
         LoginCredentials loginCredentials = new LoginCredentials();
         loginCredentials.setType("Bearer");
@@ -15,34 +18,56 @@ public class LoginCredentials {
         return loginCredentials;
     }
 
-    public String username, token, type;
+    private String username;
+    private String token;
+    private String type;
 
-    @JsOverlay
+    @JsConstructor
+    public LoginCredentials() {}
+
+    @JsIgnore
+    public LoginCredentials(JsPropertyMap<Object> source) {
+        this();
+        if (source.has("username")) {
+            username = source.getAsAny("username").asString();
+        }
+        if (source.has("token")) {
+            token = source.getAsAny("token").asString();
+        }
+        if (source.has("type")) {
+            type = source.getAsAny("type").asString();
+        }
+    }
+
+    @JsProperty
+    @JsNullable
     public final String getUsername() {
         return username;
     }
 
-    @JsOverlay
+    @JsProperty
     public final void setUsername(String username) {
         this.username = username;
     }
 
-    @JsOverlay
+    @JsProperty
+    @JsNullable
     public final String getToken() {
         return token;
     }
 
-    @JsOverlay
+    @JsProperty
     public final void setToken(String token) {
         this.token = token;
     }
 
-    @JsOverlay
+    @JsProperty
+    @JsNullable
     public final String getType() {
         return type;
     }
 
-    @JsOverlay
+    @JsProperty
     public final void setType(String type) {
         this.type = type;
     }

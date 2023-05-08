@@ -10,6 +10,7 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.IntFunction;
+import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 public class StreamPublisherImpl implements StreamPublisher {
@@ -63,12 +64,13 @@ public class StreamPublisherImpl implements StreamPublisher {
     }
 
     /**
-     * Run the provided Runnable under our lock, preventing flush from taking our chunks while filling them.
+     * Run the provided LongSupplier under our lock, preventing flush from taking our chunks while filling them.
      *
-     * @param runnable the runnable to run
+     * @param fun the LongSupplier to run
+     * @return the return of the execution of the provided LongSupplier.
      */
-    public synchronized void doLocked(Runnable runnable) {
-        runnable.run();
+    public synchronized long doLocked(LongSupplier fun) {
+        return fun.getAsLong();
     }
 
     /**

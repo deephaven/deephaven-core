@@ -23,7 +23,7 @@ import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.ShortVectorDirect;
 import io.deephaven.vector.Vector;
 
-import static io.deephaven.vector.ShortVectorDirect.ZERO_LEN_VECTOR;
+import static io.deephaven.vector.ShortVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class ShortVectorExpansionKernel implements VectorExpansionKernel {
     public final static ShortVectorExpansionKernel INSTANCE = new ShortVectorExpansionKernel();
@@ -83,7 +83,7 @@ public class ShortVectorExpansionKernel implements VectorExpansionKernel {
         for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(outOffset + i, ZERO_LEN_VECTOR);
+                result.set(outOffset + i, ZERO_LENGTH_VECTOR);
             } else {
                 final short[] row = new short[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {

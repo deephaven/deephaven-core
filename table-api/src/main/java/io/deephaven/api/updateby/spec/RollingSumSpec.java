@@ -1,19 +1,16 @@
 package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.updateby.OperationControl;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
-import java.util.Optional;
 
 /**
- * A {@link UpdateBySpec} for performing a windowed rolling sum across the specified columns
+ * An {@link UpdateBySpec} for performing a windowed rolling sum operation
  */
 @Immutable
 @BuildableStyle
-public abstract class RollingSumSpec extends UpdateBySpecBase {
+public abstract class RollingSumSpec extends RollingOpSpec {
 
     public static RollingSumSpec ofTicks(long revTicks) {
         return of(WindowScale.ofTicks(revTicks));
@@ -41,37 +38,12 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
-
-    private static RollingSumSpec of(WindowScale revWindowScale) {
-        return ImmutableRollingSumSpec.builder().revTimeScale(revWindowScale).build();
+    public static RollingSumSpec of(WindowScale revWindowScale) {
+        return ImmutableRollingSumSpec.builder().revWindowScale(revWindowScale).build();
     }
 
-    private static RollingSumSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
-        // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-        final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-
-        // assert some rational constraints
-        final long size = revWindowScale.timescaleUnits() + fwdWindowScale.timescaleUnits();
-        if (size < 0) {
-            throw new IllegalArgumentException("UpdateBy rolling window size must be non-negative");
-        } else if (!revWindowScale.isTimeBased() && size > MAX_ARRAY_SIZE) {
-            throw new IllegalArgumentException(
-                    "UpdateBy rolling window size may not exceed MAX_ARRAY_SIZE (" + MAX_ARRAY_SIZE + ")");
-        }
-        return ImmutableRollingSumSpec.builder().revTimeScale(revWindowScale).fwdTimeScale(fwdWindowScale).build();
-    }
-
-    public abstract Optional<OperationControl> control();
-
-    public abstract WindowScale revTimeScale();
-
-    /**
-     * provide a default forward-looking timescale
-     */
-    @Value.Default
-    public WindowScale fwdTimeScale() {
-        return WindowScale.ofTicks(0);
+    public static RollingSumSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
+        return ImmutableRollingSumSpec.builder().revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale).build();
     }
 
     @Override

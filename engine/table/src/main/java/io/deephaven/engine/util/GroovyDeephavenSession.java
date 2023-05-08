@@ -499,7 +499,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String commandPrefix = "package " + PACKAGE + ";\n" +
                 "import static io.deephaven.engine.util.TableTools.*;\n" +
                 "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-                "import static io.deephaven.engine.table.impl.util.PerformanceQueries.*;\n" +
                 "import io.deephaven.api.*;\n" +
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
@@ -821,19 +820,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         @Override
         public int priority() {
             return 0;
-        }
-    }
-
-    @AutoService(InitScript.class)
-    public static class PerformanceQueries implements InitScript {
-        @Override
-        public String getScriptPath() {
-            return "groovy/1-performance.groovy";
-        }
-
-        @Override
-        public int priority() {
-            return 1;
         }
     }
 

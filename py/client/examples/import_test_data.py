@@ -18,10 +18,11 @@ from pydeephaven.utils import is_deephaven_compatible
 
 
 def import_taxi_records(dh_session: Session) -> Table:
+    parquet_file_name = "sample.parquet"
 
     # download the parquet data and read it into a pyarrow table and prepare it for uploading into DH
-    parquet_file_name = download_file(url="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-11.parquet",
-                                      file_name="sample.parquet", reuse_existing=True)
+    download_file(url="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-11.parquet",
+                  file_name=parquet_file_name, reuse_existing=True)
     pa_table = parquet.read_table(parquet_file_name)
 
     # drop unwanted columns

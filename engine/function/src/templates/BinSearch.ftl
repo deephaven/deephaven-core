@@ -114,7 +114,7 @@ public class BinSearch {
     }
 
     static private <T extends Comparable<? super T>> int binarySearch0Modified(ObjectVector<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
-        if(array.size() == 0){
+        if(array.isEmpty()){
             return -1;
         }
 
@@ -197,7 +197,7 @@ public class BinSearch {
             return NULL_INT;
         }
 
-        return binSearchIndex(new ${pt.dbArrayDirect}(values), key, choiceWhenEquals);
+        return binSearchIndex(new ${pt.vectorDirect}(values), key, choiceWhenEquals);
     }
 
     /**
@@ -208,7 +208,7 @@ public class BinSearch {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
      */
-    public static int binSearchIndex(${pt.dbArray} values, ${pt.primitive} key, BinSearchAlgo choiceWhenEquals) {
+    public static int binSearchIndex(${pt.vector} values, ${pt.primitive} key, BinSearchAlgo choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
         if (index == NULL_INT) {
             return index;
@@ -234,7 +234,7 @@ public class BinSearch {
             return NULL_INT;
         }
 
-        return rawBinSearchIndex(new ${pt.dbArrayDirect}(values), key, choiceWhenEquals);
+        return rawBinSearchIndex(new ${pt.vectorDirect}(values), key, choiceWhenEquals);
     }
 
     /**
@@ -245,7 +245,7 @@ public class BinSearch {
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
      * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
-    public static int rawBinSearchIndex(${pt.dbArray} values, ${pt.primitive} key, BinSearchAlgo choiceWhenEquals) {
+    public static int rawBinSearchIndex(${pt.vector} values, ${pt.primitive} key, BinSearchAlgo choiceWhenEquals) {
         if (values == null || key == ${pt.null}) {
             return NULL_INT;
         }
@@ -257,7 +257,7 @@ public class BinSearch {
         }
     }
 
-    static private int binarySearch0(${pt.dbArray} array, int fromIndex, int toIndex, ${pt.primitive} key) {
+    static private int binarySearch0(${pt.vector} array, int fromIndex, int toIndex, ${pt.primitive} key) {
         int low = fromIndex;
         int high = toIndex - 1;
 
@@ -278,8 +278,8 @@ public class BinSearch {
         return -(low + 1);  // key not found.
     }
 
-    static private int binarySearch0Modified(${pt.dbArray} array, int fromIndex, int toIndex, ${pt.primitive} key, boolean highestOrLowest) {
-        if(array.size() == 0){
+    static private int binarySearch0Modified(${pt.vector} array, int fromIndex, int toIndex, ${pt.primitive} key, boolean highestOrLowest) {
+        if(array.isEmpty()){
             return -1;
         }
 
@@ -338,7 +338,6 @@ public class BinSearch {
 
         return -(low + 1);  // key not found.
     }
-
 
     </#if>
     </#list>

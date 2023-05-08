@@ -26,6 +26,8 @@ import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTotalsTable extends RefreshingTableTestCase {
 
+    private static final double EPSILON = 0.000000001;
+
     private long shortSum(short[] values) {
         long sum = 0;
         for (short value : values) {
@@ -104,21 +106,22 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
                     totals3.getColumnSourceMap().keySet());
-            assertEquals(Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
-                    totals3.getColumn("byteCol").get(0));
             assertEquals(
-                    Numeric
-                            .var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
-                    totals3.getColumn("doubleCol").get(0));
+                    Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
+                    totals3.getColumn("byteCol").getByte(0));
             assertEquals(
-                    Numeric
-                            .std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
-                    totals3.getColumn("doubleNullCol__Std").get(0));
-            assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").get(0));
+                    Numeric.var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
+                    totals3.getColumn("doubleCol").getDouble(0),
+                    EPSILON);
             assertEquals(
-                    Numeric
-                            .avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
-                    totals3.getColumn("doubleCol2").get(0));
+                    Numeric.std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
+                    totals3.getColumn("doubleNullCol__Std").getDouble(0),
+                    EPSILON);
+            assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").getLong(0));
+            assertEquals(
+                    Numeric.avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
+                    totals3.getColumn("doubleCol2").getDouble(0),
+                    EPSILON);
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
 
             final Table totals4 = UpdateGraphProcessor.DEFAULT.exclusiveLock()

@@ -3,7 +3,7 @@
  */
 package io.deephaven.base.stats;
 
-import io.deephaven.base.Function;
+import java.util.function.LongFunction;
 
 // --------------------------------------------------------------------
 /**
@@ -34,9 +34,5 @@ public class State extends Value {
         return TYPE_TAG;
     }
 
-    public static final Function.Unary<State, Long> FACTORY = new Function.Unary<State, Long>() {
-        public State call(Long now) {
-            return new State(now);
-        }
-    };
+    public static final LongFunction<State> FACTORY = State::new;
 }

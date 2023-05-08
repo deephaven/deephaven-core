@@ -15,22 +15,16 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -147,55 +141,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default DataColumn getColumn(final int columnIndex) {
         return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Column Iterators
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        return ColumnIterator.make(getColumnSource(columnName), getRowSet());
-    }
-
-    @Override
-    default CharacterColumnIterator characterColumnIterator(@NotNull final String columnName) {
-        return new CharacterColumnIterator(this, columnName);
-    }
-
-    @Override
-    default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(this, columnName);
-    }
-
-    @Override
-    default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(this, columnName);
-    }
-
-    @Override
-    default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
-        return new IntegerColumnIterator(this, columnName);
-    }
-
-    @Override
-    default LongColumnIterator longColumnIterator(@NotNull final String columnName) {
-        return new LongColumnIterator(this, columnName);
-    }
-
-    @Override
-    default FloatColumnIterator floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(this, columnName);
-    }
-
-    @Override
-    default DoubleColumnIterator doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(this, columnName);
-    }
-
-    @Override
-    default <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
-        return new ObjectColumnIterator<>(this, columnName);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -654,21 +599,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Miscellaneous Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default <R> R apply(Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
-            return function.apply(this);
-        } finally {
-            nugget.done();
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Resource Management
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -689,10 +619,5 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default void addUpdateListener(ShiftObliviousListener listener) {
         addUpdateListener(listener, false);
-    }
-
-    @Override
-    default boolean isFailed() {
-        return false;
     }
 }

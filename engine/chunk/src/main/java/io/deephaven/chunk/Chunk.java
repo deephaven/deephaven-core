@@ -130,7 +130,7 @@ public interface Chunk<ATTR extends Any> {
     /**
      * @return true iff this and chunk are aliases, that is they refer to the same underlying data
      */
-    boolean isAlias(Chunk chunk);
+    boolean isAlias(Chunk<?> chunk);
 
     <V extends Visitor<ATTR>> V walk(V visitor);
 
@@ -144,7 +144,6 @@ public interface Chunk<ATTR extends Any> {
 
     default CharChunk<ATTR> asCharChunk() {
         return (CharChunk<ATTR>) this;
-
     }
 
     default ShortChunk<ATTR> asShortChunk() {
@@ -173,7 +172,7 @@ public interface Chunk<ATTR extends Any> {
 
     /**
      * Downcast the attribute.
-     *
+     * <p>
      * When you know the data in this chunk which you plan to read is a more specific sub-type, you can downcast the
      * attribute with this helper method. This might be necessary, for instance, when you have a RowKeys chunk which you
      * sort, and now want to treat it as an OrderedRowKeys.
@@ -181,7 +180,6 @@ public interface Chunk<ATTR extends Any> {
      * @apiNote Upcast should not be necessary on read-only chunks, as a read-only chunk method should accept an upper
      *          bound wildcard.
      */
-
     static <ATTR extends Any, ATTR_DERIV extends ATTR> Chunk<ATTR_DERIV> downcast(Chunk<? extends ATTR> self) {
         // noinspection unchecked
         return (Chunk<ATTR_DERIV>) self;

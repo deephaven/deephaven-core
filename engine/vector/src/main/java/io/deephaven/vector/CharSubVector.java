@@ -3,19 +3,21 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
-public class CharSubVector extends CharVector.Indirect {
+/**
+ * A subset of a {@link CharVector} according to an array of positions.
+ */
+public final class CharSubVector extends CharVector.Indirect {
 
     private static final long serialVersionUID = 1L;
 
-    private final CharVector innerArray;
-    private final long positions[];
+    private final CharVector innerVector;
+    private final long[] positions;
 
-    public CharSubVector(@NotNull final CharVector innerArray, @NotNull final long[] positions) {
-        this.innerArray = innerArray;
+    public CharSubVector(@NotNull final CharVector innerVector, @NotNull final long[] positions) {
+        this.innerVector = innerVector;
         this.positions = positions;
     }
 
@@ -24,35 +26,22 @@ public class CharSubVector extends CharVector.Indirect {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_CHAR;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("SubArray get", index)]);
+        return innerVector.get(positions[(int) index]);
     }
 
     @Override
-    public CharVector subVector(final long fromIndex, final long toIndex) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositionRange(positions, fromIndex, toIndex));
+    public CharVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return innerVector.subVectorByPositions(
+                Vector.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
     public CharVector subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
-    }
-
-    @Override
-    public char[] toArray() {
-        final char[] result = new char[positions.length];
-        for (int ii = 0; ii < positions.length; ++ii) {
-            result[ii] = get(ii);
-        }
-        return result;
+        return innerVector.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
     }
 
     @Override
     public long size() {
         return positions.length;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return positions.length == 0;
     }
 }

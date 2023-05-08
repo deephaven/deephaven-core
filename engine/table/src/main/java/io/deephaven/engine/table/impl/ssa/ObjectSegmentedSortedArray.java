@@ -1440,7 +1440,7 @@ public final class ObjectSegmentedSortedArray implements SegmentedSortedArray {
         if (rhs == null) {
             return 1;
         }
-        //noinspection unchecked
+        //noinspection unchecked,rawtypes
         return ((Comparable)lhs).compareTo(rhs);
     }
 

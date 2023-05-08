@@ -26,12 +26,12 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final BigDecimal val = objectValueChunk.get(pos);
@@ -56,7 +56,7 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

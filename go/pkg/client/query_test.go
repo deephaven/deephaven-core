@@ -27,7 +27,7 @@ func TestDagQuerySerial(t *testing.T) {
 func dagQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -108,7 +108,7 @@ func TestMergeQuerySerial(t *testing.T) {
 func mergeQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -148,7 +148,7 @@ func TestNullMergeQuerySerial(t *testing.T) {
 func nullMergeQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -186,7 +186,7 @@ func TestExportNullTableQuerySerial(t *testing.T) {
 func exportNullTableQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -210,7 +210,7 @@ func TestNullTableArgQuerySerial(t *testing.T) {
 func nullTableArgQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -236,7 +236,7 @@ func TestEmptyMergeSerial(t *testing.T) {
 func emptyMerge(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -260,7 +260,7 @@ func TestTableNotReleasedSerial(t *testing.T) {
 func tableNotReleasedQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -298,7 +298,7 @@ func TestSeparateQueriesSerial(t *testing.T) {
 func separateQueries(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 
@@ -350,7 +350,7 @@ func TestEmptyTableQuerySerial(t *testing.T) {
 func emptyTableQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -409,7 +409,7 @@ func TestUpdateDropQuerySerial(t *testing.T) {
 func updateDropQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -481,7 +481,7 @@ func TestDuplicateQuerySerial(t *testing.T) {
 func duplicateQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 		return
@@ -534,7 +534,7 @@ func TestInvalidTableQuerySerial(t *testing.T) {
 func invalidTableQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 		return
@@ -566,7 +566,7 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -869,15 +869,20 @@ func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	defer results[2].Release()
 	defer results[3].Release()
 
-	left, _, result1, result2 := results[0], results[1], results[2], results[3]
+	left, right, result1, result2 := results[0], results[1], results[2], results[3]
 
-	if result1.NumRows() >= left.NumRows() {
-		t.Error("result1 was too large")
+	if result1.NumRows() == 0 {
+		t.Error("result1 is empty")
 		return
 	}
 
-	if result2.NumRows() <= left.NumRows() {
-		t.Error("result2 was too small")
+	if result1.NumRows() >= left.NumRows()*right.NumRows() {
+		t.Errorf("result1 is the wrong size: %v >= %v", result1.NumRows(), left.NumRows()*right.NumRows())
+		return
+	}
+
+	if result2.NumRows() != left.NumRows()*right.NumRows() {
+		t.Errorf("result2 is the wrong size: %v != %v", result2.NumRows(), left.NumRows()*right.NumRows())
 		return
 	}
 }
@@ -885,7 +890,7 @@ func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 func TestAsOfJoinQuery(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient %s", err.Error())
 	}
@@ -1105,11 +1110,11 @@ func TestDifferentClientsSerial(t *testing.T) {
 func differentClientsQuery(t *testing.T, exec execBatchOrSerial) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
-	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 

@@ -3,11 +3,20 @@
  */
 package io.deephaven.web.client.ide;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsArray;
+import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.web.client.api.ConnectOptions;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
@@ -22,6 +31,13 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    @Deprecated
+    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
+    public static final String EVENT_DISCONNECT = "disconnect";
+    public static final String EVENT_RECONNECT = "reconnect";
+
+    public static final String EVENT_SHUTDOWN = "shutdown";
+
     private final JsRunnable deathListenerCleanup;
     private final String serverUrl;
 
@@ -31,7 +47,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     @Deprecated
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional Object connectOptions, @JsOptional Boolean fromJava) {
-        this.serverUrl = serverUrl;
+        this.serverUrl = serverUrl.replaceAll("/+$", "");
         deathListenerCleanup = JsRunnable.doNothing();
 
         if (connectOptions != null) {
@@ -96,7 +112,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
-    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));
     }
@@ -115,12 +131,58 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     }
 
     @Override
-    public void disconnected() {
-        super.disconnected();
+    public void notifyServerShutdown(TerminationNotificationResponse success) {
+        final String details;
+        if (!success.getAbnormalTermination()) {
+            details = "Server exited normally.";
+        } else {
+            StringBuilder retval;
+            if (!success.getReason().isEmpty()) {
+                retval = new StringBuilder(success.getReason());
+            } else {
+                retval = new StringBuilder("Server exited abnormally.");
+            }
 
-        if (connection.isAvailable()) {
-            // Currently no way for an IdeConnect to recover, so make sure it doesn't try and reconnect
-            connection.get().forceClose();
+            final JsArray<StackTrace> traces = success.getStackTracesList();
+            for (int ii = 0; ii < traces.length; ++ii) {
+                final StackTrace trace = traces.getAt(ii);
+                retval.append("\n\n");
+                if (ii != 0) {
+                    retval.append("Caused By: ").append(trace.getType()).append(": ").append(trace.getMessage());
+                } else {
+                    retval.append(trace.getType()).append(": ").append(trace.getMessage());
+                }
+
+                final JsArray<String> elements = trace.getElementsList();
+                for (int jj = 0; jj < elements.length; ++jj) {
+                    retval.append("\n").append(elements.getAt(jj));
+                }
+            }
+
+            details = retval.toString();
         }
+
+        // fire shutdown advice event
+        CustomEventInit<String> eventDetails = CustomEventInit.create();
+        eventDetails.setDetail(details);
+        fireEvent(EVENT_SHUTDOWN, eventDetails);
+
+        // fire deprecated event
+        notifyConnectionError(new ResponseStreamWrapper.Status() {
+            @Override
+            public int getCode() {
+                return Code.Unavailable;
+            }
+
+            @Override
+            public String getDetails() {
+                return details;
+            }
+
+            @Override
+            public BrowserHeaders getMetadata() {
+                return new BrowserHeaders(); // nothing to offer
+            }
+        });
     }
 }

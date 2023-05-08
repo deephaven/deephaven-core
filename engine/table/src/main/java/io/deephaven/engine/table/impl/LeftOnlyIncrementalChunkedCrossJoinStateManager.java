@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 // endregion extra imports
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.util.SafeCloseable.closeAll;
 
 // region class visibility
 /**
@@ -207,8 +207,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         this.tableHashPivot = tableSize;
         // endmixin rehash
 
-        overflowKeySources = new ArrayBackedColumnSource[keyColumnCount];
-        keySources = new ArrayBackedColumnSource[keyColumnCount];
+        overflowKeySources = new WritableColumnSource[keyColumnCount];
+        keySources = new WritableColumnSource[keyColumnCount];
 
         keyChunkTypes = new ChunkType[keyColumnCount];
         chunkHashers = new ChunkHasher[keyColumnCount];
@@ -609,13 +609,13 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             // endmixin rehash
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(buildContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(buildContexts);
 
             hashChunk.close();
             tableLocationsChunk.close();
-            closeArray(writeThroughChunks);
+            closeAll(writeThroughChunks);
 
             sourcePositions.close();
             destinationLocationPositionInWriteThrough.close();
@@ -628,8 +628,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             chunkPositionsToCheckForEquality.close();
             overflowLocationForEqualityCheck.close();
             workingStateEntries.close();
-            closeArray(workingKeyChunks);
-            closeArray(overflowKeyChunks);
+            closeAll(workingKeyChunks);
+            closeAll(overflowKeyChunks);
             chunkPositionsForFetches.close();
             chunkPositionsToInsertInOverflow.close();
             tableLocationsToInsertInOverflow.close();
@@ -1271,10 +1271,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughState.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
     // endmixin allowUpdateWriteThroughState
@@ -1282,10 +1282,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private void updateWriteThroughOverflow(ResettableWritableIntChunk writeThroughOverflow, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = overflowLocationSource.resetWritableChunkToBackingStore(writeThroughOverflow, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughOverflow.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
 
@@ -1304,10 +1304,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final long firstBackingChunkPosition = ((ChunkedBackingStoreExposedWritableSource)sources[0]).resetWritableChunkToBackingStore(writeThroughChunks[0], currentHashLocation);
         for (int jj = 1; jj < sources.length; ++jj) {
             if (((ChunkedBackingStoreExposedWritableSource)sources[jj]).resetWritableChunkToBackingStore(writeThroughChunks[jj], currentHashLocation) != firstBackingChunkPosition) {
-                throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
             if (writeThroughChunks[jj].size() != writeThroughChunks[0].size()) {
-                throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
         }
         return firstBackingChunkPosition;
@@ -1508,9 +1508,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             stateSourceFillContext.close();
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(probeContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(probeContexts);
             hashChunk.close();
             tableLocationsChunk.close();
             workingStateEntries.close();
@@ -1519,7 +1519,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             overflowLocations.close();
             chunkPositionsForFetches.close();
             equalValues.close();
-            closeArray(workingKeyChunks);
+            closeAll(workingKeyChunks);
             closeSharedContexts();
             // region probe context close
             keyIndices.close();

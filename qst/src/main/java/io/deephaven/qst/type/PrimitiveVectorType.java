@@ -27,7 +27,6 @@ import java.lang.reflect.Method;
 public abstract class PrimitiveVectorType<T, ComponentType>
         extends ArrayTypeBase<T, ComponentType> {
 
-    private static final String BOOLEAN_VECTOR = "io.deephaven.vector.BooleanVector";
     private static final String BYTE_VECTOR = "io.deephaven.vector.ByteVector";
     private static final String CHAR_VECTOR = "io.deephaven.vector.CharVector";
     private static final String SHORT_VECTOR = "io.deephaven.vector.ShortVector";
@@ -36,7 +35,7 @@ public abstract class PrimitiveVectorType<T, ComponentType>
     private static final String FLOAT_VECTOR = "io.deephaven.vector.FloatVector";
     private static final String DOUBLE_VECTOR = "io.deephaven.vector.DoubleVector";
     private static final Set<String> VALID_CLASSES =
-            Stream.of(BOOLEAN_VECTOR, BYTE_VECTOR, CHAR_VECTOR, SHORT_VECTOR, INT_VECTOR,
+            Stream.of(BYTE_VECTOR, CHAR_VECTOR, SHORT_VECTOR, INT_VECTOR,
                     LONG_VECTOR, FLOAT_VECTOR, DOUBLE_VECTOR).collect(Collectors.toSet());
 
     public static <T, ComponentType> PrimitiveVectorType<T, ComponentType> of(Class<T> clazz,

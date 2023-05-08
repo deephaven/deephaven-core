@@ -6,8 +6,8 @@ package io.deephaven.extensions.barrage.util;
 import io.deephaven.io.logger.Logger;
 import com.google.rpc.Code;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 
@@ -38,7 +38,7 @@ public class GrpcUtil {
      * @param runner the runnable to execute safely
      */
     private static void safelyExecuteLocked(final StreamObserver<?> observer,
-            final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
+            final ThrowingRunnable<Exception> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (observer) {

@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -27,6 +26,7 @@ import io.deephaven.tuple.ArrayTuple;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * An abstract table that represents a hash set of array-backed tuples. Since we are representing a set, there we are
@@ -37,7 +37,7 @@ import java.util.Map;
  */
 public class HashSetBackedTableFactory {
 
-    private final Function.Nullary<HashSet<ArrayTuple>> setGenerator;
+    private final Supplier<HashSet<ArrayTuple>> setGenerator;
     private final int refreshIntervalMs;
     private long nextRefresh;
     private final Map<String, ColumnSource<?>> columns;
@@ -50,7 +50,7 @@ public class HashSetBackedTableFactory {
     private final TLongArrayList freeSet = new TLongArrayList();
     private TrackingWritableRowSet rowSet;
 
-    private HashSetBackedTableFactory(Function.Nullary<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
+    private HashSetBackedTableFactory(Supplier<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
             String... colNames) {
         this.setGenerator = setGenerator;
         this.refreshIntervalMs = refreshIntervalMs;
@@ -71,7 +71,7 @@ public class HashSetBackedTableFactory {
      * @param colNames the column names for the output table, must match the number of elements in each ArrayTuple.
      * @return a table representing the Set returned by the setGenerator
      */
-    public static Table create(Function.Nullary<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
+    public static Table create(Supplier<HashSet<ArrayTuple>> setGenerator, int refreshIntervalMs,
             String... colNames) {
         HashSetBackedTableFactory factory = new HashSetBackedTableFactory(setGenerator, refreshIntervalMs, colNames);
 
@@ -94,7 +94,7 @@ public class HashSetBackedTableFactory {
     }
 
     private void updateValueSet(RowSetBuilderRandom addedBuilder, RowSetBuilderRandom removedBuilder) {
-        HashSet<ArrayTuple> valueSet = setGenerator.call();
+        HashSet<ArrayTuple> valueSet = setGenerator.get();
 
         synchronized (this) {
             for (TObjectLongIterator<ArrayTuple> it = valueToIndexMap.iterator(); it.hasNext();) {

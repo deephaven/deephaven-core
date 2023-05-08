@@ -29,7 +29,6 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
         protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -43,12 +42,12 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteInfluencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             byteWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
@@ -56,7 +55,7 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 byteWindowValues.addUnsafe(val);
 
                 // increase the running sum
-                if (val != NULL_BYTE) {
+                if (val != nullValue) {
                     if (curVal == NULL_LONG) {
                         curVal = val;
                     } else {
@@ -76,7 +75,7 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 byte val = byteWindowValues.removeUnsafe();
 
                 // reduce the running sum
-                if (val != NULL_BYTE) {
+                if (val != nullValue) {
                     curVal -= val;
                 } else {
                     nullCount--;
@@ -102,8 +101,8 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,

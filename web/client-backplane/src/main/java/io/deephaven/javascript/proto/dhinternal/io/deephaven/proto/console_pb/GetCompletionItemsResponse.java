@@ -22,6 +22,26 @@ public class GetCompletionItemsResponse {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ItemsListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface DocumentationFieldType {
+                @JsOverlay
+                static GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.DocumentationFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getKind();
+
+                @JsProperty
+                String getValue();
+
+                @JsProperty
+                void setKind(String kind);
+
+                @JsProperty
+                void setValue(String value);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TextEditFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface RangeFieldType {
@@ -98,7 +118,7 @@ public class GetCompletionItemsResponse {
             String getDetail();
 
             @JsProperty
-            String getDocumentation();
+            GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.DocumentationFieldType getDocumentation();
 
             @JsProperty
             String getFilterText();
@@ -153,7 +173,8 @@ public class GetCompletionItemsResponse {
             void setDetail(String detail);
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(
+                    GetCompletionItemsResponse.ToObjectReturnType.ItemsListFieldType.DocumentationFieldType documentation);
 
             @JsProperty
             void setFilterText(String filterText);
@@ -221,6 +242,26 @@ public class GetCompletionItemsResponse {
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ItemsListFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface DocumentationFieldType {
+                @JsOverlay
+                static GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.DocumentationFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getKind();
+
+                @JsProperty
+                String getValue();
+
+                @JsProperty
+                void setKind(String kind);
+
+                @JsProperty
+                void setValue(String value);
+            }
+
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TextEditFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -298,7 +339,7 @@ public class GetCompletionItemsResponse {
             String getDetail();
 
             @JsProperty
-            String getDocumentation();
+            GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.DocumentationFieldType getDocumentation();
 
             @JsProperty
             String getFilterText();
@@ -353,7 +394,8 @@ public class GetCompletionItemsResponse {
             void setDetail(String detail);
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(
+                    GetCompletionItemsResponse.ToObjectReturnType0.ItemsListFieldType.DocumentationFieldType documentation);
 
             @JsProperty
             void setFilterText(String filterText);

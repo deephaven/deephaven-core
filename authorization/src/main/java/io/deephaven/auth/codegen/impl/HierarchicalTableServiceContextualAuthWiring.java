@@ -15,6 +15,7 @@ import io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest;
 import io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest;
 import io.deephaven.proto.backplane.grpc.RollupRequest;
 import io.deephaven.proto.backplane.grpc.TreeRequest;
+import java.lang.Override;
 import java.util.List;
 
 /**
@@ -75,46 +76,52 @@ public interface HierarchicalTableServiceContextualAuthWiring {
     void checkPermissionExportSource(AuthContext authContext,
             HierarchicalTableSourceExportRequest request, List<Table> sourceTables);
 
-    class AllowAll implements HierarchicalTableServiceContextualAuthWiring {
-        public void checkPermissionRollup(AuthContext authContext, RollupRequest request,
-                List<Table> sourceTables) {}
+    /**
+     * A default implementation that funnels all requests to invoke {@code checkPermission}.
+     */
+    abstract class DelegateAll implements HierarchicalTableServiceContextualAuthWiring {
+        protected abstract void checkPermission(AuthContext authContext, List<Table> sourceTables);
 
-        public void checkPermissionTree(AuthContext authContext, TreeRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionApply(AuthContext authContext, HierarchicalTableApplyRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionView(AuthContext authContext, HierarchicalTableViewRequest request,
-                List<Table> sourceTables) {}
-
-        public void checkPermissionExportSource(AuthContext authContext,
-                HierarchicalTableSourceExportRequest request, List<Table> sourceTables) {}
-    }
-
-    class DenyAll implements HierarchicalTableServiceContextualAuthWiring {
         public void checkPermissionRollup(AuthContext authContext, RollupRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionTree(AuthContext authContext, TreeRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionApply(AuthContext authContext, HierarchicalTableApplyRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionView(AuthContext authContext, HierarchicalTableViewRequest request,
                 List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionExportSource(AuthContext authContext,
                 HierarchicalTableSourceExportRequest request, List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+    }
+
+    /**
+     * A default implementation that allows all requests.
+     */
+    class AllowAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {}
+    }
+
+    /**
+     * A default implementation that denies all requests.
+     */
+    class DenyAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }

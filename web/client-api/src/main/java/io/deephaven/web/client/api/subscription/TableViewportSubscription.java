@@ -3,11 +3,12 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
-import elemental2.dom.Event;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
@@ -37,6 +38,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 
@@ -67,6 +69,8 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * Note that if the caller does close an instance, this shuts down the JsTable's use of this (while the converse is not
  * true), providing a way to stop the server from streaming updates to the client.
  */
+@TsInterface
+@TsName(namespace = "dh")
 public class TableViewportSubscription extends HasEventHandling {
     /**
      * Describes the possible lifecycle of the viewport as far as anything external cares about it
@@ -166,7 +170,7 @@ public class TableViewportSubscription extends HasEventHandling {
         return originalState;
     }
 
-    private void refire(Event e) {
+    private <T> void refire(CustomEvent<T> e) {
         this.fireEvent(e.type, e);
         if (originalActive && state() == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still
@@ -183,8 +187,8 @@ public class TableViewportSubscription extends HasEventHandling {
     }
 
     @JsMethod
-    public void setViewport(double firstRow, double lastRow, @JsOptional Column[] columns,
-            @JsOptional Double updateIntervalMs) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         retainForExternalUse();
         setInternalViewport(firstRow, lastRow, columns, updateIntervalMs);
     }

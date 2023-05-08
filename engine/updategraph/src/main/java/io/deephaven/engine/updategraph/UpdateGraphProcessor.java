@@ -10,7 +10,6 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -24,12 +23,12 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.net.CommBase;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -768,7 +767,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      *
      * @see #addNotification(Notification)
      */
-    public void addNotifications(@NotNull final Collection<Notification> notifications) {
+    public void addNotifications(@NotNull final Collection<? extends Notification> notifications) {
         synchronized (pendingNormalNotifications) {
             synchronized (terminalNotifications) {
                 notifications.forEach(this::addNotification);
@@ -942,7 +941,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param runnable the runnable to execute.
      */
     @TestUseOnly
-    public <T extends Exception> void runWithinUnitTestCycle(FunctionalInterfaces.ThrowingRunnable<T> runnable)
+    public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
             throws T {
         startCycleForUnitTests();
         try {
@@ -1276,7 +1275,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
 
         try (final SafeCloseable ignored = scope == null ? null : LivenessScopeStack.open(scope, releaseScopeOnClose)) {
-            notification.runInContext();
+            notification.run();
             logDependencies().append(Thread.currentThread().getName()).append(": Completed ").append(notification)
                     .endl();
         } catch (final Exception e) {
@@ -1753,8 +1752,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         private final WeakReference<Runnable> updateSourceRef;
 
-        private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
-
         private UpdateSourceRefreshNotification(@NotNull final Runnable updateSource) {
             super(false);
             updateSourceRef = new WeakReference<>(updateSource);
@@ -1789,11 +1786,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         @Override
         public void clear() {
             updateSourceRef.clear();
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return executionContext;
         }
     }
 

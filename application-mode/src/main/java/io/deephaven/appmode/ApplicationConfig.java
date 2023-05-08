@@ -5,38 +5,40 @@ package io.deephaven.appmode;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 public interface ApplicationConfig {
 
+    /**
+     * Returns true if the configuration property {@value ApplicationConfigImpl#APPLICATION_DIR_PROP} is set, or if the
+     * {@value ApplicationConfigImpl#DEFAULT_APP_DIRNAME} exists in the configuration directory.
+     *
+     * @return true if custom application mode is enabled
+     */
     static boolean isCustomApplicationModeEnabled() {
-        return ApplicationConfigImpl.APPLICATION_DIR != null;
+        return ApplicationConfigImpl.applicationDir().isPresent();
     }
 
     /**
-     * The custom application directory. Custom application mode must be enabled.
+     * The custom application directory. Returns the configuration property
+     * {@value ApplicationConfigImpl#APPLICATION_DIR_PROP} if it set, otherwise it returns the
+     * {@value ApplicationConfigImpl#DEFAULT_APP_DIRNAME} from the configuration directory if it exists, otherwise it
+     * throws an {@link IllegalStateException}.
      *
      * @return the application dir
      * @see #isCustomApplicationModeEnabled()
      */
     static Path customApplicationDir() {
-        if (!isCustomApplicationModeEnabled()) {
+        final Optional<Path> applicationDir = ApplicationConfigImpl.applicationDir();
+        if (applicationDir.isEmpty()) {
             throw new IllegalStateException(
-                    String.format("Custom application mode is not enabled, please set system property '%s'",
+                    String.format("Custom application mode is not enabled, please set the configuration property '%s'",
                             ApplicationConfigImpl.APPLICATION_DIR_PROP));
         }
-        final Path applicationDir;
-        try {
-            applicationDir = Paths.get(ApplicationConfigImpl.APPLICATION_DIR);
-        } catch (InvalidPathException e) {
-            throw new IllegalArgumentException(String.format("Invalid application directory '%s'",
-                    ApplicationConfigImpl.APPLICATION_DIR));
-        }
-        return applicationDir;
+        return applicationDir.get();
     }
 
     /**

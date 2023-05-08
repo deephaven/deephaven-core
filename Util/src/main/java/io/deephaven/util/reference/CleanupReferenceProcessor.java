@@ -7,7 +7,6 @@ import io.deephaven.base.reference.CleanupReference;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.internal.log.LoggerFactory;
@@ -26,9 +25,13 @@ public class CleanupReferenceProcessor {
     private static final boolean LOG_CLEANED_REFERENCES =
             Configuration.getInstance().getBooleanWithDefault("CleanupReferenceProcessor.logCleanedReferences", false);
 
+    public interface ExceptionHandler {
+        void accept(@NotNull Logger log, @NotNull CleanupReference<?> cleanupReference, @NotNull Exception exception);
+    }
+
     private final String name;
     private final long shutdownCheckDelayMillis;
-    private final FunctionalInterfaces.ThrowingTriConsumer<Logger, CleanupReference, Exception, ? extends RuntimeException> exceptionHandler;
+    private final ExceptionHandler exceptionHandler;
 
     /**
      * The reference queue from the most recent initialization.
@@ -42,9 +45,10 @@ public class CleanupReferenceProcessor {
      * @param shutdownCheckDelayMillis The frequency with which to check for shutdown
      * @param exceptionHandler Callback for exception handling
      */
-    public CleanupReferenceProcessor(@NotNull final String name,
+    public CleanupReferenceProcessor(
+            @NotNull final String name,
             final long shutdownCheckDelayMillis,
-            @NotNull final FunctionalInterfaces.ThrowingTriConsumer<Logger, CleanupReference, Exception, ? extends RuntimeException> exceptionHandler) {
+            @NotNull final ExceptionHandler exceptionHandler) {
         this.name = Require.neqNull(name, "name");
         this.shutdownCheckDelayMillis = Require.geqZero(shutdownCheckDelayMillis, "shutdownDelayCheckMillis");
         this.exceptionHandler = Require.neqNull(exceptionHandler, "exceptionHandler");
@@ -95,9 +99,10 @@ public class CleanupReferenceProcessor {
      * Drain the reference queue and call cleanup on any {@link CleanupReference}s dequeued.
      */
     private class DrainQueue implements Runnable {
-        private final ReferenceQueue localQueue;
 
-        private DrainQueue(ReferenceQueue localQueue) {
+        private final ReferenceQueue<?> localQueue;
+
+        private DrainQueue(ReferenceQueue<?> localQueue) {
             this.localQueue = localQueue;
         }
 
@@ -116,9 +121,9 @@ public class CleanupReferenceProcessor {
                             log.info().append("CleanupReferenceProcessor-").append(name).append(", cleaning ")
                                     .append(Utils.REFERENT_FORMATTER, reference).endl();
                         }
-                        ((CleanupReference) reference).cleanup();
+                        ((CleanupReference<?>) reference).cleanup();
                     } catch (Exception e) {
-                        exceptionHandler.accept(log, (CleanupReference) reference, e);
+                        exceptionHandler.accept(log, (CleanupReference<?>) reference, e);
                     }
                 }
             }

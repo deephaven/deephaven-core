@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/apache/arrow/go/v8/arrow"
@@ -68,7 +69,7 @@ func CheckError(t *testing.T, msg string, err error) {
 }
 
 // GetHost returns the host to connect to for the tests.
-// By default it is localhost, but can be overriden by setting the DH_HOST environment variable.
+// By default it is localhost, but can be overridden by setting the DH_HOST environment variable.
 func GetHost() string {
 	host := os.Getenv("DH_HOST")
 	if host == "" {
@@ -79,7 +80,7 @@ func GetHost() string {
 }
 
 // GetPort returns the port to connect to for the tests.
-// By default it is 10000, but can be overriden by setting the DH_PORT environment variable.
+// By default it is 10000, but can be overridden by setting the DH_PORT environment variable.
 func GetPort() string {
 	port := os.Getenv("DH_PORT")
 	if port == "" {
@@ -87,4 +88,60 @@ func GetPort() string {
 	} else {
 		return port
 	}
+}
+
+// GetAuthType returns the auth type to use for the tests.
+// By default it is Anonymous but can be overridden by setting the DH_AUTH_TYPE environment variable.
+func GetAuthType() string {
+	auth := os.Getenv("DH_AUTH_TYPE")
+	if auth == "" {
+		return "Anonymous"
+	} else {
+		return auth
+	}
+}
+
+// GetAuthToken returns the auth token to use for the tests.
+// By default it is "" but can be overridden by setting the DH_AUTH_TOKEN environment variable.
+func GetAuthToken() string {
+	auth := os.Getenv("DH_AUTH_TOKEN")
+	if auth == "" {
+		return ""
+	} else {
+		return auth
+	}
+}
+
+type sortableMetadata arrow.Metadata
+
+func (m sortableMetadata) Len() int { md := arrow.Metadata(m); return md.Len() }
+func (m sortableMetadata) Less(i, j int) bool {
+	md := arrow.Metadata(m)
+	return md.Keys()[i] < md.Keys()[j]
+}
+func (m sortableMetadata) Swap(i, j int) {
+	md := arrow.Metadata(m)
+	k := md.Keys()
+	v := md.Values()
+	k[i], k[j] = k[j], k[i]
+	v[i], v[j] = v[j], v[i]
+}
+
+// RecordString returns a string representation of a record in a deterministic way that is safe to use for diffs.
+func RecordString(r arrow.Record) string {
+
+	if s := r.Schema(); s != nil {
+		sort.Sort(sortableMetadata(s.Metadata()))
+
+		for _, f := range s.Fields() {
+			sort.Sort(sortableMetadata(f.Metadata))
+		}
+	}
+
+	return fmt.Sprintf("%v", r)
+}
+
+// RecordPrint prints a record in a deterministic way that is safe to use for diffs.
+func RecordPrint(r arrow.Record) {
+	fmt.Println(RecordString(r))
 }

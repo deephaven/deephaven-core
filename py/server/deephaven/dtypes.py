@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from deephaven import DHError
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -24,7 +25,10 @@ _j_name_type_map: Dict[str, DType] = {}
 
 
 def _qst_custom_type(cls_name: str):
-    return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    try:
+        return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    except:
+        return None
 
 
 class DType:
@@ -137,6 +141,36 @@ string_array = DType(j_name='[Ljava.lang.String;')
 datetime_array = DType(j_name='[Lio.deephaven.time.DateTime;')
 """Deephaven DateTime array type"""
 
+_PRIMITIVE_DTYPE_NULL_MAP = {
+    bool_: NULL_BYTE,
+    byte: NULL_BYTE,
+    char: NULL_CHAR,
+    int16: NULL_SHORT,
+    int32: NULL_INT,
+    int64: NULL_LONG,
+    float32: NULL_FLOAT,
+    float64: NULL_DOUBLE,
+}
+
+
+def null_remap(dtype: DType) -> Callable[[Any], Any]:
+    """ Creates a null value remap function for the provided DType.
+
+    Args:
+        dtype (DType): the DType instance
+
+    Returns:
+        a Callable
+
+    Raises:
+        TypeError
+    """
+    null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtype)
+    if null_value is None:
+        raise TypeError("null_remap() must be called with a primitive DType")
+
+    return lambda v: null_value if v is None else v
+
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
     """ Creates a Java array of the specified data type populated with values from a sequence.
@@ -157,13 +191,14 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
         DHError
     """
     try:
+        if isinstance(seq, str) and dtype == char:
+            # ord is the Python builtin function that takes a unicode character and returns an integer code point value
+            remap = ord
+
         if remap:
             if not callable(remap):
                 raise ValueError("Not a callable")
             seq = [remap(v) for v in seq]
-        else:
-            if isinstance(seq, str) and dtype == char:
-                return array(char, seq, remap=ord)
 
         if isinstance(seq, np.ndarray):
             if dtype == bool_:

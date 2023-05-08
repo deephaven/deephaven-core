@@ -31,12 +31,12 @@ public class IntCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intValueChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intValueChunk = valueChunks[0].asIntChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final int val = intValueChunk.get(pos);
@@ -59,7 +59,7 @@ public class IntCumProdOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

@@ -110,7 +110,7 @@ public final class FloatChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableFloatChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableFloatChunk(@NotNull final WritableFloatChunk writableFloatChunk) {
+    public void giveWritableFloatChunk(@NotNull final WritableFloatChunk<?> writableFloatChunk) {
         if (writableFloatChunk == EMPTY || writableFloatChunk.isAlias(EMPTY)) {
             return;
         }

@@ -160,6 +160,43 @@ struct MathContextDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MathContextDefaultTypeInternal _MathContext_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByEmaTimescale_UpdateByEmaTicks(
+    ::_pbi::ConstantInitialized)
+  : ticks_(0){}
+struct UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal() {}
+  union {
+    UpdateByEmaTimescale_UpdateByEmaTicks _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal _UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTime::UpdateByEmaTimescale_UpdateByEmaTime(
+    ::_pbi::ConstantInitialized)
+  : column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , period_nanos_(int64_t{0}){}
+struct UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal() {}
+  union {
+    UpdateByEmaTimescale_UpdateByEmaTime _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal _UpdateByEmaTimescale_UpdateByEmaTime_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByEmaTimescale::UpdateByEmaTimescale(
+    ::_pbi::ConstantInitialized)
+  : _oneof_case_{}{}
+struct UpdateByEmaTimescaleDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByEmaTimescaleDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByEmaTimescaleDefaultTypeInternal() {}
+  union {
+    UpdateByEmaTimescale _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByEmaTimescaleDefaultTypeInternal _UpdateByEmaTimescale_default_instance_;
 PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOptions::UpdateByRequest_UpdateByOptions(
     ::_pbi::ConstantInitialized)
   : math_context_(nullptr)
@@ -255,43 +292,6 @@ struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptionsDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions_default_instance_;
-PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks(
-    ::_pbi::ConstantInitialized)
-  : ticks_(int64_t{0}){}
-struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal() {}
-  union {
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_;
-PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime(
-    ::_pbi::ConstantInitialized)
-  : column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
-  , period_nanos_(int64_t{0}){}
-struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal() {}
-  union {
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTimeDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime_default_instance_;
-PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale(
-    ::_pbi::ConstantInitialized)
-  : _oneof_case_{}{}
-struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescaleDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescaleDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescaleDefaultTypeInternal() {}
-  union {
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescaleDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_default_instance_;
 PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma(
     ::_pbi::ConstantInitialized)
   : options_(nullptr)
@@ -305,6 +305,84 @@ struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEmaDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSumDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroupDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvgDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMinDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMinDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMinDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMinDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMaxDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMaxDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMaxDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMaxDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax_default_instance_;
+PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct(
+    ::_pbi::ConstantInitialized)
+  : reverse_timescale_(nullptr)
+  , forward_timescale_(nullptr){}
+struct UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal() {}
+  union {
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProductDefaultTypeInternal _UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct_default_instance_;
 PROTOBUF_CONSTEXPR UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec(
     ::_pbi::ConstantInitialized)
   : _oneof_case_{}{}
@@ -572,6 +650,29 @@ struct AsOfJoinTablesRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AsOfJoinTablesRequestDefaultTypeInternal _AsOfJoinTablesRequest_default_instance_;
+PROTOBUF_CONSTEXPR RangeJoinTablesRequest::RangeJoinTablesRequest(
+    ::_pbi::ConstantInitialized)
+  : exact_match_columns_()
+  , aggregations_()
+  , left_start_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , right_range_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , left_end_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , result_id_(nullptr)
+  , left_id_(nullptr)
+  , right_id_(nullptr)
+  , range_start_rule_(0)
+
+  , range_end_rule_(0)
+{}
+struct RangeJoinTablesRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RangeJoinTablesRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RangeJoinTablesRequestDefaultTypeInternal() {}
+  union {
+    RangeJoinTablesRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RangeJoinTablesRequestDefaultTypeInternal _RangeJoinTablesRequest_default_instance_;
 PROTOBUF_CONSTEXPR ComboAggregateRequest_Aggregate::ComboAggregateRequest_Aggregate(
     ::_pbi::ConstantInitialized)
   : match_pairs_()
@@ -1257,6 +1358,19 @@ struct FlattenRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FlattenRequestDefaultTypeInternal _FlattenRequest_default_instance_;
+PROTOBUF_CONSTEXPR MetaTableRequest::MetaTableRequest(
+    ::_pbi::ConstantInitialized)
+  : result_id_(nullptr)
+  , source_id_(nullptr){}
+struct MetaTableRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MetaTableRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MetaTableRequestDefaultTypeInternal() {}
+  union {
+    MetaTableRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MetaTableRequestDefaultTypeInternal _MetaTableRequest_default_instance_;
 PROTOBUF_CONSTEXPR RunChartDownsampleRequest_ZoomRange::RunChartDownsampleRequest_ZoomRange(
     ::_pbi::ConstantInitialized)
   : min_date_nanos_(int64_t{0})
@@ -1381,8 +1495,8 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2ftable_2eproto[101];
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[9];
+static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2ftable_2eproto[109];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[11];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2ftable_2eproto = nullptr;
 
 const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -1472,6 +1586,30 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MathContext, precision_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MathContext, rounding_mode_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks, ticks_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime, column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime, period_nanos_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale, _internal_metadata_),
+  ~0u,  // no _extensions_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale, _oneof_case_[0]),
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale, type_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -1541,30 +1679,6 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   4,
   ~0u,
   ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks, ticks_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime, column_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime, period_nanos_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale, _internal_metadata_),
-  ~0u,  // no _extensions_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale, _oneof_case_[0]),
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ::_pbi::kInvalidFieldOffsetTag,
-  ::_pbi::kInvalidFieldOffsetTag,
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale, type_),
-  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -1573,11 +1687,65 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma, options_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma, timescale_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum, forward_timescale_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup, forward_timescale_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg, forward_timescale_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin, forward_timescale_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax, forward_timescale_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct, reverse_timescale_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct, forward_timescale_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec, _internal_metadata_),
   ~0u,  // no _extensions_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec, _oneof_case_[0]),
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
@@ -1755,6 +1923,22 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, columns_to_match_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, columns_to_add_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, as_of_match_rule_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, result_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, right_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, exact_match_columns_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_start_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, range_start_rule_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, right_range_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, range_end_rule_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_end_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, aggregations_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2223,6 +2407,14 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FlattenRequest, result_id_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FlattenRequest, source_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MetaTableRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MetaTableRequest, result_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MetaTableRequest, source_id_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2330,6 +2522,8 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation, op_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::BatchTableRequest, _internal_metadata_),
@@ -2350,97 +2544,105 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 60, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TimeTableRequest)},
   { 69, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest)},
   { 78, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MathContext)},
-  { 86, 99, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions)},
-  { 106, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum)},
-  { 112, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin)},
-  { 118, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax)},
-  { 124, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct)},
-  { 130, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill)},
-  { 136, 148, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions)},
-  { 154, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks)},
-  { 161, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime)},
-  { 169, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale)},
+  { 86, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks)},
+  { 93, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime)},
+  { 101, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale)},
+  { 110, 123, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions)},
+  { 130, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum)},
+  { 136, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin)},
+  { 142, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax)},
+  { 148, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct)},
+  { 154, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill)},
+  { 160, 172, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions)},
   { 178, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma)},
-  { 186, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec)},
-  { 199, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn)},
-  { 207, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation)},
-  { 215, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest)},
-  { 226, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SelectDistinctRequest)},
-  { 235, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DropColumnsRequest)},
-  { 244, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest)},
-  { 253, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HeadOrTailRequest)},
-  { 262, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HeadOrTailByRequest)},
-  { 272, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UngroupRequest)},
-  { 282, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MergeTablesRequest)},
-  { 291, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SnapshotTableRequest)},
-  { 299, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest)},
-  { 312, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest)},
-  { 324, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest)},
-  { 335, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest)},
-  { 346, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest)},
-  { 357, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest)},
-  { 369, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate)},
-  { 380, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest)},
-  { 391, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateAllRequest)},
-  { 401, 409, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecApproximatePercentile)},
-  { 411, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecCountDistinct)},
-  { 418, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecDistinct)},
-  { 425, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFormula)},
-  { 433, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMedian)},
-  { 440, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecPercentile)},
-  { 448, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSorted)},
-  { 455, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSortedColumn)},
-  { 462, 469, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecTDigest)},
-  { 470, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecUnique)},
-  { 478, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecNonUniqueSentinel)},
-  { 495, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecWeighted)},
-  { 502, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAbsSum)},
-  { 508, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAvg)},
-  { 514, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFirst)},
-  { 520, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFreeze)},
-  { 526, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecGroup)},
-  { 532, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecLast)},
-  { 538, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMax)},
-  { 544, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMin)},
-  { 550, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecStd)},
-  { 556, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSum)},
-  { 562, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecVar)},
-  { 568, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec)},
-  { 598, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateRequest)},
-  { 610, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColumns)},
-  { 618, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount)},
-  { 625, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey)},
-  { 632, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition)},
-  { 640, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation)},
-  { 652, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortDescriptor)},
-  { 661, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortTableRequest)},
-  { 670, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FilterTableRequest)},
-  { 679, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowRequest)},
-  { 692, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowResponse)},
-  { 699, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Reference)},
-  { 706, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Literal)},
-  { 718, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Value)},
-  { 727, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Condition)},
-  { 744, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AndCondition)},
-  { 751, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::OrCondition)},
-  { 758, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NotCondition)},
-  { 765, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CompareCondition)},
-  { 775, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InCondition)},
-  { 785, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InvokeCondition)},
-  { 794, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::IsNullCondition)},
-  { 801, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MatchesCondition)},
-  { 811, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ContainsCondition)},
-  { 821, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SearchCondition)},
-  { 829, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FlattenRequest)},
-  { 837, 845, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange)},
-  { 847, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest)},
-  { 859, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)},
-  { 865, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)},
-  { 872, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind)},
-  { 881, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest)},
-  { 892, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WhereInRequest)},
-  { 903, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation)},
-  { 945, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest)},
+  { 186, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum)},
+  { 194, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup)},
+  { 202, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg)},
+  { 210, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin)},
+  { 218, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax)},
+  { 226, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct)},
+  { 234, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec)},
+  { 253, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn)},
+  { 261, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation)},
+  { 269, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UpdateByRequest)},
+  { 280, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SelectDistinctRequest)},
+  { 289, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DropColumnsRequest)},
+  { 298, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest)},
+  { 307, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HeadOrTailRequest)},
+  { 316, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HeadOrTailByRequest)},
+  { 326, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::UngroupRequest)},
+  { 336, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MergeTablesRequest)},
+  { 345, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SnapshotTableRequest)},
+  { 353, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest)},
+  { 366, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest)},
+  { 378, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest)},
+  { 389, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest)},
+  { 400, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest)},
+  { 411, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest)},
+  { 423, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest)},
+  { 439, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate)},
+  { 450, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest)},
+  { 461, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateAllRequest)},
+  { 471, 479, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecApproximatePercentile)},
+  { 481, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecCountDistinct)},
+  { 488, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecDistinct)},
+  { 495, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFormula)},
+  { 503, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMedian)},
+  { 510, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecPercentile)},
+  { 518, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSorted)},
+  { 525, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSortedColumn)},
+  { 532, 539, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecTDigest)},
+  { 540, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecUnique)},
+  { 548, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecNonUniqueSentinel)},
+  { 565, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecWeighted)},
+  { 572, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAbsSum)},
+  { 578, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAvg)},
+  { 584, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFirst)},
+  { 590, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFreeze)},
+  { 596, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecGroup)},
+  { 602, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecLast)},
+  { 608, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMax)},
+  { 614, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMin)},
+  { 620, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecStd)},
+  { 626, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSum)},
+  { 632, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecVar)},
+  { 638, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec)},
+  { 668, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateRequest)},
+  { 680, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColumns)},
+  { 688, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount)},
+  { 695, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey)},
+  { 702, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition)},
+  { 710, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation)},
+  { 722, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortDescriptor)},
+  { 731, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortTableRequest)},
+  { 740, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FilterTableRequest)},
+  { 749, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowRequest)},
+  { 762, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowResponse)},
+  { 769, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Reference)},
+  { 776, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Literal)},
+  { 788, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Value)},
+  { 797, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Condition)},
+  { 814, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AndCondition)},
+  { 821, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::OrCondition)},
+  { 828, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NotCondition)},
+  { 835, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CompareCondition)},
+  { 845, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InCondition)},
+  { 855, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InvokeCondition)},
+  { 864, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::IsNullCondition)},
+  { 871, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MatchesCondition)},
+  { 881, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ContainsCondition)},
+  { 891, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SearchCondition)},
+  { 899, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FlattenRequest)},
+  { 907, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MetaTableRequest)},
+  { 915, 923, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange)},
+  { 925, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest)},
+  { 937, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)},
+  { 943, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)},
+  { 950, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind)},
+  { 959, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest)},
+  { 970, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WhereInRequest)},
+  { 981, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation)},
+  { 1025, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -2454,6 +2656,9 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::io::deephaven::proto::backplane::grpc::_TimeTableRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_SelectOrUpdateRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_MathContext_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_UpdateByEmaTime_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByEmaTimescale_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOptions_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin_default_instance_._instance,
@@ -2461,10 +2666,13 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_UpdateByColumn_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_UpdateByRequest_UpdateByOperation_default_instance_._instance,
@@ -2483,6 +2691,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::io::deephaven::proto::backplane::grpc::_ExactJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_LeftJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_AsOfJoinTablesRequest_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_RangeJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_ComboAggregateRequest_Aggregate_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_ComboAggregateRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_AggregateAllRequest_default_instance_._instance,
@@ -2536,6 +2745,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::io::deephaven::proto::backplane::grpc::_ContainsCondition_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_SearchCondition_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_FlattenRequest_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_MetaTableRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_RunChartDownsampleRequest_ZoomRange_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_RunChartDownsampleRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_._instance,
@@ -2586,658 +2796,737 @@ const char descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto[] PROTOBU
   "plane.grpc.MathContext.RoundingMode\"t\n\014R"
   "oundingMode\022\006\n\002UP\020\000\022\010\n\004DOWN\020\001\022\013\n\007CEILING"
   "\020\002\022\t\n\005FLOOR\020\003\022\013\n\007HALF_UP\020\004\022\r\n\tHALF_DOWN\020"
-  "\005\022\r\n\tHALF_EVEN\020\006\022\017\n\013UNNECESSARY\020\007\"\346\032\n\017Up"
-  "dateByRequest\022<\n\tresult_id\030\001 \001(\0132).io.de"
-  "ephaven.proto.backplane.grpc.Ticket\022D\n\ts"
-  "ource_id\030\002 \001(\01321.io.deephaven.proto.back"
-  "plane.grpc.TableReference\022S\n\007options\030\003 \001"
-  "(\0132B.io.deephaven.proto.backplane.grpc.U"
-  "pdateByRequest.UpdateByOptions\022X\n\noperat"
-  "ions\030\004 \003(\0132D.io.deephaven.proto.backplan"
-  "e.grpc.UpdateByRequest.UpdateByOperation"
-  "\022\030\n\020group_by_columns\030\005 \003(\t\032\303\003\n\017UpdateByO"
-  "ptions\022\034\n\017use_redirection\030\001 \001(\010H\000\210\001\001\022\033\n\016"
-  "chunk_capacity\030\002 \001(\005H\001\210\001\001\022.\n!max_static_"
-  "sparse_memory_overhead\030\003 \001(\001H\002\210\001\001\022$\n\027ini"
-  "tial_hash_table_size\030\004 \001(\005H\003\210\001\001\022 \n\023maxim"
-  "um_load_factor\030\005 \001(\001H\004\210\001\001\022\037\n\022target_load"
-  "_factor\030\006 \001(\001H\005\210\001\001\022D\n\014math_context\030\007 \001(\013"
-  "2..io.deephaven.proto.backplane.grpc.Mat"
-  "hContextB\022\n\020_use_redirectionB\021\n\017_chunk_c"
-  "apacityB$\n\"_max_static_sparse_memory_ove"
-  "rheadB\032\n\030_initial_hash_table_sizeB\026\n\024_ma"
-  "ximum_load_factorB\025\n\023_target_load_factor"
-  "\032\277\024\n\021UpdateByOperation\022e\n\006column\030\001 \001(\0132S"
-  ".io.deephaven.proto.backplane.grpc.Updat"
-  "eByRequest.UpdateByOperation.UpdateByCol"
-  "umnH\000\032\272\023\n\016UpdateByColumn\022n\n\004spec\030\001 \001(\0132`"
-  ".io.deephaven.proto.backplane.grpc.Updat"
-  "eByRequest.UpdateByOperation.UpdateByCol"
-  "umn.UpdateBySpec\022\023\n\013match_pairs\030\002 \003(\t\032\242\022"
-  "\n\014UpdateBySpec\022\205\001\n\003sum\030\001 \001(\0132v.io.deepha"
-  "ven.proto.backplane.grpc.UpdateByRequest"
-  ".UpdateByOperation.UpdateByColumn.Update"
-  "BySpec.UpdateByCumulativeSumH\000\022\205\001\n\003min\030\002"
-  " \001(\0132v.io.deephaven.proto.backplane.grpc"
-  ".UpdateByRequest.UpdateByOperation.Updat"
-  "eByColumn.UpdateBySpec.UpdateByCumulativ"
-  "eMinH\000\022\205\001\n\003max\030\003 \001(\0132v.io.deephaven.prot"
-  "o.backplane.grpc.UpdateByRequest.UpdateB"
-  "yOperation.UpdateByColumn.UpdateBySpec.U"
-  "pdateByCumulativeMaxH\000\022\215\001\n\007product\030\004 \001(\013"
-  "2z.io.deephaven.proto.backplane.grpc.Upd"
-  "ateByRequest.UpdateByOperation.UpdateByC"
-  "olumn.UpdateBySpec.UpdateByCumulativePro"
-  "ductH\000\022}\n\004fill\030\005 \001(\0132m.io.deephaven.prot"
-  "o.backplane.grpc.UpdateByRequest.UpdateB"
-  "yOperation.UpdateByColumn.UpdateBySpec.U"
-  "pdateByFillH\000\022{\n\003ema\030\006 \001(\0132l.io.deephave"
-  "n.proto.backplane.grpc.UpdateByRequest.U"
-  "pdateByOperation.UpdateByColumn.UpdateBy"
-  "Spec.UpdateByEmaH\000\032\027\n\025UpdateByCumulative"
-  "Sum\032\027\n\025UpdateByCumulativeMin\032\027\n\025UpdateBy"
-  "CumulativeMax\032\033\n\031UpdateByCumulativeProdu"
-  "ct\032\016\n\014UpdateByFill\032\355\n\n\013UpdateByEma\022\220\001\n\007o"
-  "ptions\030\001 \001(\0132\177.io.deephaven.proto.backpl"
-  "ane.grpc.UpdateByRequest.UpdateByOperati"
-  "on.UpdateByColumn.UpdateBySpec.UpdateByE"
-  "ma.UpdateByEmaOptions\022\225\001\n\ttimescale\030\002 \001("
-  "\0132\201\001.io.deephaven.proto.backplane.grpc.U"
-  "pdateByRequest.UpdateByOperation.UpdateB"
-  "yColumn.UpdateBySpec.UpdateByEma.UpdateB"
-  "yEmaTimescale\032\341\004\n\022UpdateByEmaOptions\022N\n\r"
-  "on_null_value\030\001 \001(\01622.io.deephaven.proto"
-  ".backplane.grpc.BadDataBehaviorH\000\210\001\001\022M\n\014"
-  "on_nan_value\030\002 \001(\01622.io.deephaven.proto."
-  "backplane.grpc.BadDataBehaviorH\001\210\001\001\022M\n\014o"
-  "n_null_time\030\003 \001(\01622.io.deephaven.proto.b"
-  "ackplane.grpc.BadDataBehaviorH\002\210\001\001\022W\n\026on"
-  "_negative_delta_time\030\004 \001(\01622.io.deephave"
-  "n.proto.backplane.grpc.BadDataBehaviorH\003"
-  "\210\001\001\022S\n\022on_zero_delta_time\030\005 \001(\01622.io.dee"
-  "phaven.proto.backplane.grpc.BadDataBehav"
-  "iorH\004\210\001\001\022I\n\021big_value_context\030\006 \001(\0132..io"
-  ".deephaven.proto.backplane.grpc.MathCont"
-  "extB\020\n\016_on_null_valueB\017\n\r_on_nan_valueB\017"
-  "\n\r_on_null_timeB\031\n\027_on_negative_delta_ti"
-  "meB\025\n\023_on_zero_delta_time\032\316\003\n\024UpdateByEm"
-  "aTimescale\022\244\001\n\005ticks\030\001 \001(\0132\222\001.io.deephav"
+  "\005\022\r\n\tHALF_EVEN\020\006\022\017\n\013UNNECESSARY\020\007\"\262\002\n\024Up"
+  "dateByEmaTimescale\022Y\n\005ticks\030\001 \001(\0132H.io.d"
+  "eephaven.proto.backplane.grpc.UpdateByEm"
+  "aTimescale.UpdateByEmaTicksH\000\022W\n\004time\030\002 "
+  "\001(\0132G.io.deephaven.proto.backplane.grpc."
+  "UpdateByEmaTimescale.UpdateByEmaTimeH\000\032!"
+  "\n\020UpdateByEmaTicks\022\r\n\005ticks\030\001 \001(\001\032;\n\017Upd"
+  "ateByEmaTime\022\016\n\006column\030\001 \001(\t\022\030\n\014period_n"
+  "anos\030\002 \001(\022B\0020\001B\006\n\004type\"\243&\n\017UpdateByReque"
+  "st\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pro"
+  "to.backplane.grpc.Ticket\022D\n\tsource_id\030\002 "
+  "\001(\01321.io.deephaven.proto.backplane.grpc."
+  "TableReference\022S\n\007options\030\003 \001(\0132B.io.dee"
+  "phaven.proto.backplane.grpc.UpdateByRequ"
+  "est.UpdateByOptions\022X\n\noperations\030\004 \003(\0132"
+  "D.io.deephaven.proto.backplane.grpc.Upda"
+  "teByRequest.UpdateByOperation\022\030\n\020group_b"
+  "y_columns\030\005 \003(\t\032\303\003\n\017UpdateByOptions\022\034\n\017u"
+  "se_redirection\030\001 \001(\010H\000\210\001\001\022\033\n\016chunk_capac"
+  "ity\030\002 \001(\005H\001\210\001\001\022.\n!max_static_sparse_memo"
+  "ry_overhead\030\003 \001(\001H\002\210\001\001\022$\n\027initial_hash_t"
+  "able_size\030\004 \001(\005H\003\210\001\001\022 \n\023maximum_load_fac"
+  "tor\030\005 \001(\001H\004\210\001\001\022\037\n\022target_load_factor\030\006 \001"
+  "(\001H\005\210\001\001\022D\n\014math_context\030\007 \001(\0132..io.deeph"
+  "aven.proto.backplane.grpc.MathContextB\022\n"
+  "\020_use_redirectionB\021\n\017_chunk_capacityB$\n\""
+  "_max_static_sparse_memory_overheadB\032\n\030_i"
+  "nitial_hash_table_sizeB\026\n\024_maximum_load_"
+  "factorB\025\n\023_target_load_factor\032\374\037\n\021Update"
+  "ByOperation\022e\n\006column\030\001 \001(\0132S.io.deephav"
+  "en.proto.backplane.grpc.UpdateByRequest."
+  "UpdateByOperation.UpdateByColumnH\000\032\367\036\n\016U"
+  "pdateByColumn\022n\n\004spec\030\001 \001(\0132`.io.deephav"
   "en.proto.backplane.grpc.UpdateByRequest."
   "UpdateByOperation.UpdateByColumn.UpdateB"
-  "ySpec.UpdateByEma.UpdateByEmaTimescale.U"
-  "pdateByEmaTicksH\000\022\242\001\n\004time\030\002 \001(\0132\221\001.io.d"
+  "ySpec\022\023\n\013match_pairs\030\002 \003(\t\032\337\035\n\014UpdateByS"
+  "pec\022\205\001\n\003sum\030\001 \001(\0132v.io.deephaven.proto.b"
+  "ackplane.grpc.UpdateByRequest.UpdateByOp"
+  "eration.UpdateByColumn.UpdateBySpec.Upda"
+  "teByCumulativeSumH\000\022\205\001\n\003min\030\002 \001(\0132v.io.d"
   "eephaven.proto.backplane.grpc.UpdateByRe"
   "quest.UpdateByOperation.UpdateByColumn.U"
-  "pdateBySpec.UpdateByEma.UpdateByEmaTimes"
-  "cale.UpdateByEmaTimeH\000\032%\n\020UpdateByEmaTic"
-  "ks\022\021\n\005ticks\030\001 \001(\022B\0020\001\032;\n\017UpdateByEmaTime"
-  "\022\016\n\006column\030\001 \001(\t\022\030\n\014period_nanos\030\002 \001(\022B\002"
-  "0\001B\006\n\004typeB\006\n\004typeB\006\n\004type\"\261\001\n\025SelectDis"
-  "tinctRequest\022<\n\tresult_id\030\001 \001(\0132).io.dee"
-  "phaven.proto.backplane.grpc.Ticket\022D\n\tso"
-  "urce_id\030\002 \001(\01321.io.deephaven.proto.backp"
-  "lane.grpc.TableReference\022\024\n\014column_names"
-  "\030\003 \003(\t\"\256\001\n\022DropColumnsRequest\022<\n\tresult_"
-  "id\030\001 \001(\0132).io.deephaven.proto.backplane."
-  "grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deep"
-  "haven.proto.backplane.grpc.TableReferenc"
-  "e\022\024\n\014column_names\030\003 \003(\t\"\265\001\n\036Unstructured"
-  "FilterTableRequest\022<\n\tresult_id\030\001 \001(\0132)."
-  "io.deephaven.proto.backplane.grpc.Ticket"
-  "\022D\n\tsource_id\030\002 \001(\01321.io.deephaven.proto"
-  ".backplane.grpc.TableReference\022\017\n\007filter"
-  "s\030\003 \003(\t\"\255\001\n\021HeadOrTailRequest\022<\n\tresult_"
-  "id\030\001 \001(\0132).io.deephaven.proto.backplane."
-  "grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deep"
-  "haven.proto.backplane.grpc.TableReferenc"
-  "e\022\024\n\010num_rows\030\003 \001(\022B\0020\001\"\316\001\n\023HeadOrTailBy"
+  "pdateBySpec.UpdateByCumulativeMinH\000\022\205\001\n\003"
+  "max\030\003 \001(\0132v.io.deephaven.proto.backplane"
+  ".grpc.UpdateByRequest.UpdateByOperation."
+  "UpdateByColumn.UpdateBySpec.UpdateByCumu"
+  "lativeMaxH\000\022\215\001\n\007product\030\004 \001(\0132z.io.deeph"
+  "aven.proto.backplane.grpc.UpdateByReques"
+  "t.UpdateByOperation.UpdateByColumn.Updat"
+  "eBySpec.UpdateByCumulativeProductH\000\022}\n\004f"
+  "ill\030\005 \001(\0132m.io.deephaven.proto.backplane"
+  ".grpc.UpdateByRequest.UpdateByOperation."
+  "UpdateByColumn.UpdateBySpec.UpdateByFill"
+  "H\000\022{\n\003ema\030\006 \001(\0132l.io.deephaven.proto.bac"
+  "kplane.grpc.UpdateByRequest.UpdateByOper"
+  "ation.UpdateByColumn.UpdateBySpec.Update"
+  "ByEmaH\000\022\212\001\n\013rolling_sum\030\007 \001(\0132s.io.deeph"
+  "aven.proto.backplane.grpc.UpdateByReques"
+  "t.UpdateByOperation.UpdateByColumn.Updat"
+  "eBySpec.UpdateByRollingSumH\000\022\216\001\n\rrolling"
+  "_group\030\010 \001(\0132u.io.deephaven.proto.backpl"
+  "ane.grpc.UpdateByRequest.UpdateByOperati"
+  "on.UpdateByColumn.UpdateBySpec.UpdateByR"
+  "ollingGroupH\000\022\212\001\n\013rolling_avg\030\t \001(\0132s.io"
+  ".deephaven.proto.backplane.grpc.UpdateBy"
+  "Request.UpdateByOperation.UpdateByColumn"
+  ".UpdateBySpec.UpdateByRollingAvgH\000\022\212\001\n\013r"
+  "olling_min\030\n \001(\0132s.io.deephaven.proto.ba"
+  "ckplane.grpc.UpdateByRequest.UpdateByOpe"
+  "ration.UpdateByColumn.UpdateBySpec.Updat"
+  "eByRollingMinH\000\022\212\001\n\013rolling_max\030\013 \001(\0132s."
+  "io.deephaven.proto.backplane.grpc.Update"
+  "ByRequest.UpdateByOperation.UpdateByColu"
+  "mn.UpdateBySpec.UpdateByRollingMaxH\000\022\222\001\n"
+  "\017rolling_product\030\014 \001(\0132w.io.deephaven.pr"
+  "oto.backplane.grpc.UpdateByRequest.Updat"
+  "eByOperation.UpdateByColumn.UpdateBySpec"
+  ".UpdateByRollingProductH\000\032\027\n\025UpdateByCum"
+  "ulativeSum\032\027\n\025UpdateByCumulativeMin\032\027\n\025U"
+  "pdateByCumulativeMax\032\033\n\031UpdateByCumulati"
+  "veProduct\032\016\n\014UpdateByFill\032\320\006\n\013UpdateByEm"
+  "a\022\220\001\n\007options\030\001 \001(\0132\177.io.deephaven.proto"
+  ".backplane.grpc.UpdateByRequest.UpdateBy"
+  "Operation.UpdateByColumn.UpdateBySpec.Up"
+  "dateByEma.UpdateByEmaOptions\022J\n\ttimescal"
+  "e\030\002 \001(\01327.io.deephaven.proto.backplane.g"
+  "rpc.UpdateByEmaTimescale\032\341\004\n\022UpdateByEma"
+  "Options\022N\n\ron_null_value\030\001 \001(\01622.io.deep"
+  "haven.proto.backplane.grpc.BadDataBehavi"
+  "orH\000\210\001\001\022M\n\014on_nan_value\030\002 \001(\01622.io.deeph"
+  "aven.proto.backplane.grpc.BadDataBehavio"
+  "rH\001\210\001\001\022M\n\014on_null_time\030\003 \001(\01622.io.deepha"
+  "ven.proto.backplane.grpc.BadDataBehavior"
+  "H\002\210\001\001\022W\n\026on_negative_delta_time\030\004 \001(\01622."
+  "io.deephaven.proto.backplane.grpc.BadDat"
+  "aBehaviorH\003\210\001\001\022S\n\022on_zero_delta_time\030\005 \001"
+  "(\01622.io.deephaven.proto.backplane.grpc.B"
+  "adDataBehaviorH\004\210\001\001\022I\n\021big_value_context"
+  "\030\006 \001(\0132..io.deephaven.proto.backplane.gr"
+  "pc.MathContextB\020\n\016_on_null_valueB\017\n\r_on_"
+  "nan_valueB\017\n\r_on_null_timeB\031\n\027_on_negati"
+  "ve_delta_timeB\025\n\023_on_zero_delta_time\032\274\001\n"
+  "\022UpdateByRollingSum\022R\n\021reverse_timescale"
+  "\030\001 \001(\01327.io.deephaven.proto.backplane.gr"
+  "pc.UpdateByEmaTimescale\022R\n\021forward_times"
+  "cale\030\002 \001(\01327.io.deephaven.proto.backplan"
+  "e.grpc.UpdateByEmaTimescale\032\276\001\n\024UpdateBy"
+  "RollingGroup\022R\n\021reverse_timescale\030\001 \001(\0132"
+  "7.io.deephaven.proto.backplane.grpc.Upda"
+  "teByEmaTimescale\022R\n\021forward_timescale\030\002 "
+  "\001(\01327.io.deephaven.proto.backplane.grpc."
+  "UpdateByEmaTimescale\032\274\001\n\022UpdateByRolling"
+  "Avg\022R\n\021reverse_timescale\030\001 \001(\01327.io.deep"
+  "haven.proto.backplane.grpc.UpdateByEmaTi"
+  "mescale\022R\n\021forward_timescale\030\002 \001(\01327.io."
+  "deephaven.proto.backplane.grpc.UpdateByE"
+  "maTimescale\032\274\001\n\022UpdateByRollingMin\022R\n\021re"
+  "verse_timescale\030\001 \001(\01327.io.deephaven.pro"
+  "to.backplane.grpc.UpdateByEmaTimescale\022R"
+  "\n\021forward_timescale\030\002 \001(\01327.io.deephaven"
+  ".proto.backplane.grpc.UpdateByEmaTimesca"
+  "le\032\274\001\n\022UpdateByRollingMax\022R\n\021reverse_tim"
+  "escale\030\001 \001(\01327.io.deephaven.proto.backpl"
+  "ane.grpc.UpdateByEmaTimescale\022R\n\021forward"
+  "_timescale\030\002 \001(\01327.io.deephaven.proto.ba"
+  "ckplane.grpc.UpdateByEmaTimescale\032\300\001\n\026Up"
+  "dateByRollingProduct\022R\n\021reverse_timescal"
+  "e\030\001 \001(\01327.io.deephaven.proto.backplane.g"
+  "rpc.UpdateByEmaTimescale\022R\n\021forward_time"
+  "scale\030\002 \001(\01327.io.deephaven.proto.backpla"
+  "ne.grpc.UpdateByEmaTimescaleB\006\n\004typeB\006\n\004"
+  "type\"\261\001\n\025SelectDistinctRequest\022<\n\tresult"
+  "_id\030\001 \001(\0132).io.deephaven.proto.backplane"
+  ".grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.dee"
+  "phaven.proto.backplane.grpc.TableReferen"
+  "ce\022\024\n\014column_names\030\003 \003(\t\"\256\001\n\022DropColumns"
+  "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
+  "n.proto.backplane.grpc.Ticket\022D\n\tsource_"
+  "id\030\002 \001(\01321.io.deephaven.proto.backplane."
+  "grpc.TableReference\022\024\n\014column_names\030\003 \003("
+  "\t\"\265\001\n\036UnstructuredFilterTableRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321."
+  "io.deephaven.proto.backplane.grpc.TableR"
+  "eference\022\017\n\007filters\030\003 \003(\t\"\255\001\n\021HeadOrTail"
   "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
   "n.proto.backplane.grpc.Ticket\022D\n\tsource_"
   "id\030\002 \001(\01321.io.deephaven.proto.backplane."
   "grpc.TableReference\022\024\n\010num_rows\030\003 \001(\022B\0020"
-  "\001\022\035\n\025group_by_column_specs\030\004 \003(\t\"\303\001\n\016Ung"
-  "roupRequest\022<\n\tresult_id\030\001 \001(\0132).io.deep"
-  "haven.proto.backplane.grpc.Ticket\022D\n\tsou"
-  "rce_id\030\002 \001(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.TableReference\022\021\n\tnull_fill\030\003 \001"
-  "(\010\022\032\n\022columns_to_ungroup\030\004 \003(\t\"\255\001\n\022Merge"
-  "TablesRequest\022<\n\tresult_id\030\001 \001(\0132).io.de"
-  "ephaven.proto.backplane.grpc.Ticket\022E\n\ns"
-  "ource_ids\030\002 \003(\01321.io.deephaven.proto.bac"
-  "kplane.grpc.TableReference\022\022\n\nkey_column"
-  "\030\003 \001(\t\"\232\001\n\024SnapshotTableRequest\022<\n\tresul"
+  "\001\"\316\001\n\023HeadOrTailByRequest\022<\n\tresult_id\030\001"
+  " \001(\0132).io.deephaven.proto.backplane.grpc"
+  ".Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephave"
+  "n.proto.backplane.grpc.TableReference\022\024\n"
+  "\010num_rows\030\003 \001(\022B\0020\001\022\035\n\025group_by_column_s"
+  "pecs\030\004 \003(\t\"\303\001\n\016UngroupRequest\022<\n\tresult_"
+  "id\030\001 \001(\0132).io.deephaven.proto.backplane."
+  "grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deep"
+  "haven.proto.backplane.grpc.TableReferenc"
+  "e\022\021\n\tnull_fill\030\003 \001(\010\022\032\n\022columns_to_ungro"
+  "up\030\004 \003(\t\"\255\001\n\022MergeTablesRequest\022<\n\tresul"
   "t_id\030\001 \001(\0132).io.deephaven.proto.backplan"
-  "e.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.de"
-  "ephaven.proto.backplane.grpc.TableRefere"
-  "nce\"\261\002\n\030SnapshotWhenTableRequest\022<\n\tresu"
-  "lt_id\030\001 \001(\0132).io.deephaven.proto.backpla"
-  "ne.grpc.Ticket\022B\n\007base_id\030\002 \001(\01321.io.dee"
-  "phaven.proto.backplane.grpc.TableReferen"
-  "ce\022E\n\ntrigger_id\030\003 \001(\01321.io.deephaven.pr"
-  "oto.backplane.grpc.TableReference\022\017\n\007ini"
-  "tial\030\004 \001(\010\022\023\n\013incremental\030\005 \001(\010\022\017\n\007histo"
-  "ry\030\006 \001(\010\022\025\n\rstamp_columns\030\007 \003(\t\"\247\002\n\026Cros"
-  "sJoinTablesRequest\022<\n\tresult_id\030\001 \001(\0132)."
+  "e.grpc.Ticket\022E\n\nsource_ids\030\002 \003(\01321.io.d"
+  "eephaven.proto.backplane.grpc.TableRefer"
+  "ence\022\022\n\nkey_column\030\003 \001(\t\"\232\001\n\024SnapshotTab"
+  "leRequest\022<\n\tresult_id\030\001 \001(\0132).io.deepha"
+  "ven.proto.backplane.grpc.Ticket\022D\n\tsourc"
+  "e_id\030\002 \001(\01321.io.deephaven.proto.backplan"
+  "e.grpc.TableReference\"\261\002\n\030SnapshotWhenTa"
+  "bleRequest\022<\n\tresult_id\030\001 \001(\0132).io.deeph"
+  "aven.proto.backplane.grpc.Ticket\022B\n\007base"
+  "_id\030\002 \001(\01321.io.deephaven.proto.backplane"
+  ".grpc.TableReference\022E\n\ntrigger_id\030\003 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022\017\n\007initial\030\004 \001(\010\022\023\n\013incremen"
+  "tal\030\005 \001(\010\022\017\n\007history\030\006 \001(\010\022\025\n\rstamp_colu"
+  "mns\030\007 \003(\t\"\247\002\n\026CrossJoinTablesRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022B\n\007left_id\030\002 \001(\01321.io"
+  ".deephaven.proto.backplane.grpc.TableRef"
+  "erence\022C\n\010right_id\030\003 \001(\01321.io.deephaven."
+  "proto.backplane.grpc.TableReference\022\030\n\020c"
+  "olumns_to_match\030\004 \003(\t\022\026\n\016columns_to_add\030"
+  "\005 \003(\t\022\024\n\014reserve_bits\030\006 \001(\005\"\223\002\n\030NaturalJ"
+  "oinTablesRequest\022<\n\tresult_id\030\001 \001(\0132).io"
+  ".deephaven.proto.backplane.grpc.Ticket\022B"
+  "\n\007left_id\030\002 \001(\01321.io.deephaven.proto.bac"
+  "kplane.grpc.TableReference\022C\n\010right_id\030\003"
+  " \001(\01321.io.deephaven.proto.backplane.grpc"
+  ".TableReference\022\030\n\020columns_to_match\030\004 \003("
+  "\t\022\026\n\016columns_to_add\030\005 \003(\t\"\221\002\n\026ExactJoinT"
+  "ablesRequest\022<\n\tresult_id\030\001 \001(\0132).io.dee"
+  "phaven.proto.backplane.grpc.Ticket\022B\n\007le"
+  "ft_id\030\002 \001(\01321.io.deephaven.proto.backpla"
+  "ne.grpc.TableReference\022C\n\010right_id\030\003 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n"
+  "\016columns_to_add\030\005 \003(\t\"\220\002\n\025LeftJoinTables"
+  "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
+  "n.proto.backplane.grpc.Ticket\022B\n\007left_id"
+  "\030\002 \001(\01321.io.deephaven.proto.backplane.gr"
+  "pc.TableReference\022C\n\010right_id\030\003 \001(\01321.io"
+  ".deephaven.proto.backplane.grpc.TableRef"
+  "erence\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016colu"
+  "mns_to_add\030\005 \003(\t\"\311\003\n\025AsOfJoinTablesReque"
+  "st\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pro"
+  "to.backplane.grpc.Ticket\022B\n\007left_id\030\002 \001("
+  "\01321.io.deephaven.proto.backplane.grpc.Ta"
+  "bleReference\022C\n\010right_id\030\003 \001(\01321.io.deep"
+  "haven.proto.backplane.grpc.TableReferenc"
+  "e\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016columns_t"
+  "o_add\030\005 \003(\t\022\\\n\020as_of_match_rule\030\007 \001(\0162B."
+  "io.deephaven.proto.backplane.grpc.AsOfJo"
+  "inTablesRequest.MatchRule\"Y\n\tMatchRule\022\023"
+  "\n\017LESS_THAN_EQUAL\020\000\022\r\n\tLESS_THAN\020\001\022\026\n\022GR"
+  "EATER_THAN_EQUAL\020\002\022\020\n\014GREATER_THAN\020\003\"\237\006\n"
+  "\026RangeJoinTablesRequest\022<\n\tresult_id\030\001 \001"
+  "(\0132).io.deephaven.proto.backplane.grpc.T"
+  "icket\022B\n\007left_id\030\002 \001(\01321.io.deephaven.pr"
+  "oto.backplane.grpc.TableReference\022C\n\010rig"
+  "ht_id\030\003 \001(\01321.io.deephaven.proto.backpla"
+  "ne.grpc.TableReference\022\033\n\023exact_match_co"
+  "lumns\030\004 \003(\t\022\031\n\021left_start_column\030\005 \001(\t\022b"
+  "\n\020range_start_rule\030\006 \001(\0162H.io.deephaven."
+  "proto.backplane.grpc.RangeJoinTablesRequ"
+  "est.RangeStartRule\022\032\n\022right_range_column"
+  "\030\007 \001(\t\022^\n\016range_end_rule\030\010 \001(\0162F.io.deep"
+  "haven.proto.backplane.grpc.RangeJoinTabl"
+  "esRequest.RangeEndRule\022\027\n\017left_end_colum"
+  "n\030\t \001(\t\022D\n\014aggregations\030\n \003(\0132..io.deeph"
+  "aven.proto.backplane.grpc.Aggregation\"_\n"
+  "\016RangeStartRule\022\r\n\tLESS_THAN\020\000\022\026\n\022LESS_T"
+  "HAN_OR_EQUAL\020\001\022&\n\"LESS_THAN_OR_EQUAL_ALL"
+  "OW_PRECEDING\020\002\"f\n\014RangeEndRule\022\020\n\014GREATE"
+  "R_THAN\020\000\022\031\n\025GREATER_THAN_OR_EQUAL\020\001\022)\n%G"
+  "REATER_THAN_OR_EQUAL_ALLOW_FOLLOWING\020\002\"\376"
+  "\004\n\025ComboAggregateRequest\022<\n\tresult_id\030\001 "
+  "\001(\0132).io.deephaven.proto.backplane.grpc."
+  "Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven"
+  ".proto.backplane.grpc.TableReference\022V\n\n"
+  "aggregates\030\003 \003(\0132B.io.deephaven.proto.ba"
+  "ckplane.grpc.ComboAggregateRequest.Aggre"
+  "gate\022\030\n\020group_by_columns\030\004 \003(\t\022\023\n\013force_"
+  "combo\030\005 \001(\010\032\255\001\n\tAggregate\022N\n\004type\030\001 \001(\0162"
+  "@.io.deephaven.proto.backplane.grpc.Comb"
+  "oAggregateRequest.AggType\022\023\n\013match_pairs"
+  "\030\002 \003(\t\022\023\n\013column_name\030\003 \001(\t\022\022\n\npercentil"
+  "e\030\004 \001(\001\022\022\n\navg_median\030\005 \001(\010\"\245\001\n\007AggType\022"
+  "\007\n\003SUM\020\000\022\013\n\007ABS_SUM\020\001\022\t\n\005GROUP\020\002\022\007\n\003AVG\020"
+  "\003\022\t\n\005COUNT\020\004\022\t\n\005FIRST\020\005\022\010\n\004LAST\020\006\022\007\n\003MIN"
+  "\020\007\022\007\n\003MAX\020\010\022\n\n\006MEDIAN\020\t\022\016\n\nPERCENTILE\020\n\022"
+  "\007\n\003STD\020\013\022\007\n\003VAR\020\014\022\020\n\014WEIGHTED_AVG\020\r:\002\030\001\""
+  "\355\001\n\023AggregateAllRequest\022<\n\tresult_id\030\001 \001"
+  "(\0132).io.deephaven.proto.backplane.grpc.T"
+  "icket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven."
+  "proto.backplane.grpc.TableReference\0228\n\004s"
+  "pec\030\003 \001(\0132*.io.deephaven.proto.backplane"
+  ".grpc.AggSpec\022\030\n\020group_by_columns\030\004 \003(\t\""
+  "\327\027\n\007AggSpec\022K\n\007abs_sum\030\001 \001(\01328.io.deepha"
+  "ven.proto.backplane.grpc.AggSpec.AggSpec"
+  "AbsSumH\000\022i\n\026approximate_percentile\030\002 \001(\013"
+  "2G.io.deephaven.proto.backplane.grpc.Agg"
+  "Spec.AggSpecApproximatePercentileH\000\022D\n\003a"
+  "vg\030\003 \001(\01325.io.deephaven.proto.backplane."
+  "grpc.AggSpec.AggSpecAvgH\000\022Y\n\016count_disti"
+  "nct\030\004 \001(\0132\?.io.deephaven.proto.backplane"
+  ".grpc.AggSpec.AggSpecCountDistinctH\000\022N\n\010"
+  "distinct\030\005 \001(\0132:.io.deephaven.proto.back"
+  "plane.grpc.AggSpec.AggSpecDistinctH\000\022H\n\005"
+  "first\030\006 \001(\01327.io.deephaven.proto.backpla"
+  "ne.grpc.AggSpec.AggSpecFirstH\000\022L\n\007formul"
+  "a\030\007 \001(\01329.io.deephaven.proto.backplane.g"
+  "rpc.AggSpec.AggSpecFormulaH\000\022J\n\006freeze\030\010"
+  " \001(\01328.io.deephaven.proto.backplane.grpc"
+  ".AggSpec.AggSpecFreezeH\000\022H\n\005group\030\t \001(\0132"
+  "7.io.deephaven.proto.backplane.grpc.AggS"
+  "pec.AggSpecGroupH\000\022F\n\004last\030\n \001(\01326.io.de"
+  "ephaven.proto.backplane.grpc.AggSpec.Agg"
+  "SpecLastH\000\022D\n\003max\030\013 \001(\01325.io.deephaven.p"
+  "roto.backplane.grpc.AggSpec.AggSpecMaxH\000"
+  "\022J\n\006median\030\014 \001(\01328.io.deephaven.proto.ba"
+  "ckplane.grpc.AggSpec.AggSpecMedianH\000\022D\n\003"
+  "min\030\r \001(\01325.io.deephaven.proto.backplane"
+  ".grpc.AggSpec.AggSpecMinH\000\022R\n\npercentile"
+  "\030\016 \001(\0132<.io.deephaven.proto.backplane.gr"
+  "pc.AggSpec.AggSpecPercentileH\000\022P\n\014sorted"
+  "_first\030\017 \001(\01328.io.deephaven.proto.backpl"
+  "ane.grpc.AggSpec.AggSpecSortedH\000\022O\n\013sort"
+  "ed_last\030\020 \001(\01328.io.deephaven.proto.backp"
+  "lane.grpc.AggSpec.AggSpecSortedH\000\022D\n\003std"
+  "\030\021 \001(\01325.io.deephaven.proto.backplane.gr"
+  "pc.AggSpec.AggSpecStdH\000\022D\n\003sum\030\022 \001(\01325.i"
+  "o.deephaven.proto.backplane.grpc.AggSpec"
+  ".AggSpecSumH\000\022M\n\010t_digest\030\023 \001(\01329.io.dee"
+  "phaven.proto.backplane.grpc.AggSpec.AggS"
+  "pecTDigestH\000\022J\n\006unique\030\024 \001(\01328.io.deepha"
+  "ven.proto.backplane.grpc.AggSpec.AggSpec"
+  "UniqueH\000\022R\n\014weighted_avg\030\025 \001(\0132:.io.deep"
+  "haven.proto.backplane.grpc.AggSpec.AggSp"
+  "ecWeightedH\000\022R\n\014weighted_sum\030\026 \001(\0132:.io."
+  "deephaven.proto.backplane.grpc.AggSpec.A"
+  "ggSpecWeightedH\000\022D\n\003var\030\027 \001(\01325.io.deeph"
+  "aven.proto.backplane.grpc.AggSpec.AggSpe"
+  "cVarH\000\032\\\n\034AggSpecApproximatePercentile\022\022"
+  "\n\npercentile\030\001 \001(\001\022\030\n\013compression\030\002 \001(\001H"
+  "\000\210\001\001B\016\n\014_compression\032+\n\024AggSpecCountDist"
+  "inct\022\023\n\013count_nulls\030\001 \001(\010\032(\n\017AggSpecDist"
+  "inct\022\025\n\rinclude_nulls\030\001 \001(\010\0326\n\016AggSpecFo"
+  "rmula\022\017\n\007formula\030\001 \001(\t\022\023\n\013param_token\030\002 "
+  "\001(\t\032/\n\rAggSpecMedian\022\036\n\026average_evenly_d"
+  "ivided\030\001 \001(\010\032G\n\021AggSpecPercentile\022\022\n\nper"
+  "centile\030\001 \001(\001\022\036\n\026average_evenly_divided\030"
+  "\002 \001(\010\032`\n\rAggSpecSorted\022O\n\007columns\030\001 \003(\0132"
+  ">.io.deephaven.proto.backplane.grpc.AggS"
+  "pec.AggSpecSortedColumn\032*\n\023AggSpecSorted"
+  "Column\022\023\n\013column_name\030\001 \001(\t\032:\n\016AggSpecTD"
+  "igest\022\030\n\013compression\030\001 \001(\001H\000\210\001\001B\016\n\014_comp"
+  "ression\032\210\001\n\rAggSpecUnique\022\025\n\rinclude_nul"
+  "ls\030\001 \001(\010\022`\n\023non_unique_sentinel\030\002 \001(\0132C."
+  "io.deephaven.proto.backplane.grpc.AggSpe"
+  "c.AggSpecNonUniqueSentinel\032\265\002\n\030AggSpecNo"
+  "nUniqueSentinel\022B\n\nnull_value\030\001 \001(\0162,.io"
+  ".deephaven.proto.backplane.grpc.NullValu"
+  "eH\000\022\026\n\014string_value\030\002 \001(\tH\000\022\023\n\tint_value"
+  "\030\003 \001(\021H\000\022\030\n\nlong_value\030\004 \001(\022B\0020\001H\000\022\025\n\013fl"
+  "oat_value\030\005 \001(\002H\000\022\026\n\014double_value\030\006 \001(\001H"
+  "\000\022\024\n\nbool_value\030\007 \001(\010H\000\022\024\n\nbyte_value\030\010 "
+  "\001(\021H\000\022\025\n\013short_value\030\t \001(\021H\000\022\024\n\nchar_val"
+  "ue\030\n \001(\021H\000B\006\n\004type\032(\n\017AggSpecWeighted\022\025\n"
+  "\rweight_column\030\001 \001(\t\032\017\n\rAggSpecAbsSum\032\014\n"
+  "\nAggSpecAvg\032\016\n\014AggSpecFirst\032\017\n\rAggSpecFr"
+  "eeze\032\016\n\014AggSpecGroup\032\r\n\013AggSpecLast\032\014\n\nA"
+  "ggSpecMax\032\014\n\nAggSpecMin\032\014\n\nAggSpecStd\032\014\n"
+  "\nAggSpecSum\032\014\n\nAggSpecVarB\006\n\004type\"\334\002\n\020Ag"
+  "gregateRequest\022<\n\tresult_id\030\001 \001(\0132).io.d"
+  "eephaven.proto.backplane.grpc.Ticket\022D\n\t"
+  "source_id\030\002 \001(\01321.io.deephaven.proto.bac"
+  "kplane.grpc.TableReference\022L\n\021initial_gr"
+  "oups_id\030\003 \001(\01321.io.deephaven.proto.backp"
+  "lane.grpc.TableReference\022\026\n\016preserve_emp"
+  "ty\030\004 \001(\010\022D\n\014aggregations\030\005 \003(\0132..io.deep"
+  "haven.proto.backplane.grpc.Aggregation\022\030"
+  "\n\020group_by_columns\030\006 \003(\t\"\323\005\n\013Aggregation"
+  "\022T\n\007columns\030\001 \001(\0132A.io.deephaven.proto.b"
+  "ackplane.grpc.Aggregation.AggregationCol"
+  "umnsH\000\022P\n\005count\030\002 \001(\0132\?.io.deephaven.pro"
+  "to.backplane.grpc.Aggregation.Aggregatio"
+  "nCountH\000\022Y\n\rfirst_row_key\030\003 \001(\0132@.io.dee"
+  "phaven.proto.backplane.grpc.Aggregation."
+  "AggregationRowKeyH\000\022X\n\014last_row_key\030\004 \001("
+  "\0132@.io.deephaven.proto.backplane.grpc.Ag"
+  "gregation.AggregationRowKeyH\000\022X\n\tpartiti"
+  "on\030\005 \001(\0132C.io.deephaven.proto.backplane."
+  "grpc.Aggregation.AggregationPartitionH\000\032"
+  "c\n\022AggregationColumns\0228\n\004spec\030\001 \001(\0132*.io"
+  ".deephaven.proto.backplane.grpc.AggSpec\022"
+  "\023\n\013match_pairs\030\002 \003(\t\032\'\n\020AggregationCount"
+  "\022\023\n\013column_name\030\001 \001(\t\032(\n\021AggregationRowK"
+  "ey\022\023\n\013column_name\030\001 \001(\t\032M\n\024AggregationPa"
+  "rtition\022\023\n\013column_name\030\001 \001(\t\022 \n\030include_"
+  "group_by_columns\030\002 \001(\010B\006\n\004type\"\341\001\n\016SortD"
+  "escriptor\022\023\n\013column_name\030\001 \001(\t\022\023\n\013is_abs"
+  "olute\030\002 \001(\010\022R\n\tdirection\030\003 \001(\0162\?.io.deep"
+  "haven.proto.backplane.grpc.SortDescripto"
+  "r.SortDirection\"Q\n\rSortDirection\022\013\n\007UNKN"
+  "OWN\020\000\022\027\n\nDESCENDING\020\377\377\377\377\377\377\377\377\377\001\022\r\n\tASCEND"
+  "ING\020\001\022\013\n\007REVERSE\020\002\"\330\001\n\020SortTableRequest\022"
+  "<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto."
+  "backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022@\n\005sorts\030\003 \003(\01321.io.deephave"
+  "n.proto.backplane.grpc.SortDescriptor\"\327\001"
+  "\n\022FilterTableRequest\022<\n\tresult_id\030\001 \001(\0132"
+  ").io.deephaven.proto.backplane.grpc.Tick"
+  "et\022D\n\tsource_id\030\002 \001(\01321.io.deephaven.pro"
+  "to.backplane.grpc.TableReference\022=\n\007filt"
+  "ers\030\003 \003(\0132,.io.deephaven.proto.backplane"
+  ".grpc.Condition\"\371\001\n\016SeekRowRequest\022<\n\tso"
+  "urce_id\030\001 \001(\0132).io.deephaven.proto.backp"
+  "lane.grpc.Ticket\022\030\n\014starting_row\030\002 \001(\022B\002"
+  "0\001\022\023\n\013column_name\030\003 \001(\t\022>\n\nseek_value\030\004 "
+  "\001(\0132*.io.deephaven.proto.backplane.grpc."
+  "Literal\022\023\n\013insensitive\030\005 \001(\010\022\020\n\010contains"
+  "\030\006 \001(\010\022\023\n\013is_backward\030\007 \001(\010\")\n\017SeekRowRe"
+  "sponse\022\026\n\nresult_row\030\001 \001(\022B\0020\001\" \n\tRefere"
+  "nce\022\023\n\013column_name\030\001 \001(\t\"\221\001\n\007Literal\022\026\n\014"
+  "string_value\030\001 \001(\tH\000\022\026\n\014double_value\030\002 \001"
+  "(\001H\000\022\024\n\nbool_value\030\003 \001(\010H\000\022\030\n\nlong_value"
+  "\030\004 \001(\022B\0020\001H\000\022\035\n\017nano_time_value\030\005 \001(\022B\0020"
+  "\001H\000B\007\n\005value\"\221\001\n\005Value\022A\n\treference\030\001 \001("
+  "\0132,.io.deephaven.proto.backplane.grpc.Re"
+  "ferenceH\000\022=\n\007literal\030\002 \001(\0132*.io.deephave"
+  "n.proto.backplane.grpc.LiteralH\000B\006\n\004data"
+  "\"\274\005\n\tCondition\022>\n\003and\030\001 \001(\0132/.io.deephav"
+  "en.proto.backplane.grpc.AndConditionH\000\022<"
+  "\n\002or\030\002 \001(\0132..io.deephaven.proto.backplan"
+  "e.grpc.OrConditionH\000\022>\n\003not\030\003 \001(\0132/.io.d"
+  "eephaven.proto.backplane.grpc.NotConditi"
+  "onH\000\022F\n\007compare\030\004 \001(\01323.io.deephaven.pro"
+  "to.backplane.grpc.CompareConditionH\000\022<\n\002"
+  "in\030\005 \001(\0132..io.deephaven.proto.backplane."
+  "grpc.InConditionH\000\022D\n\006invoke\030\006 \001(\01322.io."
+  "deephaven.proto.backplane.grpc.InvokeCon"
+  "ditionH\000\022E\n\007is_null\030\007 \001(\01322.io.deephaven"
+  ".proto.backplane.grpc.IsNullConditionH\000\022"
+  "F\n\007matches\030\010 \001(\01323.io.deephaven.proto.ba"
+  "ckplane.grpc.MatchesConditionH\000\022H\n\010conta"
+  "ins\030\t \001(\01324.io.deephaven.proto.backplane"
+  ".grpc.ContainsConditionH\000\022D\n\006search\030\n \001("
+  "\01322.io.deephaven.proto.backplane.grpc.Se"
+  "archConditionH\000B\006\n\004data\"M\n\014AndCondition\022"
+  "=\n\007filters\030\001 \003(\0132,.io.deephaven.proto.ba"
+  "ckplane.grpc.Condition\"L\n\013OrCondition\022=\n"
+  "\007filters\030\001 \003(\0132,.io.deephaven.proto.back"
+  "plane.grpc.Condition\"L\n\014NotCondition\022<\n\006"
+  "filter\030\001 \001(\0132,.io.deephaven.proto.backpl"
+  "ane.grpc.Condition\"\254\003\n\020CompareCondition\022"
+  "W\n\toperation\030\001 \001(\0162D.io.deephaven.proto."
+  "backplane.grpc.CompareCondition.CompareO"
+  "peration\022L\n\020case_sensitivity\030\002 \001(\01622.io."
+  "deephaven.proto.backplane.grpc.CaseSensi"
+  "tivity\0225\n\003lhs\030\003 \001(\0132(.io.deephaven.proto"
+  ".backplane.grpc.Value\0225\n\003rhs\030\004 \001(\0132(.io."
+  "deephaven.proto.backplane.grpc.Value\"\202\001\n"
+  "\020CompareOperation\022\r\n\tLESS_THAN\020\000\022\026\n\022LESS"
+  "_THAN_OR_EQUAL\020\001\022\020\n\014GREATER_THAN\020\002\022\031\n\025GR"
+  "EATER_THAN_OR_EQUAL\020\003\022\n\n\006EQUALS\020\004\022\016\n\nNOT"
+  "_EQUALS\020\005\"\225\002\n\013InCondition\0228\n\006target\030\001 \001("
+  "\0132(.io.deephaven.proto.backplane.grpc.Va"
+  "lue\022<\n\ncandidates\030\002 \003(\0132(.io.deephaven.p"
+  "roto.backplane.grpc.Value\022L\n\020case_sensit"
+  "ivity\030\003 \001(\01622.io.deephaven.proto.backpla"
+  "ne.grpc.CaseSensitivity\022@\n\nmatch_type\030\004 "
+  "\001(\0162,.io.deephaven.proto.backplane.grpc."
+  "MatchType\"\230\001\n\017InvokeCondition\022\016\n\006method\030"
+  "\001 \001(\t\0228\n\006target\030\002 \001(\0132(.io.deephaven.pro"
+  "to.backplane.grpc.Value\022;\n\targuments\030\003 \003"
+  "(\0132(.io.deephaven.proto.backplane.grpc.V"
+  "alue\"R\n\017IsNullCondition\022\?\n\treference\030\001 \001"
+  "(\0132,.io.deephaven.proto.backplane.grpc.R"
+  "eference\"\362\001\n\020MatchesCondition\022\?\n\treferen"
+  "ce\030\001 \001(\0132,.io.deephaven.proto.backplane."
+  "grpc.Reference\022\r\n\005regex\030\002 \001(\t\022L\n\020case_se"
+  "nsitivity\030\003 \001(\01622.io.deephaven.proto.bac"
+  "kplane.grpc.CaseSensitivity\022@\n\nmatch_typ"
+  "e\030\004 \001(\0162,.io.deephaven.proto.backplane.g"
+  "rpc.MatchType\"\373\001\n\021ContainsCondition\022\?\n\tr"
+  "eference\030\001 \001(\0132,.io.deephaven.proto.back"
+  "plane.grpc.Reference\022\025\n\rsearch_string\030\002 "
+  "\001(\t\022L\n\020case_sensitivity\030\003 \001(\01622.io.deeph"
+  "aven.proto.backplane.grpc.CaseSensitivit"
+  "y\022@\n\nmatch_type\030\004 \001(\0162,.io.deephaven.pro"
+  "to.backplane.grpc.MatchType\"s\n\017SearchCon"
+  "dition\022\025\n\rsearch_string\030\001 \001(\t\022I\n\023optiona"
+  "l_references\030\002 \003(\0132,.io.deephaven.proto."
+  "backplane.grpc.Reference\"\224\001\n\016FlattenRequ"
+  "est\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pr"
+  "oto.backplane.grpc.Ticket\022D\n\tsource_id\030\002"
+  " \001(\01321.io.deephaven.proto.backplane.grpc"
+  ".TableReference\"\226\001\n\020MetaTableRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321."
+  "io.deephaven.proto.backplane.grpc.TableR"
+  "eference\"\264\003\n\031RunChartDownsampleRequest\022<"
+  "\n\tresult_id\030\001 \001(\0132).io.deephaven.proto.b"
+  "ackplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\0132"
+  "1.io.deephaven.proto.backplane.grpc.Tabl"
+  "eReference\022\023\n\013pixel_count\030\003 \001(\005\022Z\n\nzoom_"
+  "range\030\004 \001(\0132F.io.deephaven.proto.backpla"
+  "ne.grpc.RunChartDownsampleRequest.ZoomRa"
+  "nge\022\025\n\rx_column_name\030\005 \001(\t\022\026\n\016y_column_n"
+  "ames\030\006 \003(\t\032s\n\tZoomRange\022\037\n\016min_date_nano"
+  "s\030\001 \001(\003B\0020\001H\000\210\001\001\022\037\n\016max_date_nanos\030\002 \001(\003"
+  "B\0020\001H\001\210\001\001B\021\n\017_min_date_nanosB\021\n\017_max_dat"
+  "e_nanos\"\365\004\n\027CreateInputTableRequest\022<\n\tr"
+  "esult_id\030\001 \001(\0132).io.deephaven.proto.back"
+  "plane.grpc.Ticket\022L\n\017source_table_id\030\002 \001"
+  "(\01321.io.deephaven.proto.backplane.grpc.T"
+  "ableReferenceH\000\022\020\n\006schema\030\003 \001(\014H\000\022W\n\004kin"
+  "d\030\004 \001(\0132I.io.deephaven.proto.backplane.g"
+  "rpc.CreateInputTableRequest.InputTableKi"
+  "nd\032\324\002\n\016InputTableKind\022}\n\025in_memory_appen"
+  "d_only\030\001 \001(\0132\\.io.deephaven.proto.backpl"
+  "ane.grpc.CreateInputTableRequest.InputTa"
+  "bleKind.InMemoryAppendOnlyH\000\022{\n\024in_memor"
+  "y_key_backed\030\002 \001(\0132[.io.deephaven.proto."
+  "backplane.grpc.CreateInputTableRequest.I"
+  "nputTableKind.InMemoryKeyBackedH\000\032\024\n\022InM"
+  "emoryAppendOnly\032(\n\021InMemoryKeyBacked\022\023\n\013"
+  "key_columns\030\001 \003(\tB\006\n\004kindB\014\n\ndefinition\""
+  "\203\002\n\016WhereInRequest\022<\n\tresult_id\030\001 \001(\0132)."
   "io.deephaven.proto.backplane.grpc.Ticket"
   "\022B\n\007left_id\030\002 \001(\01321.io.deephaven.proto.b"
   "ackplane.grpc.TableReference\022C\n\010right_id"
   "\030\003 \001(\01321.io.deephaven.proto.backplane.gr"
-  "pc.TableReference\022\030\n\020columns_to_match\030\004 "
-  "\003(\t\022\026\n\016columns_to_add\030\005 \003(\t\022\024\n\014reserve_b"
-  "its\030\006 \001(\005\"\223\002\n\030NaturalJoinTablesRequest\022<"
-  "\n\tresult_id\030\001 \001(\0132).io.deephaven.proto.b"
-  "ackplane.grpc.Ticket\022B\n\007left_id\030\002 \001(\01321."
-  "io.deephaven.proto.backplane.grpc.TableR"
-  "eference\022C\n\010right_id\030\003 \001(\01321.io.deephave"
-  "n.proto.backplane.grpc.TableReference\022\030\n"
-  "\020columns_to_match\030\004 \003(\t\022\026\n\016columns_to_ad"
-  "d\030\005 \003(\t\"\221\002\n\026ExactJoinTablesRequest\022<\n\tre"
-  "sult_id\030\001 \001(\0132).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\022B\n\007left_id\030\002 \001(\01321.io.d"
-  "eephaven.proto.backplane.grpc.TableRefer"
-  "ence\022C\n\010right_id\030\003 \001(\01321.io.deephaven.pr"
-  "oto.backplane.grpc.TableReference\022\030\n\020col"
-  "umns_to_match\030\004 \003(\t\022\026\n\016columns_to_add\030\005 "
-  "\003(\t\"\220\002\n\025LeftJoinTablesRequest\022<\n\tresult_"
-  "id\030\001 \001(\0132).io.deephaven.proto.backplane."
-  "grpc.Ticket\022B\n\007left_id\030\002 \001(\01321.io.deepha"
-  "ven.proto.backplane.grpc.TableReference\022"
-  "C\n\010right_id\030\003 \001(\01321.io.deephaven.proto.b"
-  "ackplane.grpc.TableReference\022\030\n\020columns_"
-  "to_match\030\004 \003(\t\022\026\n\016columns_to_add\030\005 \003(\t\"\311"
-  "\003\n\025AsOfJoinTablesRequest\022<\n\tresult_id\030\001 "
-  "\001(\0132).io.deephaven.proto.backplane.grpc."
-  "Ticket\022B\n\007left_id\030\002 \001(\01321.io.deephaven.p"
-  "roto.backplane.grpc.TableReference\022C\n\010ri"
-  "ght_id\030\003 \001(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.TableReference\022\030\n\020columns_to_ma"
-  "tch\030\004 \003(\t\022\026\n\016columns_to_add\030\005 \003(\t\022\\\n\020as_"
-  "of_match_rule\030\007 \001(\0162B.io.deephaven.proto"
-  ".backplane.grpc.AsOfJoinTablesRequest.Ma"
-  "tchRule\"Y\n\tMatchRule\022\023\n\017LESS_THAN_EQUAL\020"
-  "\000\022\r\n\tLESS_THAN\020\001\022\026\n\022GREATER_THAN_EQUAL\020\002"
-  "\022\020\n\014GREATER_THAN\020\003\"\376\004\n\025ComboAggregateReq"
-  "uest\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.p"
-  "roto.backplane.grpc.Ticket\022D\n\tsource_id\030"
-  "\002 \001(\01321.io.deephaven.proto.backplane.grp"
-  "c.TableReference\022V\n\naggregates\030\003 \003(\0132B.i"
-  "o.deephaven.proto.backplane.grpc.ComboAg"
-  "gregateRequest.Aggregate\022\030\n\020group_by_col"
-  "umns\030\004 \003(\t\022\023\n\013force_combo\030\005 \001(\010\032\255\001\n\tAggr"
-  "egate\022N\n\004type\030\001 \001(\0162@.io.deephaven.proto"
-  ".backplane.grpc.ComboAggregateRequest.Ag"
-  "gType\022\023\n\013match_pairs\030\002 \003(\t\022\023\n\013column_nam"
-  "e\030\003 \001(\t\022\022\n\npercentile\030\004 \001(\001\022\022\n\navg_media"
-  "n\030\005 \001(\010\"\245\001\n\007AggType\022\007\n\003SUM\020\000\022\013\n\007ABS_SUM\020"
-  "\001\022\t\n\005GROUP\020\002\022\007\n\003AVG\020\003\022\t\n\005COUNT\020\004\022\t\n\005FIRS"
-  "T\020\005\022\010\n\004LAST\020\006\022\007\n\003MIN\020\007\022\007\n\003MAX\020\010\022\n\n\006MEDIA"
-  "N\020\t\022\016\n\nPERCENTILE\020\n\022\007\n\003STD\020\013\022\007\n\003VAR\020\014\022\020\n"
-  "\014WEIGHTED_AVG\020\r:\002\030\001\"\355\001\n\023AggregateAllRequ"
-  "est\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pr"
-  "oto.backplane.grpc.Ticket\022D\n\tsource_id\030\002"
-  " \001(\01321.io.deephaven.proto.backplane.grpc"
-  ".TableReference\0228\n\004spec\030\003 \001(\0132*.io.deeph"
-  "aven.proto.backplane.grpc.AggSpec\022\030\n\020gro"
-  "up_by_columns\030\004 \003(\t\"\327\027\n\007AggSpec\022K\n\007abs_s"
-  "um\030\001 \001(\01328.io.deephaven.proto.backplane."
-  "grpc.AggSpec.AggSpecAbsSumH\000\022i\n\026approxim"
-  "ate_percentile\030\002 \001(\0132G.io.deephaven.prot"
-  "o.backplane.grpc.AggSpec.AggSpecApproxim"
-  "atePercentileH\000\022D\n\003avg\030\003 \001(\01325.io.deepha"
-  "ven.proto.backplane.grpc.AggSpec.AggSpec"
-  "AvgH\000\022Y\n\016count_distinct\030\004 \001(\0132\?.io.deeph"
-  "aven.proto.backplane.grpc.AggSpec.AggSpe"
-  "cCountDistinctH\000\022N\n\010distinct\030\005 \001(\0132:.io."
-  "deephaven.proto.backplane.grpc.AggSpec.A"
-  "ggSpecDistinctH\000\022H\n\005first\030\006 \001(\01327.io.dee"
-  "phaven.proto.backplane.grpc.AggSpec.AggS"
-  "pecFirstH\000\022L\n\007formula\030\007 \001(\01329.io.deephav"
-  "en.proto.backplane.grpc.AggSpec.AggSpecF"
-  "ormulaH\000\022J\n\006freeze\030\010 \001(\01328.io.deephaven."
-  "proto.backplane.grpc.AggSpec.AggSpecFree"
-  "zeH\000\022H\n\005group\030\t \001(\01327.io.deephaven.proto"
-  ".backplane.grpc.AggSpec.AggSpecGroupH\000\022F"
-  "\n\004last\030\n \001(\01326.io.deephaven.proto.backpl"
-  "ane.grpc.AggSpec.AggSpecLastH\000\022D\n\003max\030\013 "
-  "\001(\01325.io.deephaven.proto.backplane.grpc."
-  "AggSpec.AggSpecMaxH\000\022J\n\006median\030\014 \001(\01328.i"
-  "o.deephaven.proto.backplane.grpc.AggSpec"
-  ".AggSpecMedianH\000\022D\n\003min\030\r \001(\01325.io.deeph"
-  "aven.proto.backplane.grpc.AggSpec.AggSpe"
-  "cMinH\000\022R\n\npercentile\030\016 \001(\0132<.io.deephave"
-  "n.proto.backplane.grpc.AggSpec.AggSpecPe"
-  "rcentileH\000\022P\n\014sorted_first\030\017 \001(\01328.io.de"
-  "ephaven.proto.backplane.grpc.AggSpec.Agg"
-  "SpecSortedH\000\022O\n\013sorted_last\030\020 \001(\01328.io.d"
-  "eephaven.proto.backplane.grpc.AggSpec.Ag"
-  "gSpecSortedH\000\022D\n\003std\030\021 \001(\01325.io.deephave"
-  "n.proto.backplane.grpc.AggSpec.AggSpecSt"
-  "dH\000\022D\n\003sum\030\022 \001(\01325.io.deephaven.proto.ba"
-  "ckplane.grpc.AggSpec.AggSpecSumH\000\022M\n\010t_d"
-  "igest\030\023 \001(\01329.io.deephaven.proto.backpla"
-  "ne.grpc.AggSpec.AggSpecTDigestH\000\022J\n\006uniq"
-  "ue\030\024 \001(\01328.io.deephaven.proto.backplane."
-  "grpc.AggSpec.AggSpecUniqueH\000\022R\n\014weighted"
-  "_avg\030\025 \001(\0132:.io.deephaven.proto.backplan"
-  "e.grpc.AggSpec.AggSpecWeightedH\000\022R\n\014weig"
-  "hted_sum\030\026 \001(\0132:.io.deephaven.proto.back"
-  "plane.grpc.AggSpec.AggSpecWeightedH\000\022D\n\003"
-  "var\030\027 \001(\01325.io.deephaven.proto.backplane"
-  ".grpc.AggSpec.AggSpecVarH\000\032\\\n\034AggSpecApp"
-  "roximatePercentile\022\022\n\npercentile\030\001 \001(\001\022\030"
-  "\n\013compression\030\002 \001(\001H\000\210\001\001B\016\n\014_compression"
-  "\032+\n\024AggSpecCountDistinct\022\023\n\013count_nulls\030"
-  "\001 \001(\010\032(\n\017AggSpecDistinct\022\025\n\rinclude_null"
-  "s\030\001 \001(\010\0326\n\016AggSpecFormula\022\017\n\007formula\030\001 \001"
-  "(\t\022\023\n\013param_token\030\002 \001(\t\032/\n\rAggSpecMedian"
-  "\022\036\n\026average_evenly_divided\030\001 \001(\010\032G\n\021AggS"
-  "pecPercentile\022\022\n\npercentile\030\001 \001(\001\022\036\n\026ave"
-  "rage_evenly_divided\030\002 \001(\010\032`\n\rAggSpecSort"
-  "ed\022O\n\007columns\030\001 \003(\0132>.io.deephaven.proto"
-  ".backplane.grpc.AggSpec.AggSpecSortedCol"
-  "umn\032*\n\023AggSpecSortedColumn\022\023\n\013column_nam"
-  "e\030\001 \001(\t\032:\n\016AggSpecTDigest\022\030\n\013compression"
-  "\030\001 \001(\001H\000\210\001\001B\016\n\014_compression\032\210\001\n\rAggSpecU"
-  "nique\022\025\n\rinclude_nulls\030\001 \001(\010\022`\n\023non_uniq"
-  "ue_sentinel\030\002 \001(\0132C.io.deephaven.proto.b"
-  "ackplane.grpc.AggSpec.AggSpecNonUniqueSe"
-  "ntinel\032\265\002\n\030AggSpecNonUniqueSentinel\022B\n\nn"
-  "ull_value\030\001 \001(\0162,.io.deephaven.proto.bac"
-  "kplane.grpc.NullValueH\000\022\026\n\014string_value\030"
-  "\002 \001(\tH\000\022\023\n\tint_value\030\003 \001(\021H\000\022\030\n\nlong_val"
-  "ue\030\004 \001(\022B\0020\001H\000\022\025\n\013float_value\030\005 \001(\002H\000\022\026\n"
-  "\014double_value\030\006 \001(\001H\000\022\024\n\nbool_value\030\007 \001("
-  "\010H\000\022\024\n\nbyte_value\030\010 \001(\021H\000\022\025\n\013short_value"
-  "\030\t \001(\021H\000\022\024\n\nchar_value\030\n \001(\021H\000B\006\n\004type\032("
-  "\n\017AggSpecWeighted\022\025\n\rweight_column\030\001 \001(\t"
-  "\032\017\n\rAggSpecAbsSum\032\014\n\nAggSpecAvg\032\016\n\014AggSp"
-  "ecFirst\032\017\n\rAggSpecFreeze\032\016\n\014AggSpecGroup"
-  "\032\r\n\013AggSpecLast\032\014\n\nAggSpecMax\032\014\n\nAggSpec"
-  "Min\032\014\n\nAggSpecStd\032\014\n\nAggSpecSum\032\014\n\nAggSp"
-  "ecVarB\006\n\004type\"\334\002\n\020AggregateRequest\022<\n\tre"
-  "sult_id\030\001 \001(\0132).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io"
-  ".deephaven.proto.backplane.grpc.TableRef"
-  "erence\022L\n\021initial_groups_id\030\003 \001(\01321.io.d"
-  "eephaven.proto.backplane.grpc.TableRefer"
-  "ence\022\026\n\016preserve_empty\030\004 \001(\010\022D\n\014aggregat"
-  "ions\030\005 \003(\0132..io.deephaven.proto.backplan"
-  "e.grpc.Aggregation\022\030\n\020group_by_columns\030\006"
-  " \003(\t\"\323\005\n\013Aggregation\022T\n\007columns\030\001 \001(\0132A."
-  "io.deephaven.proto.backplane.grpc.Aggreg"
-  "ation.AggregationColumnsH\000\022P\n\005count\030\002 \001("
-  "\0132\?.io.deephaven.proto.backplane.grpc.Ag"
-  "gregation.AggregationCountH\000\022Y\n\rfirst_ro"
-  "w_key\030\003 \001(\0132@.io.deephaven.proto.backpla"
-  "ne.grpc.Aggregation.AggregationRowKeyH\000\022"
-  "X\n\014last_row_key\030\004 \001(\0132@.io.deephaven.pro"
-  "to.backplane.grpc.Aggregation.Aggregatio"
-  "nRowKeyH\000\022X\n\tpartition\030\005 \001(\0132C.io.deepha"
-  "ven.proto.backplane.grpc.Aggregation.Agg"
-  "regationPartitionH\000\032c\n\022AggregationColumn"
-  "s\0228\n\004spec\030\001 \001(\0132*.io.deephaven.proto.bac"
-  "kplane.grpc.AggSpec\022\023\n\013match_pairs\030\002 \003(\t"
-  "\032\'\n\020AggregationCount\022\023\n\013column_name\030\001 \001("
-  "\t\032(\n\021AggregationRowKey\022\023\n\013column_name\030\001 "
-  "\001(\t\032M\n\024AggregationPartition\022\023\n\013column_na"
-  "me\030\001 \001(\t\022 \n\030include_group_by_columns\030\002 \001"
-  "(\010B\006\n\004type\"\341\001\n\016SortDescriptor\022\023\n\013column_"
-  "name\030\001 \001(\t\022\023\n\013is_absolute\030\002 \001(\010\022R\n\tdirec"
-  "tion\030\003 \001(\0162\?.io.deephaven.proto.backplan"
-  "e.grpc.SortDescriptor.SortDirection\"Q\n\rS"
-  "ortDirection\022\013\n\007UNKNOWN\020\000\022\027\n\nDESCENDING\020"
-  "\377\377\377\377\377\377\377\377\377\001\022\r\n\tASCENDING\020\001\022\013\n\007REVERSE\020\002\"\330"
-  "\001\n\020SortTableRequest\022<\n\tresult_id\030\001 \001(\0132)"
-  ".io.deephaven.proto.backplane.grpc.Ticke"
-  "t\022D\n\tsource_id\030\002 \001(\01321.io.deephaven.prot"
-  "o.backplane.grpc.TableReference\022@\n\005sorts"
-  "\030\003 \003(\01321.io.deephaven.proto.backplane.gr"
-  "pc.SortDescriptor\"\327\001\n\022FilterTableRequest"
-  "\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto"
-  ".backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001("
-  "\01321.io.deephaven.proto.backplane.grpc.Ta"
-  "bleReference\022=\n\007filters\030\003 \003(\0132,.io.deeph"
-  "aven.proto.backplane.grpc.Condition\"\371\001\n\016"
-  "SeekRowRequest\022<\n\tsource_id\030\001 \001(\0132).io.d"
-  "eephaven.proto.backplane.grpc.Ticket\022\030\n\014"
-  "starting_row\030\002 \001(\022B\0020\001\022\023\n\013column_name\030\003 "
-  "\001(\t\022>\n\nseek_value\030\004 \001(\0132*.io.deephaven.p"
-  "roto.backplane.grpc.Literal\022\023\n\013insensiti"
-  "ve\030\005 \001(\010\022\020\n\010contains\030\006 \001(\010\022\023\n\013is_backwar"
-  "d\030\007 \001(\010\")\n\017SeekRowResponse\022\026\n\nresult_row"
-  "\030\001 \001(\022B\0020\001\" \n\tReference\022\023\n\013column_name\030\001"
-  " \001(\t\"\221\001\n\007Literal\022\026\n\014string_value\030\001 \001(\tH\000"
-  "\022\026\n\014double_value\030\002 \001(\001H\000\022\024\n\nbool_value\030\003"
-  " \001(\010H\000\022\030\n\nlong_value\030\004 \001(\022B\0020\001H\000\022\035\n\017nano"
-  "_time_value\030\005 \001(\022B\0020\001H\000B\007\n\005value\"\221\001\n\005Val"
-  "ue\022A\n\treference\030\001 \001(\0132,.io.deephaven.pro"
-  "to.backplane.grpc.ReferenceH\000\022=\n\007literal"
-  "\030\002 \001(\0132*.io.deephaven.proto.backplane.gr"
-  "pc.LiteralH\000B\006\n\004data\"\274\005\n\tCondition\022>\n\003an"
-  "d\030\001 \001(\0132/.io.deephaven.proto.backplane.g"
-  "rpc.AndConditionH\000\022<\n\002or\030\002 \001(\0132..io.deep"
-  "haven.proto.backplane.grpc.OrConditionH\000"
-  "\022>\n\003not\030\003 \001(\0132/.io.deephaven.proto.backp"
-  "lane.grpc.NotConditionH\000\022F\n\007compare\030\004 \001("
-  "\01323.io.deephaven.proto.backplane.grpc.Co"
-  "mpareConditionH\000\022<\n\002in\030\005 \001(\0132..io.deepha"
-  "ven.proto.backplane.grpc.InConditionH\000\022D"
-  "\n\006invoke\030\006 \001(\01322.io.deephaven.proto.back"
-  "plane.grpc.InvokeConditionH\000\022E\n\007is_null\030"
-  "\007 \001(\01322.io.deephaven.proto.backplane.grp"
-  "c.IsNullConditionH\000\022F\n\007matches\030\010 \001(\01323.i"
-  "o.deephaven.proto.backplane.grpc.Matches"
-  "ConditionH\000\022H\n\010contains\030\t \001(\01324.io.deeph"
-  "aven.proto.backplane.grpc.ContainsCondit"
-  "ionH\000\022D\n\006search\030\n \001(\01322.io.deephaven.pro"
-  "to.backplane.grpc.SearchConditionH\000B\006\n\004d"
-  "ata\"M\n\014AndCondition\022=\n\007filters\030\001 \003(\0132,.i"
-  "o.deephaven.proto.backplane.grpc.Conditi"
-  "on\"L\n\013OrCondition\022=\n\007filters\030\001 \003(\0132,.io."
-  "deephaven.proto.backplane.grpc.Condition"
-  "\"L\n\014NotCondition\022<\n\006filter\030\001 \001(\0132,.io.de"
-  "ephaven.proto.backplane.grpc.Condition\"\254"
-  "\003\n\020CompareCondition\022W\n\toperation\030\001 \001(\0162D"
-  ".io.deephaven.proto.backplane.grpc.Compa"
-  "reCondition.CompareOperation\022L\n\020case_sen"
-  "sitivity\030\002 \001(\01622.io.deephaven.proto.back"
-  "plane.grpc.CaseSensitivity\0225\n\003lhs\030\003 \001(\0132"
-  "(.io.deephaven.proto.backplane.grpc.Valu"
-  "e\0225\n\003rhs\030\004 \001(\0132(.io.deephaven.proto.back"
-  "plane.grpc.Value\"\202\001\n\020CompareOperation\022\r\n"
-  "\tLESS_THAN\020\000\022\026\n\022LESS_THAN_OR_EQUAL\020\001\022\020\n\014"
-  "GREATER_THAN\020\002\022\031\n\025GREATER_THAN_OR_EQUAL\020"
-  "\003\022\n\n\006EQUALS\020\004\022\016\n\nNOT_EQUALS\020\005\"\225\002\n\013InCond"
-  "ition\0228\n\006target\030\001 \001(\0132(.io.deephaven.pro"
-  "to.backplane.grpc.Value\022<\n\ncandidates\030\002 "
-  "\003(\0132(.io.deephaven.proto.backplane.grpc."
-  "Value\022L\n\020case_sensitivity\030\003 \001(\01622.io.dee"
-  "phaven.proto.backplane.grpc.CaseSensitiv"
-  "ity\022@\n\nmatch_type\030\004 \001(\0162,.io.deephaven.p"
-  "roto.backplane.grpc.MatchType\"\230\001\n\017Invoke"
-  "Condition\022\016\n\006method\030\001 \001(\t\0228\n\006target\030\002 \001("
-  "\0132(.io.deephaven.proto.backplane.grpc.Va"
-  "lue\022;\n\targuments\030\003 \003(\0132(.io.deephaven.pr"
-  "oto.backplane.grpc.Value\"R\n\017IsNullCondit"
-  "ion\022\?\n\treference\030\001 \001(\0132,.io.deephaven.pr"
-  "oto.backplane.grpc.Reference\"\362\001\n\020Matches"
-  "Condition\022\?\n\treference\030\001 \001(\0132,.io.deepha"
-  "ven.proto.backplane.grpc.Reference\022\r\n\005re"
-  "gex\030\002 \001(\t\022L\n\020case_sensitivity\030\003 \001(\01622.io"
-  ".deephaven.proto.backplane.grpc.CaseSens"
-  "itivity\022@\n\nmatch_type\030\004 \001(\0162,.io.deephav"
-  "en.proto.backplane.grpc.MatchType\"\373\001\n\021Co"
-  "ntainsCondition\022\?\n\treference\030\001 \001(\0132,.io."
-  "deephaven.proto.backplane.grpc.Reference"
-  "\022\025\n\rsearch_string\030\002 \001(\t\022L\n\020case_sensitiv"
-  "ity\030\003 \001(\01622.io.deephaven.proto.backplane"
-  ".grpc.CaseSensitivity\022@\n\nmatch_type\030\004 \001("
-  "\0162,.io.deephaven.proto.backplane.grpc.Ma"
-  "tchType\"s\n\017SearchCondition\022\025\n\rsearch_str"
-  "ing\030\001 \001(\t\022I\n\023optional_references\030\002 \003(\0132,"
-  ".io.deephaven.proto.backplane.grpc.Refer"
-  "ence\"\224\001\n\016FlattenRequest\022<\n\tresult_id\030\001 \001"
-  "(\0132).io.deephaven.proto.backplane.grpc.T"
-  "icket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven."
-  "proto.backplane.grpc.TableReference\"\264\003\n\031"
-  "RunChartDownsampleRequest\022<\n\tresult_id\030\001"
-  " \001(\0132).io.deephaven.proto.backplane.grpc"
-  ".Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephave"
-  "n.proto.backplane.grpc.TableReference\022\023\n"
-  "\013pixel_count\030\003 \001(\005\022Z\n\nzoom_range\030\004 \001(\0132F"
-  ".io.deephaven.proto.backplane.grpc.RunCh"
-  "artDownsampleRequest.ZoomRange\022\025\n\rx_colu"
-  "mn_name\030\005 \001(\t\022\026\n\016y_column_names\030\006 \003(\t\032s\n"
-  "\tZoomRange\022\037\n\016min_date_nanos\030\001 \001(\003B\0020\001H\000"
-  "\210\001\001\022\037\n\016max_date_nanos\030\002 \001(\003B\0020\001H\001\210\001\001B\021\n\017"
-  "_min_date_nanosB\021\n\017_max_date_nanos\"\365\004\n\027C"
-  "reateInputTableRequest\022<\n\tresult_id\030\001 \001("
-  "\0132).io.deephaven.proto.backplane.grpc.Ti"
-  "cket\022L\n\017source_table_id\030\002 \001(\01321.io.deeph"
-  "aven.proto.backplane.grpc.TableReference"
-  "H\000\022\020\n\006schema\030\003 \001(\014H\000\022W\n\004kind\030\004 \001(\0132I.io."
-  "deephaven.proto.backplane.grpc.CreateInp"
-  "utTableRequest.InputTableKind\032\324\002\n\016InputT"
-  "ableKind\022}\n\025in_memory_append_only\030\001 \001(\0132"
-  "\\.io.deephaven.proto.backplane.grpc.Crea"
-  "teInputTableRequest.InputTableKind.InMem"
-  "oryAppendOnlyH\000\022{\n\024in_memory_key_backed\030"
-  "\002 \001(\0132[.io.deephaven.proto.backplane.grp"
-  "c.CreateInputTableRequest.InputTableKind"
-  ".InMemoryKeyBackedH\000\032\024\n\022InMemoryAppendOn"
-  "ly\032(\n\021InMemoryKeyBacked\022\023\n\013key_columns\030\001"
-  " \003(\tB\006\n\004kindB\014\n\ndefinition\"\203\002\n\016WhereInRe"
-  "quest\022<\n\tresult_id\030\001 \001(\0132).io.deephaven."
-  "proto.backplane.grpc.Ticket\022B\n\007left_id\030\002"
-  " \001(\01321.io.deephaven.proto.backplane.grpc"
-  ".TableReference\022C\n\010right_id\030\003 \001(\01321.io.d"
-  "eephaven.proto.backplane.grpc.TableRefer"
-  "ence\022\020\n\010inverted\030\004 \001(\010\022\030\n\020columns_to_mat"
-  "ch\030\005 \003(\t\"\304\026\n\021BatchTableRequest\022K\n\003ops\030\001 "
-  "\003(\0132>.io.deephaven.proto.backplane.grpc."
-  "BatchTableRequest.Operation\032\341\025\n\tOperatio"
-  "n\022K\n\013empty_table\030\001 \001(\01324.io.deephaven.pr"
-  "oto.backplane.grpc.EmptyTableRequestH\000\022I"
-  "\n\ntime_table\030\002 \001(\01323.io.deephaven.proto."
-  "backplane.grpc.TimeTableRequestH\000\022M\n\014dro"
-  "p_columns\030\003 \001(\01325.io.deephaven.proto.bac"
-  "kplane.grpc.DropColumnsRequestH\000\022J\n\006upda"
-  "te\030\004 \001(\01328.io.deephaven.proto.backplane."
-  "grpc.SelectOrUpdateRequestH\000\022O\n\013lazy_upd"
-  "ate\030\005 \001(\01328.io.deephaven.proto.backplane"
-  ".grpc.SelectOrUpdateRequestH\000\022H\n\004view\030\006 "
-  "\001(\01328.io.deephaven.proto.backplane.grpc."
-  "SelectOrUpdateRequestH\000\022O\n\013update_view\030\007"
-  " \001(\01328.io.deephaven.proto.backplane.grpc"
-  ".SelectOrUpdateRequestH\000\022J\n\006select\030\010 \001(\013"
-  "28.io.deephaven.proto.backplane.grpc.Sel"
-  "ectOrUpdateRequestH\000\022S\n\017select_distinct\030"
-  "\t \001(\01328.io.deephaven.proto.backplane.grp"
-  "c.SelectDistinctRequestH\000\022G\n\006filter\030\n \001("
-  "\01325.io.deephaven.proto.backplane.grpc.Fi"
-  "lterTableRequestH\000\022`\n\023unstructured_filte"
-  "r\030\013 \001(\0132A.io.deephaven.proto.backplane.g"
-  "rpc.UnstructuredFilterTableRequestH\000\022C\n\004"
-  "sort\030\014 \001(\01323.io.deephaven.proto.backplan"
-  "e.grpc.SortTableRequestH\000\022D\n\004head\030\r \001(\0132"
-  "4.io.deephaven.proto.backplane.grpc.Head"
-  "OrTailRequestH\000\022D\n\004tail\030\016 \001(\01324.io.deeph"
-  "aven.proto.backplane.grpc.HeadOrTailRequ"
-  "estH\000\022I\n\007head_by\030\017 \001(\01326.io.deephaven.pr"
-  "oto.backplane.grpc.HeadOrTailByRequestH\000"
-  "\022I\n\007tail_by\030\020 \001(\01326.io.deephaven.proto.b"
-  "ackplane.grpc.HeadOrTailByRequestH\000\022D\n\007u"
-  "ngroup\030\021 \001(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.UngroupRequestH\000\022F\n\005merge\030\022 \001(\013"
-  "25.io.deephaven.proto.backplane.grpc.Mer"
-  "geTablesRequestH\000\022S\n\017combo_aggregate\030\023 \001"
-  "(\01328.io.deephaven.proto.backplane.grpc.C"
-  "omboAggregateRequestH\000\022D\n\007flatten\030\025 \001(\0132"
-  "1.io.deephaven.proto.backplane.grpc.Flat"
-  "tenRequestH\000\022\\\n\024run_chart_downsample\030\026 \001"
-  "(\0132<.io.deephaven.proto.backplane.grpc.R"
-  "unChartDownsampleRequestH\000\022O\n\ncross_join"
-  "\030\027 \001(\01329.io.deephaven.proto.backplane.gr"
-  "pc.CrossJoinTablesRequestH\000\022S\n\014natural_j"
-  "oin\030\030 \001(\0132;.io.deephaven.proto.backplane"
-  ".grpc.NaturalJoinTablesRequestH\000\022O\n\nexac"
-  "t_join\030\031 \001(\01329.io.deephaven.proto.backpl"
-  "ane.grpc.ExactJoinTablesRequestH\000\022M\n\tlef"
-  "t_join\030\032 \001(\01328.io.deephaven.proto.backpl"
-  "ane.grpc.LeftJoinTablesRequestH\000\022N\n\nas_o"
-  "f_join\030\033 \001(\01328.io.deephaven.proto.backpl"
-  "ane.grpc.AsOfJoinTablesRequestH\000\022K\n\013fetc"
-  "h_table\030\034 \001(\01324.io.deephaven.proto.backp"
-  "lane.grpc.FetchTableRequestH\000\022^\n\025apply_p"
-  "review_columns\030\036 \001(\0132=.io.deephaven.prot"
-  "o.backplane.grpc.ApplyPreviewColumnsRequ"
-  "estH\000\022X\n\022create_input_table\030\037 \001(\0132:.io.d"
-  "eephaven.proto.backplane.grpc.CreateInpu"
-  "tTableRequestH\000\022G\n\tupdate_by\030  \001(\01322.io."
-  "deephaven.proto.backplane.grpc.UpdateByR"
-  "equestH\000\022E\n\010where_in\030! \001(\01321.io.deephave"
-  "n.proto.backplane.grpc.WhereInRequestH\000\022"
-  "O\n\raggregate_all\030\" \001(\01326.io.deephaven.pr"
-  "oto.backplane.grpc.AggregateAllRequestH\000"
-  "\022H\n\taggregate\030# \001(\01323.io.deephaven.proto"
-  ".backplane.grpc.AggregateRequestH\000\022K\n\010sn"
-  "apshot\030$ \001(\01327.io.deephaven.proto.backpl"
-  "ane.grpc.SnapshotTableRequestH\000\022T\n\rsnaps"
-  "hot_when\030% \001(\0132;.io.deephaven.proto.back"
-  "plane.grpc.SnapshotWhenTableRequestH\000B\004\n"
-  "\002opJ\004\010\024\020\025J\004\010\035\020\036*=\n\017BadDataBehavior\022\t\n\005TH"
-  "ROW\020\000\022\t\n\005RESET\020\001\022\010\n\004SKIP\020\002\022\n\n\006POISON\020\003*\033"
-  "\n\tNullValue\022\016\n\nNULL_VALUE\020\000*2\n\017CaseSensi"
-  "tivity\022\016\n\nMATCH_CASE\020\000\022\017\n\013IGNORE_CASE\020\001*"
-  "&\n\tMatchType\022\013\n\007REGULAR\020\000\022\014\n\010INVERTED\020\0012"
-  "\336*\n\014TableService\022\221\001\n GetExportedTableCre"
-  "ationResponse\022).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\032@.io.deephaven.proto.ba"
-  "ckplane.grpc.ExportedTableCreationRespon"
-  "se\"\000\022\206\001\n\nFetchTable\0224.io.deephaven.proto"
-  ".backplane.grpc.FetchTableRequest\032@.io.d"
-  "eephaven.proto.backplane.grpc.ExportedTa"
-  "bleCreationResponse\"\000\022\230\001\n\023ApplyPreviewCo"
-  "lumns\022=.io.deephaven.proto.backplane.grp"
-  "c.ApplyPreviewColumnsRequest\032@.io.deepha"
-  "ven.proto.backplane.grpc.ExportedTableCr"
-  "eationResponse\"\000\022\206\001\n\nEmptyTable\0224.io.dee"
-  "phaven.proto.backplane.grpc.EmptyTableRe"
-  "quest\032@.io.deephaven.proto.backplane.grp"
-  "c.ExportedTableCreationResponse\"\000\022\204\001\n\tTi"
-  "meTable\0223.io.deephaven.proto.backplane.g"
-  "rpc.TimeTableRequest\032@.io.deephaven.prot"
-  "o.backplane.grpc.ExportedTableCreationRe"
-  "sponse\"\000\022\210\001\n\013DropColumns\0225.io.deephaven."
-  "proto.backplane.grpc.DropColumnsRequest\032"
-  "@.io.deephaven.proto.backplane.grpc.Expo"
-  "rtedTableCreationResponse\"\000\022\206\001\n\006Update\0228"
-  ".io.deephaven.proto.backplane.grpc.Selec"
-  "tOrUpdateRequest\032@.io.deephaven.proto.ba"
-  "ckplane.grpc.ExportedTableCreationRespon"
-  "se\"\000\022\212\001\n\nLazyUpdate\0228.io.deephaven.proto"
-  ".backplane.grpc.SelectOrUpdateRequest\032@."
+  "pc.TableReference\022\020\n\010inverted\030\004 \001(\010\022\030\n\020c"
+  "olumns_to_match\030\005 \003(\t\"\340\027\n\021BatchTableRequ"
+  "est\022K\n\003ops\030\001 \003(\0132>.io.deephaven.proto.ba"
+  "ckplane.grpc.BatchTableRequest.Operation"
+  "\032\375\026\n\tOperation\022K\n\013empty_table\030\001 \001(\01324.io"
+  ".deephaven.proto.backplane.grpc.EmptyTab"
+  "leRequestH\000\022I\n\ntime_table\030\002 \001(\01323.io.dee"
+  "phaven.proto.backplane.grpc.TimeTableReq"
+  "uestH\000\022M\n\014drop_columns\030\003 \001(\01325.io.deepha"
+  "ven.proto.backplane.grpc.DropColumnsRequ"
+  "estH\000\022J\n\006update\030\004 \001(\01328.io.deephaven.pro"
+  "to.backplane.grpc.SelectOrUpdateRequestH"
+  "\000\022O\n\013lazy_update\030\005 \001(\01328.io.deephaven.pr"
+  "oto.backplane.grpc.SelectOrUpdateRequest"
+  "H\000\022H\n\004view\030\006 \001(\01328.io.deephaven.proto.ba"
+  "ckplane.grpc.SelectOrUpdateRequestH\000\022O\n\013"
+  "update_view\030\007 \001(\01328.io.deephaven.proto.b"
+  "ackplane.grpc.SelectOrUpdateRequestH\000\022J\n"
+  "\006select\030\010 \001(\01328.io.deephaven.proto.backp"
+  "lane.grpc.SelectOrUpdateRequestH\000\022S\n\017sel"
+  "ect_distinct\030\t \001(\01328.io.deephaven.proto."
+  "backplane.grpc.SelectDistinctRequestH\000\022G"
+  "\n\006filter\030\n \001(\01325.io.deephaven.proto.back"
+  "plane.grpc.FilterTableRequestH\000\022`\n\023unstr"
+  "uctured_filter\030\013 \001(\0132A.io.deephaven.prot"
+  "o.backplane.grpc.UnstructuredFilterTable"
+  "RequestH\000\022C\n\004sort\030\014 \001(\01323.io.deephaven.p"
+  "roto.backplane.grpc.SortTableRequestH\000\022D"
+  "\n\004head\030\r \001(\01324.io.deephaven.proto.backpl"
+  "ane.grpc.HeadOrTailRequestH\000\022D\n\004tail\030\016 \001"
+  "(\01324.io.deephaven.proto.backplane.grpc.H"
+  "eadOrTailRequestH\000\022I\n\007head_by\030\017 \001(\01326.io"
+  ".deephaven.proto.backplane.grpc.HeadOrTa"
+  "ilByRequestH\000\022I\n\007tail_by\030\020 \001(\01326.io.deep"
+  "haven.proto.backplane.grpc.HeadOrTailByR"
+  "equestH\000\022D\n\007ungroup\030\021 \001(\01321.io.deephaven"
+  ".proto.backplane.grpc.UngroupRequestH\000\022F"
+  "\n\005merge\030\022 \001(\01325.io.deephaven.proto.backp"
+  "lane.grpc.MergeTablesRequestH\000\022S\n\017combo_"
+  "aggregate\030\023 \001(\01328.io.deephaven.proto.bac"
+  "kplane.grpc.ComboAggregateRequestH\000\022D\n\007f"
+  "latten\030\025 \001(\01321.io.deephaven.proto.backpl"
+  "ane.grpc.FlattenRequestH\000\022\\\n\024run_chart_d"
+  "ownsample\030\026 \001(\0132<.io.deephaven.proto.bac"
+  "kplane.grpc.RunChartDownsampleRequestH\000\022"
+  "O\n\ncross_join\030\027 \001(\01329.io.deephaven.proto"
+  ".backplane.grpc.CrossJoinTablesRequestH\000"
+  "\022S\n\014natural_join\030\030 \001(\0132;.io.deephaven.pr"
+  "oto.backplane.grpc.NaturalJoinTablesRequ"
+  "estH\000\022O\n\nexact_join\030\031 \001(\01329.io.deephaven"
+  ".proto.backplane.grpc.ExactJoinTablesReq"
+  "uestH\000\022M\n\tleft_join\030\032 \001(\01328.io.deephaven"
+  ".proto.backplane.grpc.LeftJoinTablesRequ"
+  "estH\000\022N\n\nas_of_join\030\033 \001(\01328.io.deephaven"
+  ".proto.backplane.grpc.AsOfJoinTablesRequ"
+  "estH\000\022K\n\013fetch_table\030\034 \001(\01324.io.deephave"
+  "n.proto.backplane.grpc.FetchTableRequest"
+  "H\000\022^\n\025apply_preview_columns\030\036 \001(\0132=.io.d"
+  "eephaven.proto.backplane.grpc.ApplyPrevi"
+  "ewColumnsRequestH\000\022X\n\022create_input_table"
+  "\030\037 \001(\0132:.io.deephaven.proto.backplane.gr"
+  "pc.CreateInputTableRequestH\000\022G\n\tupdate_b"
+  "y\030  \001(\01322.io.deephaven.proto.backplane.g"
+  "rpc.UpdateByRequestH\000\022E\n\010where_in\030! \001(\0132"
+  "1.io.deephaven.proto.backplane.grpc.Wher"
+  "eInRequestH\000\022O\n\raggregate_all\030\" \001(\01326.io"
+  ".deephaven.proto.backplane.grpc.Aggregat"
+  "eAllRequestH\000\022H\n\taggregate\030# \001(\01323.io.de"
+  "ephaven.proto.backplane.grpc.AggregateRe"
+  "questH\000\022K\n\010snapshot\030$ \001(\01327.io.deephaven"
+  ".proto.backplane.grpc.SnapshotTableReque"
+  "stH\000\022T\n\rsnapshot_when\030% \001(\0132;.io.deephav"
+  "en.proto.backplane.grpc.SnapshotWhenTabl"
+  "eRequestH\000\022I\n\nmeta_table\030& \001(\01323.io.deep"
+  "haven.proto.backplane.grpc.MetaTableRequ"
+  "estH\000\022O\n\nrange_join\030\' \001(\01329.io.deephaven"
+  ".proto.backplane.grpc.RangeJoinTablesReq"
+  "uestH\000B\004\n\002opJ\004\010\024\020\025J\004\010\035\020\036*=\n\017BadDataBehav"
+  "ior\022\t\n\005THROW\020\000\022\t\n\005RESET\020\001\022\010\n\004SKIP\020\002\022\n\n\006P"
+  "OISON\020\003*\033\n\tNullValue\022\016\n\nNULL_VALUE\020\000*2\n\017"
+  "CaseSensitivity\022\016\n\nMATCH_CASE\020\000\022\017\n\013IGNOR"
+  "E_CASE\020\001*&\n\tMatchType\022\013\n\007REGULAR\020\000\022\014\n\010IN"
+  "VERTED\020\0012\370,\n\014TableService\022\221\001\n GetExporte"
+  "dTableCreationResponse\022).io.deephaven.pr"
+  "oto.backplane.grpc.Ticket\032@.io.deephaven"
+  ".proto.backplane.grpc.ExportedTableCreat"
+  "ionResponse\"\000\022\206\001\n\nFetchTable\0224.io.deepha"
+  "ven.proto.backplane.grpc.FetchTableReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\230\001\n\023Apply"
+  "PreviewColumns\022=.io.deephaven.proto.back"
+  "plane.grpc.ApplyPreviewColumnsRequest\032@."
   "io.deephaven.proto.backplane.grpc.Export"
-  "edTableCreationResponse\"\000\022\204\001\n\004View\0228.io."
-  "deephaven.proto.backplane.grpc.SelectOrU"
-  "pdateRequest\032@.io.deephaven.proto.backpl"
-  "ane.grpc.ExportedTableCreationResponse\"\000"
-  "\022\212\001\n\nUpdateView\0228.io.deephaven.proto.bac"
-  "kplane.grpc.SelectOrUpdateRequest\032@.io.d"
-  "eephaven.proto.backplane.grpc.ExportedTa"
-  "bleCreationResponse\"\000\022\206\001\n\006Select\0228.io.de"
-  "ephaven.proto.backplane.grpc.SelectOrUpd"
-  "ateRequest\032@.io.deephaven.proto.backplan"
-  "e.grpc.ExportedTableCreationResponse\"\000\022\202"
-  "\001\n\010UpdateBy\0222.io.deephaven.proto.backpla"
-  "ne.grpc.UpdateByRequest\032@.io.deephaven.p"
-  "roto.backplane.grpc.ExportedTableCreatio"
-  "nResponse\"\000\022\216\001\n\016SelectDistinct\0228.io.deep"
-  "haven.proto.backplane.grpc.SelectDistinc"
-  "tRequest\032@.io.deephaven.proto.backplane."
-  "grpc.ExportedTableCreationResponse\"\000\022\203\001\n"
-  "\006Filter\0225.io.deephaven.proto.backplane.g"
-  "rpc.FilterTableRequest\032@.io.deephaven.pr"
-  "oto.backplane.grpc.ExportedTableCreation"
-  "Response\"\000\022\233\001\n\022UnstructuredFilter\022A.io.d"
-  "eephaven.proto.backplane.grpc.Unstructur"
-  "edFilterTableRequest\032@.io.deephaven.prot"
-  "o.backplane.grpc.ExportedTableCreationRe"
-  "sponse\"\000\022\177\n\004Sort\0223.io.deephaven.proto.ba"
-  "ckplane.grpc.SortTableRequest\032@.io.deeph"
+  "edTableCreationResponse\"\000\022\206\001\n\nEmptyTable"
+  "\0224.io.deephaven.proto.backplane.grpc.Emp"
+  "tyTableRequest\032@.io.deephaven.proto.back"
+  "plane.grpc.ExportedTableCreationResponse"
+  "\"\000\022\204\001\n\tTimeTable\0223.io.deephaven.proto.ba"
+  "ckplane.grpc.TimeTableRequest\032@.io.deeph"
   "aven.proto.backplane.grpc.ExportedTableC"
-  "reationResponse\"\000\022\200\001\n\004Head\0224.io.deephave"
-  "n.proto.backplane.grpc.HeadOrTailRequest"
-  "\032@.io.deephaven.proto.backplane.grpc.Exp"
-  "ortedTableCreationResponse\"\000\022\200\001\n\004Tail\0224."
-  "io.deephaven.proto.backplane.grpc.HeadOr"
-  "TailRequest\032@.io.deephaven.proto.backpla"
-  "ne.grpc.ExportedTableCreationResponse\"\000\022"
-  "\204\001\n\006HeadBy\0226.io.deephaven.proto.backplan"
-  "e.grpc.HeadOrTailByRequest\032@.io.deephave"
-  "n.proto.backplane.grpc.ExportedTableCrea"
-  "tionResponse\"\000\022\204\001\n\006TailBy\0226.io.deephaven"
-  ".proto.backplane.grpc.HeadOrTailByReques"
-  "t\032@.io.deephaven.proto.backplane.grpc.Ex"
-  "portedTableCreationResponse\"\000\022\200\001\n\007Ungrou"
-  "p\0221.io.deephaven.proto.backplane.grpc.Un"
-  "groupRequest\032@.io.deephaven.proto.backpl"
-  "ane.grpc.ExportedTableCreationResponse\"\000"
-  "\022\210\001\n\013MergeTables\0225.io.deephaven.proto.ba"
-  "ckplane.grpc.MergeTablesRequest\032@.io.dee"
-  "phaven.proto.backplane.grpc.ExportedTabl"
-  "eCreationResponse\"\000\022\220\001\n\017CrossJoinTables\022"
-  "9.io.deephaven.proto.backplane.grpc.Cros"
-  "sJoinTablesRequest\032@.io.deephaven.proto."
-  "backplane.grpc.ExportedTableCreationResp"
-  "onse\"\000\022\224\001\n\021NaturalJoinTables\022;.io.deepha"
-  "ven.proto.backplane.grpc.NaturalJoinTabl"
-  "esRequest\032@.io.deephaven.proto.backplane"
-  ".grpc.ExportedTableCreationResponse\"\000\022\220\001"
-  "\n\017ExactJoinTables\0229.io.deephaven.proto.b"
-  "ackplane.grpc.ExactJoinTablesRequest\032@.i"
-  "o.deephaven.proto.backplane.grpc.Exporte"
-  "dTableCreationResponse\"\000\022\216\001\n\016LeftJoinTab"
-  "les\0228.io.deephaven.proto.backplane.grpc."
-  "LeftJoinTablesRequest\032@.io.deephaven.pro"
-  "to.backplane.grpc.ExportedTableCreationR"
-  "esponse\"\000\022\216\001\n\016AsOfJoinTables\0228.io.deepha"
-  "ven.proto.backplane.grpc.AsOfJoinTablesR"
+  "reationResponse\"\000\022\210\001\n\013DropColumns\0225.io.d"
+  "eephaven.proto.backplane.grpc.DropColumn"
+  "sRequest\032@.io.deephaven.proto.backplane."
+  "grpc.ExportedTableCreationResponse\"\000\022\206\001\n"
+  "\006Update\0228.io.deephaven.proto.backplane.g"
+  "rpc.SelectOrUpdateRequest\032@.io.deephaven"
+  ".proto.backplane.grpc.ExportedTableCreat"
+  "ionResponse\"\000\022\212\001\n\nLazyUpdate\0228.io.deepha"
+  "ven.proto.backplane.grpc.SelectOrUpdateR"
   "equest\032@.io.deephaven.proto.backplane.gr"
-  "pc.ExportedTableCreationResponse\"\000\022\221\001\n\016C"
-  "omboAggregate\0228.io.deephaven.proto.backp"
-  "lane.grpc.ComboAggregateRequest\032@.io.dee"
+  "pc.ExportedTableCreationResponse\"\000\022\204\001\n\004V"
+  "iew\0228.io.deephaven.proto.backplane.grpc."
+  "SelectOrUpdateRequest\032@.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableCreationR"
+  "esponse\"\000\022\212\001\n\nUpdateView\0228.io.deephaven."
+  "proto.backplane.grpc.SelectOrUpdateReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\206\001\n\006Selec"
+  "t\0228.io.deephaven.proto.backplane.grpc.Se"
+  "lectOrUpdateRequest\032@.io.deephaven.proto"
+  ".backplane.grpc.ExportedTableCreationRes"
+  "ponse\"\000\022\202\001\n\010UpdateBy\0222.io.deephaven.prot"
+  "o.backplane.grpc.UpdateByRequest\032@.io.de"
+  "ephaven.proto.backplane.grpc.ExportedTab"
+  "leCreationResponse\"\000\022\216\001\n\016SelectDistinct\022"
+  "8.io.deephaven.proto.backplane.grpc.Sele"
+  "ctDistinctRequest\032@.io.deephaven.proto.b"
+  "ackplane.grpc.ExportedTableCreationRespo"
+  "nse\"\000\022\203\001\n\006Filter\0225.io.deephaven.proto.ba"
+  "ckplane.grpc.FilterTableRequest\032@.io.dee"
   "phaven.proto.backplane.grpc.ExportedTabl"
-  "eCreationResponse\"\003\210\002\001\022\212\001\n\014AggregateAll\022"
-  "6.io.deephaven.proto.backplane.grpc.Aggr"
-  "egateAllRequest\032@.io.deephaven.proto.bac"
-  "kplane.grpc.ExportedTableCreationRespons"
-  "e\"\000\022\204\001\n\tAggregate\0223.io.deephaven.proto.b"
-  "ackplane.grpc.AggregateRequest\032@.io.deep"
-  "haven.proto.backplane.grpc.ExportedTable"
-  "CreationResponse\"\000\022\207\001\n\010Snapshot\0227.io.dee"
-  "phaven.proto.backplane.grpc.SnapshotTabl"
-  "eRequest\032@.io.deephaven.proto.backplane."
-  "grpc.ExportedTableCreationResponse\"\000\022\217\001\n"
-  "\014SnapshotWhen\022;.io.deephaven.proto.backp"
-  "lane.grpc.SnapshotWhenTableRequest\032@.io."
-  "deephaven.proto.backplane.grpc.ExportedT"
-  "ableCreationResponse\"\000\022\200\001\n\007Flatten\0221.io."
-  "deephaven.proto.backplane.grpc.FlattenRe"
-  "quest\032@.io.deephaven.proto.backplane.grp"
-  "c.ExportedTableCreationResponse\"\000\022\226\001\n\022Ru"
-  "nChartDownsample\022<.io.deephaven.proto.ba"
-  "ckplane.grpc.RunChartDownsampleRequest\032@"
+  "eCreationResponse\"\000\022\233\001\n\022UnstructuredFilt"
+  "er\022A.io.deephaven.proto.backplane.grpc.U"
+  "nstructuredFilterTableRequest\032@.io.deeph"
+  "aven.proto.backplane.grpc.ExportedTableC"
+  "reationResponse\"\000\022\177\n\004Sort\0223.io.deephaven"
+  ".proto.backplane.grpc.SortTableRequest\032@"
   ".io.deephaven.proto.backplane.grpc.Expor"
-  "tedTableCreationResponse\"\000\022\222\001\n\020CreateInp"
-  "utTable\022:.io.deephaven.proto.backplane.g"
-  "rpc.CreateInputTableRequest\032@.io.deephav"
+  "tedTableCreationResponse\"\000\022\200\001\n\004Head\0224.io"
+  ".deephaven.proto.backplane.grpc.HeadOrTa"
+  "ilRequest\032@.io.deephaven.proto.backplane"
+  ".grpc.ExportedTableCreationResponse\"\000\022\200\001"
+  "\n\004Tail\0224.io.deephaven.proto.backplane.gr"
+  "pc.HeadOrTailRequest\032@.io.deephaven.prot"
+  "o.backplane.grpc.ExportedTableCreationRe"
+  "sponse\"\000\022\204\001\n\006HeadBy\0226.io.deephaven.proto"
+  ".backplane.grpc.HeadOrTailByRequest\032@.io"
+  ".deephaven.proto.backplane.grpc.Exported"
+  "TableCreationResponse\"\000\022\204\001\n\006TailBy\0226.io."
+  "deephaven.proto.backplane.grpc.HeadOrTai"
+  "lByRequest\032@.io.deephaven.proto.backplan"
+  "e.grpc.ExportedTableCreationResponse\"\000\022\200"
+  "\001\n\007Ungroup\0221.io.deephaven.proto.backplan"
+  "e.grpc.UngroupRequest\032@.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableCreationR"
+  "esponse\"\000\022\210\001\n\013MergeTables\0225.io.deephaven"
+  ".proto.backplane.grpc.MergeTablesRequest"
+  "\032@.io.deephaven.proto.backplane.grpc.Exp"
+  "ortedTableCreationResponse\"\000\022\220\001\n\017CrossJo"
+  "inTables\0229.io.deephaven.proto.backplane."
+  "grpc.CrossJoinTablesRequest\032@.io.deephav"
   "en.proto.backplane.grpc.ExportedTableCre"
-  "ationResponse\"\000\022\200\001\n\007WhereIn\0221.io.deephav"
-  "en.proto.backplane.grpc.WhereInRequest\032@"
-  ".io.deephaven.proto.backplane.grpc.Expor"
-  "tedTableCreationResponse\"\000\022\203\001\n\005Batch\0224.i"
-  "o.deephaven.proto.backplane.grpc.BatchTa"
-  "bleRequest\032@.io.deephaven.proto.backplan"
-  "e.grpc.ExportedTableCreationResponse\"\0000\001"
-  "\022\231\001\n\024ExportedTableUpdates\022>.io.deephaven"
-  ".proto.backplane.grpc.ExportedTableUpdat"
-  "esRequest\032=.io.deephaven.proto.backplane"
-  ".grpc.ExportedTableUpdateMessage\"\0000\001\022r\n\007"
-  "SeekRow\0221.io.deephaven.proto.backplane.g"
-  "rpc.SeekRowRequest\0322.io.deephaven.proto."
-  "backplane.grpc.SeekRowResponse\"\000BAH\001P\001Z;"
-  "github.com/deephaven/deephaven-core/go/i"
-  "nternal/proto/tableb\006proto3"
+  "ationResponse\"\000\022\224\001\n\021NaturalJoinTables\022;."
+  "io.deephaven.proto.backplane.grpc.Natura"
+  "lJoinTablesRequest\032@.io.deephaven.proto."
+  "backplane.grpc.ExportedTableCreationResp"
+  "onse\"\000\022\220\001\n\017ExactJoinTables\0229.io.deephave"
+  "n.proto.backplane.grpc.ExactJoinTablesRe"
+  "quest\032@.io.deephaven.proto.backplane.grp"
+  "c.ExportedTableCreationResponse\"\000\022\216\001\n\016Le"
+  "ftJoinTables\0228.io.deephaven.proto.backpl"
+  "ane.grpc.LeftJoinTablesRequest\032@.io.deep"
+  "haven.proto.backplane.grpc.ExportedTable"
+  "CreationResponse\"\000\022\216\001\n\016AsOfJoinTables\0228."
+  "io.deephaven.proto.backplane.grpc.AsOfJo"
+  "inTablesRequest\032@.io.deephaven.proto.bac"
+  "kplane.grpc.ExportedTableCreationRespons"
+  "e\"\000\022\220\001\n\017RangeJoinTables\0229.io.deephaven.p"
+  "roto.backplane.grpc.RangeJoinTablesReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\221\001\n\016Combo"
+  "Aggregate\0228.io.deephaven.proto.backplane"
+  ".grpc.ComboAggregateRequest\032@.io.deephav"
+  "en.proto.backplane.grpc.ExportedTableCre"
+  "ationResponse\"\003\210\002\001\022\212\001\n\014AggregateAll\0226.io"
+  ".deephaven.proto.backplane.grpc.Aggregat"
+  "eAllRequest\032@.io.deephaven.proto.backpla"
+  "ne.grpc.ExportedTableCreationResponse\"\000\022"
+  "\204\001\n\tAggregate\0223.io.deephaven.proto.backp"
+  "lane.grpc.AggregateRequest\032@.io.deephave"
+  "n.proto.backplane.grpc.ExportedTableCrea"
+  "tionResponse\"\000\022\207\001\n\010Snapshot\0227.io.deephav"
+  "en.proto.backplane.grpc.SnapshotTableReq"
+  "uest\032@.io.deephaven.proto.backplane.grpc"
+  ".ExportedTableCreationResponse\"\000\022\217\001\n\014Sna"
+  "pshotWhen\022;.io.deephaven.proto.backplane"
+  ".grpc.SnapshotWhenTableRequest\032@.io.deep"
+  "haven.proto.backplane.grpc.ExportedTable"
+  "CreationResponse\"\000\022\200\001\n\007Flatten\0221.io.deep"
+  "haven.proto.backplane.grpc.FlattenReques"
+  "t\032@.io.deephaven.proto.backplane.grpc.Ex"
+  "portedTableCreationResponse\"\000\022\226\001\n\022RunCha"
+  "rtDownsample\022<.io.deephaven.proto.backpl"
+  "ane.grpc.RunChartDownsampleRequest\032@.io."
+  "deephaven.proto.backplane.grpc.ExportedT"
+  "ableCreationResponse\"\000\022\222\001\n\020CreateInputTa"
+  "ble\022:.io.deephaven.proto.backplane.grpc."
+  "CreateInputTableRequest\032@.io.deephaven.p"
+  "roto.backplane.grpc.ExportedTableCreatio"
+  "nResponse\"\000\022\200\001\n\007WhereIn\0221.io.deephaven.p"
+  "roto.backplane.grpc.WhereInRequest\032@.io."
+  "deephaven.proto.backplane.grpc.ExportedT"
+  "ableCreationResponse\"\000\022\203\001\n\005Batch\0224.io.de"
+  "ephaven.proto.backplane.grpc.BatchTableR"
+  "equest\032@.io.deephaven.proto.backplane.gr"
+  "pc.ExportedTableCreationResponse\"\0000\001\022\231\001\n"
+  "\024ExportedTableUpdates\022>.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableUpdatesRe"
+  "quest\032=.io.deephaven.proto.backplane.grp"
+  "c.ExportedTableUpdateMessage\"\0000\001\022r\n\007Seek"
+  "Row\0221.io.deephaven.proto.backplane.grpc."
+  "SeekRowRequest\0322.io.deephaven.proto.back"
+  "plane.grpc.SeekRowResponse\"\000\022\204\001\n\tMetaTab"
+  "le\0223.io.deephaven.proto.backplane.grpc.M"
+  "etaTableRequest\032@.io.deephaven.proto.bac"
+  "kplane.grpc.ExportedTableCreationRespons"
+  "e\"\000BAH\001P\001Z;github.com/deephaven/deephave"
+  "n-core/go/internal/proto/tableb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2ftable_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2ftable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2ftable_2eproto = {
-    false, false, 27227, descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto,
+    false, false, 30398, descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto,
     "deephaven/proto/table.proto",
-    &descriptor_table_deephaven_2fproto_2ftable_2eproto_once, descriptor_table_deephaven_2fproto_2ftable_2eproto_deps, 1, 101,
+    &descriptor_table_deephaven_2fproto_2ftable_2eproto_once, descriptor_table_deephaven_2fproto_2ftable_2eproto_deps, 1, 109,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2ftable_2eproto::offsets,
     file_level_metadata_deephaven_2fproto_2ftable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2ftable_2eproto,
@@ -3311,9 +3600,55 @@ constexpr AsOfJoinTablesRequest_MatchRule AsOfJoinTablesRequest::MatchRule_MIN;
 constexpr AsOfJoinTablesRequest_MatchRule AsOfJoinTablesRequest::MatchRule_MAX;
 constexpr int AsOfJoinTablesRequest::MatchRule_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
-const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ComboAggregateRequest_AggType_descriptor() {
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RangeJoinTablesRequest_RangeStartRule_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
   return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[2];
+}
+bool RangeJoinTablesRequest_RangeStartRule_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN_OR_EQUAL;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::RangeStartRule_MIN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::RangeStartRule_MAX;
+constexpr int RangeJoinTablesRequest::RangeStartRule_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RangeJoinTablesRequest_RangeEndRule_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[3];
+}
+bool RangeJoinTablesRequest_RangeEndRule_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN_OR_EQUAL;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::RangeEndRule_MIN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::RangeEndRule_MAX;
+constexpr int RangeJoinTablesRequest::RangeEndRule_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ComboAggregateRequest_AggType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[4];
 }
 bool ComboAggregateRequest_AggType_IsValid(int value) {
   switch (value) {
@@ -3358,7 +3693,7 @@ constexpr int ComboAggregateRequest::AggType_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* SortDescriptor_SortDirection_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[3];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[5];
 }
 bool SortDescriptor_SortDirection_IsValid(int value) {
   switch (value) {
@@ -3383,7 +3718,7 @@ constexpr int SortDescriptor::SortDirection_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CompareCondition_CompareOperation_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[4];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[6];
 }
 bool CompareCondition_CompareOperation_IsValid(int value) {
   switch (value) {
@@ -3412,7 +3747,7 @@ constexpr int CompareCondition::CompareOperation_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* BadDataBehavior_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[5];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[7];
 }
 bool BadDataBehavior_IsValid(int value) {
   switch (value) {
@@ -3428,7 +3763,7 @@ bool BadDataBehavior_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* NullValue_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[6];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[8];
 }
 bool NullValue_IsValid(int value) {
   switch (value) {
@@ -3441,7 +3776,7 @@ bool NullValue_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CaseSensitivity_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[7];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[9];
 }
 bool CaseSensitivity_IsValid(int value) {
   switch (value) {
@@ -3455,7 +3790,7 @@ bool CaseSensitivity_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MatchType_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[8];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[10];
 }
 bool MatchType_IsValid(int value) {
   switch (value) {
@@ -5864,6 +6199,701 @@ void MathContext::InternalSwap(MathContext* other) {
 
 // ===================================================================
 
+class UpdateByEmaTimescale_UpdateByEmaTicks::_Internal {
+ public:
+};
+
+UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByEmaTimescale_UpdateByEmaTicks(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+}
+UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByEmaTimescale_UpdateByEmaTicks(const UpdateByEmaTimescale_UpdateByEmaTicks& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ticks_ = from.ticks_;
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+}
+
+inline void UpdateByEmaTimescale_UpdateByEmaTicks::SharedCtor() {
+ticks_ = 0;
+}
+
+UpdateByEmaTimescale_UpdateByEmaTicks::~UpdateByEmaTimescale_UpdateByEmaTicks() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByEmaTimescale_UpdateByEmaTicks::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ticks_ = 0;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByEmaTimescale_UpdateByEmaTicks::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // double ticks = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 9)) {
+          ticks_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<double>(ptr);
+          ptr += sizeof(double);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByEmaTimescale_UpdateByEmaTicks::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // double ticks = 1;
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = this->_internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteDoubleToArray(1, this->_internal_ticks(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  return target;
+}
+
+size_t UpdateByEmaTimescale_UpdateByEmaTicks::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // double ticks = 1;
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = this->_internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
+    total_size += 1 + 8;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByEmaTimescale_UpdateByEmaTicks::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByEmaTimescale_UpdateByEmaTicks::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByEmaTimescale_UpdateByEmaTicks::GetClassData() const { return &_class_data_; }
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByEmaTimescale_UpdateByEmaTicks *>(to)->MergeFrom(
+      static_cast<const UpdateByEmaTimescale_UpdateByEmaTicks &>(from));
+}
+
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(const UpdateByEmaTimescale_UpdateByEmaTicks& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = from._internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
+    _internal_set_ticks(from._internal_ticks());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::CopyFrom(const UpdateByEmaTimescale_UpdateByEmaTicks& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByEmaTimescale_UpdateByEmaTicks::IsInitialized() const {
+  return true;
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTicks::InternalSwap(UpdateByEmaTimescale_UpdateByEmaTicks* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(ticks_, other->ticks_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByEmaTimescale_UpdateByEmaTicks::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[10]);
+}
+
+// ===================================================================
+
+class UpdateByEmaTimescale_UpdateByEmaTime::_Internal {
+ public:
+};
+
+UpdateByEmaTimescale_UpdateByEmaTime::UpdateByEmaTimescale_UpdateByEmaTime(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+}
+UpdateByEmaTimescale_UpdateByEmaTime::UpdateByEmaTimescale_UpdateByEmaTime(const UpdateByEmaTimescale_UpdateByEmaTime& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_column().empty()) {
+    column_.Set(from._internal_column(), 
+      GetArenaForAllocation());
+  }
+  period_nanos_ = from.period_nanos_;
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+}
+
+inline void UpdateByEmaTimescale_UpdateByEmaTime::SharedCtor() {
+column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+period_nanos_ = int64_t{0};
+}
+
+UpdateByEmaTimescale_UpdateByEmaTime::~UpdateByEmaTimescale_UpdateByEmaTime() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByEmaTimescale_UpdateByEmaTime::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  column_.Destroy();
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTime::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTime::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  column_.ClearToEmpty();
+  period_nanos_ = int64_t{0};
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByEmaTimescale_UpdateByEmaTime::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // string column = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          auto str = _internal_mutable_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // sint64 period_nanos = 2 [jstype = JS_STRING];
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          period_nanos_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByEmaTimescale_UpdateByEmaTime::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // string column = 1;
+  if (!this->_internal_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_column().data(), static_cast<int>(this->_internal_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column");
+    target = stream->WriteStringMaybeAliased(
+        1, this->_internal_column(), target);
+  }
+
+  // sint64 period_nanos = 2 [jstype = JS_STRING];
+  if (this->_internal_period_nanos() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(2, this->_internal_period_nanos(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  return target;
+}
+
+size_t UpdateByEmaTimescale_UpdateByEmaTime::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string column = 1;
+  if (!this->_internal_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_column());
+  }
+
+  // sint64 period_nanos = 2 [jstype = JS_STRING];
+  if (this->_internal_period_nanos() != 0) {
+    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_period_nanos());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByEmaTimescale_UpdateByEmaTime::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByEmaTimescale_UpdateByEmaTime::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByEmaTimescale_UpdateByEmaTime::GetClassData() const { return &_class_data_; }
+
+void UpdateByEmaTimescale_UpdateByEmaTime::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByEmaTimescale_UpdateByEmaTime *>(to)->MergeFrom(
+      static_cast<const UpdateByEmaTimescale_UpdateByEmaTime &>(from));
+}
+
+
+void UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(const UpdateByEmaTimescale_UpdateByEmaTime& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_column().empty()) {
+    _internal_set_column(from._internal_column());
+  }
+  if (from._internal_period_nanos() != 0) {
+    _internal_set_period_nanos(from._internal_period_nanos());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTime::CopyFrom(const UpdateByEmaTimescale_UpdateByEmaTime& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByEmaTimescale_UpdateByEmaTime::IsInitialized() const {
+  return true;
+}
+
+void UpdateByEmaTimescale_UpdateByEmaTime::InternalSwap(UpdateByEmaTimescale_UpdateByEmaTime* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &column_, lhs_arena,
+      &other->column_, rhs_arena
+  );
+  swap(period_nanos_, other->period_nanos_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByEmaTimescale_UpdateByEmaTime::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[11]);
+}
+
+// ===================================================================
+
+class UpdateByEmaTimescale::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks& ticks(const UpdateByEmaTimescale* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime& time(const UpdateByEmaTimescale* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks&
+UpdateByEmaTimescale::_Internal::ticks(const UpdateByEmaTimescale* msg) {
+  return *msg->type_.ticks_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime&
+UpdateByEmaTimescale::_Internal::time(const UpdateByEmaTimescale* msg) {
+  return *msg->type_.time_;
+}
+void UpdateByEmaTimescale::set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks* ticks) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (ticks) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(ticks);
+    if (message_arena != submessage_arena) {
+      ticks = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, ticks, submessage_arena);
+    }
+    set_has_ticks();
+    type_.ticks_ = ticks;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.ticks)
+}
+void UpdateByEmaTimescale::set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime* time) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (time) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(time);
+    if (message_arena != submessage_arena) {
+      time = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, time, submessage_arena);
+    }
+    set_has_time();
+    type_.time_ = time;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.time)
+}
+UpdateByEmaTimescale::UpdateByEmaTimescale(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+}
+UpdateByEmaTimescale::UpdateByEmaTimescale(const UpdateByEmaTimescale& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  clear_has_type();
+  switch (from.type_case()) {
+    case kTicks: {
+      _internal_mutable_ticks()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(from._internal_ticks());
+      break;
+    }
+    case kTime: {
+      _internal_mutable_time()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(from._internal_time());
+      break;
+    }
+    case TYPE_NOT_SET: {
+      break;
+    }
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+}
+
+inline void UpdateByEmaTimescale::SharedCtor() {
+clear_has_type();
+}
+
+UpdateByEmaTimescale::~UpdateByEmaTimescale() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByEmaTimescale::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (has_type()) {
+    clear_type();
+  }
+}
+
+void UpdateByEmaTimescale::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByEmaTimescale::clear_type() {
+// @@protoc_insertion_point(one_of_clear_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  switch (type_case()) {
+    case kTicks: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.ticks_;
+      }
+      break;
+    }
+    case kTime: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.time_;
+      }
+      break;
+    }
+    case TYPE_NOT_SET: {
+      break;
+    }
+  }
+  _oneof_case_[0] = TYPE_NOT_SET;
+}
+
+
+void UpdateByEmaTimescale::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  clear_type();
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByEmaTimescale::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_ticks(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_time(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByEmaTimescale::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
+  if (_internal_has_ticks()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::ticks(this),
+        _Internal::ticks(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
+  if (_internal_has_time()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::time(this),
+        _Internal::time(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  return target;
+}
+
+size_t UpdateByEmaTimescale::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  switch (type_case()) {
+    // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
+    case kTicks: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.ticks_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
+    case kTime: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.time_);
+      break;
+    }
+    case TYPE_NOT_SET: {
+      break;
+    }
+  }
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByEmaTimescale::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByEmaTimescale::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByEmaTimescale::GetClassData() const { return &_class_data_; }
+
+void UpdateByEmaTimescale::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByEmaTimescale *>(to)->MergeFrom(
+      static_cast<const UpdateByEmaTimescale &>(from));
+}
+
+
+void UpdateByEmaTimescale::MergeFrom(const UpdateByEmaTimescale& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  switch (from.type_case()) {
+    case kTicks: {
+      _internal_mutable_ticks()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(from._internal_ticks());
+      break;
+    }
+    case kTime: {
+      _internal_mutable_time()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(from._internal_time());
+      break;
+    }
+    case TYPE_NOT_SET: {
+      break;
+    }
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByEmaTimescale::CopyFrom(const UpdateByEmaTimescale& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByEmaTimescale::IsInitialized() const {
+  return true;
+}
+
+void UpdateByEmaTimescale::InternalSwap(UpdateByEmaTimescale* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(type_, other->type_);
+  swap(_oneof_case_[0], other->_oneof_case_[0]);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByEmaTimescale::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[12]);
+}
+
+// ===================================================================
+
 class UpdateByRequest_UpdateByOptions::_Internal {
  public:
   using HasBits = decltype(std::declval<UpdateByRequest_UpdateByOptions>()._has_bits_);
@@ -6232,7 +7262,7 @@ void UpdateByRequest_UpdateByOptions::InternalSwap(UpdateByRequest_UpdateByOptio
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOptions::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[10]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[13]);
 }
 
 // ===================================================================
@@ -6271,7 +7301,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperat
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[11]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[14]);
 }
 
 // ===================================================================
@@ -6310,7 +7340,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperat
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMin::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[12]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[15]);
 }
 
 // ===================================================================
@@ -6349,7 +7379,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperat
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeMax::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[13]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[16]);
 }
 
 // ===================================================================
@@ -6388,7 +7418,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperat
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[14]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[17]);
 }
 
 // ===================================================================
@@ -6427,7 +7457,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperat
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[15]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[18]);
 }
 
 // ===================================================================
@@ -6784,689 +7814,6 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_U
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[16]);
-}
-
-// ===================================================================
-
-class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::_Internal {
- public:
-};
-
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-}
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  ticks_ = from.ticks_;
-  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::SharedCtor() {
-ticks_ = int64_t{0};
-}
-
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  ticks_ = int64_t{0};
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // sint64 ticks = 1 [jstype = JS_STRING];
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          ticks_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // sint64 ticks = 1 [jstype = JS_STRING];
-  if (this->_internal_ticks() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(1, this->_internal_ticks(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  return target;
-}
-
-size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // sint64 ticks = 1 [jstype = JS_STRING];
-  if (this->_internal_ticks() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_ticks());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::GetClassData() const { return &_class_data_; }
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks *>(to)->MergeFrom(
-      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks &>(from));
-}
-
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (from._internal_ticks() != 0) {
-    _internal_set_ticks(from._internal_ticks());
-  }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::IsInitialized() const {
-  return true;
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(ticks_, other->ticks_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[17]);
-}
-
-// ===================================================================
-
-class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::_Internal {
- public:
-};
-
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-}
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_column().empty()) {
-    column_.Set(from._internal_column(), 
-      GetArenaForAllocation());
-  }
-  period_nanos_ = from.period_nanos_;
-  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::SharedCtor() {
-column_.InitDefault();
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  column_.Set("", GetArenaForAllocation());
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-period_nanos_ = int64_t{0};
-}
-
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  column_.Destroy();
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  column_.ClearToEmpty();
-  period_nanos_ = int64_t{0};
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // string column = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_column();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime.column"));
-        } else
-          goto handle_unusual;
-        continue;
-      // sint64 period_nanos = 2 [jstype = JS_STRING];
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          period_nanos_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // string column = 1;
-  if (!this->_internal_column().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_column().data(), static_cast<int>(this->_internal_column().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime.column");
-    target = stream->WriteStringMaybeAliased(
-        1, this->_internal_column(), target);
-  }
-
-  // sint64 period_nanos = 2 [jstype = JS_STRING];
-  if (this->_internal_period_nanos() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(2, this->_internal_period_nanos(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  return target;
-}
-
-size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // string column = 1;
-  if (!this->_internal_column().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_column());
-  }
-
-  // sint64 period_nanos = 2 [jstype = JS_STRING];
-  if (this->_internal_period_nanos() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_period_nanos());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::GetClassData() const { return &_class_data_; }
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime *>(to)->MergeFrom(
-      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime &>(from));
-}
-
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (!from._internal_column().empty()) {
-    _internal_set_column(from._internal_column());
-  }
-  if (from._internal_period_nanos() != 0) {
-    _internal_set_period_nanos(from._internal_period_nanos());
-  }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::IsInitialized() const {
-  return true;
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime* other) {
-  using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &column_, lhs_arena,
-      &other->column_, rhs_arena
-  );
-  swap(period_nanos_, other->period_nanos_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[18]);
-}
-
-// ===================================================================
-
-class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_Internal {
- public:
-  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks& ticks(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale* msg);
-  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime& time(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale* msg);
-};
-
-const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks&
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_Internal::ticks(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale* msg) {
-  return *msg->type_.ticks_;
-}
-const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime&
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_Internal::time(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale* msg) {
-  return *msg->type_.time_;
-}
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::set_allocated_ticks(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks* ticks) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  clear_type();
-  if (ticks) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(ticks);
-    if (message_arena != submessage_arena) {
-      ticks = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, ticks, submessage_arena);
-    }
-    set_has_ticks();
-    type_.ticks_ = ticks;
-  }
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.ticks)
-}
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::set_allocated_time(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime* time) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  clear_type();
-  if (time) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(time);
-    if (message_arena != submessage_arena) {
-      time = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, time, submessage_arena);
-    }
-    set_has_time();
-    type_.time_ = time;
-  }
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.time)
-}
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor();
-  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-}
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  clear_has_type();
-  switch (from.type_case()) {
-    case kTicks: {
-      _internal_mutable_ticks()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(from._internal_ticks());
-      break;
-    }
-    case kTime: {
-      _internal_mutable_time()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(from._internal_time());
-      break;
-    }
-    case TYPE_NOT_SET: {
-      break;
-    }
-  }
-  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::SharedCtor() {
-clear_has_type();
-}
-
-UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale() {
-  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (has_type()) {
-    clear_type();
-  }
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::SetCachedSize(int size) const {
-  _cached_size_.Set(size);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::clear_type() {
-// @@protoc_insertion_point(one_of_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  switch (type_case()) {
-    case kTicks: {
-      if (GetArenaForAllocation() == nullptr) {
-        delete type_.ticks_;
-      }
-      break;
-    }
-    case kTime: {
-      if (GetArenaForAllocation() == nullptr) {
-        delete type_.time_;
-      }
-      break;
-    }
-    case TYPE_NOT_SET: {
-      break;
-    }
-  }
-  _oneof_case_[0] = TYPE_NOT_SET;
-}
-
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::Clear() {
-// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  clear_type();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_ticks(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_time(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
-  if (_internal_has_ticks()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::ticks(this),
-        _Internal::ticks(this).GetCachedSize(), target, stream);
-  }
-
-  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
-  if (_internal_has_time()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::time(this),
-        _Internal::time(this).GetCachedSize(), target, stream);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  return target;
-}
-
-size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  switch (type_case()) {
-    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTicks ticks = 1;
-    case kTicks: {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *type_.ticks_);
-      break;
-    }
-    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime time = 2;
-    case kTime: {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *type_.time_);
-      break;
-    }
-    case TYPE_NOT_SET: {
-      break;
-    }
-  }
-  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
-    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::GetClassData() const { return &_class_data_; }
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
-                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale *>(to)->MergeFrom(
-      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale &>(from));
-}
-
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  GOOGLE_DCHECK_NE(&from, this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  switch (from.type_case()) {
-    case kTicks: {
-      _internal_mutable_ticks()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(from._internal_ticks());
-      break;
-    }
-    case kTime: {
-      _internal_mutable_time()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime::MergeFrom(from._internal_time());
-      break;
-    }
-    case TYPE_NOT_SET: {
-      break;
-    }
-  }
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::IsInitialized() const {
-  return true;
-}
-
-void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(type_, other->type_);
-  swap(_oneof_case_[0], other->_oneof_case_[0]);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2ftable_2eproto[19]);
 }
 
@@ -7475,14 +7822,14 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_U
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_Internal {
  public:
   static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions& options(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* msg);
-  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale& timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* msg);
 };
 
 const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions&
 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_Internal::options(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* msg) {
   return *msg->options_;
 }
-const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale&
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::_Internal::timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma* msg) {
   return *msg->timescale_;
 }
@@ -7501,7 +7848,7 @@ UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::Updat
     options_ = nullptr;
   }
   if (from._internal_has_timescale()) {
-    timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale(*from.timescale_);
+    timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.timescale_);
   } else {
     timescale_ = nullptr;
   }
@@ -7565,7 +7912,7 @@ const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_Update
         } else
           goto handle_unusual;
         continue;
-      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale timescale = 2;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale timescale = 2;
       case 2:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
           ptr = ctx->ParseMessage(_internal_mutable_timescale(), ptr);
@@ -7609,7 +7956,7 @@ uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByE
         _Internal::options(this).GetCachedSize(), target, stream);
   }
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale timescale = 2;
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale timescale = 2;
   if (this->_internal_has_timescale()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(2, _Internal::timescale(this),
@@ -7639,7 +7986,7 @@ size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma
         *options_);
   }
 
-  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale timescale = 2;
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale timescale = 2;
   if (this->_internal_has_timescale()) {
     total_size += 1 +
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
@@ -7672,7 +8019,7 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::
     _internal_mutable_options()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions::MergeFrom(from._internal_options());
   }
   if (from._internal_has_timescale()) {
-    _internal_mutable_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale::MergeFrom(from._internal_timescale());
+    _internal_mutable_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_timescale());
   }
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -7707,6 +8054,1416 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::
 
 // ===================================================================
 
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[21]);
+}
+
+// ===================================================================
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[22]);
+}
+
+// ===================================================================
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[23]);
+}
+
+// ===================================================================
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[24]);
+}
+
+// ===================================================================
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[25]);
+}
+
+// ===================================================================
+
+class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale& forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_Internal::reverse_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* msg) {
+  return *msg->reverse_timescale_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_Internal::forward_timescale(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* msg) {
+  return *msg->forward_timescale_;
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+}
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_reverse_timescale()) {
+    reverse_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.reverse_timescale_);
+  } else {
+    reverse_timescale_ = nullptr;
+  }
+  if (from._internal_has_forward_timescale()) {
+    forward_timescale_ = new ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale(*from.forward_timescale_);
+  } else {
+    forward_timescale_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&reverse_timescale_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&forward_timescale_) -
+    reinterpret_cast<char*>(&reverse_timescale_)) + sizeof(forward_timescale_));
+}
+
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::~UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete reverse_timescale_;
+  if (this != internal_default_instance()) delete forward_timescale_;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && reverse_timescale_ != nullptr) {
+    delete reverse_timescale_;
+  }
+  reverse_timescale_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && forward_timescale_ != nullptr) {
+    delete forward_timescale_;
+  }
+  forward_timescale_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_reverse_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_forward_timescale(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::reverse_timescale(this),
+        _Internal::reverse_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::forward_timescale(this),
+        _Internal::forward_timescale(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  return target;
+}
+
+size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale reverse_timescale = 1;
+  if (this->_internal_has_reverse_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *reverse_timescale_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale forward_timescale = 2;
+  if (this->_internal_has_forward_timescale()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *forward_timescale_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::GetClassData() const { return &_class_data_; }
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct *>(to)->MergeFrom(
+      static_cast<const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct &>(from));
+}
+
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::MergeFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_reverse_timescale()) {
+    _internal_mutable_reverse_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_reverse_timescale());
+  }
+  if (from._internal_has_forward_timescale()) {
+    _internal_mutable_forward_timescale()->::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale::MergeFrom(from._internal_forward_timescale());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::CopyFrom(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::IsInitialized() const {
+  return true;
+}
+
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::InternalSwap(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct, forward_timescale_)
+      + sizeof(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::forward_timescale_)
+      - PROTOBUF_FIELD_OFFSET(UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct, reverse_timescale_)>(
+          reinterpret_cast<char*>(&reverse_timescale_),
+          reinterpret_cast<char*>(&other->reverse_timescale_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[26]);
+}
+
+// ===================================================================
+
 class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal {
  public:
   static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum& sum(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
@@ -7715,6 +9472,12 @@ class UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal {
   static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeProduct& product(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
   static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByFill& fill(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
   static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma& ema(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum& rolling_sum(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup& rolling_group(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg& rolling_avg(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin& rolling_min(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax& rolling_max(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
+  static const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct& rolling_product(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg);
 };
 
 const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum&
@@ -7740,6 +9503,30 @@ UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::fill(c
 const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma&
 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::ema(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
   return *msg->type_.ema_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_sum(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_sum_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_group(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_group_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_avg(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_avg_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_min(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_min_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_max(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_max_;
+}
+const ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct&
+UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Internal::rolling_product(const UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec* msg) {
+  return *msg->type_.rolling_product_;
 }
 void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_sum(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByCumulativeSum* sum) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -7831,6 +9618,96 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocate
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.ema)
 }
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_sum(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum* rolling_sum) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_sum) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_sum);
+    if (message_arena != submessage_arena) {
+      rolling_sum = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_sum, submessage_arena);
+    }
+    set_has_rolling_sum();
+    type_.rolling_sum_ = rolling_sum;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_sum)
+}
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_group(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup* rolling_group) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_group) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_group);
+    if (message_arena != submessage_arena) {
+      rolling_group = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_group, submessage_arena);
+    }
+    set_has_rolling_group();
+    type_.rolling_group_ = rolling_group;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_group)
+}
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_avg(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg* rolling_avg) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_avg) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_avg);
+    if (message_arena != submessage_arena) {
+      rolling_avg = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_avg, submessage_arena);
+    }
+    set_has_rolling_avg();
+    type_.rolling_avg_ = rolling_avg;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_avg)
+}
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_min(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin* rolling_min) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_min) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_min);
+    if (message_arena != submessage_arena) {
+      rolling_min = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_min, submessage_arena);
+    }
+    set_has_rolling_min();
+    type_.rolling_min_ = rolling_min;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_min)
+}
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_max(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax* rolling_max) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_max) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_max);
+    if (message_arena != submessage_arena) {
+      rolling_max = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_max, submessage_arena);
+    }
+    set_has_rolling_max();
+    type_.rolling_max_ = rolling_max;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_max)
+}
+void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::set_allocated_rolling_product(::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct* rolling_product) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_type();
+  if (rolling_product) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(rolling_product);
+    if (message_arena != submessage_arena) {
+      rolling_product = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, rolling_product, submessage_arena);
+    }
+    set_has_rolling_product();
+    type_.rolling_product_ = rolling_product;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.rolling_product)
+}
 UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -7864,6 +9741,30 @@ UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::UpdateByRequest_U
     }
     case kEma: {
       _internal_mutable_ema()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::MergeFrom(from._internal_ema());
+      break;
+    }
+    case kRollingSum: {
+      _internal_mutable_rolling_sum()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::MergeFrom(from._internal_rolling_sum());
+      break;
+    }
+    case kRollingGroup: {
+      _internal_mutable_rolling_group()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::MergeFrom(from._internal_rolling_group());
+      break;
+    }
+    case kRollingAvg: {
+      _internal_mutable_rolling_avg()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::MergeFrom(from._internal_rolling_avg());
+      break;
+    }
+    case kRollingMin: {
+      _internal_mutable_rolling_min()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::MergeFrom(from._internal_rolling_min());
+      break;
+    }
+    case kRollingMax: {
+      _internal_mutable_rolling_max()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::MergeFrom(from._internal_rolling_max());
+      break;
+    }
+    case kRollingProduct: {
+      _internal_mutable_rolling_product()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::MergeFrom(from._internal_rolling_product());
       break;
     }
     case TYPE_NOT_SET: {
@@ -7933,6 +9834,42 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::clear_type()
     case kEma: {
       if (GetArenaForAllocation() == nullptr) {
         delete type_.ema_;
+      }
+      break;
+    }
+    case kRollingSum: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_sum_;
+      }
+      break;
+    }
+    case kRollingGroup: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_group_;
+      }
+      break;
+    }
+    case kRollingAvg: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_avg_;
+      }
+      break;
+    }
+    case kRollingMin: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_min_;
+      }
+      break;
+    }
+    case kRollingMax: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_max_;
+      }
+      break;
+    }
+    case kRollingProduct: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete type_.rolling_product_;
       }
       break;
     }
@@ -8008,6 +9945,54 @@ const char* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Inte
         } else
           goto handle_unusual;
         continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum rolling_sum = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_sum(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup rolling_group = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 66)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_group(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg rolling_avg = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_avg(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin rolling_min = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 82)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_min(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax rolling_max = 11;
+      case 11:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 90)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_max(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct rolling_product = 12;
+      case 12:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 98)) {
+          ptr = ctx->ParseMessage(_internal_mutable_rolling_product(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -8079,6 +10064,48 @@ uint8_t* UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::_Interna
         _Internal::ema(this).GetCachedSize(), target, stream);
   }
 
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum rolling_sum = 7;
+  if (_internal_has_rolling_sum()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(7, _Internal::rolling_sum(this),
+        _Internal::rolling_sum(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup rolling_group = 8;
+  if (_internal_has_rolling_group()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(8, _Internal::rolling_group(this),
+        _Internal::rolling_group(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg rolling_avg = 9;
+  if (_internal_has_rolling_avg()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(9, _Internal::rolling_avg(this),
+        _Internal::rolling_avg(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin rolling_min = 10;
+  if (_internal_has_rolling_min()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(10, _Internal::rolling_min(this),
+        _Internal::rolling_min(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax rolling_max = 11;
+  if (_internal_has_rolling_max()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(11, _Internal::rolling_max(this),
+        _Internal::rolling_max(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct rolling_product = 12;
+  if (_internal_has_rolling_product()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(12, _Internal::rolling_product(this),
+        _Internal::rolling_product(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -8138,6 +10165,48 @@ size_t UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::ByteSizeLo
           *type_.ema_);
       break;
     }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingSum rolling_sum = 7;
+    case kRollingSum: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_sum_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingGroup rolling_group = 8;
+    case kRollingGroup: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_group_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingAvg rolling_avg = 9;
+    case kRollingAvg: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_avg_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMin rolling_min = 10;
+    case kRollingMin: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_min_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingMax rolling_max = 11;
+    case kRollingMax: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_max_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByRollingProduct rolling_product = 12;
+    case kRollingProduct: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *type_.rolling_product_);
+      break;
+    }
     case TYPE_NOT_SET: {
       break;
     }
@@ -8189,6 +10258,30 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::MergeFrom(co
       _internal_mutable_ema()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma::MergeFrom(from._internal_ema());
       break;
     }
+    case kRollingSum: {
+      _internal_mutable_rolling_sum()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum::MergeFrom(from._internal_rolling_sum());
+      break;
+    }
+    case kRollingGroup: {
+      _internal_mutable_rolling_group()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup::MergeFrom(from._internal_rolling_group());
+      break;
+    }
+    case kRollingAvg: {
+      _internal_mutable_rolling_avg()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg::MergeFrom(from._internal_rolling_avg());
+      break;
+    }
+    case kRollingMin: {
+      _internal_mutable_rolling_min()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin::MergeFrom(from._internal_rolling_min());
+      break;
+    }
+    case kRollingMax: {
+      _internal_mutable_rolling_max()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax::MergeFrom(from._internal_rolling_max());
+      break;
+    }
+    case kRollingProduct: {
+      _internal_mutable_rolling_product()->::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct::MergeFrom(from._internal_rolling_product());
+      break;
+    }
     case TYPE_NOT_SET: {
       break;
     }
@@ -8217,7 +10310,7 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::InternalSwap
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[21]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[27]);
 }
 
 // ===================================================================
@@ -8442,7 +10535,7 @@ void UpdateByRequest_UpdateByOperation_UpdateByColumn::InternalSwap(UpdateByRequ
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation_UpdateByColumn::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[22]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[28]);
 }
 
 // ===================================================================
@@ -8677,7 +10770,7 @@ void UpdateByRequest_UpdateByOperation::InternalSwap(UpdateByRequest_UpdateByOpe
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest_UpdateByOperation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[23]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[29]);
 }
 
 // ===================================================================
@@ -9029,7 +11122,7 @@ void UpdateByRequest::InternalSwap(UpdateByRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata UpdateByRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[24]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[30]);
 }
 
 // ===================================================================
@@ -9308,7 +11401,7 @@ void SelectDistinctRequest::InternalSwap(SelectDistinctRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SelectDistinctRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[25]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[31]);
 }
 
 // ===================================================================
@@ -9587,7 +11680,7 @@ void DropColumnsRequest::InternalSwap(DropColumnsRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata DropColumnsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[26]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[32]);
 }
 
 // ===================================================================
@@ -9866,7 +11959,7 @@ void UnstructuredFilterTableRequest::InternalSwap(UnstructuredFilterTableRequest
 ::PROTOBUF_NAMESPACE_ID::Metadata UnstructuredFilterTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[27]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[33]);
 }
 
 // ===================================================================
@@ -10131,7 +12224,7 @@ void HeadOrTailRequest::InternalSwap(HeadOrTailRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HeadOrTailRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[28]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[34]);
 }
 
 // ===================================================================
@@ -10434,7 +12527,7 @@ void HeadOrTailByRequest::InternalSwap(HeadOrTailByRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata HeadOrTailByRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[29]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[35]);
 }
 
 // ===================================================================
@@ -10737,7 +12830,7 @@ void UngroupRequest::InternalSwap(UngroupRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata UngroupRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[30]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[36]);
 }
 
 // ===================================================================
@@ -11013,7 +13106,7 @@ void MergeTablesRequest::InternalSwap(MergeTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata MergeTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[31]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[37]);
 }
 
 // ===================================================================
@@ -11254,7 +13347,7 @@ void SnapshotTableRequest::InternalSwap(SnapshotTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SnapshotTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[32]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[38]);
 }
 
 // ===================================================================
@@ -11645,7 +13738,7 @@ void SnapshotWhenTableRequest::InternalSwap(SnapshotWhenTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SnapshotWhenTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[33]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[39]);
 }
 
 // ===================================================================
@@ -12026,7 +14119,7 @@ void CrossJoinTablesRequest::InternalSwap(CrossJoinTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CrossJoinTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[34]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[40]);
 }
 
 // ===================================================================
@@ -12383,7 +14476,7 @@ void NaturalJoinTablesRequest::InternalSwap(NaturalJoinTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NaturalJoinTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[35]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[41]);
 }
 
 // ===================================================================
@@ -12740,7 +14833,7 @@ void ExactJoinTablesRequest::InternalSwap(ExactJoinTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ExactJoinTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[36]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[42]);
 }
 
 // ===================================================================
@@ -13097,7 +15190,7 @@ void LeftJoinTablesRequest::InternalSwap(LeftJoinTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata LeftJoinTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[37]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[43]);
 }
 
 // ===================================================================
@@ -13481,7 +15574,561 @@ void AsOfJoinTablesRequest::InternalSwap(AsOfJoinTablesRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AsOfJoinTablesRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[38]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[44]);
+}
+
+// ===================================================================
+
+class RangeJoinTablesRequest::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const RangeJoinTablesRequest* msg);
+  static const ::io::deephaven::proto::backplane::grpc::TableReference& left_id(const RangeJoinTablesRequest* msg);
+  static const ::io::deephaven::proto::backplane::grpc::TableReference& right_id(const RangeJoinTablesRequest* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::Ticket&
+RangeJoinTablesRequest::_Internal::result_id(const RangeJoinTablesRequest* msg) {
+  return *msg->result_id_;
+}
+const ::io::deephaven::proto::backplane::grpc::TableReference&
+RangeJoinTablesRequest::_Internal::left_id(const RangeJoinTablesRequest* msg) {
+  return *msg->left_id_;
+}
+const ::io::deephaven::proto::backplane::grpc::TableReference&
+RangeJoinTablesRequest::_Internal::right_id(const RangeJoinTablesRequest* msg) {
+  return *msg->right_id_;
+}
+void RangeJoinTablesRequest::clear_result_id() {
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+}
+RangeJoinTablesRequest::RangeJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
+  exact_match_columns_(arena),
+  aggregations_(arena) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+}
+RangeJoinTablesRequest::RangeJoinTablesRequest(const RangeJoinTablesRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      exact_match_columns_(from.exact_match_columns_),
+      aggregations_(from.aggregations_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  left_start_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    left_start_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_left_start_column().empty()) {
+    left_start_column_.Set(from._internal_left_start_column(), 
+      GetArenaForAllocation());
+  }
+  right_range_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    right_range_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_right_range_column().empty()) {
+    right_range_column_.Set(from._internal_right_range_column(), 
+      GetArenaForAllocation());
+  }
+  left_end_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    left_end_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_left_end_column().empty()) {
+    left_end_column_.Set(from._internal_left_end_column(), 
+      GetArenaForAllocation());
+  }
+  if (from._internal_has_result_id()) {
+    result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.result_id_);
+  } else {
+    result_id_ = nullptr;
+  }
+  if (from._internal_has_left_id()) {
+    left_id_ = new ::io::deephaven::proto::backplane::grpc::TableReference(*from.left_id_);
+  } else {
+    left_id_ = nullptr;
+  }
+  if (from._internal_has_right_id()) {
+    right_id_ = new ::io::deephaven::proto::backplane::grpc::TableReference(*from.right_id_);
+  } else {
+    right_id_ = nullptr;
+  }
+  ::memcpy(&range_start_rule_, &from.range_start_rule_,
+    static_cast<size_t>(reinterpret_cast<char*>(&range_end_rule_) -
+    reinterpret_cast<char*>(&range_start_rule_)) + sizeof(range_end_rule_));
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+}
+
+inline void RangeJoinTablesRequest::SharedCtor() {
+left_start_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  left_start_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+right_range_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  right_range_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+left_end_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  left_end_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&result_id_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&range_end_rule_) -
+    reinterpret_cast<char*>(&result_id_)) + sizeof(range_end_rule_));
+}
+
+RangeJoinTablesRequest::~RangeJoinTablesRequest() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void RangeJoinTablesRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  left_start_column_.Destroy();
+  right_range_column_.Destroy();
+  left_end_column_.Destroy();
+  if (this != internal_default_instance()) delete result_id_;
+  if (this != internal_default_instance()) delete left_id_;
+  if (this != internal_default_instance()) delete right_id_;
+}
+
+void RangeJoinTablesRequest::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void RangeJoinTablesRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  exact_match_columns_.Clear();
+  aggregations_.Clear();
+  left_start_column_.ClearToEmpty();
+  right_range_column_.ClearToEmpty();
+  left_end_column_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && left_id_ != nullptr) {
+    delete left_id_;
+  }
+  left_id_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && right_id_ != nullptr) {
+    delete right_id_;
+  }
+  right_id_ = nullptr;
+  ::memset(&range_start_rule_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&range_end_rule_) -
+      reinterpret_cast<char*>(&range_start_rule_)) + sizeof(range_end_rule_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* RangeJoinTablesRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_left_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_right_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated string exact_match_columns = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_exact_match_columns();
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.exact_match_columns"));
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // string left_start_column = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_left_start_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_start_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_range_start_rule(static_cast<::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest_RangeStartRule>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // string right_range_column = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          auto str = _internal_mutable_right_range_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.right_range_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_range_end_rule(static_cast<::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest_RangeEndRule>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // string left_end_column = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
+          auto str = _internal_mutable_left_end_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_end_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 82)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_aggregations(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<82>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* RangeJoinTablesRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::result_id(this),
+        _Internal::result_id(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  if (this->_internal_has_left_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::left_id(this),
+        _Internal::left_id(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  if (this->_internal_has_right_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(3, _Internal::right_id(this),
+        _Internal::right_id(this).GetCachedSize(), target, stream);
+  }
+
+  // repeated string exact_match_columns = 4;
+  for (int i = 0, n = this->_internal_exact_match_columns_size(); i < n; i++) {
+    const auto& s = this->_internal_exact_match_columns(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.exact_match_columns");
+    target = stream->WriteString(4, s, target);
+  }
+
+  // string left_start_column = 5;
+  if (!this->_internal_left_start_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_left_start_column().data(), static_cast<int>(this->_internal_left_start_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_start_column");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_left_start_column(), target);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+  if (this->_internal_range_start_rule() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      6, this->_internal_range_start_rule(), target);
+  }
+
+  // string right_range_column = 7;
+  if (!this->_internal_right_range_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_right_range_column().data(), static_cast<int>(this->_internal_right_range_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.right_range_column");
+    target = stream->WriteStringMaybeAliased(
+        7, this->_internal_right_range_column(), target);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+  if (this->_internal_range_end_rule() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      8, this->_internal_range_end_rule(), target);
+  }
+
+  // string left_end_column = 9;
+  if (!this->_internal_left_end_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_left_end_column().data(), static_cast<int>(this->_internal_left_end_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_end_column");
+    target = stream->WriteStringMaybeAliased(
+        9, this->_internal_left_end_column(), target);
+  }
+
+  // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_aggregations_size()); i < n; i++) {
+    const auto& repfield = this->_internal_aggregations(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(10, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  return target;
+}
+
+size_t RangeJoinTablesRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated string exact_match_columns = 4;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(exact_match_columns_.size());
+  for (int i = 0, n = exact_match_columns_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      exact_match_columns_.Get(i));
+  }
+
+  // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+  total_size += 1UL * this->_internal_aggregations_size();
+  for (const auto& msg : this->aggregations_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string left_start_column = 5;
+  if (!this->_internal_left_start_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_left_start_column());
+  }
+
+  // string right_range_column = 7;
+  if (!this->_internal_right_range_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_right_range_column());
+  }
+
+  // string left_end_column = 9;
+  if (!this->_internal_left_end_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_left_end_column());
+  }
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *result_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  if (this->_internal_has_left_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *left_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  if (this->_internal_has_right_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *right_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+  if (this->_internal_range_start_rule() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_range_start_rule());
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+  if (this->_internal_range_end_rule() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_range_end_rule());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RangeJoinTablesRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    RangeJoinTablesRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RangeJoinTablesRequest::GetClassData() const { return &_class_data_; }
+
+void RangeJoinTablesRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<RangeJoinTablesRequest *>(to)->MergeFrom(
+      static_cast<const RangeJoinTablesRequest &>(from));
+}
+
+
+void RangeJoinTablesRequest::MergeFrom(const RangeJoinTablesRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  exact_match_columns_.MergeFrom(from.exact_match_columns_);
+  aggregations_.MergeFrom(from.aggregations_);
+  if (!from._internal_left_start_column().empty()) {
+    _internal_set_left_start_column(from._internal_left_start_column());
+  }
+  if (!from._internal_right_range_column().empty()) {
+    _internal_set_right_range_column(from._internal_right_range_column());
+  }
+  if (!from._internal_left_end_column().empty()) {
+    _internal_set_left_end_column(from._internal_left_end_column());
+  }
+  if (from._internal_has_result_id()) {
+    _internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_result_id());
+  }
+  if (from._internal_has_left_id()) {
+    _internal_mutable_left_id()->::io::deephaven::proto::backplane::grpc::TableReference::MergeFrom(from._internal_left_id());
+  }
+  if (from._internal_has_right_id()) {
+    _internal_mutable_right_id()->::io::deephaven::proto::backplane::grpc::TableReference::MergeFrom(from._internal_right_id());
+  }
+  if (from._internal_range_start_rule() != 0) {
+    _internal_set_range_start_rule(from._internal_range_start_rule());
+  }
+  if (from._internal_range_end_rule() != 0) {
+    _internal_set_range_end_rule(from._internal_range_end_rule());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void RangeJoinTablesRequest::CopyFrom(const RangeJoinTablesRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RangeJoinTablesRequest::IsInitialized() const {
+  return true;
+}
+
+void RangeJoinTablesRequest::InternalSwap(RangeJoinTablesRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  exact_match_columns_.InternalSwap(&other->exact_match_columns_);
+  aggregations_.InternalSwap(&other->aggregations_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &left_start_column_, lhs_arena,
+      &other->left_start_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &right_range_column_, lhs_arena,
+      &other->right_range_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &left_end_column_, lhs_arena,
+      &other->left_end_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RangeJoinTablesRequest, range_end_rule_)
+      + sizeof(RangeJoinTablesRequest::range_end_rule_)
+      - PROTOBUF_FIELD_OFFSET(RangeJoinTablesRequest, result_id_)>(
+          reinterpret_cast<char*>(&result_id_),
+          reinterpret_cast<char*>(&other->result_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata RangeJoinTablesRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[45]);
 }
 
 // ===================================================================
@@ -13811,7 +16458,7 @@ void ComboAggregateRequest_Aggregate::InternalSwap(ComboAggregateRequest_Aggrega
 ::PROTOBUF_NAMESPACE_ID::Metadata ComboAggregateRequest_Aggregate::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[39]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[46]);
 }
 
 // ===================================================================
@@ -14147,7 +16794,7 @@ void ComboAggregateRequest::InternalSwap(ComboAggregateRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ComboAggregateRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[40]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[47]);
 }
 
 // ===================================================================
@@ -14466,7 +17113,7 @@ void AggregateAllRequest::InternalSwap(AggregateAllRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggregateAllRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[41]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[48]);
 }
 
 // ===================================================================
@@ -14693,7 +17340,7 @@ void AggSpec_AggSpecApproximatePercentile::InternalSwap(AggSpec_AggSpecApproxima
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecApproximatePercentile::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[42]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[49]);
 }
 
 // ===================================================================
@@ -14864,7 +17511,7 @@ void AggSpec_AggSpecCountDistinct::InternalSwap(AggSpec_AggSpecCountDistinct* ot
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecCountDistinct::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[43]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[50]);
 }
 
 // ===================================================================
@@ -15035,7 +17682,7 @@ void AggSpec_AggSpecDistinct::InternalSwap(AggSpec_AggSpecDistinct* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecDistinct::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[44]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[51]);
 }
 
 // ===================================================================
@@ -15278,7 +17925,7 @@ void AggSpec_AggSpecFormula::InternalSwap(AggSpec_AggSpecFormula* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFormula::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[45]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[52]);
 }
 
 // ===================================================================
@@ -15449,7 +18096,7 @@ void AggSpec_AggSpecMedian::InternalSwap(AggSpec_AggSpecMedian* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMedian::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[46]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[53]);
 }
 
 // ===================================================================
@@ -15666,7 +18313,7 @@ void AggSpec_AggSpecPercentile::InternalSwap(AggSpec_AggSpecPercentile* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecPercentile::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[47]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[54]);
 }
 
 // ===================================================================
@@ -15844,7 +18491,7 @@ void AggSpec_AggSpecSorted::InternalSwap(AggSpec_AggSpecSorted* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSorted::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[48]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[55]);
 }
 
 // ===================================================================
@@ -16039,7 +18686,7 @@ void AggSpec_AggSpecSortedColumn::InternalSwap(AggSpec_AggSpecSortedColumn* othe
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSortedColumn::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[49]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[56]);
 }
 
 // ===================================================================
@@ -16221,7 +18868,7 @@ void AggSpec_AggSpecTDigest::InternalSwap(AggSpec_AggSpecTDigest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecTDigest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[50]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[57]);
 }
 
 // ===================================================================
@@ -16440,7 +19087,7 @@ void AggSpec_AggSpecUnique::InternalSwap(AggSpec_AggSpecUnique* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecUnique::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[51]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[58]);
 }
 
 // ===================================================================
@@ -16940,7 +19587,7 @@ void AggSpec_AggSpecNonUniqueSentinel::InternalSwap(AggSpec_AggSpecNonUniqueSent
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecNonUniqueSentinel::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[52]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[59]);
 }
 
 // ===================================================================
@@ -17135,7 +19782,7 @@ void AggSpec_AggSpecWeighted::InternalSwap(AggSpec_AggSpecWeighted* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecWeighted::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[53]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[60]);
 }
 
 // ===================================================================
@@ -17174,7 +19821,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecAbsSum::GetClas
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecAbsSum::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[54]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[61]);
 }
 
 // ===================================================================
@@ -17213,7 +19860,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecAvg::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecAvg::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[55]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[62]);
 }
 
 // ===================================================================
@@ -17252,7 +19899,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecFirst::GetClass
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFirst::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[56]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[63]);
 }
 
 // ===================================================================
@@ -17291,7 +19938,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecFreeze::GetClas
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFreeze::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[57]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[64]);
 }
 
 // ===================================================================
@@ -17330,7 +19977,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecGroup::GetClass
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecGroup::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[58]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[65]);
 }
 
 // ===================================================================
@@ -17369,7 +20016,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecLast::GetClassD
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecLast::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[59]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[66]);
 }
 
 // ===================================================================
@@ -17408,7 +20055,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecMax::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMax::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[60]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[67]);
 }
 
 // ===================================================================
@@ -17447,7 +20094,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecMin::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMin::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[61]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[68]);
 }
 
 // ===================================================================
@@ -17486,7 +20133,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecStd::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecStd::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[62]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[69]);
 }
 
 // ===================================================================
@@ -17525,7 +20172,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecSum::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSum::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[63]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[70]);
 }
 
 // ===================================================================
@@ -17564,7 +20211,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecVar::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecVar::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[64]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[71]);
 }
 
 // ===================================================================
@@ -19031,7 +21678,7 @@ void AggSpec::InternalSwap(AggSpec* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[65]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[72]);
 }
 
 // ===================================================================
@@ -19407,7 +22054,7 @@ void AggregateRequest::InternalSwap(AggregateRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggregateRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[66]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[73]);
 }
 
 // ===================================================================
@@ -19632,7 +22279,7 @@ void Aggregation_AggregationColumns::InternalSwap(Aggregation_AggregationColumns
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationColumns::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[67]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[74]);
 }
 
 // ===================================================================
@@ -19827,7 +22474,7 @@ void Aggregation_AggregationCount::InternalSwap(Aggregation_AggregationCount* ot
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationCount::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[68]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[75]);
 }
 
 // ===================================================================
@@ -20022,7 +22669,7 @@ void Aggregation_AggregationRowKey::InternalSwap(Aggregation_AggregationRowKey* 
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationRowKey::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[69]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[76]);
 }
 
 // ===================================================================
@@ -20243,7 +22890,7 @@ void Aggregation_AggregationPartition::InternalSwap(Aggregation_AggregationParti
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationPartition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[70]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[77]);
 }
 
 // ===================================================================
@@ -20702,7 +23349,7 @@ void Aggregation::InternalSwap(Aggregation* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[71]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[78]);
 }
 
 // ===================================================================
@@ -20960,7 +23607,7 @@ void SortDescriptor::InternalSwap(SortDescriptor* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SortDescriptor::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[72]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[79]);
 }
 
 // ===================================================================
@@ -21234,7 +23881,7 @@ void SortTableRequest::InternalSwap(SortTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SortTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[73]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[80]);
 }
 
 // ===================================================================
@@ -21508,7 +24155,7 @@ void FilterTableRequest::InternalSwap(FilterTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FilterTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[74]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[81]);
 }
 
 // ===================================================================
@@ -21893,7 +24540,7 @@ void SeekRowRequest::InternalSwap(SeekRowRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SeekRowRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[75]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[82]);
 }
 
 // ===================================================================
@@ -22064,7 +24711,7 @@ void SeekRowResponse::InternalSwap(SeekRowResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SeekRowResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[76]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[83]);
 }
 
 // ===================================================================
@@ -22259,7 +24906,7 @@ void Reference::InternalSwap(Reference* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Reference::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[77]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[84]);
 }
 
 // ===================================================================
@@ -22601,7 +25248,7 @@ void Literal::InternalSwap(Literal* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Literal::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[78]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[85]);
 }
 
 // ===================================================================
@@ -22892,7 +25539,7 @@ void Value::InternalSwap(Value* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Value::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[79]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[86]);
 }
 
 // ===================================================================
@@ -23631,7 +26278,7 @@ void Condition::InternalSwap(Condition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Condition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[80]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[87]);
 }
 
 // ===================================================================
@@ -23809,7 +26456,7 @@ void AndCondition::InternalSwap(AndCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AndCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[81]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[88]);
 }
 
 // ===================================================================
@@ -23987,7 +26634,7 @@ void OrCondition::InternalSwap(OrCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata OrCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[82]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[89]);
 }
 
 // ===================================================================
@@ -24174,7 +26821,7 @@ void NotCondition::InternalSwap(NotCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NotCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[83]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[90]);
 }
 
 // ===================================================================
@@ -24465,7 +27112,7 @@ void CompareCondition::InternalSwap(CompareCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CompareCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[84]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[91]);
 }
 
 // ===================================================================
@@ -24749,7 +27396,7 @@ void InCondition::InternalSwap(InCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata InCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[85]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[92]);
 }
 
 // ===================================================================
@@ -25019,7 +27666,7 @@ void InvokeCondition::InternalSwap(InvokeCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata InvokeCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[86]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[93]);
 }
 
 // ===================================================================
@@ -25206,7 +27853,7 @@ void IsNullCondition::InternalSwap(IsNullCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata IsNullCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[87]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[94]);
 }
 
 // ===================================================================
@@ -25507,7 +28154,7 @@ void MatchesCondition::InternalSwap(MatchesCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata MatchesCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[88]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[95]);
 }
 
 // ===================================================================
@@ -25808,7 +28455,7 @@ void ContainsCondition::InternalSwap(ContainsCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ContainsCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[89]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[96]);
 }
 
 // ===================================================================
@@ -26036,7 +28683,7 @@ void SearchCondition::InternalSwap(SearchCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SearchCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[90]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[97]);
 }
 
 // ===================================================================
@@ -26277,7 +28924,248 @@ void FlattenRequest::InternalSwap(FlattenRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FlattenRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[91]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[98]);
+}
+
+// ===================================================================
+
+class MetaTableRequest::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const MetaTableRequest* msg);
+  static const ::io::deephaven::proto::backplane::grpc::TableReference& source_id(const MetaTableRequest* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::Ticket&
+MetaTableRequest::_Internal::result_id(const MetaTableRequest* msg) {
+  return *msg->result_id_;
+}
+const ::io::deephaven::proto::backplane::grpc::TableReference&
+MetaTableRequest::_Internal::source_id(const MetaTableRequest* msg) {
+  return *msg->source_id_;
+}
+void MetaTableRequest::clear_result_id() {
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+}
+MetaTableRequest::MetaTableRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+}
+MetaTableRequest::MetaTableRequest(const MetaTableRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  if (from._internal_has_result_id()) {
+    result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.result_id_);
+  } else {
+    result_id_ = nullptr;
+  }
+  if (from._internal_has_source_id()) {
+    source_id_ = new ::io::deephaven::proto::backplane::grpc::TableReference(*from.source_id_);
+  } else {
+    source_id_ = nullptr;
+  }
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+}
+
+inline void MetaTableRequest::SharedCtor() {
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&result_id_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&source_id_) -
+    reinterpret_cast<char*>(&result_id_)) + sizeof(source_id_));
+}
+
+MetaTableRequest::~MetaTableRequest() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void MetaTableRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  if (this != internal_default_instance()) delete result_id_;
+  if (this != internal_default_instance()) delete source_id_;
+}
+
+void MetaTableRequest::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void MetaTableRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
+    delete source_id_;
+  }
+  source_id_ = nullptr;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* MetaTableRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_source_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* MetaTableRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::result_id(this),
+        _Internal::result_id(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+  if (this->_internal_has_source_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::source_id(this),
+        _Internal::source_id(this).GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  return target;
+}
+
+size_t MetaTableRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *result_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+  if (this->_internal_has_source_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *source_id_);
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData MetaTableRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    MetaTableRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*MetaTableRequest::GetClassData() const { return &_class_data_; }
+
+void MetaTableRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<MetaTableRequest *>(to)->MergeFrom(
+      static_cast<const MetaTableRequest &>(from));
+}
+
+
+void MetaTableRequest::MergeFrom(const MetaTableRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_has_result_id()) {
+    _internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_result_id());
+  }
+  if (from._internal_has_source_id()) {
+    _internal_mutable_source_id()->::io::deephaven::proto::backplane::grpc::TableReference::MergeFrom(from._internal_source_id());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void MetaTableRequest::CopyFrom(const MetaTableRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool MetaTableRequest::IsInitialized() const {
+  return true;
+}
+
+void MetaTableRequest::InternalSwap(MetaTableRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(MetaTableRequest, source_id_)
+      + sizeof(MetaTableRequest::source_id_)
+      - PROTOBUF_FIELD_OFFSET(MetaTableRequest, result_id_)>(
+          reinterpret_cast<char*>(&result_id_),
+          reinterpret_cast<char*>(&other->result_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata MetaTableRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[99]);
 }
 
 // ===================================================================
@@ -26506,7 +29394,7 @@ void RunChartDownsampleRequest_ZoomRange::InternalSwap(RunChartDownsampleRequest
 ::PROTOBUF_NAMESPACE_ID::Metadata RunChartDownsampleRequest_ZoomRange::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[92]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[100]);
 }
 
 // ===================================================================
@@ -26899,7 +29787,7 @@ void RunChartDownsampleRequest::InternalSwap(RunChartDownsampleRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RunChartDownsampleRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[93]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[101]);
 }
 
 // ===================================================================
@@ -26938,7 +29826,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CreateInputTableRequest_InputT
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind_InMemoryAppendOnly::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[94]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[102]);
 }
 
 // ===================================================================
@@ -27121,7 +30009,7 @@ void CreateInputTableRequest_InputTableKind_InMemoryKeyBacked::InternalSwap(Crea
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind_InMemoryKeyBacked::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[95]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[103]);
 }
 
 // ===================================================================
@@ -27412,7 +30300,7 @@ void CreateInputTableRequest_InputTableKind::InternalSwap(CreateInputTableReques
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[96]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[104]);
 }
 
 // ===================================================================
@@ -27777,7 +30665,7 @@ void CreateInputTableRequest::InternalSwap(CreateInputTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[97]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[105]);
 }
 
 // ===================================================================
@@ -28120,7 +31008,7 @@ void WhereInRequest::InternalSwap(WhereInRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata WhereInRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[98]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[106]);
 }
 
 // ===================================================================
@@ -28162,6 +31050,8 @@ class BatchTableRequest_Operation::_Internal {
   static const ::io::deephaven::proto::backplane::grpc::AggregateRequest& aggregate(const BatchTableRequest_Operation* msg);
   static const ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest& snapshot(const BatchTableRequest_Operation* msg);
   static const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest& snapshot_when(const BatchTableRequest_Operation* msg);
+  static const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& meta_table(const BatchTableRequest_Operation* msg);
+  static const ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest& range_join(const BatchTableRequest_Operation* msg);
 };
 
 const ::io::deephaven::proto::backplane::grpc::EmptyTableRequest&
@@ -28303,6 +31193,14 @@ BatchTableRequest_Operation::_Internal::snapshot(const BatchTableRequest_Operati
 const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest&
 BatchTableRequest_Operation::_Internal::snapshot_when(const BatchTableRequest_Operation* msg) {
   return *msg->op_.snapshot_when_;
+}
+const ::io::deephaven::proto::backplane::grpc::MetaTableRequest&
+BatchTableRequest_Operation::_Internal::meta_table(const BatchTableRequest_Operation* msg) {
+  return *msg->op_.meta_table_;
+}
+const ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest&
+BatchTableRequest_Operation::_Internal::range_join(const BatchTableRequest_Operation* msg) {
+  return *msg->op_.range_join_;
 }
 void BatchTableRequest_Operation::set_allocated_empty_table(::io::deephaven::proto::backplane::grpc::EmptyTableRequest* empty_table) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -28829,6 +31727,36 @@ void BatchTableRequest_Operation::set_allocated_snapshot_when(::io::deephaven::p
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.snapshot_when)
 }
+void BatchTableRequest_Operation::set_allocated_meta_table(::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_op();
+  if (meta_table) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(meta_table);
+    if (message_arena != submessage_arena) {
+      meta_table = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, meta_table, submessage_arena);
+    }
+    set_has_meta_table();
+    op_.meta_table_ = meta_table;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+}
+void BatchTableRequest_Operation::set_allocated_range_join(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_op();
+  if (range_join) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(range_join);
+    if (message_arena != submessage_arena) {
+      range_join = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, range_join, submessage_arena);
+    }
+    set_has_range_join();
+    op_.range_join_ = range_join;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.range_join)
+}
 BatchTableRequest_Operation::BatchTableRequest_Operation(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -28978,6 +31906,14 @@ BatchTableRequest_Operation::BatchTableRequest_Operation(const BatchTableRequest
     }
     case kSnapshotWhen: {
       _internal_mutable_snapshot_when()->::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest::MergeFrom(from._internal_snapshot_when());
+      break;
+    }
+    case kMetaTable: {
+      _internal_mutable_meta_table()->::io::deephaven::proto::backplane::grpc::MetaTableRequest::MergeFrom(from._internal_meta_table());
+      break;
+    }
+    case kRangeJoin: {
+      _internal_mutable_range_join()->::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest::MergeFrom(from._internal_range_join());
       break;
     }
     case OP_NOT_SET: {
@@ -29221,6 +32157,18 @@ void BatchTableRequest_Operation::clear_op() {
     case kSnapshotWhen: {
       if (GetArenaForAllocation() == nullptr) {
         delete op_.snapshot_when_;
+      }
+      break;
+    }
+    case kMetaTable: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete op_.meta_table_;
+      }
+      break;
+    }
+    case kRangeJoin: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete op_.range_join_;
       }
       break;
     }
@@ -29528,6 +32476,22 @@ const char* BatchTableRequest_Operation::_InternalParse(const char* ptr, ::_pbi:
         } else
           goto handle_unusual;
         continue;
+      // .io.deephaven.proto.backplane.grpc.MetaTableRequest meta_table = 38;
+      case 38:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 50)) {
+          ptr = ctx->ParseMessage(_internal_mutable_meta_table(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+      case 39:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          ptr = ctx->ParseMessage(_internal_mutable_range_join(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -29802,6 +32766,20 @@ uint8_t* BatchTableRequest_Operation::_InternalSerialize(
         _Internal::snapshot_when(this).GetCachedSize(), target, stream);
   }
 
+  // .io.deephaven.proto.backplane.grpc.MetaTableRequest meta_table = 38;
+  if (_internal_has_meta_table()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(38, _Internal::meta_table(this),
+        _Internal::meta_table(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+  if (_internal_has_range_join()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(39, _Internal::range_join(this),
+        _Internal::range_join(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -30064,6 +33042,20 @@ size_t BatchTableRequest_Operation::ByteSizeLong() const {
           *op_.snapshot_when_);
       break;
     }
+    // .io.deephaven.proto.backplane.grpc.MetaTableRequest meta_table = 38;
+    case kMetaTable: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *op_.meta_table_);
+      break;
+    }
+    // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+    case kRangeJoin: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *op_.range_join_);
+      break;
+    }
     case OP_NOT_SET: {
       break;
     }
@@ -30231,6 +33223,14 @@ void BatchTableRequest_Operation::MergeFrom(const BatchTableRequest_Operation& f
       _internal_mutable_snapshot_when()->::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest::MergeFrom(from._internal_snapshot_when());
       break;
     }
+    case kMetaTable: {
+      _internal_mutable_meta_table()->::io::deephaven::proto::backplane::grpc::MetaTableRequest::MergeFrom(from._internal_meta_table());
+      break;
+    }
+    case kRangeJoin: {
+      _internal_mutable_range_join()->::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest::MergeFrom(from._internal_range_join());
+      break;
+    }
     case OP_NOT_SET: {
       break;
     }
@@ -30259,7 +33259,7 @@ void BatchTableRequest_Operation::InternalSwap(BatchTableRequest_Operation* othe
 ::PROTOBUF_NAMESPACE_ID::Metadata BatchTableRequest_Operation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[99]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[107]);
 }
 
 // ===================================================================
@@ -30437,7 +33437,7 @@ void BatchTableRequest::InternalSwap(BatchTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BatchTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[100]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[108]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -30487,6 +33487,18 @@ template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::MathContex
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::MathContext >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::MathContext >(arena);
 }
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTicks >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale_UpdateByEmaTime >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByEmaTimescale >(arena);
+}
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOptions >(arena);
@@ -30515,21 +33527,33 @@ template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRe
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaOptions >(arena);
 }
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTicks >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale_UpdateByEmaTime >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma_UpdateByEmaTimescale >(arena);
-}
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByEma >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingSum >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingGroup >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingAvg >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMin >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingMax >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec_UpdateByRollingProduct >(arena);
 }
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::UpdateByRequest_UpdateByOperation_UpdateByColumn_UpdateBySpec >(Arena* arena) {
@@ -30602,6 +33626,10 @@ Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::LeftJoinTabl
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate >(Arena* arena) {
@@ -30814,6 +33842,10 @@ Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::SearchCondit
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::FlattenRequest*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::FlattenRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::FlattenRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::MetaTableRequest*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::MetaTableRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::MetaTableRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange >(Arena* arena) {

@@ -21,11 +21,16 @@ import java.nio.Buffer;
 import java.nio.LongBuffer;
 // endregion BufferImports
 
+// region BinarySearchImports
+import java.util.Arrays;
+// endregion BinarySearchImports
+
 /**
  * {@link Chunk} implementation for long data.
  */
 public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final LongChunk EMPTY = new LongChunk<>(ArrayTypeUtils.EMPTY_LONG_ARRAY, 0, 0);
 
     public static <ATTR extends Any> LongChunk<ATTR> getEmptyChunk() {
@@ -33,6 +38,7 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final LongChunk[] EMPTY_LONG_CHUNK_ARRAY = new LongChunk[0];
 
     static <ATTR extends Any> LongChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +121,7 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +164,42 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableLongChunk<ATTR_DERIV> downcast(WritableLongChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> LongChunk<ATTR_DERIV> downcast(LongChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableLongChunk<ATTR_DERIV>) self;
+        return (LongChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
+
+    // region BinarySearch
+    /**
+     * Search for {@code key} in this chunk in the index range [0, {@link #size() size}) using Java's primitive
+     * ordering. This chunk must be sorted as by {@link WritableLongChunk#sort()} prior to this call.
+     * <p>
+     * This method does <em>not</em> compare {@code null} or {@code NaN} values according to Deephaven ordering rules.
+     *
+     * @param key The key to search for
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
+     *         {@link Arrays#binarySearch(long[], long)}
+     */
+    public final int binarySearch(final long key) {
+        return Arrays.binarySearch(data, offset, offset + size, key);
+    }
+
+    /**
+     * Search for {@code key} in this chunk in the index range {@code [fromIndexInclusive, toIndexExclusive)} using
+     * Java's primitive ordering. This chunk must be sorted over the search index range as by
+     * {@link WritableLongChunk#sort(int, int)} prior to this call.
+     * <p>
+     * This method does <em>not</em> compare {@code null} or {@code NaN} values according to Deephaven ordering rules.
+     *
+     * @param fromIndexInclusive The first index to be searched
+     * @param toIndexExclusive The index after the last index to be searched
+     * @param key The key to search for
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
+     *         {@link Arrays#binarySearch(long[], int, int, long)}
+     */
+    public final int binarySearch(final int fromIndexInclusive, final int toIndexExclusive, final long key) {
+        return Arrays.binarySearch(data, offset + fromIndexInclusive, offset + toIndexExclusive, key);
+    }
+    // endregion BinarySearch
 }

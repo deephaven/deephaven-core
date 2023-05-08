@@ -40,6 +40,10 @@ public final class QueryLanguageFunctionUtils {
         return obj1.compareTo(obj2);
     }
 
+    public static boolean not(boolean a) {
+        return !a;
+    }
+
     public static Boolean not(Boolean a) {
         return a == QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);
     }

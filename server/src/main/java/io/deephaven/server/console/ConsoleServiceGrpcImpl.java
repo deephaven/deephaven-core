@@ -19,6 +19,7 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
 import io.deephaven.io.logger.LogBufferRecordListener;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.lang.completion.CustomCompletion;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -43,6 +44,7 @@ import javax.inject.Provider;
 import javax.inject.Singleton;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
@@ -74,18 +76,20 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private final Provider<ScriptSession> scriptSessionProvider;
     private final Scheduler scheduler;
     private final LogBuffer logBuffer;
+    private final Set<CustomCompletion.Factory> customCompletionFactory;
 
     @Inject
     public ConsoleServiceGrpcImpl(final TicketRouter ticketRouter,
             final SessionService sessionService,
             final Provider<ScriptSession> scriptSessionProvider,
             final Scheduler scheduler,
-            final LogBuffer logBuffer) {
+            final LogBuffer logBuffer, Set<CustomCompletion.Factory> customCompletionFactory) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.scriptSessionProvider = scriptSessionProvider;
         this.scheduler = Objects.requireNonNull(scheduler);
         this.logBuffer = Objects.requireNonNull(logBuffer);
+        this.customCompletionFactory = customCompletionFactory;
     }
 
     @Override
@@ -284,7 +288,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     : new NoopAutoCompleteObserver(session, responseObserver);
         }
 
-        return new JavaAutoCompleteObserver(session, responseObserver);
+        return new JavaAutoCompleteObserver(session, responseObserver, customCompletionFactory);
     }
 
     private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>
@@ -296,13 +300,18 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         @Override
         public void onNext(AutoCompleteRequest value) {
             // This implementation only responds to autocomplete requests with "success, nothing found"
+            AutoCompleteResponse.Builder responseBuilder = AutoCompleteResponse.newBuilder()
+                    .setSuccess(true)
+                    .setRequestId(value.getRequestId());
+
             if (value.getRequestCase() == AutoCompleteRequest.RequestCase.GET_COMPLETION_ITEMS) {
-                safelyOnNext(responseObserver, AutoCompleteResponse.newBuilder()
-                        .setCompletionItems(
-                                GetCompletionItemsResponse.newBuilder().setSuccess(true)
-                                        .setRequestId(value.getGetCompletionItems().getRequestId()))
-                        .build());
+                // For maintaining backwards compatibility
+                responseBuilder.setCompletionItems(
+                        GetCompletionItemsResponse.newBuilder()
+                                .setSuccess(true)
+                                .setRequestId(value.getRequestId()));
             }
+            safelyOnNext(responseObserver, responseBuilder.build());
         }
 
         @Override
@@ -315,6 +324,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // just hang up too, browser will reconnect if interested
             safelyComplete(responseObserver);
         }
+    }
+
+    @Override
+    public void cancelAutoComplete(
+            @NotNull final CancelAutoCompleteRequest request,
+            @NotNull final StreamObserver<CancelAutoCompleteResponse> responseObserver) {
+        // TODO: Consider autocomplete cancellation
+        super.cancelAutoComplete(request, responseObserver);
     }
 
     private final class LogsClient implements LogBufferRecordListener, Runnable {
@@ -364,7 +381,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
             // since the subscribe() method auto-replays all existing logs, filter to just once this consumer probably
             // hasn't seen
-            if (record.getTimestampMicros() < request.getLastSeenLogTimestamp()) {
+            if (record.getTimestampMicros() <= request.getLastSeenLogTimestamp()) {
                 return;
             }
             // Note: we can't send record off-thread without doing a deepCopy.

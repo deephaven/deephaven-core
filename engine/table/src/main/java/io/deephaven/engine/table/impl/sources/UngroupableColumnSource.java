@@ -4,64 +4,203 @@
 package io.deephaven.engine.table.impl.sources;
 
 /**
- * Column sources that provide an array.
+ * Interface for ColumnSources of vectors that allow retrieving single elements by offset.
  */
 public interface UngroupableColumnSource {
+
     /**
-     * Does this particular instance of the column source support ungrouping?
+     * Does this particular ColumnSource support ungrouping?
      * 
-     * @return true if you can call the getUngrouped family of methods and get a valid answer.
+     * @return {@code true} if you can call the getUngrouped family of methods and get a valid answer
      */
     boolean isUngroupable();
 
-    /**
-     * @param columnIndex the row key within this column to interrogate
-     * @return the size of the Vector at columnIndex.
-     */
-    long getUngroupedSize(long columnIndex);
-
-    long getUngroupedPrevSize(long columnIndex);
-
-    /**
-     * Reach into a grouped column source and pull one element out of the array.
+    /*
+     * Get the size of the vector at {@code groupRowKey}.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
      * 
-     * @param columnIndex the row key within the column of the cell to get
-     * @param arrayIndex the index within the array at the specified cell
-     * @return Equivalent to ((Vector)columnSource.get(columnIndex)).get(arrayIndex)
+     * @return The size of the vector at {@code groupRowKey}
      */
-    Object getUngrouped(long columnIndex, int arrayIndex);
+    long getUngroupedSize(long groupRowKey);
 
-    Object getUngroupedPrev(long columnIndex, int arrayIndex);
+    /*
+     * Get the size of the vector at {@code groupRowKey} as of end of the previous update cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * 
+     * @return The size of the vector at {@code groupRowKey} as of the end of the previous update cycle
+     */
+    long getUngroupedPrevSize(long groupRowKey);
 
-    Boolean getUngroupedBoolean(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one Object element out of the vector.
+     * 
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ObjectVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    Object getUngrouped(long groupRowKey, int offsetInGroup);
 
-    Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one Object element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ObjectVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    Object getUngroupedPrev(long groupRowKey, int offsetInGroup);
 
-    double getUngroupedDouble(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one Boolean element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ObjectVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    Boolean getUngroupedBoolean(long groupRowKey, int offsetInGroup);
 
-    double getUngroupedPrevDouble(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one Boolean element out of the vector as of end of the previous
+     * update cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ObjectVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    Boolean getUngroupedPrevBoolean(long groupRowKey, int offsetInGroup);
 
-    float getUngroupedFloat(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one double element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((DoubleVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    double getUngroupedDouble(long groupRowKey, int offsetInGroup);
 
-    float getUngroupedPrevFloat(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one double element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((DoubleVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    double getUngroupedPrevDouble(long groupRowKey, int offsetInGroup);
 
-    byte getUngroupedByte(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one float element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((FloatVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    float getUngroupedFloat(long groupRowKey, int offsetInGroup);
 
-    byte getUngroupedPrevByte(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one float element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((FloatVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    float getUngroupedPrevFloat(long groupRowKey, int offsetInGroup);
 
-    char getUngroupedChar(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one byte element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ByteVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    byte getUngroupedByte(long groupRowKey, int offsetInGroup);
 
-    char getUngroupedPrevChar(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one byte element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ByteVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    byte getUngroupedPrevByte(long groupRowKey, int offsetInGroup);
 
-    short getUngroupedShort(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one char element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((CharVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    char getUngroupedChar(long groupRowKey, int offsetInGroup);
 
-    short getUngroupedPrevShort(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one char element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((CharVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    char getUngroupedPrevChar(long groupRowKey, int offsetInGroup);
 
-    int getUngroupedInt(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one short element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ShortVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    short getUngroupedShort(long groupRowKey, int offsetInGroup);
 
-    int getUngroupedPrevInt(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one short element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((ShortVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    short getUngroupedPrevShort(long groupRowKey, int offsetInGroup);
 
-    long getUngroupedLong(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one int element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((IntVector)columnSource.get(groupRowKey)).get(offsetInGroup)
+     */
+    int getUngroupedInt(long groupRowKey, int offsetInGroup);
 
-    long getUngroupedPrevLong(long columnIndex, int arrayIndex);
+    /**
+     * Reach into a grouped column source and pull one int element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((IntVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    int getUngroupedPrevInt(long groupRowKey, int offsetInGroup);
+
+    /**
+     * Reach into a grouped column source and pull one long element out of the vector.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((LongVector)columnSource.getLong(groupRowKey)).get(offsetInGroup)
+     */
+    long getUngroupedLong(long groupRowKey, int offsetInGroup);
+
+    /**
+     * Reach into a grouped column source and pull one long element out of the vector as of end of the previous update
+     * cycle.
+     *
+     * @param groupRowKey The vector's row key in the grouped column source
+     * @param offsetInGroup Positional offset within the vector at {@code groupRowKey}
+     * @return Equivalent to ((LongVector)columnSource.getPrev(groupRowKey)).get(offsetInGroup)
+     */
+    long getUngroupedPrevLong(long groupRowKey, int offsetInGroup);
 }

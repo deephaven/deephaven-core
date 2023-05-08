@@ -105,7 +105,7 @@ public final class CharChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableCharChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableCharChunk(@NotNull final WritableCharChunk writableCharChunk) {
+    public void giveWritableCharChunk(@NotNull final WritableCharChunk<?> writableCharChunk) {
         if (writableCharChunk == EMPTY || writableCharChunk.isAlias(EMPTY)) {
             return;
         }

@@ -3,7 +3,6 @@
  */
 package io.deephaven.io.sched;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.base.RingBuffer;
 import io.deephaven.base.stats.*;
 import io.deephaven.io.logger.Logger;
@@ -638,7 +637,7 @@ public class YASchedulerImpl implements Scheduler {
     /**
      * dispatch a gathered job, if there are any
      */
-    private boolean dispatch(Procedure.Nullary handoff) {
+    private boolean dispatch(Runnable handoff) {
         JobState state;
         SelectableChannel readyChannel;
         int readyOps;
@@ -688,7 +687,7 @@ public class YASchedulerImpl implements Scheduler {
                         log.debug().append(name).append(" timedOut ").append(state.job).endl();
                     }
                     if (handoff != null) {
-                        handoff.call();
+                        handoff.run();
                     }
                     state.job.timedOut();
                 }
@@ -732,7 +731,7 @@ public class YASchedulerImpl implements Scheduler {
      *
      * @return true, if some work was done.
      */
-    public boolean work(long timeout, Procedure.Nullary handoff) {
+    public boolean work(long timeout, Runnable handoff) {
         if (doSpinSelect) {
             // just use the millis timeout as the number of times to spin
             long times = timeout;
@@ -769,7 +768,7 @@ public class YASchedulerImpl implements Scheduler {
         return didOne;
     }
 
-    private boolean spinWork(long times, Procedure.Nullary handoff) {
+    private boolean spinWork(long times, Runnable handoff) {
         boolean didOne = dispatch(handoff);
         if (!didOne) {
             // apply any changes to the states

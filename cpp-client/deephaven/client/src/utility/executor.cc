@@ -5,14 +5,11 @@
 
 #include <iostream>
 #include <thread>
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
-namespace deephaven {
-namespace client {
-namespace utility {
+using deephaven::dhcore::utility::streamf;
 
-using deephaven::client::utility::streamf;
-
+namespace deephaven::client::utility {
 std::shared_ptr<Executor> Executor::create() {
   auto result = std::make_shared<Executor>(Private());
   std::thread t(&threadStart, result);
@@ -21,6 +18,7 @@ std::shared_ptr<Executor> Executor::create() {
 }
 
 Executor::Executor(Private) {}
+
 Executor::~Executor() = default;
 
 void Executor::invoke(std::shared_ptr<callback_t> cb) {
@@ -50,7 +48,7 @@ void Executor::runForever() {
     lock.unlock();
 
     // invoke callback while not under lock
-    for (const auto &cb : localCallbacks) {
+    for (const auto &cb: localCallbacks) {
       try {
         cb->invoke();
       } catch (const std::exception &e) {
@@ -63,6 +61,4 @@ void Executor::runForever() {
     lock.lock();
   }
 }
-}  // namespace utility
-}  // namespace client
-}  // namespace deephaven
+}  // namespace deephaven::client::utility

@@ -73,6 +73,7 @@ dependencies {
 
     testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
+    testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
     testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation project(':base-test-utils')

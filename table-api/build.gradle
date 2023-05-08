@@ -6,6 +6,8 @@ plugins {
 description = 'The Deephaven table operations API'
 
 dependencies {
+  implementation project(':engine-query-constants')
+  Classpaths.inheritCommonsText(project, 'implementation')
   Classpaths.inheritImmutables(project)
 
   compileOnly 'com.google.code.findbugs:jsr305:3.0.2'

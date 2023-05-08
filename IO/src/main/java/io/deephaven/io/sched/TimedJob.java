@@ -3,7 +3,6 @@
  */
 package io.deephaven.io.sched;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.base.log.LogOutput;
 
 import java.nio.channels.SelectableChannel;
@@ -13,9 +12,9 @@ import java.nio.channels.SelectableChannel;
  * cancelled() method which do nothing.
  */
 public abstract class TimedJob extends Job {
-    public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff) {
+    public int invoke(SelectableChannel channel, int readyOps, Runnable handoff) {
         if (handoff != null) {
-            handoff.call();
+            handoff.run();
         }
         return 0;
     }

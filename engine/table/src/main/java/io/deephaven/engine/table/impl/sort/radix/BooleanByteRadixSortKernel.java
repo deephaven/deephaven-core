@@ -11,13 +11,17 @@ package io.deephaven.engine.table.impl.sort.radix;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.ByteSortKernel;
 import io.deephaven.chunk.*;
 
 public class BooleanByteRadixSortKernel {
-    public static <ATTR extends Any, KEY_INDICES extends Indices> ByteSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {
+
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(
+            int size,
+            SortingOrder order,
+            boolean preserveValues) {
         if (order == SortingOrder.Ascending) {
             return new BooleanByteSortKernel<>(size, preserveValues);
         } else {
@@ -25,9 +29,11 @@ public class BooleanByteRadixSortKernel {
         }
     }
 
-    private static class BooleanByteSortKernel<ATTR extends Any, KEY_INDICES extends Indices> implements ByteSortKernel<ATTR, KEY_INDICES> {
-        final WritableByteChunk<KEY_INDICES> nullKeys;
-        final WritableByteChunk<KEY_INDICES> falseKeys;
+    private static class BooleanByteSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+            implements ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
+
+        final WritableByteChunk<PERMUTE_VALUES_ATTR> nullKeys;
+        final WritableByteChunk<PERMUTE_VALUES_ATTR> falseKeys;
         private final boolean preserveValues;
         int backPosition = 0;
 
@@ -38,45 +44,55 @@ public class BooleanByteRadixSortKernel {
         }
 
         @Override
-        public void sort(WritableByteChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort) {
+        public void sort(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
             nullKeys.setSize(0);
             falseKeys.setSize(0);
-            doSortAscending(indexKeys, valuesToSort.asWritableObjectChunk(), 0, valuesToSort.size());
+            doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), 0, valuesToSort.size());
         }
 
         @Override
-        public void sort(WritableByteChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+        public void sort(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort,
+                IntChunk<? extends ChunkPositions> offsetsIn,
+                IntChunk<? extends ChunkLengths> lengthsIn) {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 nullKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortAscending(indexKeys, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortAscending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
             }
         }
 
-        void doSortAscending(WritableByteChunk<KEY_INDICES> indexKeys, WritableObjectChunk<Boolean, ATTR> valuesToSort, int offset, int length) {
+        void doSortAscending(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableObjectChunk<Boolean, SORT_VALUES_ATTR> valuesToSort,
+                int offset,
+                int length) {
             int backCursor = offset + length - 1;
             backPosition = offset + length - 1;
 
             while (backCursor >= offset) {
                 final Boolean val = valuesToSort.get(backCursor);
                 if (val == null) {
-                    nullKeys.add(indexKeys.get(backCursor));
+                    nullKeys.add(valuesToPermute.get(backCursor));
                 } else if (!val) {
-                    falseKeys.add(indexKeys.get(backCursor));
+                    falseKeys.add(valuesToPermute.get(backCursor));
                 } else {
-                    final byte cursorValue = indexKeys.get(backCursor);
-                    indexKeys.set(backPosition--, cursorValue);
+                    final byte cursorValue = valuesToPermute.get(backCursor);
+                    valuesToPermute.set(backPosition--, cursorValue);
                 }
                 --backCursor;
             }
 
             final int nullCount = nullKeys.size();
             for (int ii = 0; ii < nullCount; ++ii) {
-                indexKeys.set(offset + ii, nullKeys.get(nullCount - ii - 1));
+                valuesToPermute.set(offset + ii, nullKeys.get(nullCount - ii - 1));
             }
             final int falseCount = falseKeys.size();
             for (int ii = 0; ii < falseKeys.size(); ++ii) {
-                indexKeys.set(offset + ii + nullCount, falseKeys.get(falseCount - ii - 1));
+                valuesToPermute.set(offset + ii + nullCount, falseKeys.get(falseCount - ii - 1));
             }
             if (preserveValues) {
                 for (int ii = 0; ii < nullCount; ++ii) {
@@ -96,10 +112,12 @@ public class BooleanByteRadixSortKernel {
         }
     }
 
-    private static class BooleanByteSortDescendingKernel<ATTR extends Any, KEY_INDICES extends Indices> implements ByteSortKernel<ATTR, KEY_INDICES> {
-        final WritableByteChunk<Indices> falseKeys;
+    private static class BooleanByteSortDescendingKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+            implements ByteSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
+
+        final WritableByteChunk<Any> falseKeys;
         private final boolean preserveValues;
-        final WritableByteChunk<Indices> trueKeys;
+        final WritableByteChunk<Any> trueKeys;
         int backPosition = 0;
 
         private BooleanByteSortDescendingKernel(int size, boolean preserveValues) {
@@ -109,34 +127,44 @@ public class BooleanByteRadixSortKernel {
         }
 
         @Override
-        public void sort(WritableByteChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort) {
+        public void sort(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
             trueKeys.setSize(0);
             falseKeys.setSize(0);
-            doSortDescending(indexKeys, valuesToSort.asWritableObjectChunk(), 0, valuesToSort.size());
+            doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), 0, valuesToSort.size());
         }
 
         @Override
-        public void sort(WritableByteChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+        public void sort(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort,
+                IntChunk<? extends ChunkPositions> offsetsIn,
+                IntChunk<? extends ChunkLengths> lengthsIn) {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 trueKeys.setSize(0);
                 falseKeys.setSize(0);
-                doSortDescending(indexKeys, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
+                doSortDescending(valuesToPermute, valuesToSort.asWritableObjectChunk(), offsetsIn.get(ii), lengthsIn.get(ii));
             }
         }
 
-        void doSortDescending(WritableByteChunk<KEY_INDICES> indexKeys, WritableObjectChunk<Boolean, ATTR> valuesToSort, int offset, int length) {
+        void doSortDescending(
+                WritableByteChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableObjectChunk<Boolean, SORT_VALUES_ATTR> valuesToSort,
+                int offset,
+                int length) {
             int backCursor = offset + length - 1;
             backPosition = offset + length - 1;
 
             while (backCursor >= offset) {
                 final Boolean val = valuesToSort.get(backCursor);
                 if (val == null) {
-                    final byte cursorValue = indexKeys.get(backCursor);
-                    indexKeys.set(backPosition--, cursorValue);
+                    final byte cursorValue = valuesToPermute.get(backCursor);
+                    valuesToPermute.set(backPosition--, cursorValue);
                 } else if (val) {
-                    trueKeys.add(indexKeys.get(backCursor));
+                    trueKeys.add(valuesToPermute.get(backCursor));
                 } else {
-                    falseKeys.add(indexKeys.get(backCursor));
+                    falseKeys.add(valuesToPermute.get(backCursor));
                 }
                 --backCursor;
 
@@ -144,11 +172,11 @@ public class BooleanByteRadixSortKernel {
 
             final int trueCount = trueKeys.size();
             for (int ii = 0; ii < trueCount; ++ii) {
-                indexKeys.set(offset + ii, trueKeys.get(trueCount - ii - 1));
+                valuesToPermute.set(offset + ii, trueKeys.get(trueCount - ii - 1));
             }
             final int falseCount = falseKeys.size();
             for (int ii = 0; ii < falseKeys.size(); ++ii) {
-                indexKeys.set(offset + ii + trueCount, falseKeys.get(falseCount - ii - 1));
+                valuesToPermute.set(offset + ii + trueCount, falseKeys.get(falseCount - ii - 1));
             }
 
             if (preserveValues) {

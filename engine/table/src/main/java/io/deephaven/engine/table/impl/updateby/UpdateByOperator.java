@@ -6,10 +6,8 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
@@ -24,17 +22,16 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long)} for cumulative operators or
- * {@link UpdateByOperator#initializeRolling(Context)} (Context)} for windowed operators</li>
+ * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long, RowSet)} for cumulative operators or
+ * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
- * operators or {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], IntChunk, IntChunk, int)} for
- * windowed operators</li>
+ * operators or
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
  */
 public abstract class UpdateByOperator {
-    protected static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
-
     protected final MatchPair pair;
     protected final String[] affectingColumns;
     protected final RowRedirection rowRedirection;
@@ -48,40 +45,42 @@ public abstract class UpdateByOperator {
     /**
      * The input modifiedColumnSet for this operator
      */
-    ModifiedColumnSet inputModifiedColumnSet;
+    protected ModifiedColumnSet inputModifiedColumnSet;
     /**
      * The output modifiedColumnSet for this operator
      */
-    ModifiedColumnSet outputModifiedColumnSet;
+    protected ModifiedColumnSet outputModifiedColumnSet;
 
     /**
      * A context item for use with updateBy operators
      */
     public abstract static class Context implements SafeCloseable {
         protected int nullCount = 0;
-
-        public Context() {}
+        protected LongChunk<OrderedRowKeys> affectedPosChunk;
+        protected LongChunk<OrderedRowKeys> influencerPosChunk;
 
         public boolean isValueValid(long atKey) {
             throw new UnsupportedOperationException(
                     "isValueValid() must be overridden by time-aware cumulative operators");
         }
 
-        @Override
-        public void close() {}
+        protected abstract void setValueChunks(@NotNull Chunk<? extends Values>[] valueChunks);
 
-        protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
+        protected void setPosChunks(final LongChunk<OrderedRowKeys> affectedPosChunk,
+                final LongChunk<OrderedRowKeys> influencerPosChunk) {
+            this.affectedPosChunk = affectedPosChunk;
+            this.influencerPosChunk = influencerPosChunk;
+        }
 
         /**
          * Add values to the operators current data set
          *
-         * @param key the row key associated with the value
          * @param pos the index in the associated chunk where this value can be found. Depending on the usage, might be
          *        a values chunk (for cumulative operators) or an influencer values chunk (for windowed). It is the task
          *        of the operator to pull the data from the chunk and use it properly
          * @param count the number of items to push from the chunk
          */
-        protected abstract void push(long key, int pos, int count);
+        protected abstract void push(int pos, int count);
 
         /**
          * Remove values from the operators current data set. This is only valid for windowed operators as cumulative
@@ -100,6 +99,8 @@ public abstract class UpdateByOperator {
 
         public abstract void accumulateRolling(RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
+                LongChunk<OrderedRowKeys> affectedPosChunk,
+                LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len);
@@ -108,7 +109,6 @@ public abstract class UpdateByOperator {
          * Write the current value for this row to the output chunk
          */
         protected abstract void writeToOutputChunk(int outIdx);
-
 
         /**
          * Write the output chunk to the output column
@@ -122,7 +122,6 @@ public abstract class UpdateByOperator {
         @OverridingMethodsMustInvokeSuper
         protected abstract void reset();
     }
-
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -144,14 +143,16 @@ public abstract class UpdateByOperator {
      * Initialize the bucket context for a cumulative operator
      */
     public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context) {
+    public void initializeRolling(@NotNull final Context context,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
@@ -225,11 +226,12 @@ public abstract class UpdateByOperator {
     /**
      * Make an {@link Context} suitable for use with updates.
      *
-     * @param chunkSize The expected size of chunks that will be provided during the update,
+     * @param affectedChunkSize The maximum size of affected chunks that will be provided during the update.
+     * @param influencerChunkSize The maximum size of influencer chunks that will be provided during the update.
      * @return a new context
      */
     @NotNull
-    public abstract Context makeUpdateContext(final int chunkSize);
+    public abstract Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call
@@ -278,7 +280,24 @@ public abstract class UpdateByOperator {
     }
 
     /**
+     * Set the downstream modified column set appropriately for this operator.
+     */
+    protected void extractDownstreamModifiedColumnSet(@NotNull final TableUpdate upstream,
+            @NotNull final TableUpdate downstream) {
+        // for nearly all operators, all output columns will be modified.
+        downstream.modifiedColumnSet().setAll(getOutputModifiedColumnSet());
+    }
+
+    /**
      * Clear the output rows by setting value to NULL. Dense sources will apply removes to the inner source.
      */
     protected abstract void clearOutputRows(RowSet toClear);
+
+    /**
+     * Return whether the operator needs affected and influencer row positions during accumulation. Defaults to
+     * {@code false}.
+     */
+    protected boolean requiresRowPositions() {
+        return false;
+    }
 }

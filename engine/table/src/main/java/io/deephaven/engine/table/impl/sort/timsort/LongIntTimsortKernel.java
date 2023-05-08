@@ -16,16 +16,15 @@ package io.deephaven.engine.table.impl.sort.timsort;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
  * This implements a timsort kernel for Longs.
- *
- * https://bugs.python.org/file4451/timsort.txt and https://en.wikipedia.org/wiki/Timsort do a decent job of describing
- * the algorithm.
+ * <p>
+ * <a href="https://bugs.python.org/file4451/timsort.txt">bugs.python.org</a> and
+ * <a href="https://en.wikipedia.org/wiki/Timsort">Wikipedia</a> do a decent job of describing the algorithm.
  */
 public class LongIntTimsortKernel {
     private LongIntTimsortKernel() {
@@ -33,13 +32,15 @@ public class LongIntTimsortKernel {
     }
 
     // region Context
-    public static class LongIntSortKernelContext<ATTR extends Any, KEY_INDICES extends Indices> implements IntSortKernel<ATTR, KEY_INDICES> {
+    public static class LongIntSortKernelContext<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+            implements IntSortKernel<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> {
+
         int minGallop;
         int runCount = 0;
-        private final int [] runStarts;
-        private final int [] runLengths;
-        private final WritableIntChunk<KEY_INDICES> temporaryKeys;
-        private final WritableLongChunk<ATTR> temporaryValues;
+        private final int[] runStarts;
+        private final int[] runLengths;
+        private final WritableIntChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
+        private final WritableLongChunk<SORT_VALUES_ATTR> temporaryValues;
 
         private LongIntSortKernelContext(int size) {
             temporaryKeys = WritableIntChunk.makeWritableChunk((size + 2) / 2);
@@ -50,13 +51,19 @@ public class LongIntTimsortKernel {
         }
 
         @Override
-        public void sort(WritableIntChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort) {
-            LongIntTimsortKernel.sort(this, indexKeys, valuesToSort.asWritableLongChunk());
+        public void sort(
+                WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort) {
+            LongIntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableLongChunk());
         }
 
         @Override
-        public void sort(WritableIntChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
-            LongIntTimsortKernel.sort(this, indexKeys, valuesToSort.asWritableLongChunk(), offsetsIn, lengthsIn);
+        public void sort(
+                WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+                WritableChunk<SORT_VALUES_ATTR> valuesToSort,
+                IntChunk<? extends ChunkPositions> offsetsIn,
+                IntChunk<? extends ChunkLengths> lengthsIn) {
+            LongIntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableLongChunk(), offsetsIn, lengthsIn);
         }
 
         @Override
@@ -67,39 +74,53 @@ public class LongIntTimsortKernel {
     }
     // endregion Context
 
-    public static <ATTR extends Any, KEY_INDICES extends Indices> LongIntSortKernelContext<ATTR, KEY_INDICES> createContext(int size) {
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any>
+    LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> createContext(int size) {
         return new LongIntSortKernelContext<>(size);
     }
 
     /**
-     * Sort the values in valuesToSort permuting the indexKeys chunk in the same way.
-     *
-     * The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length
-     * of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer
-     * runs sorted on each pass.
+     * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
+     * <p>
+     * The offsetsIn chunk is contains the offset of runs to sort in valuesToPermute; and the lengthsIn contains the
+     * length of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
+     * fewer runs sorted on each pass.
      */
-    static <ATTR extends Any, KEY_INDICES extends Indices> void sort(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+    static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            IntChunk<? extends ChunkPositions> offsetsIn,
+            IntChunk<? extends ChunkLengths> lengthsIn) {
         final int numberRuns = offsetsIn.size();
         for (int run = 0; run < numberRuns; ++run) {
             final int offset = offsetsIn.get(run);
             final int length = lengthsIn.get(run);
 
-            timSort(context, indexKeys, valuesToSort, offset, length);
+            timSort(context, valuesToPermute, valuesToSort, offset, length);
         }
     }
 
     /**
-     * Sort the values in valuesToSort permuting the indexKeys chunk in the same way.
-     *
-     * The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length
-     * of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer
-     * runs sorted on each pass.
+     * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
+     * <p>
+     * The offsetsIn chunk is contains the offset of runs to sort in valuesToPermute; and the lengthsIn contains the
+     * length of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
+     * fewer runs sorted on each pass.
      */
-    public static <ATTR extends Any, KEY_INDICES extends Indices> void sort(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort) {
-        timSort(context, indexKeys, valuesToSort, 0, indexKeys.size());
+    public static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void sort(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort) {
+        timSort(context, valuesToPermute, valuesToSort, 0, valuesToPermute.size());
     }
 
-    static private <ATTR extends Any, KEY_INDICES extends Indices> void timSort(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, int offset, int length) {
+    static private <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void timSort(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            int offset,
+            int length) {
         if (length <= 1) {
             return;
         }
@@ -107,7 +128,7 @@ public class LongIntTimsortKernel {
         final int minRun = TimsortUtils.getRunLength(length);
 
         if (length <= minRun) {
-            insertionSort(indexKeys, valuesToSort, offset, length);
+            insertionSort(valuesToPermute, valuesToSort, offset, length);
             return;
         }
 
@@ -136,7 +157,8 @@ public class LongIntTimsortKernel {
                         endRun++;
                     }
                 } else {
-                    // search for a strictly descending run; we can not have any equal values, or we will break the sort's stability guarantee
+                    // search for a strictly descending run; we can not have any equal values, or we will break the
+                    // sort's stability guarantee
                     current = next;
                     while (endRun < length && lt(next = valuesToSort.get(endRun), current)) {
                         current = next;
@@ -150,14 +172,14 @@ public class LongIntTimsortKernel {
             if (foundLength < minRun) {
                 // increase the size of the run to the minimum run
                 final int actualLength = Math.min(minRun, length - (startRun - offset));
-                insertionSort(indexKeys, valuesToSort, startRun, actualLength);
+                insertionSort(valuesToPermute, valuesToSort, startRun, actualLength);
                 context.runLengths[context.runCount] = actualLength;
                 startRun += actualLength;
             } else {
                 if (descending) {
                     // reverse the current run
                     for (int ii = 0; ii < foundLength / 2; ++ii) {
-                        swap(indexKeys, valuesToSort, ii + startRun, endRun - ii - 1);
+                        swap(valuesToPermute, valuesToSort, ii + startRun, endRun - ii - 1);
                     }
                 }
                 // now an ascending run
@@ -168,14 +190,14 @@ public class LongIntTimsortKernel {
             context.runCount++;
 
             // check the invariants at the top of the stack
-            ensureMergeInvariants(context, indexKeys, valuesToSort);
+            ensureMergeInvariants(context, valuesToPermute, valuesToSort);
         }
 
         while (context.runCount > 1) {
             final int length2 = context.runLengths[context.runCount - 1];
             final int start1 = context.runStarts[context.runCount - 2];
             final int length1 = context.runLengths[context.runCount - 2];
-            merge(context, indexKeys, valuesToSort, start1, length1, length2);
+            merge(context, valuesToPermute, valuesToSort, start1, length1, length2);
             context.runStarts[context.runCount - 2] = start1;
             context.runLengths[context.runCount - 2] = length1 + length2;
             context.runCount--;
@@ -209,24 +231,32 @@ public class LongIntTimsortKernel {
     }
 
     /**
-     * <p>There are two merge invariants that we must preserve, quoting from Wikipedia:</p>
-     *
-     * <p>Concurrently with the search for runs, the runs are merged with mergesort. Except where Timsort tries to optimise for merging disjoint runs in galloping mode, runs are repeatedly merged two at a time, with the only concerns being to maintain stability and merge balance.</p>
-     *
-     * <p>Stability requires non-consecutive runs are not merged, as elements could be transferred across equal elements in the intervening run, violating stability. Further, it would be impossible to recover the order of the equal elements at a later point.</p>
-     *
-     * <p>In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the invariants:
-     *
-     * <ul><li>|Z| > |Y| + |X|</li>
-     * <li>|Y| > |X|</li></ul>
-     *
-     * If the invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once the invariants hold, the next run is formed.</p>
-     *
-     * <p>Somewhat inappreciably, the invariants maintain merges as being approximately balanced while maintaining a compromise between delaying merging for balance, and exploiting fresh occurrence of runs in cache memory, and also making merge decisions relatively simple.</p>
-     *
-     * <p>On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one run of the entire data remains.</p>
+     * <p>
+     * There are two merge invariants that we must preserve, quoting from Wikipedia:
+     * <p>
+     * Timsort is a stable sorting algorithm (order of elements with same key is kept) and strives to perform balanced
+     * merges (a merge thus merges runs of similar sizes).
+     * <p>
+     * In order to achieve sorting stability, only consecutive runs are merged. Between two non-consecutive runs, there
+     * can be an element with the same key inside the runs. Merging those two runs would change the order of equal keys.
+     * Example of this situation ([] are ordered runs): [1 2 2] 1 4 2 [0 1 2]
+     * <p>
+     * In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the
+     * invariants:
+     * <ul>
+     * <li>|Z| > |Y| + |X|</li>
+     * <li>|Y| > |X|</li>
+     * </ul>
+     * <p>
+     * If any of these invariants is violated, Y is merged with the smaller of X or Z and the invariants are checked
+     * again. Once the invariants hold, the search for a new run in the data can start. These invariants maintain merges
+     * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
+     * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void ensureMergeInvariants(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort) {
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort) {
         while (context.runCount > 1) {
             final int xIndex = context.runCount - 1;
             final int yIndex = context.runCount - 2;
@@ -252,14 +282,14 @@ public class LongIntTimsortKernel {
             final int xStart = context.runStarts[xIndex];
             if (xMerge) {
                 // merge y and x
-                merge(context, indexKeys, valuesToSort, yStart, yLen, xLen);
+                merge(context, valuesToPermute, valuesToSort, yStart, yLen, xLen);
 
                 // unchanged: context.runStarts[yStart];
                 context.runLengths[yIndex] += xLen;
             } else {
                 // merge y and z
                 final int zStart = context.runStarts[zIndex];
-                merge(context, indexKeys, valuesToSort, zStart, zLen, yLen);
+                merge(context, valuesToPermute, valuesToSort, zStart, zLen, yLen);
 
                 // unchanged: context.runStarts[zIndex];
                 context.runLengths[zIndex] += yLen;
@@ -271,10 +301,16 @@ public class LongIntTimsortKernel {
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void merge(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, int start1, int length1, int length2) {
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void merge(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            int start1,
+            int length1,
+            int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
-        // end of an input, we won't create a zero-length run.  When we merge runs, they only become bigger, thus
-        // they'll never be empty.  I'm being cheap about function calls and control flow here.
+        // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
+        // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
 
@@ -297,23 +333,31 @@ public class LongIntTimsortKernel {
         final int remaining2 = mergeEndPosition - start2;
 
         if (remaining1 < remaining2) {
-            copyToTemporary(context, indexKeys, valuesToSort, mergeStartPosition, remaining1);
-            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front, because we've preserved all the values of run1
-            frontMerge(context, indexKeys, valuesToSort, mergeStartPosition, start2, remaining2);
+            copyToTemporary(context, valuesToPermute, valuesToSort, mergeStartPosition, remaining1);
+            // now we need to do the merge from temporary and remaining2 into remaining1 (so start at the front,
+            // because we've preserved all the values of run1
+            frontMerge(context, valuesToPermute, valuesToSort, mergeStartPosition, start2, remaining2);
         } else {
-            copyToTemporary(context, indexKeys, valuesToSort, start2, remaining2);
-            // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the back, because we've preserved all the values of run2)
-            backMerge(context, indexKeys, valuesToSort, mergeStartPosition, remaining1);
+            copyToTemporary(context, valuesToPermute, valuesToSort, start2, remaining2);
+            // now we need to do the merge from temporary and remaining1 into the remaining two area (so start at the
+            // back, because we've preserved all the values of run2)
+            backMerge(context, valuesToPermute, valuesToSort, mergeStartPosition, remaining1);
         }
     }
 
     /**
      * Merge context temporary and run2 between mergeStartPosition and length2 (which is not the full run length, but
      * the length of things we might need to merge.
-     *
+     * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void frontMerge(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, final int mergeStartPosition, final int start2, final int length2) {
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void frontMerge(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            final int mergeStartPosition,
+            final int start2,
+            final int length2) {
         int tempCursor = 0;
         int run2Cursor = start2;
 
@@ -338,7 +382,7 @@ public class LongIntTimsortKernel {
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (leq(val1, val2)) {
                     valuesToSort.set(ii, val1);
-                    indexKeys.set(ii++, context.temporaryKeys.get(tempCursor));
+                    valuesToPermute.set(ii++, context.temporaryKeys.get(tempCursor));
 
                     if (++tempCursor == run1size) {
                         break nodataleft;
@@ -349,7 +393,7 @@ public class LongIntTimsortKernel {
                     run2wins = 0;
                 } else {
                     valuesToSort.set(ii, val2);
-                    indexKeys.set(ii++, indexKeys.get(run2Cursor));
+                    valuesToPermute.set(ii++, valuesToPermute.get(run2Cursor));
 
                     if (++run2Cursor == mergeEndExclusive) {
                         break nodataleft;
@@ -361,13 +405,15 @@ public class LongIntTimsortKernel {
                 }
             }
 
-            // we are in galloping mode now, if we had run out of data then we should have already bailed out to nodataleft
+            // we are in galloping mode now, if we had run out of data then we should have already bailed out to
+            // nodataleft
             while (ii < mergeEndExclusive) {
                 // if we had a lot of things from run1, we take the next thing from run2 then find it in run1
                 final int copyUntil1 = upperBound(context.temporaryValues, tempCursor, run1size, val2);
                 final int gallopLength1 = copyUntil1 - tempCursor;
                 if (gallopLength1 > 0) {
-                    copyToChunk(context.temporaryKeys, context.temporaryValues, indexKeys, valuesToSort, tempCursor, ii, gallopLength1);
+                    copyToChunk(context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort,
+                            tempCursor, ii, gallopLength1);
                     tempCursor += gallopLength1;
                     ii += gallopLength1;
 
@@ -383,7 +429,8 @@ public class LongIntTimsortKernel {
                 final int copyUntil2 = lowerBound(valuesToSort, run2Cursor, mergeEndExclusive, val1);
                 final int gallopLength2 = copyUntil2 - run2Cursor;
                 if (gallopLength2 > 0) {
-                    copyToChunk(indexKeys, valuesToSort, indexKeys, valuesToSort, run2Cursor, ii, gallopLength2);
+                    copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort, run2Cursor, ii,
+                            gallopLength2);
                     run2Cursor += gallopLength2;
                     ii += gallopLength2;
 
@@ -404,7 +451,7 @@ public class LongIntTimsortKernel {
 
         while (tempCursor < run1size) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
-            indexKeys.set(ii, context.temporaryKeys.get(tempCursor));
+            valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));
             tempCursor++;
             ii++;
         }
@@ -412,10 +459,15 @@ public class LongIntTimsortKernel {
 
     /**
      * Merge context temporary and run1 between mergeStartPosition + length1 + temporary.length
-     *
+     * <p>
      * We eventually need to do galloping here, but are skipping that for now
      */
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void backMerge(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, final int mergeStartPosition, final int length1) {
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void backMerge(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            final int mergeStartPosition,
+            final int length1) {
         final int run1End = mergeStartPosition + length1;
         int run1Cursor = run1End - 1;
         int tempCursor = context.temporaryValues.size() - 1;
@@ -442,7 +494,7 @@ public class LongIntTimsortKernel {
             while (run1wins < context.minGallop && run2wins < context.minGallop) {
                 if (geq(val2, val1)) {
                     valuesToSort.set(ii, val2);
-                    indexKeys.set(ii--, context.temporaryKeys.get(tempCursor));
+                    valuesToPermute.set(ii--, context.temporaryKeys.get(tempCursor));
 
                     if (--tempCursor < 0) {
                         break nodataleft;
@@ -453,7 +505,7 @@ public class LongIntTimsortKernel {
                     run1wins = 0;
                 } else {
                     valuesToSort.set(ii, val1);
-                    indexKeys.set(ii--, indexKeys.get(run1Cursor));
+                    valuesToPermute.set(ii--, valuesToPermute.get(run1Cursor));
 
                     if (--run1Cursor < mergeStartPosition) {
                         break nodataleft;
@@ -465,14 +517,16 @@ public class LongIntTimsortKernel {
                 }
             }
 
-            // we are in galloping mode now, if we had run out of data then we should have already bailed out to nodataleft
+            // we are in galloping mode now, if we had run out of data then we should have already bailed out to
+            // nodataleft
             while (ii >= mergeStartPosition) {
                 // if we had a lot of things from run2, we take the next thing from run1 then find it in run2
                 final int copyUntil2 = lowerBound(context.temporaryValues, 0, tempCursor, val1) + 1;
 
                 final int gallopLength2 = tempCursor - copyUntil2 + 1;
                 if (gallopLength2 > 0) {
-                    copyToChunk(context.temporaryKeys, context.temporaryValues, indexKeys, valuesToSort, copyUntil2, ii - gallopLength2 + 1, gallopLength2);
+                    copyToChunk(context.temporaryKeys, context.temporaryValues, valuesToPermute, valuesToSort,
+                            copyUntil2, ii - gallopLength2 + 1, gallopLength2);
                     tempCursor -= gallopLength2;
                     ii -= gallopLength2;
 
@@ -489,7 +543,8 @@ public class LongIntTimsortKernel {
 
                 final int gallopLength1 = run1Cursor - copyUntil1;
                 if (gallopLength1 > 0) {
-                    copyToChunk(indexKeys, valuesToSort, indexKeys, valuesToSort, copyUntil1, ii - gallopLength1, gallopLength1 + 1);
+                    copyToChunk(valuesToPermute, valuesToSort, valuesToPermute, valuesToSort,
+                            copyUntil1, ii - gallopLength1, gallopLength1 + 1);
                     run1Cursor -= gallopLength1;
                     ii -= gallopLength1;
 
@@ -510,23 +565,35 @@ public class LongIntTimsortKernel {
 
         while (tempCursor >= 0) {
             valuesToSort.set(ii, context.temporaryValues.get(tempCursor));
-            indexKeys.set(ii, context.temporaryKeys.get(tempCursor));
+            valuesToPermute.set(ii, context.temporaryKeys.get(tempCursor));
             tempCursor--;
             ii--;
         }
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToTemporary(LongIntSortKernelContext<ATTR, KEY_INDICES> context, WritableIntChunk<KEY_INDICES> indexKeys, WritableLongChunk<ATTR> valuesToSort, int mergeStartPosition, int remaining1) {
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void copyToTemporary(
+            LongIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute,
+            WritableLongChunk<SORT_VALUES_ATTR> valuesToSort,
+            int mergeStartPosition,
+            int remaining1) {
         context.temporaryValues.setSize(remaining1);
         context.temporaryKeys.setSize(remaining1);
 
         context.temporaryValues.copyFromChunk(valuesToSort, mergeStartPosition, 0, remaining1);
-        context.temporaryKeys.copyFromChunk(indexKeys, mergeStartPosition, 0, remaining1);
+        context.temporaryKeys.copyFromChunk(valuesToPermute, mergeStartPosition, 0, remaining1);
     }
 
-    private static <ATTR extends Any, KEY_INDICES extends Indices> void copyToChunk(IntChunk<KEY_INDICES> rowSetSource, LongChunk<ATTR> valuesSource, WritableIntChunk<KEY_INDICES> indexDest, WritableLongChunk<ATTR> valuesDest, int sourceStart, int destStart, int length) {
-        valuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
-        indexDest.copyFromChunk(rowSetSource, sourceStart, destStart, length);
+    private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void copyToChunk(
+            IntChunk<PERMUTE_VALUES_ATTR> rowSetSource,
+            LongChunk<SORT_VALUES_ATTR> valuesSource,
+            WritableIntChunk<PERMUTE_VALUES_ATTR> permuteValuesDest,
+            WritableLongChunk<SORT_VALUES_ATTR> sortValuesDest,
+            int sourceStart,
+            int destStart,
+            int length) {
+        sortValuesDest.copyFromChunk(valuesSource, sourceStart, destStart, length);
+        permuteValuesDest.copyFromChunk(rowSetSource, sourceStart, destStart, length);
     }
 
     // when we binary search in 1, we must identify a position for search value that is *after* our test values;
@@ -546,7 +613,7 @@ public class LongIntTimsortKernel {
     }
 
     private static int bound(LongChunk<?> valuesToSort, int lo, int hi, long searchValue, final boolean lower) {
-        final int compareLimit = lower ? -1 : 0;  // lt or leq
+        final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
@@ -563,28 +630,32 @@ public class LongIntTimsortKernel {
         return lo;
     }
 
-    private static void insertionSort(WritableIntChunk<? extends Indices> indexKeys, WritableLongChunk<?> valuesToSort, int offset, int length) {
-        // this could eventually be done with intrinsics (AVX 512/64 bits for int keys == 16 elements, and can be combined up to 256)
+    private static void insertionSort(
+            WritableIntChunk<?> valuesToPermute,
+            WritableLongChunk<?> valuesToSort,
+            int offset,
+            int length) {
+        // this could eventually be done with intrinsics (AVX 512/64 bits for int keys == 16 elements, and can be
+        // combined up to 256)
         for (int ii = offset + 1; ii < offset + length; ++ii) {
-            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj));  jj--) {
-                swap(indexKeys, valuesToSort, jj, jj - 1);
+            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--) {
+                swap(valuesToPermute, valuesToSort, jj, jj - 1);
             }
         }
     }
 
-    static private void swap(WritableIntChunk<? extends Indices> indexKeys, WritableLongChunk<?> valuesToSort, int a, int b) {
-        final int tempIndexKey = indexKeys.get(a);
+    static private void swap(WritableIntChunk<?> valuesToPermute, WritableLongChunk<?> valuesToSort, int a, int b) {
+        final int tempPermuteValue = valuesToPermute.get(a);
         final long tempLong = valuesToSort.get(a);
 
-        indexKeys.set(a, indexKeys.get(b));
+        valuesToPermute.set(a, valuesToPermute.get(b));
         valuesToSort.set(a, valuesToSort.get(b));
 
-        indexKeys.set(b, tempIndexKey);
+        valuesToPermute.set(b, tempPermuteValue);
         valuesToSort.set(b, tempLong);
     }
 
-
-//    private static void doCheck(Chunk.IntChunk indexKeys, Chunk.LongChunk valuesToSort, int startCheck, int mergeEnd) {
+//    private static void doCheck(Chunk.IntChunk valuesToPermute, Chunk.LongChunk valuesToSort, int startCheck, int mergeEnd) {
 //        long lastCheck;
 //        lastCheck = valuesToSort.get(startCheck);
 //        for (int jj = startCheck + 1; jj < mergeEnd; ++jj) {
@@ -594,9 +665,9 @@ public class LongIntTimsortKernel {
 //                throw new IllegalStateException();
 //            }
 //            else if (newCheck == lastCheck) {
-//                if (indexKeys.get(jj) < indexKeys.get(jj - 1)) {
+//                if (valuesToPermute.get(jj) < valuesToPermute.get(jj - 1)) {
 //                    dumpValues(valuesToSort, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
-//                    dumpKeys(indexKeys, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
+//                    dumpKeys(valuesToPermute, startCheck, mergeEnd - startCheck, "Bad index loop at " + jj);
 //                    throw new IllegalStateException();
 //                }
 //            }

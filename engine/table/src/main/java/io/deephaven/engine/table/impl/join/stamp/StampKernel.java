@@ -129,7 +129,7 @@ public interface StampKernel extends Context {
 
     /**
      * Stamps the left-hand-side values with the corresponding right hand side.
-     *
+     * <p>
      * The rightKeyIndices are parallel to the stamp values in rightStamps; and used to compute a new chunk of
      * redirections parallel to leftStamps.
      *
@@ -138,7 +138,9 @@ public interface StampKernel extends Context {
      * @param rightKeyIndices the input rhs stamp indices
      * @param leftRedirections the resulting redirections from the stamping operation
      */
-    void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
+    void computeRedirections(
+            Chunk<Values> leftStamps,
+            Chunk<Values> rightStamps,
             LongChunk<RowKeys> rightKeyIndices,
             WritableLongChunk<RowKeys> leftRedirections);
 }

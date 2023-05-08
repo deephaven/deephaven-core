@@ -2277,28 +2277,28 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region ByteVector
     @Override
-    public byte get(long i) {
-        if(i < 0 || i > size()) {
-            throw new IllegalArgumentException("Illegal index " + i + " current size: " + size());
+    public byte get(long index) {
+        if(index < 0 || index > size()) {
+            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
         }
 
         if(leafCount == 1) {
-            return directoryValues[(int)i];
+            return directoryValues[(int) index];
         } else {
             for(int ii = 0; ii < leafCount; ii++) {
-                if(i < leafSizes[ii]) {
-                    return leafValues[ii][(int)(i)];
+                if(index < leafSizes[ii]) {
+                    return leafValues[ii][(int)(index)];
                 }
-                i -= leafSizes[ii];
+                index -= leafSizes[ii];
             }
         }
 
-        throw new IllegalStateException("Index " + i + " not found in this SSM");
+        throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
     @Override
-    public ByteVector subVector(long fromIndex, long toIndex) {
-        return new ByteVectorDirect(keyArray(fromIndex, toIndex));
+    public ByteVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        return new ByteVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
@@ -2315,6 +2315,11 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public byte[] toArray() {
         return keyArray();
+    }
+
+    @Override
+    public byte[] copyToArray() {
+        return toArray();
     }
 
     @Override

@@ -136,8 +136,7 @@ public class CrossJoinHelper {
             int numRightBitsToReserve,
             final JoinControl control,
             final boolean leftOuterJoin) {
-        QueryTable.checkInitiateOperation(leftTable);
-        QueryTable.checkInitiateOperation(rightTable);
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bucketingContext =
                 new BucketingContext("join", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {

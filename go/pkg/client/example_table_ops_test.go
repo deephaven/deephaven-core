@@ -34,50 +34,51 @@ func Example_tableOps() {
 
 	fmt.Println(queryResult)
 
-    // Data Before:
-    // record:
-    //   schema:
-    //   fields: 3
-    //     - Ticker: type=utf8
-    //     - Close: type=float32
-    //     - Volume: type=int32
-    //   rows: 7
-    //   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
-    //   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
-    //   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
-    //
-    // New data:
-    // record:
-    //   schema:
-    //   fields: 3
-    //     - Ticker: type=utf8, nullable
-    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
-    //     - Close: type=float32, nullable
-    //        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
-    //     - Volume: type=int32, nullable
-    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
-    //   metadata: ["deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true"]
-    //   rows: 5
-    //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
-    //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
-    //   col[2][Volume]: [87000 138000 138000000 19000 48300]
-    //
-    // record:
-    //   schema:
-    //   fields: 4
-    //     - Ticker: type=utf8, nullable
-    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
-    //     - Close: type=float32, nullable
-    //        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
-    //     - Volume: type=int32, nullable
-    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
-    //     - Magnitude: type=int32, nullable
-    //            metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
-    //   rows: 5
-    //   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
-    //   col[1][Close]: [53.8 38.7 453 26.7 544.9]
-    //   col[2][Volume]: [87000 138000 138000000 19000 48300]
-    //   col[3][Magnitude]: [10000 100000 100000000 10000 10000]
+	// Output:
+	// Data Before:
+	// record:
+	//   schema:
+	//   fields: 3
+	//     - Ticker: type=utf8
+	//     - Close: type=float32
+	//     - Volume: type=int32
+	//   rows: 7
+	//   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
+	//   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
+	//   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
+	//
+	// New data:
+	// record:
+	//   schema:
+	//   fields: 3
+	//     - Ticker: type=utf8, nullable
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
+	//     - Close: type=float32, nullable
+	//        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
+	//     - Volume: type=int32, nullable
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
+	//   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean"]
+	//   rows: 5
+	//   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
+	//   col[1][Close]: [53.8 38.7 453 26.7 544.9]
+	//   col[2][Volume]: [87000 138000 138000000 19000 48300]
+	//
+	// record:
+	//   schema:
+	//   fields: 4
+	//     - Ticker: type=utf8, nullable
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
+	//     - Close: type=float32, nullable
+	//        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
+	//     - Volume: type=int32, nullable
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
+	//     - Magnitude: type=int32, nullable
+	//            metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isPartitioning": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
+	//   rows: 5
+	//   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
+	//   col[1][Close]: [53.8 38.7 453 26.7 544.9]
+	//   col[2][Volume]: [87000 138000 138000000 19000 48300]
+	//   col[3][Magnitude]: [10000 100000 100000000 10000 10000]
 }
 
 // This function demonstrates how to use immediate table operations.
@@ -89,7 +90,7 @@ func doImmediateOps() (string, error) {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return "", err
@@ -159,7 +160,7 @@ func doImmediateOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", sampleRecord, midRecord, magRecord), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }
 
 // This function demonstrates how to use query-graph table operations.
@@ -172,7 +173,7 @@ func doQueryOps() (string, error) {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return "", err
@@ -239,5 +240,5 @@ func doQueryOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", sampleRecord, midRecord, magRecord), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }

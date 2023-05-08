@@ -110,7 +110,7 @@ public final class ShortChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableShortChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableShortChunk(@NotNull final WritableShortChunk writableShortChunk) {
+    public void giveWritableShortChunk(@NotNull final WritableShortChunk<?> writableShortChunk) {
         if (writableShortChunk == EMPTY || writableShortChunk.isAlias(EMPTY)) {
             return;
         }

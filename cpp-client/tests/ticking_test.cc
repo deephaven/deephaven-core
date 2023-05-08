@@ -9,7 +9,7 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/client.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 #include <iostream>
 #include <arrow/flight/client.h>
@@ -25,17 +25,17 @@
 #include <arrow/table.h>
 #include <arrow/util/key_value_metadata.h>
 
-using deephaven::client::chunk::Int64Chunk;
 using deephaven::client::Client;
 using deephaven::client::NumCol;
 using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
+using deephaven::dhcore::chunk::Int64Chunk;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::tests {
-class CommonBase : public deephaven::client::TickingCallback {
+class CommonBase : public deephaven::dhcore::ticking::TickingCallback {
 public:
   void onFailure(std::exception_ptr ep) final {
     std::unique_lock guard(mutex_);
@@ -71,7 +71,7 @@ class ReachesNRowsCallback final : public CommonBase {
 public:
   explicit ReachesNRowsCallback(size_t targetRows) : targetRows_(targetRows) {}
 
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     std::cout << "=== The Full Table ===\n"
               << update.current()->stream(true, true)
               << '\n';
@@ -111,7 +111,7 @@ class AllValuesGreaterThanNCallback final : public CommonBase {
 public:
   explicit AllValuesGreaterThanNCallback(int64_t target) : target_(target) {}
 
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     const auto &current = update.current();
     std::cout << "=== The Full Table ===\n"
               << current->stream(true, true)

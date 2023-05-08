@@ -20,20 +20,23 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.tuple.ArrayTuple;
+import io.deephaven.tuple.generated.IntObjectDoubleTuple;
+import io.deephaven.tuple.generated.IntObjectObjectTuple;
+import io.deephaven.tuple.generated.IntObjectTuple;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+
 import org.junit.experimental.categories.Category;
 
-@SuppressWarnings("ClassInitializerMayBeStatic")
 @Category(OutOfBandTest.class)
 public class TestRowSetIndexer extends RefreshingTableTestCase {
 
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
-        return powerSet(originalSet.stream().collect(Collectors.toList()));
+        return powerSet(new ArrayList<>(originalSet));
     }
 
     private static <T> ArrayList<ArrayList<T>> powerSet(List<T> originalSet) {
@@ -63,7 +66,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         testGrouping(true, new Random(0), new MutableInt(50));
     }
 
-    public void testGrouping(final boolean immutableColumns, final Random random, final MutableInt numSteps) {
+    private void testGrouping(final boolean immutableColumns, final Random random, final MutableInt numSteps) {
         int size = 100;
 
         ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
@@ -167,17 +170,16 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
 
     // we don't ever need to look at the grouping validators, just make sure they don't go away
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
-    private ArrayList<GroupingValidator> groupingValidators = new ArrayList<>();
+    private final ArrayList<GroupingValidator> groupingValidators = new ArrayList<>();
 
     private void addGroupingValidator(Table originalValue, String context) {
         ArrayList<ArrayList<String>> columnSets2 = powerSet(originalValue.getColumnSourceMap().keySet());
-        ArrayList<String> columnNames = new ArrayList<>();
-        columnNames.addAll(originalValue.getColumnSourceMap().keySet());
+        ArrayList<String> columnNames = new ArrayList<>(originalValue.getColumnSourceMap().keySet());
         columnSets2.add(columnNames);
         groupingValidators.add(new GroupingValidator(context, originalValue, columnSets2));
     }
 
-    public void testCombinedGrouping() throws IOException {
+    public void testCombinedGrouping() {
         Random random = new Random(0);
         int size = 100;
 
@@ -272,7 +274,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
     }
 
-    public void testRestrictedGrouping() throws IOException {
+    public void testRestrictedGrouping() {
         Random random = new Random(0);
         int size = 100;
 
@@ -345,13 +347,20 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 .forAllRowKeys(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
+        long intSymGroupingSize = indexer.getGroupingForKeySet(
+                keySet.stream().map(k -> {
+                    final IntObjectDoubleTuple kTuple = (IntObjectDoubleTuple) k;
+                    return new IntObjectTuple(kTuple.getFirstElement(), kTuple.getSecondElement());
+                }).collect(Collectors.toSet()),
+                TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource))
+                .values().stream().mapToLong(RowSet::size).sum();
         final Map<Object, RowSet> intSymDoubleGrouping = indexer.getGroupingForKeySet(keySet,
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        long groupingSize = intSymDoubleGrouping.values().stream().mapToLong(RowSet::size).sum();
-        TestCase.assertEquals(groupingSize, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(intSymGroupingSize,
+                ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
@@ -366,6 +375,14 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 .forAllRowKeys(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
+        long intSymSym2GroupingSize = indexer.getGroupingForKeySet(
+                keySet.stream().map(k -> {
+                    final ArrayTuple kTuple = (ArrayTuple) k;
+                    return new IntObjectObjectTuple(
+                            kTuple.getElement(0), kTuple.getElement(1), kTuple.getElement(2));
+                }).collect(Collectors.toSet()),
+                TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource))
+                .values().stream().mapToLong(RowSet::size).sum();
         final Map<Object, RowSet> intSymSym2DoubleGrouping =
                 indexer.getGroupingForKeySet(keySet, TupleSourceFactory
                         .makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource, doubleColumnSource));
@@ -373,8 +390,8 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        groupingSize = intSymSym2DoubleGrouping.values().stream().mapToLong(RowSet::size).sum();
-        TestCase.assertEquals(groupingSize, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(intSymSym2GroupingSize,
+                ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 

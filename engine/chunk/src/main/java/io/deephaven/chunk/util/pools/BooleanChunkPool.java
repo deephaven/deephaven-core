@@ -110,7 +110,7 @@ public final class BooleanChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableBooleanChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableBooleanChunk(@NotNull final WritableBooleanChunk writableBooleanChunk) {
+    public void giveWritableBooleanChunk(@NotNull final WritableBooleanChunk<?> writableBooleanChunk) {
         if (writableBooleanChunk == EMPTY || writableBooleanChunk.isAlias(EMPTY)) {
             return;
         }

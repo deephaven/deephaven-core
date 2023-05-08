@@ -38,10 +38,10 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+_JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 
 # PartitionedTable
@@ -87,6 +87,16 @@ class NodeType(Enum):
     """Nodes at the leaf level when meth:`~deephaven.table.Table.rollup` method is called with 
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
+
+
+class SearchDisplayMode(Enum):
+    """An enum of search display modes for layout hints"""
+    DEFAULT = _JSearchDisplayMode.Default
+    """Use the system default. This may depend on your user and/or system settings."""
+    SHOW = _JSearchDisplayMode.Show
+    """Permit the search bar to be displayed, regardless of user or system settings."""
+    HIDE = _JSearchDisplayMode.Hide
+    """Hide the search bar, regardless of user or system settings."""
 
 
 class _FormatOperationsRecorder(Protocol):
@@ -474,15 +484,6 @@ class SortDirection(Enum):
     """"""
 
 
-class AsOfMatchRule(Enum):
-    """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
-    operation. """
-    LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
-    LESS_THAN = _JAsOfMatchRule.LESS_THAN
-    GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
-    GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
-
-
 def _sort_column(col, dir_):
     return (_JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
         _JColumnName.of(col)))
@@ -519,6 +520,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._is_flat = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -547,6 +549,13 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def is_flat(self) -> bool:
+        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
+        if self._is_flat is None:
+            self._is_flat = self.j_table.isFlat()
+        return self._is_flat
 
     @property
     def columns(self) -> List[Column]:
@@ -616,6 +625,10 @@ class Table(JObjectWrapper):
     def coalesce(self) -> Table:
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
+
+    def flatten(self) -> Table:
+        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
+        return Table(j_table=self.j_table.flatten())
 
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
@@ -865,7 +878,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table select operation failed.") from e
 
     def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> Table:
-        """The select_distinct method creates a new table containing all of the unique values for a set of key
+        """The select_distinct method creates a new table containing all the unique values for a set of key
         columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
         the selected columns.
 
@@ -1249,8 +1262,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -1259,12 +1271,12 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new table
 
@@ -1272,20 +1284,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
+                return Table(j_table=table_op.aj(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
-        """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+        """The reverse-as-of join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going under. If there is no matching key in the right table, appended row
@@ -1293,12 +1301,116 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            with auto_locking_ctx(self, table):
+                return Table(j_table=table_op.raj(table.j_table, on, joins))
+        except Exception as e:
+            raise DHError(e, "table reverse-as-of join operation failed.") from e
+
+    def range_join(self, table: Table, on: Union[str, List[str]], aggs: Union[Aggregation, List[Aggregation]]) -> Table:
+        """The range_join method creates a new table containing all the rows and columns of the left table,
+        plus additional columns containing aggregated data from the right table. For columns appended to the
+        left table (joins), cell values equal aggregations over vectors of values from the right table.
+        These vectors are formed from all values in the right table where the right table keys fall within the
+        ranges of keys defined by the left table (responsive ranges).
+
+        range_join is a join plus aggregation that (1) joins arrays of data from the right table onto the left table,
+        and then (2) aggregates over the joined data. Oftentimes this is used to join data for a particular time range
+        from the right table onto the left table.
+
+        Rows from the right table with null or NaN key values are discarded; that is, they are never included in the
+        vectors used for aggregation.  For all rows that are not discarded, the right table must be sorted according
+        to the right range column for all rows within a group.
+
+        Join key ranges, specified by the 'on' argument, are defined by zero-or-more exact join matches and a single
+        range join match. The range join match must be the last match in the list.
+
+        The exact match expressions are parsed as in other join operations. That is, they are either a column name
+        common to both tables or a column name from the left table followed by an equals sign followed by a column
+        name from the right table.
+        Examples:
+            Match on the same column name in both tables:
+                "common_column"
+            Match on different column names in each table:
+                "left_column = right_column"
+                or
+                "left_column == right_column"
+
+        The range match expression is expressed as a ternary logical expression, expressing the relationship between
+        the left start column, the right range column, and the left end column. Each column name pair is separated by
+        a logical operator, either < or <=. Additionally, the entire expression may be preceded by a left arrow <-
+        and/or followed by a right arrow ->.  The arrows indicate that range match can 'allow preceding' or 'allow
+        following' to match values outside the explicit range. 'Allow preceding' means that if no matching right
+        range column value is equal to the left start column value, the immediately preceding matching right row
+        should be included in the aggregation if such a row exists. 'Allow following' means that if no matching right
+        range column value is equal to the left end column value, the immediately following matching right row should
+        be included in the aggregation if such a row exists.
+        Examples:
+            For less than paired with greater than:
+               "left_start_column < right_range_column < left_end_column"
+            For less than or equal paired with greater than or equal:
+               "left_start_column <= right_range_column <= left_end_column"
+            For less than or equal (allow preceding) paired with greater than or equal (allow following):
+               "<- left_start_column <= right_range_column <= left_end_column ->"
+
+        Special Cases
+            In order to produce aggregated output, range match expressions must define a range of values to aggregate
+            over. There are a few noteworthy special cases of ranges.
+
+            Empty Range
+            An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right
+            rows were found using the exact join matches, or none were in range according to the range join match.
+
+            Single-value Ranges
+            A single-value range is a range where the left row's values for the left start column and left end
+            column are equal and both relative matches are inclusive (<= and >=, respectively). For a single-value
+            range, only rows within the bucket where the right range column matches the single value are included in
+            the output aggregations.
+
+            Invalid Ranges
+            An invalid range occurs in two scenarios:
+                (1) When the range is inverted, i.e., when the value of the left start column is greater than the value
+                    of the left end column.
+                (2) When either relative-match is exclusive (< or >) and the value in the left start column is equal to
+                    the value in the left end column.
+            For invalid ranges, the result row will be null for all aggregation output columns.
+
+            Undefined Ranges
+            An undefined range occurs when either the left start column or the left end column is NaN. For rows with an
+            undefined range, the corresponding output values will be null (as with invalid ranges).
+
+            Unbounded Ranges
+            A partially or fully unbounded range occurs when either the left start column or the left end column is
+            null. If the left start column value is null and the left end column value is non-null, the range is
+            unbounded at the beginning, and only the left end column subexpression will be used for the match. If the
+            left start column value is non-null and the left end column value is null, the range is unbounded at the
+            end, and only the left start column subexpression will be used for the match. If the left start column
+            and left end column values are null, the range is unbounded, and all rows will be included.
+
+        Note: At this time, implementations only support static tables. This operation remains under active development.
+
+        Args:
+            table (Table): the right table of the join
+            on (Union[str, List[str]]): the match expression(s) that must include zero-or-more exact match expression,
+                and exactly one range match expression as described above
+            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
+                the right table for each row from this Table
 
         Returns:
             a new table
@@ -1308,17 +1420,11 @@ class Table(JObjectWrapper):
         """
         try:
             on = to_sequence(on)
-            joins = to_sequence(joins)
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
-            with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
+            aggs = to_sequence(aggs)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            return Table(j_table=self.j_table.rangeJoin(table.j_table, j_array_list(on), j_agg_list))
         except Exception as e:
-            raise DHError(e, "table reverse-as-of join operation failed.") from e
+            raise DHError(e, message="table range_join operation failed.") from e
 
     # endregion
 
@@ -1852,7 +1958,7 @@ class Table(JObjectWrapper):
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
-                     column_groups: List[dict] = None) -> Table:
+                     column_groups: List[dict] = None, search_display_mode: SearchDisplayMode = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
@@ -1861,12 +1967,16 @@ class Table(JObjectWrapper):
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Union[str, List[str]]): the columns to hide.
-            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI.
                 The dicts can specify the following:
 
-                name (str): The group name
-                children (List[str]): The
-                color (Optional[str]): The hex color string or Deephaven color name
+                * name (str): The group name
+                * children (List[str]): The column names in the group
+                * color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
+                or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
+                :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
+                use the default value configured by the user and system settings.
 
         Returns:
             a new table with the layout hints set
@@ -1893,6 +2003,10 @@ class Table(JObjectWrapper):
                 for group in column_groups:
                     _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
                                                        group.get("color", ""))
+
+            if search_display_mode is not None:
+                _j_layout_hint_builder.setSearchBarAccess(search_display_mode.value)
+
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
@@ -1924,7 +2038,7 @@ class Table(JObjectWrapper):
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
@@ -2046,6 +2160,32 @@ class Table(JObjectWrapper):
             return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col, parent_col=parent_col)
         except Exception as e:
             raise DHError(e, "table tree operation failed.") from e
+
+    def await_update(self, timeout: int = None) -> bool:
+        """Waits until either this refreshing Table is updated or the timeout elapses if provided.
+
+        Args:
+            timeout (int): the maximum time to wait in milliseconds, default is None, meaning no timeout
+
+        Returns:
+            True when the table is updated or False when the timeout has been reached.
+
+        Raises:
+            DHError
+        """
+        if not self.is_refreshing:
+            raise DHError(message="await_update can only be called on refreshing tables.")
+
+        updated = True
+        try:
+            if timeout is not None:
+                updated = self.j_table.awaitUpdate(timeout)
+            else:
+                self.j_table.awaitUpdate()
+        except Exception as e:
+            raise DHError(e, "await_update was interrupted.") from e
+        else:
+            return updated
 
 
 class PartitionedTable(JObjectWrapper):
@@ -2878,8 +3018,7 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "join operation on the PartitionedTableProxy failed.") from e
 
     def aj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-           joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
+           joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2889,12 +3028,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2902,31 +3041,18 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.LESS_THAN_EQUAL:
-                match_rule = _JAsOfJoinRule.LESS_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.LESS_THAN:
-                match_rule = _JAsOfJoinRule.LESS_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.aj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "as-of join operation on the PartitionedTableProxy failed.") from e
 
     def raj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-            joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
+            joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2936,12 +3062,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2949,25 +3075,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.GREATER_THAN_EQUAL:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.GREATER_THAN:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.raj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
 

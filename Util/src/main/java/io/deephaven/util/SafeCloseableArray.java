@@ -36,8 +36,9 @@ public class SafeCloseableArray<SCT extends SafeCloseable> implements SafeClosea
      * @param array The array to operate one
      */
     public static <SCT extends SafeCloseable> void close(@NotNull final SCT[] array) {
+        final int length = array.length;
         List<Exception> exceptions = null;
-        for (int ii = 0; ii < array.length; ii++) {
+        for (int ii = 0; ii < length; ii++) {
             try (final SafeCloseable ignored = array[ii]) {
                 array[ii] = null;
             } catch (Exception e) {

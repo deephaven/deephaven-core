@@ -41,7 +41,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 // endregion extra imports
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.util.SafeCloseable.closeAll;
 
 // region class visibility
 // endregion class visibility
@@ -427,13 +427,13 @@ class SymbolTableCombiner
             // endmixin rehash
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(buildContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(buildContexts);
 
             hashChunk.close();
             tableLocationsChunk.close();
-            closeArray(writeThroughChunks);
+            closeAll(writeThroughChunks);
 
             sourcePositions.close();
             destinationLocationPositionInWriteThrough.close();
@@ -446,8 +446,8 @@ class SymbolTableCombiner
             chunkPositionsToCheckForEquality.close();
             overflowLocationForEqualityCheck.close();
             workingStateEntries.close();
-            closeArray(workingKeyChunks);
-            closeArray(overflowKeyChunks);
+            closeAll(workingKeyChunks);
+            closeAll(overflowKeyChunks);
             chunkPositionsForFetches.close();
             chunkPositionsToInsertInOverflow.close();
             tableLocationsToInsertInOverflow.close();
@@ -1094,10 +1094,10 @@ class SymbolTableCombiner
     private void updateWriteThroughState(ResettableWritableIntChunk<Values> writeThroughState, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = uniqueIdentifierSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("WritableColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughState.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("WritableColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
     // endmixin allowUpdateWriteThroughState
@@ -1105,10 +1105,10 @@ class SymbolTableCombiner
     private void updateWriteThroughOverflow(ResettableWritableIntChunk writeThroughOverflow, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = overflowLocationSource.resetWritableChunkToBackingStore(writeThroughOverflow, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("WritableColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughOverflow.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("WritableColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
 
@@ -1127,10 +1127,10 @@ class SymbolTableCombiner
         final long firstBackingChunkPosition = ((ChunkedBackingStoreExposedWritableSource)sources[0]).resetWritableChunkToBackingStore(writeThroughChunks[0], currentHashLocation);
         for (int jj = 1; jj < sources.length; ++jj) {
             if (((ChunkedBackingStoreExposedWritableSource)sources[jj]).resetWritableChunkToBackingStore(writeThroughChunks[jj], currentHashLocation) != firstBackingChunkPosition) {
-                throw new IllegalStateException("WritableColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
             if (writeThroughChunks[jj].size() != writeThroughChunks[0].size()) {
-                throw new IllegalStateException("WritableColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
         }
         return firstBackingChunkPosition;
@@ -1342,9 +1342,9 @@ class SymbolTableCombiner
             stateSourceFillContext.close();
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(probeContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(probeContexts);
             hashChunk.close();
             tableLocationsChunk.close();
             workingStateEntries.close();
@@ -1353,7 +1353,7 @@ class SymbolTableCombiner
             overflowLocations.close();
             chunkPositionsForFetches.close();
             equalValues.close();
-            closeArray(workingKeyChunks);
+            closeAll(workingKeyChunks);
             closeSharedContexts();
             // region probe context close
             overflowOverflowFillContext.close();

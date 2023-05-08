@@ -3,25 +3,25 @@
  */
 package io.deephaven.base.cache;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.hash.KeyedObjectKey;
 import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 @SuppressWarnings({"RedundantStringConstructorCall", "JUnit4AnnotatedMethodInJUnit3TestCase"})
 public class TestKeyedObjectCache extends TestCase {
 
-    private static final KeyedObjectKey<Object, Object> KEY = new KeyedObjectKey.Basic<Object, Object>() {
+    private static final KeyedObjectKey<Object, Object> KEY = new KeyedObjectKey.Basic<>() {
         @Override
         public Object getKey(Object o) {
             return o;
         }
     };
-    private static final Procedure.Unary<Object> POST = new Procedure.Unary<Object>() {
+    private static final Consumer<Object> POST = new Consumer<>() {
         @Override
-        public void call(Object arg) {
+        public void accept(Object arg) {
             lastPost = arg;
         }
     };

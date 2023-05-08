@@ -8,41 +8,46 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
+/**
+ * A {@link DoubleVector} backed by an array.
+ */
 @ArrayType(type = double[].class)
-public class DoubleVectorDirect implements DoubleVector {
+public final class DoubleVectorDirect implements DoubleVector {
 
     private final static long serialVersionUID = 3636374971797603565L;
 
+    public static final DoubleVector ZERO_LENGTH_VECTOR = new DoubleVectorDirect();
+
     private final double[] data;
 
-    public DoubleVectorDirect(double... data){
-        this.data = data;
+    public DoubleVectorDirect(@NotNull final double... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
-    public static final DoubleVector ZERO_LEN_VECTOR = new DoubleVectorDirect();
-
     @Override
-    public double get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public double get(final long index) {
+        if (index < 0 || index >= data.length) {
             return NULL_DOUBLE;
         }
-        return data[LongSizedDataStructure.intSize("DoubleVectorDirect get",  i)];
+        return data[(int) index];
     }
 
     @Override
-    public DoubleVector subVector(long fromIndex, long toIndex) {
-        return new DoubleVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public DoubleVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new DoubleVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public DoubleVector subVectorByPositions(long [] positions) {
+    public DoubleVector subVectorByPositions(final long[] positions) {
         return new DoubleSubVector(this, positions);
     }
 
@@ -50,6 +55,19 @@ public class DoubleVectorDirect implements DoubleVector {
     @ArrayTypeGetter
     public double[] toArray() {
         return data;
+    }
+
+    @Override
+    public double[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfDouble.of(data);
+        }
+        return DoubleVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
 
     @Override
@@ -63,12 +81,12 @@ public class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return DoubleVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof DoubleVectorDirect) {
             return Arrays.equals(data, ((DoubleVectorDirect) obj).data);
         }
@@ -76,7 +94,7 @@ public class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return DoubleVector.hashCode(this);
     }
 }

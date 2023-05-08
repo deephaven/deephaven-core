@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import com.google.gwt.user.client.Timer;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
@@ -15,12 +16,13 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.ExecutionHandle;
@@ -36,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
+import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  */
@@ -44,7 +46,8 @@ import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
 public class IdeSession extends HasEventHandling {
     private static final int AUTOCOMPLETE_STREAM_TIMEOUT = 30_000;
 
-    public static final String EVENT_COMMANDSTARTED = "commandstarted";
+    public static final String EVENT_COMMANDSTARTED = "commandstarted",
+            EVENT_REQUEST_FAILED = "requestfailed";
 
     private final Ticket result;
 
@@ -52,7 +55,7 @@ public class IdeSession extends HasEventHandling {
     private final WorkerConnection connection;
     private final JsRunnable closer;
     private int nextAutocompleteRequestId = 0;
-    private Map<Integer, LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>> pendingAutocompleteCalls =
+    private Map<Integer, LazyPromise<AutoCompleteResponse>> pendingAutocompleteCalls =
             new HashMap<>();
 
     private final Supplier<BiDiStream<AutoCompleteRequest, AutoCompleteResponse>> streamFactory;
@@ -92,7 +95,7 @@ public class IdeSession extends HasEventHandling {
 
     // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
-        return connection.getVariableDefinition(name, JsVariableChanges.TABLE).then(varDef -> {
+        return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
             final CustomEventInit event = CustomEventInit.create();
             event.setDetail(table);
@@ -102,20 +105,20 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<JsFigure> getFigure(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.FIGURE).then(connection::getFigure);
+        return connection.getVariableDefinition(name, JsVariableType.FIGURE).then(connection::getFigure);
     }
 
     public Promise<JsTreeTable> getTreeTable(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+        return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
     }
 
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+        return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
     }
 
-    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }
 
@@ -204,15 +207,10 @@ public class IdeSession extends HasEventHandling {
         }
         currentStream = streamFactory.get();
         currentStream.onData(res -> {
-            LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> pendingPromise =
-                    pendingAutocompleteCalls.remove(res.getCompletionItems().getRequestId());
-            if (pendingPromise == null) {
-                return;
-            }
-            if (res.getCompletionItems().getSuccess()) {
-                pendingPromise.succeed(cleanupItems(res.getCompletionItems().getItemsList()));
+            if (res.getSuccess()) {
+                pendingAutocompleteCalls.remove(res.getRequestId()).succeed(res);
             } else {
-                pendingPromise
+                pendingAutocompleteCalls.remove(res.getRequestId())
                         .fail("Error occurred handling autocomplete on the server, probably request is out of date");
             }
         });
@@ -250,6 +248,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Opening document for autocomplete ", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setOpenDocument(request);
         ensureStream().send(wrapper);
     }
@@ -283,6 +282,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Sending content changes", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setChangeDocument(request);
         ensureStream().send(wrapper);
     }
@@ -303,45 +303,98 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
+    private AutoCompleteRequest getAutoCompleteRequest() {
+        AutoCompleteRequest request = new AutoCompleteRequest();
+        request.setConsoleId(this.result);
+        request.setRequestId(nextAutocompleteRequestId);
+        nextAutocompleteRequestId++;
+        return request;
+    }
+
     public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final GetCompletionItemsRequest request = new GetCompletionItemsRequest();
+        final GetCompletionItemsRequest completionRequest = new GetCompletionItemsRequest();
 
         final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        request.setTextDocument(textDocument);
-        request.setPosition(toPosition(jsMap.getAsAny("position")));
-        request.setContext(toContext(jsMap.getAsAny("context")));
-        request.setConsoleId(this.result);
-        request.setRequestId(nextAutocompleteRequestId++);
+        completionRequest.setTextDocument(textDocument);
+        completionRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+        completionRequest.setContext(toContext(jsMap.getAsAny("context")));
 
-        LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> promise = new LazyPromise<>();
-        AutoCompleteRequest wrapper = new AutoCompleteRequest();
-        wrapper.setGetCompletionItems(request);
-        ensureStream().send(wrapper);
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetCompletionItems(completionRequest);
+
+        // Set these in case running against an old server implementation
+        completionRequest.setConsoleId(request.getConsoleId());
+        completionRequest.setRequestId(request.getRequestId());
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
         pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
 
         return promise
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
-                .then(Promise::resolve, fail -> {
-                    pendingAutocompleteCalls.remove(request.getRequestId());
-                    // noinspection unchecked, rawtypes
-                    return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
-                            .reject(fail);
-                });
+                .then(res -> Promise.resolve(
+                        res.getCompletionItems().getItemsList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
+                                    .reject(fail);
+                        });
     }
 
-    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(
-            final JsArray<CompletionItem> itemsList) {
-        JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleaned = new JsArray<>();
-        if (itemsList != null) {
-            for (int i = 0; i < itemsList.getLength(); i++) {
-                final CompletionItem item = itemsList.getAt(i);
-                final io.deephaven.web.shared.ide.lsp.CompletionItem copy = LspTranslate.toJs(item);
-                cleaned.push(copy);
-            }
-        }
-        return cleaned;
+
+    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>> getSignatureHelp(Object params) {
+        final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
+        final GetSignatureHelpRequest signatureHelpRequest = new GetSignatureHelpRequest();
+
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
+        signatureHelpRequest.setTextDocument(textDocument);
+        signatureHelpRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetSignatureHelp(signatureHelpRequest);
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
+        pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
+
+        return promise
+                .timeout(JsTable.MAX_BATCH_TIME)
+                .asPromise()
+                .then(res -> Promise.resolve(
+                        res.getSignatures().getSignaturesList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise
+                                    .reject(fail);
+                        });
+    }
+
+    public Promise<io.deephaven.web.shared.ide.lsp.Hover> getHover(Object params) {
+        final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
+        final GetHoverRequest hoverRequest = new GetHoverRequest();
+
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
+        hoverRequest.setTextDocument(textDocument);
+        hoverRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetHover(hoverRequest);
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
+        pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
+
+        return promise
+                .timeout(JsTable.MAX_BATCH_TIME)
+                .asPromise()
+                .then(res -> Promise.resolve(LspTranslate.toJs(res.getHover())),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<io.deephaven.web.shared.ide.lsp.Hover>) (Promise) Promise
+                                    .reject(fail);
+                        });
     }
 
     private CompletionContext toContext(final Any context) {
@@ -364,6 +417,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Closing document for autocomplete ", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setCloseDocument(request);
         ensureStream().send(wrapper);
     }

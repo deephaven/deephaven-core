@@ -21,11 +21,16 @@ import java.nio.Buffer;
 import java.nio.IntBuffer;
 // endregion BufferImports
 
+// region BinarySearchImports
+import java.util.Arrays;
+// endregion BinarySearchImports
+
 /**
  * {@link Chunk} implementation for int data.
  */
 public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final IntChunk EMPTY = new IntChunk<>(ArrayTypeUtils.EMPTY_INT_ARRAY, 0, 0);
 
     public static <ATTR extends Any> IntChunk<ATTR> getEmptyChunk() {
@@ -33,6 +38,7 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final IntChunk[] EMPTY_INT_CHUNK_ARRAY = new IntChunk[0];
 
     static <ATTR extends Any> IntChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +121,7 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +164,42 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableIntChunk<ATTR_DERIV> downcast(WritableIntChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> IntChunk<ATTR_DERIV> downcast(IntChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableIntChunk<ATTR_DERIV>) self;
+        return (IntChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
+
+    // region BinarySearch
+    /**
+     * Search for {@code key} in this chunk in the index range [0, {@link #size() size}) using Java's primitive
+     * ordering. This chunk must be sorted as by {@link WritableIntChunk#sort()} prior to this call.
+     * <p>
+     * This method does <em>not</em> compare {@code null} or {@code NaN} values according to Deephaven ordering rules.
+     *
+     * @param key The key to search for
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
+     *         {@link Arrays#binarySearch(int[], int)}
+     */
+    public final int binarySearch(final int key) {
+        return Arrays.binarySearch(data, offset, offset + size, key);
+    }
+
+    /**
+     * Search for {@code key} in this chunk in the index range {@code [fromIndexInclusive, toIndexExclusive)} using
+     * Java's primitive ordering. This chunk must be sorted over the search index range as by
+     * {@link WritableIntChunk#sort(int, int)} prior to this call.
+     * <p>
+     * This method does <em>not</em> compare {@code null} or {@code NaN} values according to Deephaven ordering rules.
+     *
+     * @param fromIndexInclusive The first index to be searched
+     * @param toIndexExclusive The index after the last index to be searched
+     * @param key The key to search for
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
+     *         {@link Arrays#binarySearch(int[], int, int, int)}
+     */
+    public final int binarySearch(final int fromIndexInclusive, final int toIndexExclusive, final int key) {
+        return Arrays.binarySearch(data, offset + fromIndexInclusive, offset + toIndexExclusive, key);
+    }
+    // endregion BinarySearch
 }

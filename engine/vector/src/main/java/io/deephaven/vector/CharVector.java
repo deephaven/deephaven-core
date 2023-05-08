@@ -3,6 +3,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.qst.type.CharType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -12,7 +14,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface CharVector extends Vector<CharVector> {
+/**
+ * A {@link Vector} of primitive chars.
+ */
+public interface CharVector extends Vector<CharVector>, Iterable<Character> {
 
     long serialVersionUID = -1373264425081841175L;
 
@@ -20,23 +25,65 @@ public interface CharVector extends Vector<CharVector> {
         return PrimitiveVectorType.of(CharVector.class, CharType.instance());
     }
 
-    char get(long i);
+    /**
+     * Get the element of this CharVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_CHAR null char}.
+     *
+     * @param index An offset into this CharVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_CHAR null char}
+     */
+    char get(long index);
 
     @Override
-    CharVector subVector(long fromIndex, long toIndex);
+    CharVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    CharVector subVectorByPositions(long [] positions);
+    CharVector subVectorByPositions(long[] positions);
 
     @Override
     char[] toArray();
 
     @Override
-    long size();
+    char[] copyToArray();
+
+    @Override
+    CharVector getDirect();
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default CloseablePrimitiveIteratorOfChar iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfChar() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public char nextChar() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
+
+    @Override
+    @FinalDefault
+    default Class<?> getComponentType() {
         return char.class;
     }
 
@@ -46,12 +93,8 @@ public interface CharVector extends Vector<CharVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
-    @Override
-    CharVector getDirect();
-
     static String charValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character) val);
     }
 
     static String primitiveCharValToString(final char val) {
@@ -61,21 +104,22 @@ public interface CharVector extends Vector<CharVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The CharVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The CharVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final CharVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final CharVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveCharValToString(array.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveCharValToString(array.get(ei)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        try (final CloseablePrimitiveIteratorOfChar iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveCharValToString(iterator.nextChar()));
+            iterator.forEachRemaining(
+                    (final char value) -> builder.append(',').append(primitiveCharValToString(value)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -86,44 +130,55 @@ public interface CharVector extends Vector<CharVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a CharVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a CharVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final CharVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final CharVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof CharVector)) {
+        if (!(bObj instanceof CharVector)) {
             return false;
         }
-        final CharVector bArray = (CharVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final CharVector bVector = (CharVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfChar aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                // region ElementEquals
+                if (aIterator.nextChar() != bIterator.nextChar()) {
+                    return false;
+                }
+                // endregion ElementEquals
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(char[])}.
      *
-     * @param array The CharVector to hash
+     * @param vector The CharVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final CharVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final CharVector vector) {
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Character.hashCode(array.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfChar iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Character.hashCode(iterator.nextChar());
+            }
         }
         return result;
     }
@@ -133,7 +188,22 @@ public interface CharVector extends Vector<CharVector> {
      */
     abstract class Indirect implements CharVector {
 
-        private static final long serialVersionUID = 1L;
+        @Override
+        public char[] toArray() {
+            final int size = intSize("CharVector.toArray");
+            final char[] result = new char[size];
+            try (final CloseablePrimitiveIteratorOfChar iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextChar();
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public char[] copyToArray() {
+            return toArray();
+        }
 
         @Override
         public CharVector getDirect() {
@@ -157,7 +227,7 @@ public interface CharVector extends Vector<CharVector> {
         }
 
         protected final Object writeReplace() {
-            return new CharVectorDirect(toArray());
+            return getDirect();
         }
     }
 }

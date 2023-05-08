@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
@@ -30,14 +31,20 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
-                if (a == NULL_DOUBLE) {
-                    return b;
-                } else if (b == NULL_DOUBLE) {
-                    return  a;
-                }
-                return a + b;
-            });
+            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
+                    0,
+                    Double::sum, // tree function
+                    (a, b) -> { // value function
+                        if (a == NULL_DOUBLE && b == NULL_DOUBLE) {
+                            return 0; // identity val
+                        } else if (a == NULL_DOUBLE) {
+                            return b;
+                        } else if (b == NULL_DOUBLE) {
+                            return a;
+                        }
+                        return a + b;
+                    },
+                    true);
         }
 
         @Override
@@ -46,12 +53,12 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleInfluencerValuesChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
@@ -95,8 +102,8 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public DoubleRollingSumOperator(@NotNull final MatchPair pair,

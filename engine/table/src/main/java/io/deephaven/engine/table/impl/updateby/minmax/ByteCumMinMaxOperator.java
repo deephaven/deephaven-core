@@ -22,6 +22,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
 
     // region extra-fields
+    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseByteUpdateByOperator.Context {
@@ -32,19 +33,19 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final byte val = byteValueChunk.get(pos);
 
-            if (curVal == NULL_BYTE) {
+            if (curVal == nullValue) {
                 curVal = val;
-            } else if (val != NULL_BYTE) {
+            } else if (val != nullValue) {
                 if ((isMax && val > curVal) ||
                         (!isMax && val < curVal)) {
                     curVal = val;
@@ -57,11 +58,13 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
                                 // region extra-constructor-args
+                               ,final byte nullValue
                                 // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
+        this.nullValue = nullValue;
         // endregion constructor
     }
     // region extra-methods
@@ -69,7 +72,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

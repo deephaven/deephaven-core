@@ -7,18 +7,13 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
-import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.time.DateTime;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -26,10 +21,9 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 
 // region boxing imports
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 // endregion boxing imports
 
 public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
@@ -196,8 +190,8 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
 
     // region reinterpretation

@@ -44,6 +44,9 @@ tasks.register('updateProtobuf', Sync) {
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m'
+    ])
     containerName.set "dh-server-for-go-${randomSuffix}"
     networkName.set "go-test-network-${randomSuffix}"
 }

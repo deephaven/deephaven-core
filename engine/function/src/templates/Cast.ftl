@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.engine.primitive.iterator.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -243,7 +244,7 @@ public class Cast {
      * @return cast array.
      */
     public static int[] castInt(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castInt(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castInt(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -252,7 +253,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static int[] castInt(${pt.dbArray} values){
+    public static int[] castInt(${pt.vector} values){
         return castInt(values, true);
     }
 
@@ -263,16 +264,21 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static int[] castInt(${pt.dbArray} values, boolean checkFidelity) {
+    public static int[] castInt(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }
 
         final int s = values.intSize("castInt");
         int[] result = new int[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castInt(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castInt(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -306,7 +312,7 @@ public class Cast {
      * @return cast array.
      */
     public static long[] castLong(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castLong(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castLong(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -315,7 +321,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(${pt.dbArray} values){
+    public static long[] castLong(${pt.vector} values){
         return castLong(values, true);
     }
 
@@ -326,16 +332,21 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static long[] castLong(${pt.dbArray} values, boolean checkFidelity) {
+    public static long[] castLong(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }
 
         final int s = values.intSize("castLong");
         long[] result = new long[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castLong(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castLong(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -360,7 +371,7 @@ public class Cast {
      * @return cast array.
      */
     public static double[] castDouble(${pt.primitive}... values) {
-        return values == null ? null : castDouble(new ${pt.dbArrayDirect}(values));
+        return values == null ? null : castDouble(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -371,7 +382,7 @@ public class Cast {
      * @return cast array.
      */
     public static double[] castDouble(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castDouble(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castDouble(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -380,7 +391,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(${pt.dbArray} values) {
+    public static double[] castDouble(${pt.vector} values) {
         return castDouble(values, true);
     }
 
@@ -391,16 +402,21 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static double[] castDouble(${pt.dbArray} values, boolean checkFidelity) {
+    public static double[] castDouble(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }
 
         final int s = values.intSize("castDouble");
         double[] result = new double[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castDouble(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castDouble(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;

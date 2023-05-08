@@ -148,7 +148,7 @@ public class BarrageUtil {
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>())
-                        .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }
@@ -191,6 +191,8 @@ public class BarrageUtil {
             final Class<?> dataType = column.getDataType();
             final Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
+
+            putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
 
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);

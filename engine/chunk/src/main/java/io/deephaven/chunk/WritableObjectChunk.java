@@ -26,6 +26,8 @@ import java.util.Arrays;
 // region BufferImports
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.util.Arrays;
  */
 public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableObjectChunk[] EMPTY_WRITABLE_OBJECT_CHUNK_ARRAY = new WritableObjectChunk[0];
 
     static <T, ATTR extends Any> WritableObjectChunk<T, ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
     }
 
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getObjectChunkPool().takeWritableObjectChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getObjectChunkPool().takeWritableObjectChunk(size);
+        }
+        return new WritableObjectChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableObjectChunk makeWritableChunkForPool(int size) {
         return new WritableObjectChunk(makeArray(size), 0, size) {
             @Override

@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -33,8 +34,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableLongChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableLongChunk<Values> outputValues;
 
         public long curVal = NULL_LONG;
 
@@ -44,16 +45,16 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+        public void accumulateCumulative(@NotNull final RowSequence inputKeys,
+                                         @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable final LongChunk<? extends Values> tsChunk,
+                                         final int len) {
 
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
-                push(NULL_ROW_KEY, ii, 1);
+                push(ii, 1);
                 writeToOutputChunk(ii);
             }
 
@@ -62,13 +63,17 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         }
 
         @Override
-        public void accumulateRolling(RowSequence inputKeys,
-                                      Chunk<? extends Values>[] influencerValueChunkArr,
-                                      IntChunk<? extends Values> pushChunk,
-                                      IntChunk<? extends Values> popChunk,
-                                      int len) {
+        public void accumulateRolling(@NotNull final RowSequence inputKeys,
+                                      @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
+                                      @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
+                                      @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
+                                      @NotNull final IntChunk<? extends Values> pushChunk,
+                                      @NotNull final IntChunk<? extends Values> popChunk,
+                                      final int len) {
 
-            setValuesChunk(influencerValueChunkArr[0]);
+            setValueChunks(influencerValueChunkArr);
+            setPosChunks(affectedPosChunk, influencerPosChunk);
+
             int pushIndex = 0;
 
             // chunk processing
@@ -88,7 +93,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
 
                 // push for this row
                 if (pushCount > 0) {
-                    push(NULL_ROW_KEY, pushIndex, pushCount);
+                    push(pushIndex, pushCount);
                     pushIndex += pushCount;
                 }
 
@@ -101,14 +106,14 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {}
 
         @Override
-        public void writeToOutputChunk(int outIdx) {
+        public void writeToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, curVal);
         }
 
-        void writeNullToOutputChunk(int outIdx) {
+        void writeNullToOutputChunk(final int outIdx) {
             outputValues.set(outIdx, NULL_LONG);
         }
 
@@ -125,7 +130,6 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
 
         @Override
         public void close() {
-            super.close();
             outputValues.close();
             outputFillContext.close();
         }
@@ -194,7 +198,10 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
     // endregion extra-methods
 
     @Override
-    public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+    public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
+                                     final long firstUnmodifiedKey,
+                                     final long firstUnmodifiedTimestamp,
+                                     @NotNull final RowSet bucketRowSet) {
         Context ctx = (Context) context;
         ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {

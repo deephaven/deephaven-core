@@ -7,8 +7,8 @@
 #include <string_view>
 #include "deephaven/client/columns.h"
 #include "deephaven/client/expressions.h"
-#include "deephaven/client/ticking.h"
-#include "deephaven/client/utility/callbacks.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/utility/callbacks.h"
 
 /**
  * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
@@ -142,7 +142,9 @@ private:
  */
 class Client {
   template<typename... Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
+
+  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
 
 public:
   typedef void (*CCallback)(TickingUpdate, void *);
@@ -579,6 +581,8 @@ struct StringHolder {
  * server resource is destructed, the resource will be released.
  */
 class TableHandle {
+  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+  typedef deephaven::dhcore::ticking::TickingUpdate TickingUpdate;
   typedef deephaven::client::BooleanExpression BooleanExpression;
   typedef deephaven::client::Column Column;
   typedef deephaven::client::DateTimeCol DateTimeCol;
@@ -590,10 +594,10 @@ class TableHandle {
   typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
 
   template<typename... Args>
-  using Callback = deephaven::client::utility::Callback<Args...>;
+  using Callback = deephaven::dhcore::utility::Callback<Args...>;
 
   template<typename... Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
   TableHandle();

@@ -127,6 +127,14 @@ public interface WritableRowSet extends RowSet {
      */
     void compact();
 
+    /**
+     * Reset this RowSet to exactly match another RowSet. Subsequent modifications to {@code other} will not change
+     * {@code this}.
+     *
+     * @param other The RowSet to reset to
+     */
+    void resetTo(@NotNull final RowSet other);
+
     @Override
     default TrackingWritableRowSet trackingCast() {
         return (TrackingWritableRowSet) this;

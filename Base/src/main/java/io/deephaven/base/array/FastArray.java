@@ -5,7 +5,6 @@ package io.deephaven.base.array;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.Copyable;
-import io.deephaven.base.Function;
 import io.deephaven.base.verify.Assert;
 
 import java.io.Externalizable;
@@ -13,40 +12,31 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Array;
+import java.util.function.Supplier;
 
 public class FastArray<T> {
     protected final Class<? extends T> clazz;
-    protected final Function.Nullary<? extends T> newInstance;
+    protected final Supplier<? extends T> newInstance;
 
     protected int length;
     protected T[] array;
 
     public FastArray(final Class<? extends T> clazz) {
-        this(clazz, new Function.Nullary<T>() {
-            @Override
-            public T call() {
-                try {
-                    return clazz.newInstance();
-                } catch (InstantiationException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+        this(clazz, () -> {
+            try {
+                return clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         });
     }
 
     public FastArray(final Class<? extends T> clazz, int initialSize) {
-        this(clazz, new Function.Nullary<T>() {
-            @Override
-            public T call() {
-                try {
-                    return clazz.newInstance();
-                } catch (InstantiationException e) {
-                    throw new RuntimeException(e);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+        this(clazz, () -> {
+            try {
+                return clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         }, initialSize, true);
     }
@@ -54,11 +44,11 @@ public class FastArray<T> {
     // newInstance shouldn't use a pool or any special mechanism! (Sharing happens w/ newInstance w/ other cloned/copied
     // instances)
     // need to use clazz b/c we want array to actually be an array of type T
-    public FastArray(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance) {
+    public FastArray(final Class<? extends T> clazz, final Supplier<? extends T> newInstance) {
         this(clazz, newInstance, 0, true);
     }
 
-    public FastArray(final Class<? extends T> clazz, final Function.Nullary<? extends T> newInstance, int initialSize,
+    public FastArray(final Class<? extends T> clazz, final Supplier<? extends T> newInstance, int initialSize,
             boolean preallocate) {
         this.clazz = clazz;
         this.newInstance = newInstance;
@@ -73,12 +63,12 @@ public class FastArray<T> {
         }
     }
 
-    public Function.Nullary<? extends T> getNewInstance() {
+    public Supplier<? extends T> getNewInstance() {
         return newInstance;
     }
 
-    public FastArray(final Function.Nullary<? extends T> newInstance) {
-        this((Class) newInstance.call().getClass(), newInstance);
+    public FastArray(final Supplier<? extends T> newInstance) {
+        this((Class) newInstance.get().getClass(), newInstance);
     }
 
     public final void add(T t) {
@@ -120,7 +110,7 @@ public class FastArray<T> {
     public final T next() {
         T t;
         if ((length >= array.length) || ((t = array[length]) == null)) {
-            t = newInstance.call();
+            t = newInstance.get();
         }
         fastAdd(t);
         return t;

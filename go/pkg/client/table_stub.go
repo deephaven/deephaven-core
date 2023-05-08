@@ -23,16 +23,16 @@ type tableStub struct {
 }
 
 // newTableStub creates a new table stub that can be used to make table gRPC requests.
-func newTableStub(client *Client) tableStub {
+func newTableStub(client *Client) *tableStub {
 	stub := tablepb2.NewTableServiceClient(client.grpcChannel)
 
-	return tableStub{client: client, stub: stub}
+	return &tableStub{client: client, stub: stub}
 }
 
 // createInputTable simply wraps the CreateInputTable gRPC call and returns the resulting table.
 // See inputTableStub for more details on how it is used.
 func (ts *tableStub) createInputTable(ctx context.Context, req *tablepb2.CreateInputTableRequest) (*TableHandle, error) {
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (err batchError) Error() string {
 // so this can be used to identify the tables and put them back in order.
 // This may return a batchError.
 func (ts *tableStub) batch(ctx context.Context, ops []*tablepb2.BatchTableRequest_Operation) ([]*TableHandle, error) {
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +128,7 @@ func (ts *tableStub) fetchTable(ctx context.Context, oldTable *TableHandle) (*Ta
 		return nil, ErrInvalidTableHandle
 	}
 
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -171,7 +171,7 @@ func (ts *tableStub) EmptyTableQuery(numRows int64) QueryNode {
 //
 // The table will have zero columns and the specified number of rows.
 func (ts *tableStub) EmptyTable(ctx context.Context, numRows int64) (*TableHandle, error) {
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (ts *tableStub) TimeTableQuery(period time.Duration, startTime time.Time) Q
 // The period is time between adding new rows to the table.
 // The startTime is the time of the first row in the table.
 func (ts *tableStub) TimeTable(ctx context.Context, period time.Duration, startTime time.Time) (*TableHandle, error) {
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +257,7 @@ func (ts *tableStub) dropColumns(ctx context.Context, table *TableHandle, cols [
 		return nil, err
 	}
 
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (ts *tableStub) doSelectOrUpdate(ctx context.Context, table *TableHandle, f
 		return nil, err
 	}
 
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +340,7 @@ func (ts *tableStub) makeRequest(ctx context.Context, table *TableHandle, op req
 		return nil, err
 	}
 
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -557,7 +557,7 @@ func (ts *tableStub) merge(ctx context.Context, sortBy string, others []*TableHa
 		return nil, ErrEmptyMerge
 	}
 
-	ctx, err := ts.client.withToken(ctx)
+	ctx, err := ts.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -705,7 +705,7 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode, al
 
 	// All of the children have either been locked by lockedTables,
 	// or are exclusively owned by this goroutine, so this method is safe.
-	tbl, err := op.execSerialOp(ctx, &state.client.tableStub, children)
+	tbl, err := op.execSerialOp(ctx, state.client.tableStub, children)
 	if err != nil {
 		return nil, wrapExecSerialError(err, node)
 	}

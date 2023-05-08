@@ -18,16 +18,15 @@ Examples:
     >>> table1 = session.import_table(csv.read_csv("data1.csv"))
     >>> table2 = session.import_table(csv.read_csv("data2.csv"))
     >>> joined_table = table1.join(table2, on=["key_col_1", "key_col_2"], joins=["data_col1"])
-    >>> df = joined_table.snapshot().to_pandas()
+    >>> df = joined_table.to_arrow().to_pandas()
     >>> print(df)
     >>> session.close()
 """
 
-from .table import Table
 from .session import Session
 from .dherror import DHError
-from .combo_agg import ComboAggregation
-from .constants import SortDirection, MatchRule
+from ._table_interface import SortDirection, MatchRule
 from .query import Query
 
-__version__ = "0.23.0"
+__all__ = ["Session", "DHError", "SortDirection", "MatchRule"]
+__version__ = "0.24.0"

@@ -1,5 +1,6 @@
 package io.deephaven.web.client.api.storage;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
 import jsinterop.annotations.JsIgnore;
@@ -45,8 +46,9 @@ public class JsItemDetails {
     }
 
     @JsProperty
+    @TsTypeRef(JsItemType.class)
     public String getType() {
-        return type == Storage_pb.ItemType.getDIRECTORY() ? "directory" : "file";
+        return type == Storage_pb.ItemType.getDIRECTORY() ? JsItemType.DIRECTORY : JsItemType.FILE;
     }
 
     @JsProperty

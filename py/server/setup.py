@@ -51,17 +51,18 @@ setup(
         'Programming Language :: Python :: 3.11',
     ],
     keywords='Deephaven Development',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     install_requires=[
         'jpy>=0.13.0',
         'deephaven-plugin',
         'numpy',
         'pandas',
         'pyarrow',
-        # Numba does not support 3.11 yet
-        # https://github.com/numba/numba/issues/8304
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
-        'numba; python_version < "3.11"',
+        # It took 6 months for numba to support 3.11 after it was released, we want to make sure deephaven-core will be
+        # installable when 3.12 is out. When we decide to upgrade to 3.12 or higher for testing/production, CI check
+        # will alert us that numba isn't available.
+        'numba; python_version < "3.12"',
     ],
     extras_require={
         "autocomplete": ["jedi==0.18.2"],

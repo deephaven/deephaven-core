@@ -25,12 +25,12 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charValueChunk = valuesChunk.asCharChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            charValueChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             char val = charValueChunk.get(pos);
@@ -52,8 +52,8 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     // region extra-methods

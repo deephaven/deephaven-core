@@ -49,6 +49,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         super(src, startIdx, startOffset, endIdx, endOffset);
     }
 
+    public RspBitmap(final RspArray src, final int startIdx, final int endIdx) {
+        super(src, startIdx, endIdx);
+    }
+
     public static RspBitmap makeEmpty() {
         return new RspBitmap();
     }
@@ -1023,7 +1027,53 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @return r1 and not r2 as a new RspArray.
      */
     public static RspBitmap andNotImpl(final RspBitmap r1, final RspBitmap r2) {
-        final RspBitmap r = r1.deepCopy();
+        final int minLen = Math.min(r1.size, r2.size);
+        // Detect if there is an "obvious" common prefix.
+        int startIndex;
+        for (startIndex = 0; startIndex < minLen; ++startIndex) {
+            final long r1SpanInfo = r1.spanInfos[startIndex];
+            final long r2SpanInfo = r2.spanInfos[startIndex];
+            if (r1SpanInfo != r2SpanInfo) {
+                // We do not detect the case where a full block span is encoded differently
+                // (with a marker object in the spans array and the lower 16 bits of spanInfo in one case,
+                // versus a Long object in the other).
+                // We also wouldn't detect a singleton container that is encoded as null span object in one
+                // case, with the lower 16 bits indicating the singleton value, and with an actual container
+                // with a single element in the other.
+                // Bottom line we need the exact same optimization applied to both RspBitmap arguments.
+                break;
+            }
+            final Object r1Span = r1.spans[startIndex];
+            final Object r2Span = r2.spans[startIndex];
+
+            if (r1Span == r2Span) {
+                // r1Span and r2Span are either:
+                // (a) Both null, representing singleton spans, so our check for spanInfo equality was enough
+                // to guarantee sameness
+                // (b) The same object, representing a shared container or full block span (either marker or Long; if
+                // marker our check for spanInfo equality was enough to guarantee sameness).
+                continue;
+            }
+            // r1Span != r2Span
+            if (r1Span instanceof Long && r2Span instanceof Long) {
+                if (((Long) r1Span).longValue() != ((Long) r2Span).longValue()) {
+                    break;
+                }
+            } else {
+                // In the case of containers, we only detect same object being shared;
+                // we do not try to compare contents of containers otherwise.
+                break;
+            }
+        }
+        final RspBitmap r;
+        if (startIndex == 0) {
+            r = r1.deepCopy();
+        } else {
+            if (startIndex == r1.size) {
+                return makeEmpty();
+            }
+            r = new RspBitmap(r1, startIndex, r1.size - 1);
+        }
         r.andNotEqualsUnsafeNoWriteCheck(r2);
         return r;
     }

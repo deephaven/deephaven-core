@@ -3,10 +3,16 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -15,6 +21,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.text.SplitIgnoreQuotes;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,6 +32,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -164,10 +172,11 @@ public class WhereFilterFactory {
                 final boolean internalDisjunctive = values.length == 1
                         || StringUtils.isNullOrEmpty(anyAllPart)
                         || "any".equalsIgnoreCase(anyAllPart);
-
-                log.debug().append("WhereFilterFactory creating StringContainsFilter for expression: ")
-                        .append(expression).endl();
-                return new StringContainsFilter(
+                log.debug()
+                        .append("WhereFilterFactory creating stringContainsFilter for expression: ")
+                        .append(expression)
+                        .endl();
+                return stringContainsFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -244,15 +253,19 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new RegexFilter(MatchFilter.CaseSensitivity.IgnoreCase,
-                                        MatchFilter.MatchType.Regular, colName, quickFilter);
+                                return WhereFilterAdapter.of(FilterPattern.of(
+                                        ColumnName.of(colName),
+                                        Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                                        Mode.MATCHES,
+                                        false), false);
                             }
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
                             final String[] parts = quickFilter.split("\\s+");
-                            final List<WhereFilter> filters =
-                                    Arrays.stream(parts).map(part -> getSelectFilterForAnd(colName, part, colClass))
-                                            .filter(Objects::nonNull).collect(Collectors.toList());
+                            final List<WhereFilter> filters = Arrays.stream(parts)
+                                    .map(part -> getSelectFilterForAnd(colName, part, colClass))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
@@ -261,15 +274,16 @@ public class WhereFilterFactory {
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
                             final List<WhereFilter> filters = Arrays.stream(parts)
-                                    .map(part -> getSelectFilter(colName, part, filterMode, colClass))
-                                    .filter(Objects::nonNull).collect(Collectors.toList());
+                                    .map(part -> createQuickFilter(cd, part, filterMode))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
                             return DisjunctiveFilter.makeDisjunctiveFilter(
                                     filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
                         } else {
-                            return getSelectFilter(colName, quickFilter, filterMode, colClass);
+                            return createQuickFilter(cd, quickFilter, filterMode);
                         }
 
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
@@ -285,11 +299,9 @@ public class WhereFilterFactory {
         for (String part : parts) {
             final WhereFilter[] filterArray = tableDefinition.getColumnStream()
                     .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()))
-                    .map(cd -> {
-                        final Class<?> colClass = cd.getDataType();
-                        final String colName = cd.getName();
-                        return getSelectFilter(colName, part, QuickFilterMode.MULTI, colClass);
-                    }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
+                    .map(cd -> createQuickFilter(cd, part, QuickFilterMode.MULTI))
+                    .filter(Objects::nonNull)
+                    .toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
                 filters.add(DisjunctiveFilter.makeDisjunctiveFilter(filterArray));
             }
@@ -298,8 +310,10 @@ public class WhereFilterFactory {
         return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    private static WhereFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
-            Class<?> colClass) {
+    private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,
+            QuickFilterMode filterMode) {
+        final String colName = colDef.getName();
+        final Class<?> colClass = colDef.getDataType();
         final InferenceResult typeData = new InferenceResult(quickFilter);
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {
@@ -327,8 +341,11 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Regular,
-                        colName, quickFilter);
+                return WhereFilterAdapter.of(FilterPattern.of(
+                        ColumnName.of(colName),
+                        Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
+                        Mode.FIND,
+                        false), false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == DateTime.class && typeData.dateLower != null && typeData.dateUpper != null) {
@@ -343,8 +360,11 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Regular,
-                    colName, quickFilter);
+            return WhereFilterAdapter.of(FilterPattern.of(
+                    ColumnName.of(colName),
+                    Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
+                    Mode.FIND,
+                    false), false);
         }
         return null;
     }
@@ -365,6 +385,58 @@ public class WhereFilterFactory {
                     .toArray(WhereFilter[]::new);
         }
         return getExpressions(expressions);
+    }
+
+    @VisibleForTesting
+    public static WhereFilter stringContainsFilter(
+            CaseSensitivity sensitivity,
+            MatchType matchType,
+            @NotNull String columnName,
+            boolean internalDisjunctive,
+            boolean removeQuotes,
+            String... values) {
+        final String value =
+                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
+        return WhereFilterAdapter.of(FilterPattern.of(
+                ColumnName.of(columnName),
+                Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
+                Mode.FIND,
+                matchType == MatchType.Inverted), false);
+    }
+
+    private static String constructStringContainsRegex(
+            String[] values,
+            MatchType matchType,
+            boolean internalDisjunctive,
+            boolean removeQuotes,
+            String columnName) {
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException(
+                    "constructStringContainsRegex must be called with at least one value parameter");
+        }
+        final MatchFilter.ColumnTypeConvertor converter = removeQuotes
+                ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
+                : null;
+        final String regex;
+        final Stream<String> valueStream = Arrays.stream(values)
+                .map(val -> {
+                    if (StringUtils.isNullOrEmpty(val)) {
+                        throw new IllegalArgumentException(
+                                "Parameters to constructStringContainsRegex must not be null or empty");
+                    }
+                    return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
+                });
+        // If the match is simple, includes -any- or includes -none- we can just use a simple
+        // regex of or'd values
+        if ((matchType == MatchType.Regular && internalDisjunctive) ||
+                (matchType == MatchType.Inverted && !internalDisjunctive)) {
+            regex = valueStream.collect(Collectors.joining("|"));
+        } else {
+            // If we need to match -all of- or -not one of- then we must use forward matching
+            regex = valueStream.map(item -> "(?=.*" + item + ")")
+                    .collect(Collectors.joining()) + ".*";
+        }
+        return regex;
     }
 
     static class InferenceResult {

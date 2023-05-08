@@ -7,7 +7,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.type.TypeUtils;
@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.function.LongConsumer;
 import java.util.stream.StreamSupport;
 
 /**
@@ -74,7 +73,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     }
 
     @Override
-    public Class getComponentType() {
+    public Class<?> getComponentType() {
         return columnSource.getComponentType();
     }
 
@@ -108,7 +107,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public TYPE[] get(final long startPosInclusive, final long endPosExclusive) {
         final Iterable<TYPE> iterable =
-                () -> ColumnIterator.make(columnSource, getSubIndexByPos(startPosInclusive, endPosExclusive));
+                () -> ChunkedColumnIterator.make(columnSource, getSubIndexByPos(startPosInclusive, endPosExclusive));
         // noinspection unchecked
         return StreamSupport.stream(iterable.spliterator(), false).toArray(s -> (TYPE[]) Array
                 .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));

@@ -5,80 +5,125 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static io.deephaven.base.ClampUtil.clampLong;
 import static io.deephaven.vector.Vector.clampIndex;
 
-public class ObjectVectorSlice<T> extends ObjectVector.Indirect<T> {
+/**
+ * A subset of an {@link ObjectVector} according to a range of positions.
+ */
+public class ObjectVectorSlice<COMPONENT_TYPE> extends ObjectVector.Indirect<COMPONENT_TYPE> {
 
     private static final long serialVersionUID = 1L;
 
-    private final ObjectVector<T> innerArray;
+    private final ObjectVector<COMPONENT_TYPE> innerVector;
     private final long offsetIndex;
     private final long length;
-    private final long innerArrayValidFromInclusive;
-    private final long innerArrayValidToExclusive;
+    private final long innerVectorValidFromInclusive;
+    private final long innerVectorValidToExclusive;
 
-    private ObjectVectorSlice(@NotNull final ObjectVector<T> innerArray, final long offsetIndex, final long length,
-                              final long innerArrayValidFromInclusive, final long innerArrayValidToExclusive) {
+    private ObjectVectorSlice(
+            @NotNull final ObjectVector<COMPONENT_TYPE> innerVector,
+            final long offsetIndex,
+            final long length,
+            final long innerVectorValidFromInclusive,
+            final long innerVectorValidToExclusive) {
         Assert.geqZero(length, "length");
-        Assert.leq(innerArrayValidFromInclusive, "innerArrayValidFromInclusive", innerArrayValidToExclusive,
-                "innerArrayValidToExclusive");
-        this.innerArray = innerArray;
+        Assert.leq(innerVectorValidFromInclusive, "innerArrayValidFromInclusive",
+                innerVectorValidToExclusive, "innerArrayValidToExclusive");
+        this.innerVector = innerVector;
         this.offsetIndex = offsetIndex;
         this.length = length;
-        this.innerArrayValidFromInclusive = innerArrayValidFromInclusive;
-        this.innerArrayValidToExclusive = innerArrayValidToExclusive;
+        this.innerVectorValidFromInclusive = innerVectorValidFromInclusive;
+        this.innerVectorValidToExclusive = innerVectorValidToExclusive;
     }
 
-    public ObjectVectorSlice(@NotNull final ObjectVector<T> innerArray, final long offsetIndex, final long length) {
-        this(innerArray, offsetIndex, length,
-                clampLong(0, innerArray.size(), offsetIndex),
-                clampLong(0, innerArray.size(), offsetIndex + length));
-    }
-
-    @Override
-    public T get(final long index) {
-        return innerArray
-                .get(clampIndex(innerArrayValidFromInclusive, innerArrayValidToExclusive, index + offsetIndex));
+    public ObjectVectorSlice(
+            @NotNull final ObjectVector<COMPONENT_TYPE> innerVector,
+            final long offsetIndex,
+            final long length) {
+        this(innerVector, offsetIndex, length,
+                clampLong(0, innerVector.size(), offsetIndex),
+                clampLong(0, innerVector.size(), offsetIndex + length));
     }
 
     @Override
-    public ObjectVector<T> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+    public COMPONENT_TYPE get(final long index) {
+        return innerVector
+                .get(clampIndex(innerVectorValidFromInclusive, innerVectorValidToExclusive, index + offsetIndex));
+    }
+
+    @Override
+    public ObjectVector<COMPONENT_TYPE> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
         final long newLength = toIndexExclusive - fromIndexInclusive;
         final long newOffsetIndex = offsetIndex + fromIndexInclusive;
-        return new ObjectVectorSlice<>(innerArray, newOffsetIndex, newLength,
-                clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive, newOffsetIndex),
-                clampLong(innerArrayValidFromInclusive, innerArrayValidToExclusive, newOffsetIndex + newLength));
+        return new ObjectVectorSlice<>(innerVector, newOffsetIndex, newLength,
+                clampLong(innerVectorValidFromInclusive, innerVectorValidToExclusive, newOffsetIndex),
+                clampLong(innerVectorValidFromInclusive, innerVectorValidToExclusive, newOffsetIndex + newLength));
     }
 
     @Override
-    public ObjectVector<T> subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Arrays.stream(positions)
-                .map(p -> clampIndex(innerArrayValidFromInclusive, innerArrayValidToExclusive, p + offsetIndex))
+    public ObjectVector<COMPONENT_TYPE> subVectorByPositions(final long[] positions) {
+        return innerVector.subVectorByPositions(Arrays.stream(positions)
+                .map((final long position) -> clampIndex(
+                        innerVectorValidFromInclusive,
+                        innerVectorValidToExclusive,
+                        position + offsetIndex))
                 .toArray());
     }
 
     @Override
-    public T[] toArray() {
-        if (innerArray instanceof ObjectVectorDirect && offsetIndex >= innerArrayValidFromInclusive
-                && offsetIndex + length <= innerArrayValidToExclusive) {
-            return Arrays.copyOfRange(innerArray.toArray(), LongSizedDataStructure.intSize("toArray", offsetIndex),
-                    LongSizedDataStructure.intSize("toArray", offsetIndex + length));
+    public COMPONENT_TYPE[] toArray() {
+        if (innerVector instanceof ObjectVectorDirect
+                && offsetIndex >= innerVectorValidFromInclusive
+                && offsetIndex + length <= innerVectorValidToExclusive) {
+            // In this case, innerVectorValidFromInclusive must be in range [0, MAX_ARRAY_SIZE) and
+            // innerVectorValidToExclusive must be in range [0, MAX_ARRAY_SIZE].
+            return Arrays.copyOfRange(innerVector.toArray(), (int) offsetIndex, (int) (offsetIndex + length));
         }
-        // noinspection unchecked
-        final T[] result =
-                (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray", length));
-        for (int ii = 0; ii < length; ++ii) {
-            result[ii] = get(ii);
+        return super.toArray();
+    }
+
+    @Override
+    public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        long nextIndexWanted = fromIndexInclusive + offsetIndex;
+
+        final long includedInitialNulls = nextIndexWanted < innerVectorValidFromInclusive
+                ? Math.min(innerVectorValidFromInclusive - nextIndexWanted, totalWanted)
+                : 0;
+        long remaining = totalWanted - includedInitialNulls;
+        nextIndexWanted += includedInitialNulls;
+
+        final long firstIncludedInnerOffset;
+        final long includedInnerLength;
+        if (nextIndexWanted < innerVectorValidToExclusive) {
+            firstIncludedInnerOffset = nextIndexWanted;
+            includedInnerLength = Math.min(innerVectorValidToExclusive - nextIndexWanted, remaining);
+            remaining -= includedInnerLength;
+            // Unused, but note for posterity:
+            // nextIndexWanted += includedInnerLength;
+        } else {
+            firstIncludedInnerOffset = -1;
+            includedInnerLength = 0;
         }
-        return result;
+
+        final CloseableIterator<COMPONENT_TYPE> initialNullsIterator = includedInitialNulls > 0
+                ? CloseableIterator.repeat(null, includedInitialNulls)
+                : null;
+        final CloseableIterator<COMPONENT_TYPE> innerIterator = includedInnerLength > 0
+                ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
+                : null;
+        final CloseableIterator<COMPONENT_TYPE> finalNullsIterator = remaining > 0
+                ? CloseableIterator.repeat(null, remaining)
+                : null;
+        return CloseableIterator.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
     }
 
     @Override
@@ -87,17 +132,7 @@ public class ObjectVectorSlice<T> extends ObjectVector.Indirect<T> {
     }
 
     @Override
-    public Class<T> getComponentType() {
-        return innerArray.getComponentType();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return length == 0;
-    }
-
-    @Override
-    public ObjectVector<T> getDirect() {
-        return new ObjectVectorDirect<>(toArray());
+    public Class<COMPONENT_TYPE> getComponentType() {
+        return innerVector.getComponentType();
     }
 }

@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.time.DateTimeUtils;
@@ -47,18 +49,22 @@ public class TestStreamTableTools {
         TestCase.assertTrue(appendOnly.isFlat());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            RowSet removed = streamTable.getRowSet().copyPrev();
+            ((WritableRowSet) streamTable.getRowSet()).clear();
             TstUtils.addToTable(streamTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt2),
                     col("B", true));
-            streamTable.notifyListeners(i(7), i(), i());
+            streamTable.notifyListeners(i(7), removed, i());
         });
 
         assertTableEquals(TableTools.newTable(intCol("I", 7, 1), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI),
                 dateTimeCol("DT", dt1, dt2), col("B", true, true)), appendOnly);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            RowSet removed = streamTable.getRowSet().copyPrev();
+            ((WritableRowSet) streamTable.getRowSet()).clear();
             TstUtils.addToTable(streamTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt3),
                     col("B", false));
-            streamTable.notifyListeners(i(7), i(), i());
+            streamTable.notifyListeners(i(7), removed, i());
         });
         assertTableEquals(
                 TableTools.newTable(intCol("I", 7, 1, 2), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI, Math.E),

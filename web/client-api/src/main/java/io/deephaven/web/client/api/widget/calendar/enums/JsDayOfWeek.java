@@ -3,12 +3,14 @@
  */
 package io.deephaven.web.client.api.widget.calendar.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import elemental2.core.JsObject;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "DayOfWeek", namespace = "dh.calendar")
 @SuppressWarnings("unusable-by-js")
+@TsTypeDef(tsType = "string", name = "DayOfWeekType")
 public class JsDayOfWeek {
     public static final String SUNDAY = "SUNDAY";
     public static final String MONDAY = "MONDAY";

@@ -87,6 +87,8 @@ Liveness.cleanupLogEnabled=false
 
 # Force more parallelism
 QueryTable.minimumParallelSelectRows=1024
+QueryTable.forceParallelWhere=true
+QueryTable.parallelWhereSegments=2
 
 BarrageMessageProducer.subscriptionGrowthEnabled=true
 BarrageMessageProducer.targetSnapshotPercentage=0.1

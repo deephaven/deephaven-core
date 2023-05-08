@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
@@ -25,14 +26,20 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
-                if (a == NULL_FLOAT) {
-                    return b;
-                } else if (b == NULL_FLOAT) {
-                    return  a;
-                }
-                return a + b;
-            });
+            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE,
+                    0,
+                    Float::sum, // tree function
+                    (a, b) -> { // value function
+                        if (a == NULL_FLOAT && b == NULL_FLOAT) {
+                            return 0; // identity val
+                        } else if (a == NULL_FLOAT) {
+                            return b;
+                        } else if (b == NULL_FLOAT) {
+                            return a;
+                        }
+                        return a + b;
+                    },
+                    true);
         }
 
         @Override
@@ -41,12 +48,12 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatInfluencerValuesChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
@@ -90,8 +97,8 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,

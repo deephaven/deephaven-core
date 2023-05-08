@@ -165,6 +165,9 @@ project(':engine-chunk').projectDir = file('engine/chunk')
 include(':engine-context')
 project(':engine-context').projectDir = file('engine/context')
 
+include(':engine-primitive')
+project(':engine-primitive').projectDir = file('engine/primitive')
+
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
 
@@ -207,6 +210,9 @@ project(':engine-benchmark').projectDir = file('engine/benchmark')
 include(':engine-test-utils')
 project(':engine-test-utils').projectDir = file('engine/test-utils')
 
+include(':engine-query-constants')
+project(':engine-query-constants').projectDir = file('engine/query-constants')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -228,6 +234,9 @@ project(':extensions-parquet-table').projectDir = file('extensions/parquet/table
 include(':extensions-parquet-benchmark')
 project(':extensions-parquet-benchmark').projectDir = file('extensions/parquet/benchmark')
 
+include(':extensions-arrow')
+project(':extensions-arrow').projectDir = file('extensions/arrow')
+
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
 
@@ -239,6 +248,9 @@ project(':extensions-jdbc').projectDir = file('extensions/jdbc')
 
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
+
+include(':extensions-performance')
+project(':extensions-performance').projectDir = file('extensions/performance')
 
 include(':plugin')
 

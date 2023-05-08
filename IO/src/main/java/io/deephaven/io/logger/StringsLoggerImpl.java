@@ -3,7 +3,6 @@
  */
 package io.deephaven.io.logger;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.pool.Pool;
 import io.deephaven.base.pool.ThreadSafeLenientFixedSizePool;
@@ -15,6 +14,7 @@ import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.function.Supplier;
 
 public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
@@ -88,7 +88,7 @@ public class StringsLoggerImpl<E extends LogEntry> implements Logger {
 
     private LogLevel loggingLevel;
 
-    public StringsLoggerImpl(Function.Nullary<E> entryFactory, int entryPoolSize, LogOutput outputBuffer,
+    public StringsLoggerImpl(Supplier<E> entryFactory, int entryPoolSize, LogOutput outputBuffer,
             LogLevel loggingLevel) {
         this.loggingLevel = loggingLevel;
         this.entries = new ThreadSafeLenientFixedSizePool<E>(entryPoolSize, entryFactory, null);

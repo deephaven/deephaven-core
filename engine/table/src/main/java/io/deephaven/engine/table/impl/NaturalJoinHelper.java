@@ -52,6 +52,8 @@ class NaturalJoinHelper {
 
     private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
+
         try (final BucketingContext bucketingContext =
                 new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
 

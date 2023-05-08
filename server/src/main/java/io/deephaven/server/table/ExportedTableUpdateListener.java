@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -118,6 +119,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      * @param table the table that was just exported
      */
     private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
+        if (table instanceof UncoalescedTable) {
+            // uncoalesced tables have no size and don't get updates
+            return;
+        }
         if (!table.isRefreshing()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
@@ -169,7 +174,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         try {
             responseObserver.onNext(update.build());
         } catch (final RuntimeException err) {
-            log.error().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
+            log.debug().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
             session.removeExportListener(this);
         }
     }

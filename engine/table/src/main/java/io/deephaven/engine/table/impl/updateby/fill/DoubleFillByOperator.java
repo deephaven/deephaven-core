@@ -30,12 +30,12 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleValueChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleValueChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             double val = doubleValueChunk.get(pos);
@@ -57,8 +57,8 @@ public class DoubleFillByOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     // region extra-methods

@@ -18,12 +18,12 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             for (int ii = 0; ii < count; ii++) {
                 // read the value from the values chunk
                 final T currentVal = objectValueChunk.get(pos + ii);
@@ -52,7 +52,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

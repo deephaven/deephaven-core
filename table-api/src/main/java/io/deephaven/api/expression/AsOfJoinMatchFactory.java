@@ -121,7 +121,7 @@ public class AsOfJoinMatchFactory {
         });
     }
 
-    public static AsOfJoinResult getAjExpression(String match) {
+    private static AsOfJoinResult getAjExpression(String match) {
         return asOfJoinParser.parse(match);
     }
 
@@ -141,7 +141,7 @@ public class AsOfJoinMatchFactory {
         return getAjExpressions(matches.toArray(new String[0]));
     }
 
-    public static ReverseAsOfJoinResult getRajExpression(String match) {
+    private static ReverseAsOfJoinResult getRajExpression(String match) {
         return reverseAsOfJoinParser.parse(match);
     }
 

@@ -8,8 +8,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
@@ -144,7 +144,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSet asRowSet() {
         if (size == sar.getCardinality()) {
-            return new TrackingWritableRowSetImpl(sar.deepCopy());
+            return new WritableRowSetImpl(sar.deepCopy());
         }
         if (size <= 0) {
             return RowSetFactory.empty();
@@ -179,7 +179,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
             }
             ans.count = iAns;
         }
-        return new TrackingWritableRowSetImpl(ans);
+        return new WritableRowSetImpl(ans);
     }
 
     @Override

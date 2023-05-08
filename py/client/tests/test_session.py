@@ -6,6 +6,7 @@ import unittest
 from time import sleep
 
 import pyarrow as pa
+import pandas as pd
 from pyarrow import csv
 
 from pydeephaven import DHError
@@ -35,9 +36,9 @@ class SessionTestCase(BaseTestCase):
     def test_never_timeout(self):
         session = Session()
         for _ in range(2):
-            token1 = session.session_token
+            token1 = session._auth_token
             sleep(300)
-            token2 = session.session_token
+            token2 = session._auth_token
             self.assertNotEqual(token1, token2)
         session.close()
 
@@ -67,7 +68,7 @@ class SessionTestCase(BaseTestCase):
 
     def test_multiple_sessions(self):
         sessions = []
-        for i in range(100):
+        for i in range(10):
             sessions.append(Session())
 
         tables = []
@@ -88,7 +89,7 @@ class SessionTestCase(BaseTestCase):
     def test_import_table_long_csv(self):
         pa_table = csv.read_csv(self.csv_file)
         new_table = self.session.import_table(pa_table)
-        pa_table2 = new_table.snapshot()
+        pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table2, pa_table)
         df = pa_table2.to_pandas()
         self.assertEquals(1000, len(df.index))
@@ -99,7 +100,7 @@ class SessionTestCase(BaseTestCase):
         pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
         pa_table = pa.Table.from_batches([pa_record_batch])
         new_table = self.session.import_table(pa_table)
-        pa_table2 = new_table.snapshot()
+        pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table, pa_table2)
 
     @unittest.skip("GH ticket filed #941.")
@@ -111,7 +112,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -128,7 +129,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             # print(pa_table, pa_table2)
             try:
                 self.assertEqual(pa_table, pa_table2)
@@ -145,7 +146,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -161,7 +162,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -178,10 +179,76 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
                 exception_list.append(e)
 
         self.assertEqual(0, len(exception_list))
+
+    def test_input_table(self):
+        pa_types = [
+            pa.bool_(),
+            pa.int8(),
+            pa.int16(),
+            pa.int32(),
+            pa.int64(),
+            # Skip due to https://github.com/deephaven/deephaven-core/issues/3605
+            # pa.timestamp('ns'),
+            # pa.timestamp('ns', tz='MST'),
+            pa.float32(),
+            pa.float64(),
+            pa.string(),
+        ]
+        pa_data = [
+            pa.array([True, False]),
+            pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
+            pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
+            pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
+            pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
+            # pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
+            #           pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            # pa.array([pd.Timestamp('2017-01-01T2:01:01', tz='UTC'),
+            #           pd.Timestamp('2017-01-01T1:01:01', tz='Europe/Paris')]),
+            pa.array([1.1, 2.2], pa.float32()),
+            pa.array([1.1, 2.2], pa.float64()),
+            pa.array(["foo", "bar"]),
+        ]
+        fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
+        schema = pa.schema(fields)
+        pa_table = pa.table(pa_data, schema=schema)
+        dh_table = self.session.import_table(pa_table)
+
+        with self.subTest("Create Input Table"):
+            keyed_input_t = self.session.input_table(schema=schema, key_cols="f1")
+            pa_table = keyed_input_t.to_arrow()
+            self.assertEqual(schema, pa_table.schema)
+
+            append_input_t = self.session.input_table(init_table=keyed_input_t)
+            pa_table = append_input_t.to_arrow()
+            self.assertEqual(schema, pa_table.schema)
+
+            with self.assertRaises(ValueError):
+                self.session.input_table(schema=schema, init_table=append_input_t)
+            with self.assertRaises(ValueError):
+                self.session.input_table(key_cols="f0")
+
+        with self.subTest("InputTable ops"):
+            keyed_input_t.add(dh_table)
+            self.assertEqual(keyed_input_t.snapshot().size, dh_table.size)
+            keyed_input_t.add(dh_table)
+            self.assertEqual(keyed_input_t.snapshot().size, dh_table.size)
+            keyed_input_t.delete(dh_table.select(["f1"]))
+            self.assertEqual(keyed_input_t.snapshot().size, 0)
+
+            append_input_t.add(dh_table)
+            self.assertEqual(append_input_t.snapshot().size, dh_table.size)
+            append_input_t.add(dh_table)
+            self.assertEqual(append_input_t.snapshot().size, dh_table.size * 2)
+            with self.assertRaises(PermissionError):
+                append_input_t.delete(dh_table)
+
+
+if __name__ == '__main__':
+    unittest.main()

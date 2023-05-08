@@ -32,20 +32,20 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             // read the value from the values chunk
             final byte currentVal = byteValueChunk.get(pos);
 
             if(curVal == NULL_LONG) {
-                curVal = currentVal == NULL_BYTE ? NULL_LONG : currentVal;
-            } else if (currentVal != NULL_BYTE) {
+                curVal = currentVal == nullValue ? NULL_LONG : currentVal;
+            } else if (currentVal != nullValue) {
                 curVal += currentVal;
             }
         }
@@ -65,7 +65,7 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

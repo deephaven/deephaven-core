@@ -10,6 +10,7 @@ dependencies {
     api project(':qst')
     api project(':engine-chunk')
     api project(':engine-context')
+    api project(':engine-primitive')
     api project(':engine-vector')
     api project(':engine-time')
     api project(':engine-updategraph')
@@ -22,6 +23,8 @@ dependencies {
     Classpaths.inheritGuava(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation TestTools.projectDependency(project, 'engine-table')
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }

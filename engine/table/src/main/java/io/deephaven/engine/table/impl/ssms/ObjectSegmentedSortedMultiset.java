@@ -2288,28 +2288,28 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     // region ObjectVector
     @Override
-    public Object get(long i) {
-        if(i < 0 || i > size()) {
-            throw new IllegalArgumentException("Illegal index " + i + " current size: " + size());
+    public Object get(long index) {
+        if(index < 0 || index > size()) {
+            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
         }
 
         if(leafCount == 1) {
-            return directoryValues[(int)i];
+            return directoryValues[(int) index];
         } else {
             for(int ii = 0; ii < leafCount; ii++) {
-                if(i < leafSizes[ii]) {
-                    return leafValues[ii][(int)(i)];
+                if(index < leafSizes[ii]) {
+                    return leafValues[ii][(int)(index)];
                 }
-                i -= leafSizes[ii];
+                index -= leafSizes[ii];
             }
         }
 
-        throw new IllegalStateException("Index " + i + " not found in this SSM");
+        throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
     @Override
-    public ObjectVector subVector(long fromIndex, long toIndex) {
-        return new ObjectVectorDirect(keyArray(fromIndex, toIndex));
+    public ObjectVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        return new ObjectVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
@@ -2326,6 +2326,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     @Override
     public Object[] toArray() {
         return keyArray();
+    }
+
+    @Override
+    public Object[] copyToArray() {
+        return toArray();
     }
 
     @Override

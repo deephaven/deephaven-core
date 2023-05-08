@@ -38,7 +38,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet rowSet = parent.getRowSet();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
-        final WritableRowRedirection rowRedirection = new WrappedRowSetWritableRowRedirection(rowSet);
+        final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(rowSet);
 
         final long size = usePrev ? rowSet.sizePrev() : rowSet.size();
 

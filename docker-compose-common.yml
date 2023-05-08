@@ -23,7 +23,7 @@ services:
       # - START_OPTS=-agentpath:/opt/jprofiler13.0/bin/linux-x64/libjprofilerti.so=port=8849,nowait -Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
 
     ports:
-      - '10000:10000'
+      - "${DEEPHAVEN_PORT}:10000"
 # For remote debugging (change if using different port)
 #      - '5005:5005'
 # For jprofiler (change if using different port)

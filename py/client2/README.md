@@ -49,8 +49,9 @@ cd ${DHROOT}/py/client2
 Then run these commands to build the Deephaven shared library:
 
 ```
-rm -rf build *.so && \
-CFLAGS="-I${DHLIB}/deephaven/include" LDFLAGS="-L${DHLIB}/deephaven/lib -L${DHLIB}/protobuf/lib -L${DHLIB}/arrow/lib -L${DHLIB}/grpc/lib -L${DHLIB}/abseil/lib -L${DHLIB}/re2/lib" python setup.py build_ext -i
+export DEEPHAVEN_LOCAL=/usr/local/dhcpp-230313/local # Or where your build of the deephaven C++ client is installed.
+export LD_LIBRARY_PATH=${DEEPHAVEN_LOCAL}/arrow/lib:$PFX/cares/lib
+rm -rf build *.so && CFLAGS="-I${DEEPHAVEN_LOCAL}/deephaven/include" LDFLAGS="-L${DEEPHAVEN_LOCAL}/deephaven/lib -L${DEEPHAVEN_LOCAL}/protobuf/lib -L${DEEPHAVEN_LOCAL}/arrow/lib -L${DEEPHAVEN_LOCAL}/grpc/lib -L${DEEPHAVEN_LOCAL}/abseil/lib -L${DEEPHAVEN_LOCAL}/re2/lib -L${DEEPHAVEN_LOCAL}/cares/lib" python setup.py build_ext -i
 ```
 
 Once built, a shared object with the binary python module should show up, named like
@@ -71,7 +72,7 @@ program:
 ```
 import deephaven_client as dh
 client = dh.Client.connect("localhost:10000")
-manager = client.getManager()
-handle = manager.emptyTable(10).update(["II= ii"])
+manager = client.get_manager()
+handle = manager.empty_table(10).update(["II= ii"])
 print(handle.toString(True))
 ```

@@ -54,10 +54,10 @@ public class StackTraceMixInTest {
         // Note: we could further trim this stacktrace by 1 element if we wanted smarter logic, see
         // note in io.deephaven.qst.table.StackTraceMixInCreator.trimElements
         StackTraceMixIn<TableSpec, TableSpec> mixin = example2(mixinCreator);
-        assertThat(mixin.elements()[2].getClassName())
+        assertThat(mixin.elements()[3].getClassName())
                 .isEqualTo(io.deephaven.qst.table.StackTraceMixInTest.class.getName());
-        assertThat(mixin.elements()[2].getMethodName()).isEqualTo("example2");
-        assertThat(mixin.elements()[2].getLineNumber()).isEqualTo(22);
+        assertThat(mixin.elements()[3].getMethodName()).isEqualTo("example2");
+        assertThat(mixin.elements()[3].getLineNumber()).isEqualTo(22);
     }
 
     @Test

@@ -16,7 +16,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     /**
      * @return the type of object contained within this column.
      */
-    Class getType();
+    Class<TYPE> getType();
 
     /**
      * Get the array component type, or the type itself. For basic types, this is just the type. For example, if you
@@ -26,7 +26,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
      *
      * @return if type is an array, the type of object within the array. Otherwise type itself.
      */
-    Class getComponentType();
+    Class<?> getComponentType();
 
     /**
      * Get the contents of this data column in array form. Note that this will return an array of the appropriate
@@ -47,7 +47,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
      * @return An appropriately-typed array containing the contents of the specified range of this data column
      */
     default Object getDirect(final long startIndexInclusive, final long endIndexExclusive) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(startIndexInclusive, endIndexExclusive);
@@ -74,7 +73,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final long... indexes) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);
@@ -101,7 +99,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final int... indexes) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);

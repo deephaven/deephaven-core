@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -261,6 +260,13 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         return result;
     }
 
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
+
     @Override
     public void startTrackingPrevValues() {
         if (prevFlusher != null) {
@@ -405,7 +411,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
 
     @Override
-    public void prepareForParallelPopulation(final RowSet changedRows) {
+    public void prepareForParallelPopulation(final RowSequence changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
@@ -712,13 +718,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 offset += length;
             }
         }
-    }
-
-    private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
-        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
-        // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges
 

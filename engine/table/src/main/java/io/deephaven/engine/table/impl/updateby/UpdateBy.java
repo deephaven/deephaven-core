@@ -4,6 +4,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
@@ -32,14 +33,12 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,8 +68,6 @@ public abstract class UpdateBy {
 
     /** Input sources may be reused by multiple operators, only store and cache unique ones (post-reinterpret) */
     protected final ColumnSource<?>[] inputSources;
-    /** All the operators for this UpdateBy manager */
-    protected final UpdateByOperator[] operators;
     /** All the windows for this UpdateBy manager */
     protected final UpdateByWindow[] windows;
     /** The source table for the UpdateBy operators */
@@ -98,14 +95,16 @@ public abstract class UpdateBy {
 
     static class UpdateByRedirectionHelper {
         @Nullable
-        private final WritableRowRedirection rowRedirection;
+        private final RowRedirection rowRedirection;
         private final WritableRowSet freeRows;
         private long maxInnerRowKey;
 
-        private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
+        private UpdateByRedirectionHelper(@Nullable final RowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
             // noinspection resource
-            this.freeRows = rowRedirection == null ? null : RowSetFactory.empty().toTracking();
+            this.freeRows = rowRedirection == null || !rowRedirection.isWritable()
+                    ? null
+                    : RowSetFactory.empty().toTracking();
             this.maxInnerRowKey = 0;
         }
 
@@ -121,15 +120,29 @@ public abstract class UpdateBy {
          * Process the upstream {@link TableUpdate update} and return the rowset of dense keys that need cleared for
          * Object array sources
          */
-        private WritableRowSet processUpdateForRedirection(@NotNull final TableUpdate upstream,
-                final TrackingRowSet sourceRowSet) {
+        private WritableRowSet processUpdateForRedirection(
+                @NotNull final TableUpdate upstream,
+                @NotNull final TrackingRowSet sourceRowSet) {
             assert rowRedirection != null;
 
+            if (!rowRedirection.isWritable()) {
+                // The inner row key space is always a flattened view of the outer row key space in this case.
+                maxInnerRowKey = sourceRowSet.size() - 1;
+                final WritableRowSet denseRowsToClear = sourceRowSet.prev().invert(upstream.removed());
+                if (denseRowsToClear.isNonempty() && upstream.added().isNonempty()) {
+                    try (final RowSet invertedAdds = sourceRowSet.invert(upstream.added())) {
+                        denseRowsToClear.remove(invertedAdds);
+                    }
+                }
+                return denseRowsToClear;
+            }
+
+            final WritableRowRedirection writableRowRedirection = rowRedirection.writableCast();
             final WritableRowSet toClear;
 
             if (upstream.removed().isNonempty()) {
                 final RowSetBuilderRandom freeBuilder = RowSetFactory.builderRandom();
-                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(rowRedirection.remove(key)));
+                upstream.removed().forAllRowKeys(key -> freeBuilder.addKey(writableRowRedirection.remove(key)));
                 // store all freed rows as the candidate toClear set
                 toClear = freeBuilder.build();
                 freeRows.insert(toClear);
@@ -140,7 +153,7 @@ public abstract class UpdateBy {
             if (upstream.shifted().nonempty()) {
                 try (final WritableRowSet prevRowSetLessRemoves = sourceRowSet.copyPrev()) {
                     prevRowSetLessRemoves.remove(upstream.removed());
-                    rowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
+                    writableRowRedirection.applyShift(prevRowSetLessRemoves, upstream.shifted());
                 }
             }
 
@@ -148,7 +161,7 @@ public abstract class UpdateBy {
                 final WritableRowSet.Iterator freeIt = freeRows.iterator();
                 upstream.added().forAllRowKeys(outerKey -> {
                     final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : maxInnerRowKey++;
-                    rowRedirection.put(outerKey, innerKey);
+                    writableRowRedirection.put(outerKey, innerKey);
                 });
                 if (freeIt.hasNext()) {
                     try (final RowSet added = freeRows.subSetByKeyRange(0, freeIt.nextLong() - 1)) {
@@ -181,19 +194,13 @@ public abstract class UpdateBy {
 
     protected UpdateBy(
             @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @Nullable String timestampColumnName,
-            @Nullable final WritableRowRedirection rowRedirection,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
-        if (operators.length == 0) {
-            throw new IllegalArgumentException("At least one operator must be specified");
-        }
-
         this.source = source;
-        this.operators = operators;
         this.windows = windows;
         this.inputSources = inputSources;
         this.timestampColumnName = timestampColumnName;
@@ -293,8 +300,7 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (OperationInitializationThreadPool.NUM_THREADS > 1
-                        && !OperationInitializationThreadPool.isInitializationThread()) {
+                if (OperationInitializationThreadPool.canParallelize()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
@@ -365,9 +371,9 @@ public abstract class UpdateBy {
 
                 // clear them now and let them set their own prev states
                 if (!initialStep && !toClear.isEmpty()) {
-                    for (UpdateByOperator op : operators) {
+                    forAllOperators(op -> {
                         op.clearOutputRows(toClear);
-                    }
+                    });
                 }
             } else {
                 // identify which rows we need to clear in our Object columns (actual clearing will be performed later)
@@ -377,8 +383,7 @@ public abstract class UpdateBy {
                 // for our sparse array output sources, we need to identify which rows will be affected by the upstream
                 // shifts and include them in our parallel update preparations
                 if (upstream.shifted().nonempty()) {
-                    try (final RowSet prev = source.getRowSet().copyPrev();
-                            final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
+                    try (final RowSequence.Iterator it = source.getRowSet().prev().getRowSequenceIterator()) {
 
                         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                         final int size = upstream.shifted().size();
@@ -450,7 +455,7 @@ public abstract class UpdateBy {
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
                     if (inputSourceCacheNeeded[srcIdx]) {
-                        // create a RowSet to be used by `InverseWrappedRowSetWritableRowRedirection`
+                        // create a RowSet to be used by `InverseWrappedRowSetRowRedirection`
                         inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
                         // record how many operators require this input source
@@ -558,15 +563,13 @@ public abstract class UpdateBy {
 
                         if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
                             // Shift the non-redirected output sources now, after parallelPopulation.
-                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                                upstream.shifted().apply((begin, end, delta) -> {
-                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                        for (UpdateByOperator op : win.getOperators()) {
-                                            op.applyOutputShift(subRowSet, delta);
-                                        }
+                            upstream.shifted().apply((begin, end, delta) -> {
+                                try (final RowSet subRowSet = source.getRowSet().prev().subSetByKeyRange(begin, end)) {
+                                    for (UpdateByOperator op : win.getOperators()) {
+                                        op.applyOutputShift(subRowSet, delta);
                                     }
-                                });
-                            }
+                                }
+                            });
                         }
                     }, onParallelPopulationComplete, this::onError);
         }
@@ -749,7 +752,7 @@ public abstract class UpdateBy {
             innerSource.ensureCapacity(inputRowSet.size());
 
             // there will be no updates to this cached column source, so use a simple redirection
-            final WritableRowRedirection rowRedirection = new InverseWrappedRowSetWritableRowRedirection(inputRowSet);
+            final RowRedirection rowRedirection = new InverseWrappedRowSetRowRedirection(inputRowSet);
             final WritableColumnSource<?> outputSource =
                     WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerSource, 0);
 
@@ -766,7 +769,7 @@ public abstract class UpdateBy {
 
                 @Override
                 public void close() {
-                    SafeCloseable.closeArray(rsIt, ffc, gc);
+                    SafeCloseable.closeAll(rsIt, ffc, gc);
                 }
             }
 
@@ -815,7 +818,8 @@ public abstract class UpdateBy {
 
                     for (int ii = 0; ii < opIndices.length; ii++) {
                         final int opIdx = opIndices[ii];
-                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize);
+                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize,
+                                maxInfluencerChunkSize);
                     }
 
                     chunkArr = new Chunk[srcIndices.length];
@@ -905,13 +909,13 @@ public abstract class UpdateBy {
 
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
-                for (UpdateByOperator op : operators) {
+                forAllOperators(op -> {
                     op.clearOutputRows(toClear);
-                }
+                });
             }
 
             // release remaining resources
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
             // accumulate performance data
@@ -974,7 +978,7 @@ public abstract class UpdateBy {
                         final UpdateByOperator[] winOps = win.getOperators();
                         for (int winOpIdx : win.getDirtyOperators(winCtx)) {
                             // these were created directly from the result output columns so no transformer needed
-                            downstream.modifiedColumnSet.setAll(winOps[winOpIdx].getOutputModifiedColumnSet());
+                            win.operators[winOpIdx].extractDownstreamModifiedColumnSet(upstream, downstream);
                         }
                     }
                 }
@@ -1014,7 +1018,7 @@ public abstract class UpdateBy {
                 bucket.finalizeUpdate();
             }
 
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
 
             upstream.release();
         }
@@ -1053,6 +1057,14 @@ public abstract class UpdateBy {
         } catch (IOException e) {
             throw new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry, error);
+        }
+    }
+
+    void forAllOperators(Consumer<UpdateByOperator> consumer) {
+        for (UpdateByWindow win : windows) {
+            for (UpdateByOperator op : win.operators) {
+                consumer.accept(op);
+            }
         }
     }
 
@@ -1126,13 +1138,15 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
+        QueryTable.checkInitiateOperation(source);
+
         // create the rowRedirection if instructed
-        final WritableRowRedirection rowRedirection;
+        final RowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
             if (!source.isRefreshing()) {
                 if (!source.isFlat() && SparseConstants.sparseStructureExceedsOverhead(source.getRowSet(),
                         control.maxStaticSparseMemoryOverheadOrDefault())) {
-                    rowRedirection = new InverseWrappedRowSetWritableRowRedirection(source.getRowSet());
+                    rowRedirection = new InverseWrappedRowSetRowRedirection(source.getRowSet());
                 } else {
                     rowRedirection = null;
                 }
@@ -1160,11 +1174,10 @@ public abstract class UpdateBy {
 
         final UpdateByOperatorFactory updateByOperatorFactory =
                 new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
-        final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
-        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
-
-        if (opArr.length == 0) {
+        final Collection<List<ColumnUpdateOperation>> windowSpecs =
+                updateByOperatorFactory.getWindowOperatorSpecs(clauses);
+        if (windowSpecs.size() == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
         }
 
@@ -1172,94 +1185,48 @@ public abstract class UpdateBy {
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
 
-        String timestampColumnName = null;
+        final MutableObject<String> timestampColumnName = new MutableObject<>(null);
         // create an initial set of all source columns
         final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
-        for (final UpdateByOperator op : opArr) {
-            op.getOutputColumns().forEach((name, col) -> {
-                if (opResultSources.putIfAbsent(name, col) != null) {
-                    problems.add(name);
-                }
-                // remove overridden source columns
-                preservedColumnSet.remove(name);
-            });
-            // verify zero or one timestamp column names
-            if (op.getTimestampColumnName() != null) {
-                if (timestampColumnName == null) {
-                    timestampColumnName = op.getTimestampColumnName();
-                } else {
-                    if (!timestampColumnName.equals(op.getTimestampColumnName())) {
-                        throw new UncheckedTableException(
-                                "Cannot reference more than one timestamp source on a single UpdateBy call {"
-                                        + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
-                    }
-                }
-            }
-        }
-
-        if (!problems.isEmpty()) {
-            throw new UncheckedTableException(descriptionBuilder + ": resulting column names must be unique {" +
-                    String.join(", ", problems) + "}");
-        }
-
-        // These are the source columns that exist unchanged in the result
-        final String[] preservedColumns = preservedColumnSet.toArray(String[]::new);
-
-        // We will divide the operators into similar windows for efficient processing.
-        final KeyedObjectHashMap<UpdateByOperator, List<UpdateByOperator>> windowMap =
-                new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
-                    @Override
-                    public UpdateByOperator getKey(List<UpdateByOperator> updateByOperators) {
-                        return updateByOperators.get(0);
-                    }
-
-                    @Override
-                    public int hashKey(UpdateByOperator updateByOperator) {
-                        return UpdateByWindow.hashCodeFromOperator(updateByOperator);
-                    }
-
-                    @Override
-                    public boolean equalKey(UpdateByOperator updateByOperator,
-                            List<UpdateByOperator> updateByOperators) {
-                        return UpdateByWindow.isEquivalentWindow(updateByOperator, updateByOperators.get(0));
-                    }
-                });
-        for (UpdateByOperator updateByOperator : opArr) {
-            final MutableBoolean created = new MutableBoolean(false);
-            final List<UpdateByOperator> opList = windowMap.putIfAbsent(updateByOperator,
-                    (newOpListOp) -> {
-                        final List<UpdateByOperator> newOpList = new ArrayList<>();
-                        newOpList.add(newOpListOp);
-                        created.setTrue();
-                        return newOpList;
-                    });
-            if (!created.booleanValue()) {
-                opList.add(updateByOperator);
-            }
-        }
-
-        // make the windows and create unique input sources for all the window operators
 
         final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
         final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
 
-        final UpdateByWindow[] windowArr = windowMap.values().stream().map((final List<UpdateByOperator> opList) -> {
-            // build an array from the operator indices
-            UpdateByOperator[] windowOps = new UpdateByOperator[opList.size()];
-            // local map of operators indices to input source indices
-            final int[][] windowOpSourceSlots = new int[opList.size()][];
+        final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
+            final UpdateByOperator[] windowOps =
+                    updateByOperatorFactory.getOperators(clauseList).toArray(UpdateByOperator[]::new);
+            final int[][] windowOpSourceSlots = new int[windowOps.length][];
 
-            // do the mapping from operator input sources to unique input sources
-            for (int idx = 0; idx < opList.size(); idx++) {
-                final UpdateByOperator localOp = opList.get(idx);
-                // store this operator into an array for window creation
-                windowOps[idx] = localOp;
-                // iterate over each input column and map this operator to unique source
-                final String[] inputColumnNames = localOp.getInputColumnNames();
-                windowOpSourceSlots[idx] = new int[inputColumnNames.length];
+            for (int opIdx = 0; opIdx < windowOps.length; opIdx++) {
+                UpdateByOperator op = windowOps[opIdx];
+
+                op.getOutputColumns().forEach((name, col) -> {
+                    if (opResultSources.putIfAbsent(name, col) != null) {
+                        problems.add(name);
+                    }
+                    // remove overridden source columns
+                    preservedColumnSet.remove(name);
+                });
+                // verify zero or one timestamp column names
+                if (op.getTimestampColumnName() != null) {
+                    if (timestampColumnName.getValue() == null) {
+                        timestampColumnName.setValue(op.getTimestampColumnName());
+                    } else {
+                        if (!timestampColumnName.getValue().equals(op.getTimestampColumnName())) {
+                            throw new UncheckedTableException(
+                                    "Cannot reference more than one timestamp source on a single UpdateBy call {"
+                                            + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
+                        }
+                    }
+                }
+
+                // Iterate over each input column and map this operator to unique source
+                final String[] inputColumnNames = op.getInputColumnNames();
+                windowOpSourceSlots[opIdx] = new int[inputColumnNames.length];
+
                 for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                     final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
                     final int maybeExistingSlot = sourceToSlotMap.get(input);
@@ -1269,40 +1236,58 @@ public abstract class UpdateBy {
                         inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
                         sourceToSlotMap.put(input, srcIdx);
                         // map the window operator indices to this new source
-                        windowOpSourceSlots[idx][colIdx] = srcIdx;
+                        windowOpSourceSlots[opIdx][colIdx] = srcIdx;
                     } else {
                         // map the window indices to this existing source
-                        windowOpSourceSlots[idx][colIdx] = maybeExistingSlot;
+                        windowOpSourceSlots[opIdx][colIdx] = maybeExistingSlot;
                     }
                 }
             }
+
             return UpdateByWindow.createFromOperatorArray(windowOps, windowOpSourceSlots);
         }).toArray(UpdateByWindow[]::new);
+
+        if (!problems.isEmpty()) {
+            throw new UncheckedTableException(descriptionBuilder + ": resulting column names must be unique {" +
+                    String.join(", ", problems) + "}");
+        }
+
+        // These are the source columns that exist unchanged in the result
+        final String[] preservedColumns = preservedColumnSet.toArray(String[]::new);
+
         final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
-        resultSources.putAll(opResultSources);
-        final String fTimestampColumnName = timestampColumnName;
+        // Add the output columns in the user-supplied order
+        final Collection<String> userOutputColumns = updateByOperatorFactory.getOutputColumns(clauses);
+        for (String colName : userOutputColumns) {
+            final ColumnSource<?> matchedColumn = opResultSources.get(colName);
+            Assert.neqNull(matchedColumn, "matchedColumn");
+            resultSources.put(colName, matchedColumn);
+        }
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
             return LivenessScopeStack.computeEnclosed(() -> {
                 final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
-                        opArr,
                         windowArr,
                         inputSourceArr,
                         source,
                         preservedColumns,
                         resultSources,
-                        fTimestampColumnName,
+                        timestampColumnName.getValue(),
                         rowRedirection,
                         control);
 
                 if (source.isRefreshing()) {
                     // start tracking previous values
                     if (rowRedirection != null) {
-                        rowRedirection.startTrackingPrevValues();
+                        rowRedirection.writableCast().startTrackingPrevValues();
                     }
-                    ops.forEach(UpdateByOperator::startTrackingPrev);
+                    for (UpdateByWindow win : windowArr) {
+                        for (UpdateByOperator op : win.operators) {
+                            op.startTrackingPrev();
+                        }
+                    }
                 }
                 return zkm.result();
             }, source::isRefreshing, DynamicNode::isRefreshing);
@@ -1326,23 +1311,26 @@ public abstract class UpdateBy {
 
         return LivenessScopeStack.computeEnclosed(() -> {
             final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
-                    opArr,
                     windowArr,
                     inputSourceArr,
                     source,
                     preservedColumns,
                     resultSources,
                     byColumns,
-                    fTimestampColumnName,
+                    timestampColumnName.getValue(),
                     rowRedirection,
                     control);
 
             if (source.isRefreshing()) {
                 // start tracking previous values
                 if (rowRedirection != null) {
-                    rowRedirection.startTrackingPrevValues();
+                    rowRedirection.writableCast().startTrackingPrevValues();
                 }
-                ops.forEach(UpdateByOperator::startTrackingPrev);
+                for (UpdateByWindow win : windowArr) {
+                    for (UpdateByOperator op : win.operators) {
+                        op.startTrackingPrev();
+                    }
+                }
             }
             return bm.result();
         }, source::isRefreshing, DynamicNode::isRefreshing);

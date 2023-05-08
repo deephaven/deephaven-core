@@ -1,6 +1,9 @@
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsObject;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
@@ -10,12 +13,15 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_ser
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
+import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -28,7 +34,10 @@ public class CoreClient extends HasEventHandling {
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
             EVENT_RECONNECT_AUTH_FAILED = "reconnectauthfailed",
-            EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
+            EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated",
+            EVENT_REQUEST_FAILED = "requestfailed",
+            EVENT_REQUEST_STARTED = "requeststarted",
+            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     public static final String LOGIN_TYPE_PASSWORD = "password",
             LOGIN_TYPE_ANONYMOUS = "anonymous";
@@ -70,40 +79,60 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        return getConfigs(
-                // Explicitly creating a new client, and not passing auth details, so this works pre-connection
-                c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
-                        new AuthenticationConstantsRequest(),
-                        c::apply),
-                AuthenticationConstantsResponse::getConfigValuesMap);
+        return ideConnection.getConnectOptions().then(options -> {
+            BrowserHeaders metadata = new BrowserHeaders();
+            JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                metadata.set(key, options.headers.get(key));
+                return null;
+            });
+            return getConfigs(
+                    // Explicitly creating a new client, and not passing auth details, so this works pre-connection
+                    c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
+                            new AuthenticationConstantsRequest(),
+                            metadata,
+                            c::apply),
+                    AuthenticationConstantsResponse::getConfigValuesMap);
+        });
     }
 
-    public Promise<Void> login(LoginCredentials credentials) {
-        Objects.requireNonNull(credentials.getType(), "type must be specified");
+    public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
+        final LoginCredentials creds;
+        if (credentials instanceof LoginCredentials) {
+            creds = (LoginCredentials) credentials;
+        } else {
+            creds = new LoginCredentials(credentials);
+        }
+        Objects.requireNonNull(creds.getType(), "type must be specified");
         ConnectToken token = ideConnection.getToken();
-        if (LOGIN_TYPE_PASSWORD.equals(credentials.getType())) {
-            Objects.requireNonNull(credentials.getUsername(), "username must be specified for password login");
-            Objects.requireNonNull(credentials.getToken(), "token must be specified for password login");
+        if (LOGIN_TYPE_PASSWORD.equals(creds.getType())) {
+            Objects.requireNonNull(creds.getUsername(), "username must be specified for password login");
+            Objects.requireNonNull(creds.getToken(), "token must be specified for password login");
             token.setType("Basic");
-            token.setValue(ConnectToken.bytesToBase64(credentials.getUsername() + ":" + credentials.getToken()));
-        } else if (LOGIN_TYPE_ANONYMOUS.equals(credentials.getType())) {
+            token.setValue(ConnectToken.bytesToBase64(creds.getUsername() + ":" + creds.getToken()));
+        } else if (LOGIN_TYPE_ANONYMOUS.equals(creds.getType())) {
             token.setType("Anonymous");
             token.setValue("");
         } else {
-            token.setType(credentials.getType());
-            token.setValue(credentials.getToken());
-            if (credentials.getUsername() != null) {
-                JsLog.warn("username ignored for login type " + credentials.getType());
+            token.setType(creds.getType());
+            token.setValue(creds.getToken());
+            if (creds.getUsername() != null) {
+                JsLog.warn("username ignored for login type " + creds.getType());
             }
         }
-        Promise<Void> login =
-                ideConnection.connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+
+        boolean alreadyRunning = ideConnection.connection.isAvailable();
+        WorkerConnection workerConnection = ideConnection.connection.get();
+        LazyPromise<Void> loginPromise = new LazyPromise<>();
+        ideConnection.addEventListenerOneShot(
+                EventPair.of(QueryInfoConstants.EVENT_CONNECT, ignore -> loginPromise.succeed(null)),
+                EventPair.of(CoreClient.EVENT_RECONNECT_AUTH_FAILED, loginPromise::fail));
+        Promise<Void> login = loginPromise.asPromise();
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {
             for (String[] config : configs) {
                 if (config[0].equals("http.session.durationMs")) {
-                    ideConnection.connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
+                    workerConnection.setSessionTimeoutMs(Double.parseDouble(config[1]));
                 }
             }
             return null;
@@ -111,11 +140,15 @@ public class CoreClient extends HasEventHandling {
             // Ignore this failure and suppress browser logging, we have a safe fallback
             return Promise.resolve((Object) null);
         });
+
+        if (alreadyRunning) {
+            ideConnection.connection.get().forceReconnect();
+        }
         return login;
     }
 
-    public Promise<Void> relogin(Object token) {
-        return login(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes()));
+    public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
+        return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
 
     public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {
@@ -129,10 +162,6 @@ public class CoreClient extends HasEventHandling {
                         ideConnection.connection.get().metadata(),
                         c::apply),
                 ConfigurationConstantsResponse::getConfigValuesMap);
-    }
-
-    public Promise<UserInfo> getUserInfo() {
-        return Promise.resolve(new UserInfo());
     }
 
     public JsStorageService getStorageService() {

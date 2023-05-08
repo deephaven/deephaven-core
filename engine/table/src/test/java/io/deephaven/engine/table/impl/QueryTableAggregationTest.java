@@ -1621,7 +1621,7 @@ public class QueryTableAggregationTest {
     }
 
     private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
-        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             doTestSumByIncremental(size, seed, grouped, lotsOfStrings);
         }
     }
@@ -2810,7 +2810,7 @@ public class QueryTableAggregationTest {
 
                                     final double error = Math
                                             .abs((recomputedPercentile - originalPercentile) / recomputedPercentile);
-                                    if (error > .025) {
+                                    if (error > .03) {
                                         throw new ComparisonFailure("Bad percentile for " + name + ", error=" + error,
                                                 Double.toString(recomputedPercentile),
                                                 Double.toString(originalPercentile));

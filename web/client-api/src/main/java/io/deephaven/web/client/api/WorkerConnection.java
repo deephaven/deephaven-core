@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
@@ -75,6 +76,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -89,7 +91,6 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.TableSnapshot;
 import io.deephaven.web.shared.data.TableSubscriptionRequest;
@@ -139,8 +140,9 @@ import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
  * Responsible for reconnecting to the query server when required - when that server disappears, and at least one table
  * is left un-closed.
  */
+@TsIgnore
 public class WorkerConnection {
-
+    private static final String FLIGHT_AUTH_HEADER_NAME = "authorization";
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
     private final BrowserHeaders metadata = new BrowserHeaders();
@@ -201,7 +203,7 @@ public class WorkerConnection {
     private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
-    private JsSet<JsFigure> figures = new JsSet<>();
+    private JsSet<HasLifecycle> simpleReconnectableInstances = new JsSet<>();
 
     private List<LogItem> pastLogs = new ArrayList<>();
     private JsConsumer<LogItem> recordLog = pastLogs::add;
@@ -210,9 +212,6 @@ public class WorkerConnection {
     private final JsSet<JsConsumer<JsVariableChanges>> fieldUpdatesCallback = new JsSet<>();
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
     private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
-
-    private long lastSuccessResponseTime = 0;
-    private static final long GIVE_UP_TIMEOUT_MS = 10_000;
 
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
@@ -260,22 +259,27 @@ public class WorkerConnection {
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
     private void connectToWorker() {
-        info.running()
+        info.onReady()
                 .then(queryWorkerRunning -> {
+                    if (metadata().has(FLIGHT_AUTH_HEADER_NAME)) {
+                        return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
+                    }
                     return Promise.all(
                             info.getConnectToken().then(authToken -> {
-                                metadata.set("authorization",
+                                // set the proposed initial token and make the first call
+                                metadata.set(FLIGHT_AUTH_HEADER_NAME,
                                         (authToken.getType() + " " + authToken.getValue()).trim());
                                 return Promise.resolve(authToken);
                             }),
                             info.getConnectOptions().then(options -> {
+                                // set other specified headers, if any
                                 JsObject.keys(options.headers).forEach((key, index, arr) -> {
                                     metadata.set(key, options.headers.get(key));
                                     return null;
                                 });
                                 return Promise.resolve(options);
-                            })).then(ignore -> authUpdate());
-                }).then(handshakeResponse -> {
+                            })).then(ignore -> authUpdate()).then(ignore -> Promise.resolve(Boolean.TRUE));
+                }).then(newSession -> {
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
 
@@ -285,41 +289,59 @@ public class WorkerConnection {
                     // mark that we succeeded
                     newSessionReconnect.success();
 
-                    // nuke pending callbacks, we'll remake them
-                    handleCallbacks = new JsWeakMap<>();
-                    definitionCallbacks = new JsWeakMap<>();
+                    if (newSession) {
+                        // assert false : "Can't yet rebuild connections with new auth, please log in again";
+                        // nuke pending callbacks, we'll remake them
+                        handleCallbacks = new JsWeakMap<>();
+                        definitionCallbacks = new JsWeakMap<>();
 
-                    // for each cts in the cache, get all with active subs
-                    ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
-                            .peek(cts -> {
-                                cts.getHandle().setConnected(false);
-                                cts.setSubscribed(false);
-                                cts.forActiveLifecycles(item -> {
-                                    assert !(item instanceof JsTable) ||
-                                            ((JsTable) item).state() == cts
-                                            : "Invalid table state " + item + " does not point to state " + cts;
-                                    item.suppressEvents();
-                                });
-                            })
-                            .filter(cts -> !cts.isEmpty())
-                            .peek(cts -> {
-                                cts.forActiveTables(t -> {
-                                    assert t.state().isAncestor(cts)
-                                            : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
-                                });
-                            })
-                            .toArray(ClientTableState[]::new);
-                    // clear caches
-                    List<ClientTableState> inactiveStatesToRemove = cache.getAllStates().stream()
-                            .filter(ClientTableState::isEmpty)
-                            .collect(Collectors.toList());
-                    inactiveStatesToRemove.forEach(cache::release);
+                        // for each cts in the cache, get all with active subs
+                        ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
+                                .peek(cts -> {
+                                    cts.getHandle().setConnected(false);
+                                    cts.setSubscribed(false);
+                                    cts.forActiveLifecycles(item -> {
+                                        assert !(item instanceof JsTable) ||
+                                                ((JsTable) item).state() == cts
+                                                : "Invalid table state " + item + " does not point to state " + cts;
+                                        item.suppressEvents();
+                                    });
+                                })
+                                .filter(cts -> !cts.isEmpty())
+                                .peek(cts -> {
+                                    cts.forActiveTables(t -> {
+                                        assert t.state().isAncestor(cts)
+                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain "
+                                                        + cts;
+                                    });
+                                })
+                                .toArray(ClientTableState[]::new);
+                        // clear caches
+                        // TODO verify we still need to do this, it seems like it might signify a leak
+                        List<ClientTableState> inactiveStatesToRemove = cache.getAllStates().stream()
+                                .filter(ClientTableState::isEmpty)
+                                .collect(Collectors.toList());
+                        inactiveStatesToRemove.forEach(cache::release);
 
-                    flushable.clear();
+                        flushable.clear();
 
-                    reviver.revive(metadata, hasActiveSubs);
+                        reviver.revive(metadata, hasActiveSubs);
 
-                    figures.forEach((p0, p1, p2) -> p0.refetch());
+                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch());
+                    } else {
+                        // wire up figures to attempt to reconnect when ready
+                        simpleReconnectableInstances.forEach((item, index, arr) -> {
+                            item.reconnect();
+                            return null;
+                        });
+
+                        // only notify that we're back, no need to re-create or re-fetch anything
+                        ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
+                                .filter(cts -> !cts.isEmpty())
+                                .toArray(ClientTableState[]::new);
+
+                        reviver.revive(metadata, hasActiveSubs);
+                    }
 
                     info.connected();
 
@@ -327,11 +349,11 @@ public class WorkerConnection {
                     onOpen.forEach(c -> c.onSuccess(null));
                     onOpen.clear();
 
-                    // // start a heartbeat to check if connection is properly alive
-                    // ping(success.getAuthSessionToken());
                     startExportNotificationsStream();
 
-                    return Promise.resolve(handshakeResponse);
+                    maybeRestartLogStream();
+
+                    return Promise.resolve((Object) null);
                 }, fail -> {
                     // this is non-recoverable, connection/auth/registration failed, but we'll let it start again when
                     // state changes
@@ -350,7 +372,7 @@ public class WorkerConnection {
                     // }
 
                     // signal that we should try again
-                    newSessionReconnect.failed();
+                    connectionLost();
 
                     // inform the UI that it failed to connect
                     info.failureHandled("Failed to connect: " + failure);
@@ -358,38 +380,62 @@ public class WorkerConnection {
                 });
     }
 
+
     private boolean checkStatus(ResponseStreamWrapper.ServiceError fail) {
         return checkStatus(ResponseStreamWrapper.Status.of(fail.getCode(), fail.getMessage(), fail.getMetadata()));
     }
 
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
-        // TODO provide simpler hooks to retry auth, restart the stream
-        final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
-            lastSuccessResponseTime = now;
             return true;
         } else if (status.getCode() == Code.Unauthenticated) {
-            // TODO re-create session once?
-            // for now treating this as fatal, UI should encourage refresh to try again
+            // fire deprecated event for now
             info.notifyConnectionError(status);
-        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown) {
-            // for now treating these as fatal also
+
+            // signal that the user needs to re-authenticate, make a new session
+            // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
+            info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
+                || status.getCode() == Code.Unavailable) {
+            // fire deprecated event for now
             info.notifyConnectionError(status);
-        } else if (status.getCode() == Code.Unavailable) {
-            // TODO skip re-authing for now, just backoff and try again
-            if (lastSuccessResponseTime == 0) {
-                lastSuccessResponseTime = now;
-                return true;
-            } else if (now - lastSuccessResponseTime >= GIVE_UP_TIMEOUT_MS) {
-                // this actually seems to be a problem; likely the worker has unexpectedly exited
-                // UI should encourage refresh to try again (which will probably fail; but at least doesn't look "OK")
-                info.notifyConnectionError(status);
-            } else {
-                return true;
-            }
+
+            // signal that there has been a connection failure of some kind and attempt to reconnect
+            info.fireEvent(CoreClient.EVENT_DISCONNECT);
+
+            // Try again after a backoff, this may happen several times
+            connectionLost();
         } // others probably are meaningful to the caller
         return false;
+    }
+
+    private void maybeRestartLogStream() {
+        if (logCallbacks.size == 0) {
+            return;
+        }
+        if (logStream != null) {
+            logStream.cancel();
+        }
+        LogSubscriptionRequest logSubscriptionRequest = new LogSubscriptionRequest();
+        if (pastLogs.size() > 0) {
+            // only ask for messages seen after the last message we recieved
+            logSubscriptionRequest
+                    .setLastSeenLogTimestamp(String.valueOf((long) pastLogs.get(pastLogs.size() - 1).getMicros()));
+        }
+        logStream = ResponseStreamWrapper
+                .of(consoleServiceClient.subscribeToLogs(logSubscriptionRequest, metadata));
+        logStream.onData(data -> {
+            LogItem logItem = new LogItem();
+            logItem.setLogLevel(data.getLogLevel());
+            logItem.setMessage(data.getMessage());
+            logItem.setMicros((double) java.lang.Long.parseLong(data.getMicros()));
+
+            for (JsConsumer<LogItem> callback : JsItr.iterate(logCallbacks.keys())) {
+                callback.apply(logItem);
+            }
+        });
+        logStream.onEnd(this::checkStatus);
     }
 
     private void startExportNotificationsStream() {
@@ -400,8 +446,9 @@ public class WorkerConnection {
                 .of(tableServiceClient.exportedTableUpdates(new ExportedTableUpdatesRequest(), metadata()));
         exportNotifications.onData(update -> {
             if (update.getUpdateFailureMessage() != null && !update.getUpdateFailureMessage().isEmpty()) {
-                exportedTableUpdateMessageError(new TableTicket(update.getExportId().getTicket_asU8()),
-                        update.getUpdateFailureMessage());
+                cache.get(new TableTicket(update.getExportId().getTicket_asU8())).ifPresent(state1 -> {
+                    state1.forActiveTables(t -> t.failureHandled(update.getUpdateFailureMessage()));
+                });
             } else {
                 exportedTableUpdateMessage(new TableTicket(update.getExportId().getTicket_asU8()),
                         java.lang.Long.parseLong(update.getSize()));
@@ -431,13 +478,13 @@ public class WorkerConnection {
             handshake.onHeaders(headers -> {
                 // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
                 // Metadata
-                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
+                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
                 if (authorization.length > 0) {
-                    JsArray<String> existing = metadata().get("authorization");
+                    JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
                     if (!existing.getAt(0).equals(authorization.getAt(0))) {
                         // use this new token
-                        metadata().set("authorization", authorization);
-                        CustomEventInit init = CustomEventInit.create();
+                        metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
+                        CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
                         init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
                         info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
                     }
@@ -453,7 +500,14 @@ public class WorkerConnection {
 
                     resolve.onInvoke((Void) null);
                 } else {
-                    // token is no longer valid, signal deauth for re-login
+                    if (status.getCode() == Code.Unauthenticated) {
+                        // explicitly clear out any metadata for authentication, and signal that auth failed
+                        metadata.delete(FLIGHT_AUTH_HEADER_NAME);
+
+                        // Fire an event for the UI to attempt to re-auth
+                        info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+                        return;
+                    }
                     // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
                     if (status.getDetails() == null || status.getDetails().isEmpty()) {
@@ -472,68 +526,23 @@ public class WorkerConnection {
         sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
                 (fail, success) -> {
                     if (fail != null) {
+                        // Errors are treated like connection issues, won't signal any shutdown
                         if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
                             info.notifyConnectionError(Js.cast(fail));
+                            connectionLost();
                         }
                         return;
                     }
                     assert success != null;
 
                     // welp; the server is gone -- let everyone know
-                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
-                        @Override
-                        public int getCode() {
-                            return Code.Unavailable;
-                        }
+                    connectionLost();
 
-                        @SuppressWarnings("StringConcatenationInLoop")
-                        @Override
-                        public String getDetails() {
-                            if (!success.getAbnormalTermination()) {
-                                return "Server exited normally.";
-                            }
-
-                            String retval;
-                            if (!success.getReason().isEmpty()) {
-                                retval = success.getReason();
-                            } else {
-                                retval = "Server exited abnormally.";
-                            }
-
-                            final JsArray<StackTrace> traces = success.getStackTracesList();
-                            for (int ii = 0; ii < traces.length; ++ii) {
-                                final StackTrace trace = traces.getAt(ii);
-                                retval += "\n\n";
-                                if (ii != 0) {
-                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
-                                } else {
-                                    retval += trace.getType() + ": " + trace.getMessage();
-                                }
-
-                                final JsArray<String> elements = trace.getElementsList();
-                                for (int jj = 0; jj < elements.length; ++jj) {
-                                    retval += "\n" + elements.getAt(jj);
-                                }
-                            }
-
-                            return retval;
-                        }
-
-                        @Override
-                        public BrowserHeaders getMetadata() {
-                            return new BrowserHeaders(); // nothing to offer
-                        }
-                    });
+                    info.notifyServerShutdown(success);
                 });
-    }
-
-    private void notifyLog(LogItem log) {
-        for (JsConsumer<LogItem> callback : JsItr.iterate(logCallbacks.keys())) {
-            callback.apply(log);
-        }
     }
 
     // @Override
@@ -586,27 +595,13 @@ public class WorkerConnection {
     }
 
     // @Override
-    public void exportedTableUpdateMessageError(TableTicket clientId, String errorMessage) {
-        cache.get(clientId).ifPresent(state -> {
-            state.forActiveTables(t -> t.failureHandled(errorMessage));
-        });
-    }
 
-    // @Override
-    public void onOpen() {
-        // never actually called - this instance isn't configured to be the "client" in the connection until auth
-        // has succeeded.
-        assert false
-                : "WorkerConnection.onOpen() should not be invoked directly, check the stack trace to see how this was triggered";
-    }
-
-    // @Override
-    public void onClose(int code, String message) {
-        // notify all active tables and figures that the connection is closed
-        figures.forEach((p0, p1, p2) -> {
+    public void connectionLost() {
+        // notify all active tables and widgets that the connection is closed
+        // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
+        simpleReconnectableInstances.forEach((item, index, array) -> {
             try {
-                p0.fireEvent(JsFigure.EVENT_DISCONNECT);
-                p0.suppressEvents();
+                item.disconnected();
             } catch (Exception e) {
                 JsLog.warn("Error in firing Figure.EVENT_DISCONNECT event", e);
             }
@@ -616,6 +611,7 @@ public class WorkerConnection {
         for (ClientTableState cts : cache.getAllStates()) {
             cts.forActiveLifecycles(HasLifecycle::disconnected);
         }
+
 
         if (state == State.Disconnected) {
             // deliberately closed, don't try to reopen at this time
@@ -630,48 +626,14 @@ public class WorkerConnection {
         newSessionReconnect.failed();
 
         // fail outstanding promises, if any
-        onOpen.forEach(c -> c.onFailure("Connection to server closed (" + code + "): " + message));
+        onOpen.forEach(c -> c.onFailure("Connection to server closed"));
         onOpen.clear();
     }
-
-    // TODO #730 fold this into the auth reconnect and "my stream puked" check"
-    // @Override
-    // public void ping(final String lastKnownSessionToken) {
-    // // note that lastKnownSessionToken may be null when client manually tries to ping
-    //
-    // if (state == State.Disconnected) {
-    // // deliberately closed, stop the ping/pong
-    // JsLog.debug("WorkerConnection.ping Disconnected, ignoring");
-    // return;
-    // }
-    //
-    // // cancel the last timeout check, and schedule a new one
-    // DomGlobal.clearTimeout(killTimerCancelation);
-    // final double now = Duration.currentTimeMillis();
-    // killTimerCancelation = DomGlobal.setTimeout(ignore -> {
-    // boolean keepWaiting = isDevMode() && (Duration.currentTimeMillis() - now > 45_000);
-    // if (keepWaiting) {
-    // // it took quite a bit more than 30s, user was probably stuck in debugger,
-    // // or laptop was shut down in some way. Ping again.
-    // ping(null);
-    // } else {
-    // JsLog.debug("Haven't heard from the server in 30s, reconnecting...");
-    // forceReconnect();
-    // }
-    // }, 30_000);
-    //
-    // // wait 5s, and tell the server that we're here to continue the cycle
-    // DomGlobal.setTimeout(ignore -> server.pong(), 5000);
-    // }
 
     @JsMethod
     public void forceReconnect() {
         JsLog.debug("pending: ", definitionCallbacks, handleCallbacks);
 
-        // stop the current connection
-        // if (server != null) {
-        // server.close();
-        // }
         // just in case it wasn't already running, mark us as reconnecting
         state = State.Reconnecting;
         newSessionReconnect.failed();
@@ -681,9 +643,8 @@ public class WorkerConnection {
     public void forceClose() {
         // explicitly mark as disconnected so reconnect isn't attempted
         state = State.Disconnected;
-        // if (server != null) {
-        // server.close();
-        // }
+
+
         newSessionReconnect.disconnected();
         DomGlobal.clearTimeout(killTimerCancelation);
     }
@@ -765,23 +726,23 @@ public class WorkerConnection {
     }
 
     public Promise<?> getObject(JsVariableDefinition definition) {
-        if (JsVariableChanges.TABLE.equals(definition.getType())) {
+        if (JsVariableType.TABLE.equals(definition.getType())) {
             return getTable(definition, null);
-        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
+        } else if (JsVariableType.FIGURE.equals(definition.getType())) {
             return getFigure(definition);
-        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+        } else if (JsVariableType.PANDAS.equals(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
-        } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.PARTITIONEDTABLE.equals(definition.getType())) {
             return getPartitionedTable(definition);
-        } else if (JsVariableChanges.HIERARCHICALTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.HIERARCHICALTABLE.equals(definition.getType())) {
             return getHierarchicalTable(definition);
         } else {
-            if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
+            if (JsVariableType.TABLEMAP.equals(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
-            if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
+            if (JsVariableType.TREETABLE.equals(definition.getType())) {
                 JsLog.warn(
                         "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
@@ -938,12 +899,12 @@ public class WorkerConnection {
                 .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
     }
 
-    public void registerFigure(JsFigure figure) {
-        this.figures.add(figure);
+    public void registerSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.add(figure);
     }
 
-    public void releaseFigure(JsFigure figure) {
-        this.figures.delete(figure);
+    public void unregisterSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.delete(figure);
     }
 
 
@@ -1532,18 +1493,7 @@ public class WorkerConnection {
         logCallbacks.add(callback);
         if (mustSub) {
             logCallbacks.add(recordLog);
-            // TODO core#225 track latest message seen and only sub after that
-            logStream = ResponseStreamWrapper
-                    .of(consoleServiceClient.subscribeToLogs(new LogSubscriptionRequest(), metadata));
-            logStream.onData(data -> {
-                LogItem logItem = new LogItem();
-                logItem.setLogLevel(data.getLogLevel());
-                logItem.setMessage(data.getMessage());
-                logItem.setMicros((double) java.lang.Long.parseLong(data.getMicros()));
-
-                notifyLog(logItem);
-            });
-            logStream.onEnd(this::checkStatus);
+            maybeRestartLogStream();
         } else {
             pastLogs.forEach(callback::apply);
         }

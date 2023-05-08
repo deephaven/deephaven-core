@@ -80,11 +80,11 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
 
-            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
+            if (f.contains("Byte")) {
                 fixupByte(f);
             }
 
-            if (f.contains("Long") && f.contains("MinMax")) {
+            if (f.contains("Long")) {
                 augmentLongWithReinterps(f);
             }
         }
@@ -92,13 +92,91 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
 
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
+
+        files = ReplicatePrimitiveCode.charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/CharRollingAvgOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingminmax/CharRollingMinMaxOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingcount/CharRollingCountOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingstd/CharRollingStdOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/CharRollingWAvgOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
@@ -108,7 +186,7 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
 
-            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
+            if (f.contains("Byte")) {
                 fixupByte(f);
             }
 
@@ -230,8 +308,8 @@ public class ReplicateUpdateBy {
                 Collections.singletonList("                               ,final byte nullValue"));
         lines = replaceRegion(lines, "constructor", Collections.singletonList("        this.nullValue = nullValue;"));
         lines = ReplicationUtils.globalReplacements(lines,
-                "isCurrentNull = BytePrimitives\\.isNull\\(currentVal\\)", "isCurrentNull = currentVal == nullValue",
-                "!BytePrimitives\\.isNull\\(currentVal\\)", "currentVal != nullValue");
+                "!= NULL_BYTE", "!= nullValue",
+                "== NULL_BYTE", "== nullValue");
         FileUtils.writeLines(objectFile, lines);
     }
 
