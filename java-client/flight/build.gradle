@@ -8,7 +8,6 @@ description = 'The Deephaven client flight library'
 dependencies {
     api project(':java-client-session')
     implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':qst')
 
     Classpaths.inheritArrow(project, 'flight-core', 'api')
     Classpaths.inheritArrow(project, 'flight-grpc', 'implementation')

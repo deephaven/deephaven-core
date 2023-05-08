@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.ByteType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,12 @@ public final class ByteArray extends PrimitiveArrayBase<Byte> {
      */
     public final byte[] values() {
         return values;
+    }
+
+    @Override
+    public Byte value(int index) {
+        byte value = values[index];
+        return value == QueryConstants.NULL_BYTE ? null : value;
     }
 
     @Override

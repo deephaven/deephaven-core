@@ -3,8 +3,17 @@
  */
 package io.deephaven.client.impl;
 
-import io.deephaven.qst.array.Util;
-import org.apache.arrow.vector.*;
+import io.deephaven.qst.array.BooleanArray;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.BitVector;
+import org.apache.arrow.vector.Float4Vector;
+import org.apache.arrow.vector.Float8Vector;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.SmallIntVector;
+import org.apache.arrow.vector.TimeStampNanoTZVector;
+import org.apache.arrow.vector.TinyIntVector;
+import org.apache.arrow.vector.UInt2Vector;
+import org.apache.arrow.vector.VarCharVector;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -23,10 +32,15 @@ public class VectorHelper {
         vector.setValueCount(len);
     }
 
-    public static void fill(BitVector vector, byte[] array, int offset, int len) {
+    public static void fill(BitVector vector, BooleanArray array, int offset, int len) {
         vector.allocateNew(len);
         for (int i = 0; i < len; i++) {
-            vector.set(i, array[offset + i] != Util.NULL_BOOL ? 1 : 0, array[offset + i] == Util.TRUE_BOOL ? 1 : 0);
+            Boolean value = array.value(offset + i);
+            if (value == null) {
+                vector.set(i, 0, 0);
+            } else {
+                vector.set(i, value ? 1 : 0);
+            }
         }
         vector.setValueCount(len);
     }

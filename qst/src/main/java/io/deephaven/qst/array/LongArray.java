@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.LongType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,12 @@ public final class LongArray extends PrimitiveArrayBase<Long> {
      */
     public final long[] values() {
         return values;
+    }
+
+    @Override
+    public Long value(int index) {
+        long value = values[index];
+        return value == QueryConstants.NULL_LONG ? null : value;
     }
 
     @Override

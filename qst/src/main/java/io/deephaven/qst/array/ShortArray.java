@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.ShortType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,12 @@ public final class ShortArray extends PrimitiveArrayBase<Short> {
      */
     public final short[] values() {
         return values;
+    }
+
+    @Override
+    public Short value(int index) {
+        short value = values[index];
+        return value == QueryConstants.NULL_SHORT ? null : value;
     }
 
     @Override

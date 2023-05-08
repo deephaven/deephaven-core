@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.IntType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,12 @@ public final class IntArray extends PrimitiveArrayBase<Integer> {
      */
     public final int[] values() {
         return values;
+    }
+
+    @Override
+    public Integer value(int index) {
+        int value = values[index];
+        return value == QueryConstants.NULL_INT ? null : value;
     }
 
     @Override
