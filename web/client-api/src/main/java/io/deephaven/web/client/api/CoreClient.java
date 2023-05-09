@@ -1,7 +1,9 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsObject;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
@@ -77,12 +79,20 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<String[][]> getAuthConfigValues() {
-        return getConfigs(
-                // Explicitly creating a new client, and not passing auth details, so this works pre-connection
-                c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
-                        new AuthenticationConstantsRequest(),
-                        c::apply),
-                AuthenticationConstantsResponse::getConfigValuesMap);
+        return ideConnection.getConnectOptions().then(options -> {
+            BrowserHeaders metadata = new BrowserHeaders();
+            JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                metadata.set(key, options.headers.get(key));
+                return null;
+            });
+            return getConfigs(
+                    // Explicitly creating a new client, and not passing auth details, so this works pre-connection
+                    c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
+                            new AuthenticationConstantsRequest(),
+                            metadata,
+                            c::apply),
+                    AuthenticationConstantsResponse::getConfigValuesMap);
+        });
     }
 
     public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {

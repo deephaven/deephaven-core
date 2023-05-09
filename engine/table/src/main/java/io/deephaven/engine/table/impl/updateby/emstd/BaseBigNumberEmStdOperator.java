@@ -107,7 +107,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
         @Override
         public void close() {
             super.close();
-            SafeCloseable.closeArray(emaValues, emaFillContext);
+            SafeCloseable.closeAll(emaValues, emaFillContext);
         }
     }
 

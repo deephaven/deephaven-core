@@ -20,6 +20,22 @@ import io.deephaven.util.QueryConstants;
 
 public class DoubleRangeFilter extends AbstractRangeFilter {
 
+    public static DoubleRangeFilter lt(String columnName, double x) {
+        return new DoubleRangeFilter(columnName, x, QueryConstants.NULL_DOUBLE, true, false);
+    }
+
+    public static DoubleRangeFilter leq(String columnName, double x) {
+        return new DoubleRangeFilter(columnName, x, QueryConstants.NULL_DOUBLE, true, true);
+    }
+
+    public static DoubleRangeFilter gt(String columnName, double x) {
+        return new DoubleRangeFilter(columnName, x, Double.NaN, false, true);
+    }
+
+    public static DoubleRangeFilter geq(String columnName, double x) {
+        return new DoubleRangeFilter(columnName, x, Double.NaN, true, true);
+    }
+
     private final double upper;
     private final double lower;
 
@@ -29,8 +45,7 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
 
     public DoubleRangeFilter(String columnName, double val1, double val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
-        if(val1 > val2) {
+        if(DoubleComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
         } else {
@@ -44,20 +59,19 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
         final double parsed = Double.parseDouble(val);
         final double offset = Math.pow(10, -precision);
         final boolean positiveOrZero = parsed >= 0;
-
         return new DoubleRangeFilter(columnName, (double)parsed, (double)(positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
     static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new DoubleRangeFilter(columnName, Double.parseDouble(value), QueryConstants.NULL_DOUBLE, true, false);
+                return lt(columnName, Double.parseDouble(value));
             case LESS_THAN_OR_EQUAL:
-                return new DoubleRangeFilter(columnName, Double.parseDouble(value), QueryConstants.NULL_DOUBLE, true, true);
+                return leq(columnName, Double.parseDouble(value));
             case GREATER_THAN:
-                return new DoubleRangeFilter(columnName, Double.parseDouble(value), Double.NaN, false, true);
+                return gt(columnName, Double.parseDouble(value));
             case GREATER_THAN_OR_EQUAL:
-                return new DoubleRangeFilter(columnName, Double.parseDouble(value), Double.NaN, true, true);
+                return geq(columnName, Double.parseDouble(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

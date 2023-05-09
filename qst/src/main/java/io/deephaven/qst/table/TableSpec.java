@@ -4,6 +4,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreator.OperationsToTable;
@@ -33,7 +34,7 @@ import java.util.Collection;
  * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
-public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableSchema, Serializable {
+public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>, TableSchema, Serializable {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -133,6 +134,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
         void visit(AsOfJoinTable aj);
 
         void visit(ReverseAsOfJoinTable raj);
+
+        void visit(RangeJoinTable rangeJoinTable);
 
         void visit(ViewTable viewTable);
 

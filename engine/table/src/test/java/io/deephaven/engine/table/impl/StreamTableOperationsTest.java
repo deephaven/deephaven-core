@@ -61,7 +61,9 @@ public class StreamTableOperationsTest {
      *        {@code false})
      * @param expectStreamResult Whether the result is expected to be a stream table
      */
-    private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed,
+    private void doOperatorTest(
+            @NotNull final UnaryOperator<Table> operator,
+            final boolean windowed,
             final boolean expectStreamResult) {
         final QueryTable normal = new QueryTable(RowSetFactory.empty().toTracking(),
                 source.getColumnSourceMap());
@@ -75,8 +77,7 @@ public class StreamTableOperationsTest {
         } else {
             // Redirecting so we can present a zero-based RowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final WritableRowRedirection streamRedirections =
-                    new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
+            final RowRedirection streamRedirections = new WrappedRowSetRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
                     (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
@@ -92,7 +93,7 @@ public class StreamTableOperationsTest {
         final Table expected = operator.apply(normal);
         final Table streamExpected = operator.apply(stream);
         TstUtils.assertTableEquals(expected, streamExpected);
-        TestCase.assertEquals(expectStreamResult, ((BaseTable) streamExpected).isStream());
+        TestCase.assertEquals(expectStreamResult, ((BaseTable<?>) streamExpected).isStream());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),

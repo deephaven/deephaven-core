@@ -12,6 +12,7 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
@@ -225,6 +226,25 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         });
 
         TableTools.show(result);
+    }
+
+    @Test
+    public void testStaticRedirected() {
+        final int prevTicks = 100;
+        final int postTicks = 0;
+
+        final CreateResult result = createTestTable(100, true, false, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
+        final QueryTable t = result.t;
+
+        final UpdateByControl control = UpdateByControl.builder()
+                .useRedirection(true)
+                // Provide a low memory overhead to force use of redirection.
+                .maxStaticSparseMemoryOverhead(0.1)
+                .build();
+
+        Table ignored = t.updateBy(control, List.of(UpdateByOperation.RollingCount(prevTicks, postTicks)));
     }
 
     @Test

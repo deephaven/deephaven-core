@@ -3,10 +3,12 @@
  */
 package io.deephaven.api.filter;
 
+import io.deephaven.api.expression.Expression;
+
 public abstract class FilterBase implements Filter {
 
     @Override
-    public final FilterNot not() {
-        return FilterNot.of(this);
+    public final <T> T walk(Expression.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

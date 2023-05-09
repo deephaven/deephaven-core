@@ -65,7 +65,7 @@ public class StreamTableAggregationTest {
                 source.getColumnSourceMap());
         normal.setRefreshing(true);
 
-        final QueryTable addOnly = (QueryTable) normal.copy();
+        final QueryTable addOnly = normal.copy();
         addOnly.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
 
         final TrackingWritableRowSet streamInternalRowSet;
@@ -76,8 +76,7 @@ public class StreamTableAggregationTest {
         } else {
             // Redirecting so we can present a zero-based RowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final WritableRowRedirection streamRedirections =
-                    new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
+            final RowRedirection streamRedirections = new WrappedRowSetRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
                     (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
@@ -95,7 +94,7 @@ public class StreamTableAggregationTest {
         final Table streamExpected = operator.apply(stream);
         TstUtils.assertTableEquals(expected, addOnlyExpected);
         TstUtils.assertTableEquals(expected, streamExpected);
-        TestCase.assertFalse(((BaseTable) streamExpected).isStream()); // Aggregation results are never stream tables
+        TestCase.assertFalse(((BaseTable<?>) streamExpected).isStream()); // Aggregation results are never stream tables
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),

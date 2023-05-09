@@ -4,15 +4,16 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 
 #include <map>
-#include "deephaven/client/utility/utility.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/impl/table_handle_impl.h"
+#include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::utility::Callback;
+using deephaven::dhcore::utility::Callback;
+using deephaven::dhcore::utility::CBPromise;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::impl {
 std::shared_ptr<TableHandleManagerImpl> TableHandleManagerImpl::create(Ticket consoleId,
@@ -56,7 +57,7 @@ std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor>
 TableHandleManagerImpl::newTicket() const {
   auto[ticket, fd] = server_->newTicketAndFlightDescriptor();
 
-  utility::CBPromise<Ticket> ticketPromise;
+  CBPromise<Ticket> ticketPromise;
   ticketPromise.setValue(ticket);
   auto ls = std::make_shared<internal::LazyState>(server_, flightExecutor_,
       ticketPromise.makeFuture());

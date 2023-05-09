@@ -150,7 +150,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         ROLLUP_BASE(true),
         ROLLUP_REAGGREGATED(true),
         TREE_SOURCE_ROW_LOOKUP(false),
-        SELECT_DISTINCT(false);
+        SELECT_DISTINCT(false),
+        EXPOSE_GROUP_ROW_SETS(false);
         // @formatter:on
 
         private final boolean isRollup;
@@ -241,6 +242,18 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new AggregationProcessor(Collections.emptyList(), Type.SELECT_DISTINCT);
     }
 
+    public static final ColumnName EXPOSED_GROUP_ROW_SETS = ColumnName.of("__EXPOSED_GROUP_ROW_SETS__");
+
+    /**
+     * Create a trivial {@link AggregationContextFactory} to {@link Aggregation#AggGroup(String...) group} the input
+     * table and expose the group {@link io.deephaven.engine.rowset.RowSet row sets} as {@link #EXPOSED_GROUP_ROW_SETS}.
+     *
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forExposeGroupRowSets() {
+        return new AggregationProcessor(Collections.emptyList(), Type.EXPOSE_GROUP_ROW_SETS);
+    }
+
     private AggregationProcessor(
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Type type) {
@@ -284,6 +297,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return makeSourceRowLookupAggregationContext();
             case SELECT_DISTINCT:
                 return makeEmptyAggregationContext(requireStateChangeRecorder);
+            case EXPOSE_GROUP_ROW_SETS:
+                return makeExposedGroupRowSetAggregationContext(table, requireStateChangeRecorder);
             default:
                 throw new UnsupportedOperationException("Unsupported type " + type);
         }
@@ -729,7 +744,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
             streamUnsupported("Formula");
-            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false,
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
                     true, formula.formula(), formula.paramToken(), MatchPair.fromPairs(resultPairs));
@@ -744,7 +759,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecGroup group) {
             streamUnsupported("Group");
-            addNoInputOperator(new GroupByChunkedOperator(table, true, MatchPair.fromPairs(resultPairs)));
+            addNoInputOperator(new GroupByChunkedOperator(table, true, null, MatchPair.fromPairs(resultPairs)));
         }
 
         @Override
@@ -900,7 +915,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         throw new UnsupportedOperationException(String.format("Agg%s is not supported for rollup()", operationName));
     }
 
-    private static void rollupUnsupported(@NotNull final String operationName, int ticket) {
+    private static void rollupUnsupported(@NotNull final String operationName, final int ticket) {
         throw new UnsupportedOperationException(String.format(
                 "Agg%s is not supported for rollup(), see https://github.com/deephaven/deephaven-core/issues/%d",
                 operationName, ticket));
@@ -1376,6 +1391,29 @@ public class AggregationProcessor implements AggregationContextFactory {
                 ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
                 ZERO_LENGTH_STRING_ARRAY_ARRAY,
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
+    }
+
+    private static AggregationContext makeExposedGroupRowSetAggregationContext(
+            @NotNull final Table inputTable,
+            final boolean requireStateChangeRecorder) {
+        final QueryTable inputQueryTable = (QueryTable) inputTable.coalesce();
+        if (requireStateChangeRecorder) {
+            // noinspection unchecked
+            return new AggregationContext(
+                    new IterativeChunkedAggregationOperator[] {
+                            new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name()),
+                            new CountAggregationOperator(null)
+                    },
+                    new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
+                    new ChunkSource.WithPrev[] {null, null});
+        }
+        // noinspection unchecked
+        return new AggregationContext(
+                new IterativeChunkedAggregationOperator[] {
+                        new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
+                },
+                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new ChunkSource.WithPrev[] {null});
     }
 
     private static ColumnSource<?> maybeReinterpretDateTimeAsLong(@NotNull final ColumnSource<?> inputSource) {

@@ -74,7 +74,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
         @Override
         public void close() {
             super.close();
-            SafeCloseable.closeArray(emaValues, emaFillContext);
+            SafeCloseable.closeAll(emaValues, emaFillContext);
         }
     }
 

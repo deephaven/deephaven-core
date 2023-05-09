@@ -6,12 +6,13 @@
 #include <ostream>
 #include <vector>
 #include <arrow/status.h>
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using namespace std;
 
 namespace deephaven::client::utility {
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status) {
+void okOrThrow(const deephaven::dhcore::utility::DebugInfo &debugInfo,
+    const arrow::Status &status) {
   if (status.ok()) {
     return;
   }

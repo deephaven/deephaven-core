@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.literal.Literal;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SelectColumnTest extends TestCase {
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
-    private static final Value V42 = Value.of(42L);
+    private static final Literal V42 = Literal.of(42L);
 
     public void testSingleColumn() {
         expect(FOO, SourceColumn.class, "Foo=Foo");

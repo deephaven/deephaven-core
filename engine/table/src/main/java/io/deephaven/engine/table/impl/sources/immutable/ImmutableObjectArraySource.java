@@ -295,8 +295,9 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        // we don't track previous values, so we don't care to do any work
+    public void prepareForParallelPopulation(@NotNull final RowSequence rowSequence) {
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
     // region getArray

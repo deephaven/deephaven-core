@@ -275,6 +275,21 @@ class PandasTestCase(BaseTestCase):
         dh_table = to_table(df)
         self.assert_table_equals(test_table, dh_table)
 
+    def test_numpy_array(self):
+        df_dict = {
+            "Datetime_s": pd.Series(["2016-01-01T00:00:01", "2018-01-01T00:00:01"], dtype=np.dtype("datetime64[s]")),
+            "Datetime_ms": pd.Series(["2016-01-01T00:00:01.001", "2018-01-01T00:00:01.001"], dtype=np.dtype(
+                "datetime64[ms]")),
+            "Datetime_us": pd.Series(["2016-01-01T00:00:01.000001", "2018-01-01T00:00:01.000001"], dtype=np.dtype(
+                "datetime64[us]")),
+            "Datetime_ns": pd.Series(["2016-01-01T00:00:01.000000001", "2018-01-01T00:00:01.000000001"], dtype=np.dtype(
+                "datetime64[ns]")),
+        }
+        df = pd.DataFrame(df_dict)
+        dh_t = to_table(df)
+        for c in dh_t.columns:
+            self.assertEqual(c.data_type, dtypes.DateTime)
+
 
 if __name__ == '__main__':
     unittest.main()

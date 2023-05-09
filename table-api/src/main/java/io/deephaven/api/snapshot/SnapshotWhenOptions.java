@@ -9,7 +9,6 @@ import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * The options for creating a snapshotting table with respect to the {@code base} and {@code trigger} tables of
@@ -140,7 +139,7 @@ public abstract class SnapshotWhenOptions {
                 has(Flag.INITIAL),
                 has(Flag.INCREMENTAL),
                 has(Flag.HISTORY),
-                Strings.of(stampColumns()));
+                Strings.ofJoinAdditions(stampColumns()));
     }
 
     @Check

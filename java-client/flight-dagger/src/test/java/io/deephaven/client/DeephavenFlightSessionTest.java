@@ -6,12 +6,12 @@ package io.deephaven.client;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.UpdateByTable;
 import org.apache.arrow.flight.FlightStream;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -60,7 +60,7 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     @Test
     public void updateBy() throws Exception {
         final int size = 100;
-        final UpdateByTable spec = TableSpec.empty(size)
+        final TableSpec spec = TableSpec.empty(size)
                 .view("I=i")
                 .updateBy(UpdateByOperation.CumSum("I"));
         try (
@@ -82,25 +82,25 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
         }
     }
 
-    // TODO (deephaven-core#1373): Hook up doPut integration unit testing
-    // @Test
-    // public void doPutStream() throws Exception {
-    // try (
-    // final TableHandle ten = flightSession.session().execute(TableSpec.empty(10).view("I=i"));
-    // // DoGet
-    // final FlightStream tenStream = flightSession.stream(ten);
-    // // DoPut
-    // final TableHandle tenAgain = flightSession.put(tenStream)) {
-    // assertThat(tenAgain.response().getSchemaHeader()).isEqualTo(ten.response().getSchemaHeader());
-    // }
-    // }
-    //
-    // @Test
-    // public void doPutNewTable() throws TableHandleException, InterruptedException {
-    // try (final TableHandle newTableHandle = flightSession.put(newTable(), bufferAllocator)) {
-    // // ignore
-    // }
-    // }
+    @Test
+    public void doPutStream() throws Exception {
+        try (final TableHandle ten = flightSession.session().execute(TableSpec.empty(10).view("I=i"));
+                // DoGet
+                final FlightStream tenStream = flightSession.stream(ten);
+                // DoPut
+                final TableHandle tenAgain = flightSession.putExport(tenStream)) {
+            BarrageUtil.ConvertedArrowSchema tenSchema = BarrageUtil.convertArrowSchema(ten.response());
+            BarrageUtil.ConvertedArrowSchema tenAgainSchema = BarrageUtil.convertArrowSchema(tenAgain.response());
+            assertThat(tenSchema.tableDef).isEqualTo(tenAgainSchema.tableDef);
+        }
+    }
+
+    @Test
+    public void doPutNewTable() throws TableHandle.TableHandleException, InterruptedException {
+        try (final TableHandle newTableHandle = flightSession.putExport(newTable(), bufferAllocator)) {
+            // ignore
+        }
+    }
 
     private static Schema metadataLess(Schema schema) {
         return new Schema(

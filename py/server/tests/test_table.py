@@ -993,6 +993,19 @@ class TableTestCase(BaseTestCase):
         updated = time_t.update("X = i % 2").where("X = 2").await_update(-1)
         self.assertFalse(updated)
 
+    def test_range_join(self):
+        aggs = [
+            group(cols=["GroupD=d"]),
+        ]
+        left_table = self.test_table.select_distinct()
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
+        result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
+        self.assertEqual(result_table.size, left_table.size)
+        self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
+
+        with self.assertRaises(DHError):
+            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+
 
 if __name__ == "__main__":
     unittest.main()

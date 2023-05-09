@@ -8,7 +8,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
@@ -672,20 +671,20 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             String columnName,
             String... values) {
         return stringContainsFilter(MatchType.Regular, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             MatchType matchType,
             String columnName,
             String... values) {
         return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -2772,7 +2771,7 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.where("Sym=`aa`"));
             testMemoize(source, t -> t.where("Sym in `aa`, `bb`"));
             testMemoize(source,
-                    t -> t.where(FilterOr.of(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
+                    t -> t.where(Filter.or(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(DisjunctiveFilter
                     .makeDisjunctiveFilter(WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(ConjunctiveFilter

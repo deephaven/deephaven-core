@@ -471,7 +471,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         public void close() {
             outputChunk.close();
             jsonChunk.close();
-            SafeCloseable.closeArray(fieldContexts);
+            SafeCloseable.closeAll(fieldContexts);
         }
     }
 }

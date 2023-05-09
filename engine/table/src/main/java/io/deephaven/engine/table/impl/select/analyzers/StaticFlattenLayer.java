@@ -17,7 +17,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,7 +42,7 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
             alreadyFlattenedColumns.add(name);
         });
 
-        final RowRedirection rowRedirection = new WrappedRowSetWritableRowRedirection(parentRowSet);
+        final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(parentRowSet);
         overriddenColumns = new HashMap<>();
         inner.getAllColumnSources().forEach((name, cs) -> {
             if (alreadyFlattenedColumns.contains(name)) {

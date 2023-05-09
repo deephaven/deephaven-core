@@ -12,9 +12,9 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class FilterNot extends FilterBase {
+public abstract class FilterNot<F extends Filter> extends FilterBase {
 
-    public static FilterNot of(Filter filter) {
+    public static <F extends Filter> FilterNot<F> of(F filter) {
         return ImmutableFilterNot.of(filter);
     }
 
@@ -24,11 +24,30 @@ public abstract class FilterNot extends FilterBase {
      * @return the filter
      */
     @Parameter
-    public abstract Filter filter();
+    public abstract F filter();
+
+    /**
+     * Equivalent to {@code filter()}.
+     *
+     * @return the inverse filter
+     */
+    @Override
+    public final F invert() {
+        return filter();
+    }
+
+    /**
+     * Creates a logical equivalent of {@code this} equal to {@code filter().inverse()}. It's possible that the result
+     * is equal to {@code this}.
+     *
+     * @return the inverted filter
+     */
+    public final Filter invertFilter() {
+        return filter().invert();
+    }
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

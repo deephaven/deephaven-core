@@ -25,7 +25,10 @@ _j_name_type_map: Dict[str, DType] = {}
 
 
 def _qst_custom_type(cls_name: str):
-    return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    try:
+        return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    except:
+        return None
 
 
 class DType:
@@ -239,6 +242,9 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
 
     if np_dtype.kind in {'U', 'S'}:
         return string
+
+    if np_dtype.kind in {'M'}:
+        return DateTime
 
     for _, dtype in _j_name_type_map.items():
         if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
