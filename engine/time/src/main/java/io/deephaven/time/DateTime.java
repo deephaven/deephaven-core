@@ -59,7 +59,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return the date time.
      */
     public static DateTime of(Instant instant) {
-        return new DateTime(DateTimeUtils.epochNanos(instant));
+        return DateTimeUtils.toDateTime(instant);
     }
 
     /**
@@ -194,6 +194,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return Instant.ofEpochSecond(0, nanos);
     }
 
+    //TODO remove TZ_DEFAULT methods?
     /**
      * Convert this DateTime to a {@link ZonedDateTime} with the system default time zone.
      *
@@ -252,6 +253,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return ZonedDateTime.ofInstant(toInstant(), timeZone);
     }
 
+    //TODO remove TZ_DEFAULT methods?
     /**
      * Convert this DateTime to a {@link LocalDate} with the system default time zone.
      *
@@ -302,6 +304,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return toZonedDateTime(timeZone).toLocalDate();
     }
 
+    //TODO remove TZ_DEFAULT methods?
+    //TODO: document TZ_DEFAULT with @see?
     /**
      * Convert this DateTime to a {@link LocalTime} with the system default time zone.
      *

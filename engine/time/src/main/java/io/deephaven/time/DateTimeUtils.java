@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.zone.ZoneRulesException;
+import java.util.Date;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,6 +42,7 @@ public class DateTimeUtils {
     //TODO: review function subsections for consistency
     //TODO: review function subsections for missing functions
     //TODO: methods to use ZoneId instead of just TimeZone
+    //TODO: remove TZ_DEFAULT / add @see for TZ_DEFUALT
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -654,16 +656,16 @@ public class DateTimeUtils {
         return epochNanosToDateTime(secondsToNanos(seconds));
     }
 
-    //TODO: remove dateTime from name??
+    //TODO: java.util.TimeZone methods needed?
     /**
-     * Converts a {@link DateTime} to an Excel time represented as a double.
+     * Converts a date time to an Excel time represented as a double.
      *
-     * @param dateTime {@link DateTime} to convert.
+     * @param dateTime date time to convert.
      * @param timeZone {@link java.util.TimeZone} to use when interpreting the {@link DateTime}.
      * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
     @ScriptApi
-    public static double dateTimeToExcel(@Nullable final DateTime dateTime, @Nullable final java.util.TimeZone timeZone) {
+    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final java.util.TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return 0.0d;
         }
@@ -672,23 +674,23 @@ public class DateTimeUtils {
         return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
     }
 
-    //TODO: remove dateTime from name??
     /**
-     * Converts a {@link DateTime} to an Excel time represented as a double.
+     * Converts a date time to an Excel time represented as a double.
      *
-     * @param dateTime {@link DateTime} to convert.
+     * @param dateTime date time to convert.
      * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
      * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
     @ScriptApi
-    public static double dateTimeToExcel(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if( dateTime == null || timeZone == null){
             return 0.0;
         }
 
-        return dateTimeToExcel(dateTime, timeZone.getTimeZone().toTimeZone());
+        return toExcelTime(dateTime, timeZone.getTimeZone().toTimeZone());
     }
 
+    //TODO: remove java.util.TimeZone
     /**
      * Converts an Excel time represented as a double to a {@link DateTime}.
      *
@@ -716,7 +718,7 @@ public class DateTimeUtils {
      * Converts an Excel time represented as a double to a {@link DateTime}.
      *
      * @param excel excel time represented as a double.
-     * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
+     * @param timeZone time zone to use when interpreting the Excel time.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
      */
     @ScriptApi
@@ -1070,11 +1072,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     * Converts a date time to a {@link ZonedDateTime}.
      *
      * Uses the default time zone.
      *
-     * @param dateTime {@link DateTime} to convert.
+     * @param dateTime date time to convert.
      * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
      */
     @ScriptApi
@@ -1084,9 +1086,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     * Converts a date time to a {@link ZonedDateTime}.
      *
-     * @param dateTime {@link DateTime} to convert.
+     * @param dateTime date time to convert.
      * @param timeZone time zone.
      * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
      */
@@ -1102,9 +1104,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     * Converts a date time to a {@link ZonedDateTime}.
      *
-     * @param dateTime {@link DateTime} to convert.
+     * @param dateTime date time to convert.
      * @param timeZone time zone.
      * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
      */
@@ -1119,28 +1121,571 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
+     * Converts a date time to a {@link DateTime}.
      *
-     * @param zonedDateTime {@link ZonedDateTime} to convert.
+     * @param dateTime date time to convert.
      * @return {@link DateTime}, or null if zonedDateTime is null.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
     @ScriptApi
     @Nullable
-    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
-        if (zonedDateTime == null) {
+    public static DateTime toDateTime(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
             return null;
         }
 
-        int nanos = zonedDateTime.getNano();
-        long seconds = zonedDateTime.toEpochSecond();
+        return new DateTime(DateTimeUtils.epochNanos(dateTime));
+    }
+
+    /**
+     * Converts a date time to a {@link DateTime}.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link DateTime}, or null if zonedDateTime is null.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime toDateTime(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        int nanos = dateTime.getNano();
+        long seconds = dateTime.toEpochSecond();
 
         long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
         if (seconds >= limit) {
-            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
+            throw new DateTimeOverflowException("Overflow: cannot convert " + dateTime + " to new DateTime");
         }
 
         return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
+    }
+
+    /**
+     * Converts a date, time, and time zone to an {@link Instant}.
+     *
+     * @param date date.
+     * @param time local time.
+     * @param timeZone time zone.
+     * @return {@link Instant}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    //TODO: make sure all methods support ZoneId and TimeZone
+    public static DateTime toDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+        if (date == null || time == null || timeZone == null) {
+            return null;
+        }
+
+        return toDateTime(toInstant(date, time, timeZone));
+    }
+
+    /**
+     * Converts a date, time, and time zone to an {@link Instant}.
+     *
+     * @param date date.
+     * @param time local time.
+     * @param timeZone time zone.
+     * @return {@link Instant}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    //TODO: make sure all methods support ZoneId and TimeZone
+    public static DateTime toDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable TimeZone timeZone) {
+        if (date == null || time == null || timeZone == null) {
+            return null;
+        }
+
+        return toDateTime(toInstant(date, time, timeZone.getZoneId()));
+    }
+
+    //TODO: other DateTime conversions
+    //TODO: support string to timezone method and remove methods accepting string time zones.
+
+    /**
+     * Converts a date time to an {@link Instant}.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link Instant}, or null if dateTime is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant toInstant(@Nullable final DateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return Instant.ofEpochSecond(0, dateTime.getNanos());
+    }
+
+    /**
+     * Converts a date time to an {@link Instant}.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link Instant}, or null if dateTime is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant toInstant(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.toInstant();
+    }
+
+    /**
+     * Converts a date, time, and time zone to an {@link Instant}.
+     *
+     * @param date date.
+     * @param time local time.
+     * @param timeZone time zone.
+     * @return {@link Instant}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    //TODO: make sure all methods support ZoneId and TimeZone
+    public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+        if (date == null || time == null || timeZone == null) {
+            return null;
+        }
+
+        return time // LocalTime
+                .atDate(date) // LocalDateTime
+                .atZone(timeZone) // ZonedDateTime
+                .toInstant(); // Instant
+    }
+
+//    /**
+//     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+//     *
+//     * @param dateTime date time to convert.
+//     * @param timeZone time zone.
+//     * @return {@link ZonedDateTime}, or null if any input is null.
+//     */
+//    @ScriptApi
+//    @Nullable
+//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable ZoneId timeZone) {
+//        if (dateTime == null || timeZone == null) {
+//            return null;
+//        }
+//
+//        return ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone);
+//    }
+
+//    /**
+//     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+//     *
+//     * @param dateTime date time to convert.
+//     * @param timeZone time zone.
+//     * @return {@link ZonedDateTime}, or null if any input is null.
+//     */
+//    @ScriptApi
+//    @Nullable
+//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable TimeZone timeZone) {
+//        if (dateTime == null || timeZone == null) {
+//            return null;
+//        }
+//
+//        return toZonedDateTime(dateTime, timeZone.getZoneId());
+//    }
+
+//    /**
+//     * Converts a {@link DateTime} to a {@link ZonedDateTime} using the default time zone.
+//     *
+//     * @param dateTime date time to convert.
+//     * @return {@link ZonedDateTime}, or null if any input is null.
+//     */
+//    @ScriptApi
+//    @Nullable
+//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime) {
+//        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
+//    }
+
+    /**
+     * Converts a date time to a {@link ZonedDateTime}.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime, @Nullable ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return ZonedDateTime.ofInstant(dateTime, timeZone);
+    }
+
+    /**
+     * Converts a date time to a {@link ZonedDateTime}.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime, @Nullable TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return toZonedDateTime(dateTime, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to a {@link ZonedDateTime} using the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link ZonedDateTime}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime) {
+        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
+     *
+     * @param date date.
+     * @param time local time.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+        if (date == null || time == null || timeZone == null) {
+            return null;
+        }
+
+        return time // LocalTime
+                .atDate(date) // LocalDateTime
+                .atZone(timeZone); // ZonedDateTime
+    }
+
+    /**
+     * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
+     *
+     * @param date date.
+     * @param time local time.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime}, or null if any input is null.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable TimeZone timeZone) {
+        if (date == null || time == null || timeZone == null) {
+            return null;
+        }
+
+        return toZonedDateTime(date, time, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).toLocalDate();
+    }
+
+//    /**
+//     * Converts a date time to a {@link LocalDate} with the specified time zone.
+//     *
+//     * @param dateTime date time to convert.
+//     * @param timeZone time zone.
+//     * @return {@link LocalDate}, or null if any input is null.
+//     */
+//    @Nullable
+//    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+//        if(dateTime == null || timeZone == null){
+//            return null;
+//        }
+//
+//        //noinspection ConstantConditions
+//        return toZonedDateTime(dateTime, timeZone).toLocalDate();
+//    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime).toLocalDate();
+    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final DateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+
+        return toLocalDate(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).toLocalDate();
+    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).toLocalDate();
+    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final Instant dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+
+        return toLocalDate(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    //    /**
+//     * Converts a date time to a {@link LocalDate} with the default time zone.
+//     *
+//     * @param dateTime date time to convert.
+//     * @param timeZone time zone.
+//     * @return {@link LocalDate}, or null if any input is null.
+//     */
+//    @Nullable
+//    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+//        if(dateTime == null || timeZone == null){
+//            return null;
+//        }
+//
+//        //noinspection ConstantConditions
+//        return toZonedDateTime(dateTime).toLocalDate();
+//    }
+
+    /**
+     * Converts a date time to a {@link LocalDate} with the time zone in the {@link ZonedDateTime}.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalDate}, or null if any input is null.
+     */
+    @Nullable
+    public LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+
+        return dateTime.toLocalDate();
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+        return toZonedDateTime(dateTime, timeZone).toLocalTime();
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+        return toLocalTime(dateTime, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final Instant dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        return toLocalTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+        return toLocalTime(dateTime.toInstant(), timeZone);
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the specified time zone.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if(dateTime == null || timeZone == null){
+            return null;
+        }
+        return toLocalTime(dateTime, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final DateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        return toLocalTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a date time to a {@link LocalTime} with the time zone in the {@link ZonedDateTime}.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link LocalTime}, or null if any input is null.
+     */
+    @Nullable
+    public LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        return dateTime.toLocalTime();
+    }
+
+
+
+    /**
+     * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link Date}, or null if any input is null.
+     * @deprecated
+     */
+    @Deprecated
+    @Nullable
+    public Date toDate(@Nullable final Instant dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        //noinspection ConstantConditions
+        return new Date(toDateTime(dateTime).getMillis());
+    }
+
+    /**
+     * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link Date}, or null if any input is null.
+     * @deprecated
+     */
+    @Deprecated
+    @Nullable
+    public Date toDate(@Nullable final DateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        return new Date(epochMillis(dateTime));
+    }
+
+    /**
+     * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
+     *
+     * @param dateTime date time to convert.
+     * @return {@link Date}, or null if any input is null.
+     * @deprecated
+     */
+    @Deprecated
+    @Nullable
+    public Date toDate(@Nullable final ZonedDateTime dateTime) {
+        if(dateTime == null){
+            return null;
+        }
+        //noinspection ConstantConditions
+        return new Date(toDateTime(dateTime).getMillis());
     }
 
     // endregion
