@@ -591,9 +591,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testDateTimeToExcel() {
         DateTime time = DateTimeUtils.parseDateTime("2010-06-15T16:00:00 NY");
-        TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(time, TimeZones.TZ_NEWYORK)));
+        TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(time, TimeZone.TZ_NY)));
         TestCase.assertTrue(
-                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(time, TimeZones.TZ_CHICAGO)));
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(time, TimeZone.TZ_CT)));
         TestCase.assertTrue(CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(time, TimeZone.TZ_MN)));
     }
 

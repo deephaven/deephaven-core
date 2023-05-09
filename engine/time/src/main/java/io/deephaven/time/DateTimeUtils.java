@@ -21,7 +21,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
-import java.time.zone.ZoneRulesException;
 import java.util.Date;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -657,24 +656,6 @@ public class DateTimeUtils {
         return epochNanosToDateTime(secondsToNanos(seconds));
     }
 
-    //TODO: java.util.TimeZone methods needed?
-    /**
-     * Converts a date time to an Excel time represented as a double.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone {@link java.util.TimeZone} to use when interpreting the {@link DateTime}.
-     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final java.util.TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return 0.0d;
-        }
-        long millis = dateTime.getMillis();
-
-        return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
-    }
-
     /**
      * Converts a date time to an Excel time represented as a double.
      *
@@ -688,31 +669,9 @@ public class DateTimeUtils {
             return 0.0;
         }
 
-        return toExcelTime(dateTime, timeZone.getTimeZone().toTimeZone());
-    }
+        long millis = dateTime.getMillis();
 
-    //TODO: remove java.util.TimeZone
-    /**
-     * Converts an Excel time represented as a double to a {@link DateTime}.
-     *
-     * @param excel excel time represented as a double.
-     * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime excelToDateTime(final double excel, @Nullable final java.util.TimeZone timeZone) {
-        if(timeZone == null) {
-            return null;
-        }
-
-        //TODO: test this DST handling
-        final long mpo = (long)((excel - 25569) * 86400000);
-        final long o = timeZone.getOffset(mpo);
-        final long m = mpo - o;
-        final long o2 = timeZone.getOffset(m);
-        final long m2 = mpo-o2;
-        return epochMillisToDateTime(m2);
+        return (double) (millis + timeZone.getTimeZone().toTimeZone().getOffset(millis)) / 86400000 + 25569;
     }
 
     /**
@@ -729,7 +688,15 @@ public class DateTimeUtils {
             return null;
         }
 
-        return excelToDateTime(excel, timeZone.getTimeZone().toTimeZone());
+        final java.util.TimeZone tz = timeZone.getTimeZone().toTimeZone();
+
+        //TODO: test this DST handling
+        final long mpo = (long)((excel - 25569) * 86400000);
+        final long o = tz.getOffset(mpo);
+        final long m = mpo - o;
+        final long o2 = tz.getOffset(m);
+        final long m2 = mpo-o2;
+        return epochMillisToDateTime(m2);
     }
 
     /**
