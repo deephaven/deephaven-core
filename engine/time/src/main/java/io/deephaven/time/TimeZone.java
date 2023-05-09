@@ -11,14 +11,15 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Defines Deephaven-supported timezones, which may be used for PQ-scheduling and display purposes
+ * Common time zones.
+ *
+ * In Deephaven queries, these time zones can be referenced using short 2- or 3-character abbreviations.
+ * For example, in the date time string '2023-04-05T10:13 NY', 'NY' refers to the #TZ_NY time zone.
  */
 //TODO: remove deprecated
-//TODO: document
-//TODO: remove Joda exposure
-//TODO: curate API
-//TODO: review public vs private
+//TODO: remove Joda exposure / deprecated
 //TODO: test coverage
+//TODO: replace with ZoneId?
 public enum TimeZone {
     /**
      * America/New_York
@@ -130,7 +131,7 @@ public enum TimeZone {
     private final DateTimeZone timeZone;
     private final ZoneId zoneId;
 
-    TimeZone(final @NotNull String timeZone) {
+    private TimeZone(final @NotNull String timeZone) {
         this.timeZone = DateTimeZone.forID(timeZone);
         this.zoneId = ZoneId.of(timeZone);
     }
@@ -146,7 +147,7 @@ public enum TimeZone {
     }
 
     /**
-     * Returns the Java ZoneID for this DBTimeZone;
+     * Returns the {@link ZoneId} for this time zone;
      * 
      * @return the ZoneId
      */
@@ -161,6 +162,7 @@ public enum TimeZone {
      *
      * @return the corresponding TimeZone, or null if none was found
      */
+    @Deprecated
     public static TimeZone lookup(DateTimeZone dateTimeZone) {
         for (TimeZone zone : values()) {
             if (zone.getTimeZone().equals(dateTimeZone)) {
@@ -203,23 +205,21 @@ public enum TimeZone {
         return allZones.toArray(new TimeZone[0]);
     }
 
-    //TODO: rename without Tz
     /**
-     * Get the default time zone.
+     * Gets the default time zone.
      *
      * @return the default {@link TimeZone}
      */
-    public static TimeZone getTzDefault() {
+    public static TimeZone getDefault() {
         return TZ_DEFAULT;
     }
 
-    //TODO: rename without Tz
     /**
-     * Set the default time zone.
+     * Sets the default time zone.
      *
      * @param tzDefault the {@link TimeZone} to be used as the default.
      */
-    public static void setTzDefault(TimeZone tzDefault) {
+    public static void setDefault(TimeZone tzDefault) {
         TZ_DEFAULT = tzDefault;
     }
 }
