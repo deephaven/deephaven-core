@@ -4,13 +4,11 @@
 package io.deephaven.time;
 
 /**
- * Common DateTimeFormatters.
+ * Common date time formatters.
+ *
+ * @see DateTimeFormatter
  */
-//TODO: remove deprecated
 //TODO: document
-//TODO: remove Joda exposure
-//TODO: curate API
-//TODO: review public vs private
 //TODO: test coverage
 public enum DateTimeFormatters {
     // @formatter:off
@@ -45,11 +43,16 @@ public enum DateTimeFormatters {
 
     private final DateTimeFormatter formatter;
 
-    DateTimeFormatters(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits,
+    private DateTimeFormatters(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits,
             final boolean hasTZ) {
         this.formatter = new DateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
     }
 
+    /**
+     * Gets the formatter.
+     *
+     * @return formatter.
+     */
     public DateTimeFormatter getFormatter() {
         return formatter;
     }
