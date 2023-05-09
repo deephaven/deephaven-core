@@ -35,16 +35,16 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
     protected final WritableColumnSource<Double> maybeEmaInnerSource;
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
-        final ChunkSink.FillFromContext emaFillContext;
-        final WritableDoubleChunk<Values> emaValues;
+        protected final ChunkSink.FillFromContext emaFillContext;
+        protected final WritableDoubleChunk<Values> emaValues;
 
-        double alpha;
-        double oneMinusAlpha;
-        long lastDt = NULL_LONG;
-        long lastStamp = NULL_LONG;
+        protected double alpha;
+        protected double oneMinusAlpha;
+        protected long lastDt = NULL_LONG;
+        protected long lastStamp = NULL_LONG;
 
-        double curEma;
-        double curVariance;
+        protected double curEma;
+        protected double curVariance;
 
         Context(final int chunkSize) {
             super(chunkSize);
@@ -180,7 +180,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
         }
     }
 
-    void handleBadData(@NotNull final Context ctx,
+    protected void handleBadData(@NotNull final Context ctx,
             final boolean isNull,
             final boolean isNan) {
         boolean doReset = false;

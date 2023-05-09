@@ -46,18 +46,18 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
     }
 
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
-        ObjectChunk<T, ? extends Values> objectValueChunk;
+        protected ObjectChunk<T, ? extends Values> objectValueChunk;
 
-        final ChunkSink.FillFromContext emaFillContext;
-        final WritableObjectChunk<BigDecimal, ? extends Values> emaValues;
+        protected final ChunkSink.FillFromContext emaFillContext;
+        protected final WritableObjectChunk<BigDecimal, ? extends Values> emaValues;
 
-        BigDecimal alpha;
-        BigDecimal oneMinusAlpha;
-        long lastDt = NULL_LONG;
-        long lastStamp = NULL_LONG;
+        protected BigDecimal alpha;
+        protected BigDecimal oneMinusAlpha;
+        protected long lastDt = NULL_LONG;
+        protected long lastStamp = NULL_LONG;
 
-        BigDecimal curEma;
-        BigDecimal curVariance;
+        protected BigDecimal curEma;
+        protected BigDecimal curVariance;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -224,7 +224,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
         }
     }
 
-    void handleBadData(@NotNull final Context ctx, final boolean isNull) {
+    protected void handleBadData(@NotNull final Context ctx, final boolean isNull) {
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
@@ -238,11 +238,11 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
         }
     }
 
-    BigDecimal computeAlpha(final long dt, final double timeScaleUnits) {
+    protected BigDecimal computeAlpha(final long dt, final double timeScaleUnits) {
         return BigDecimal.valueOf(Math.exp(dt / timeScaleUnits));
     }
 
-    BigDecimal computeOneMinusAlpha(final BigDecimal alpha) {
+    protected BigDecimal computeOneMinusAlpha(final BigDecimal alpha) {
         return BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
     }
 }

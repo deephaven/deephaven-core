@@ -860,13 +860,13 @@ public class TestEmStd extends BaseUpdateByTest {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                         generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
-                        // generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
+                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
                     });
                     validate("Table", nuggets);
                     validate("Table", timeNuggets);
                 } else {
                     simulateShiftAwareStep(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos, nuggets);
-                    // simulateShiftAwareStep(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos, timeNuggets);
+                    simulateShiftAwareStep(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos, timeNuggets);
                 }
             } catch (Throwable t) {
                 System.out.println("Crapped out on step " + ii);
