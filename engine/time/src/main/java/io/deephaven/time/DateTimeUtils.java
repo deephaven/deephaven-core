@@ -21,6 +21,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
+import java.time.zone.ZoneRulesException;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1996,6 +1997,26 @@ public class DateTimeUtils {
     }
 
     /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     * @see ZoneId
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final String timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDateTime(dateTime, ZoneId.of(timeZone));
+    }
+
+    /**
      * Returns a DateTime formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
@@ -2027,6 +2048,26 @@ public class DateTimeUtils {
         }
 
         return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     * @see ZoneId
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final String timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDate(dateTime, ZoneId.of(timeZone));
     }
 
     /**

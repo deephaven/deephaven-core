@@ -16,8 +16,6 @@ import java.time.*;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 
-//import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-
 /**
  * A point on the timeline.
  *
@@ -29,11 +27,7 @@ import java.util.Date;
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
-    //TODO: remove deprecated
-    //TODO: document
-    //TODO: remove Joda exposure
     //TODO: curate API
-    //TODO: review public vs private
     //TODO: test coverage
 
     private static final long serialVersionUID = -9077991715632523353L;
@@ -376,11 +370,9 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     // endregion
 
-    //TODO: fix regions
-
-    // region Mutations to other DateTime types
-
     // region Joda DateTime flavors
+
+    //TODO: remove deprecated JODA
     /**
      * Convert this DateTime to a Joda DateTime.
      *
@@ -394,6 +386,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return new org.joda.time.DateTime(getMillis());
     }
 
+    //TODO: remove deprecated JODA
     /**
      * Convert this DateTime to a Joda DateTime.
      *
@@ -408,8 +401,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     public org.joda.time.DateTime getJodaDateTime(TimeZone timeZone) {
         return new org.joda.time.DateTime(getMillis(), timeZone.getTimeZone());
     }
-
-    // endregion
 
     // endregion
 
@@ -470,6 +461,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
      * @return a string representation of this DateTime
      * @see ZoneId
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
      */
     @NotNull
     public String toString(@NotNull final String timeZone) {
@@ -478,7 +471,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
 
-        return toString(ZoneId.of(timeZone));
+        //noinspection ConstantConditions
+        return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
     /**
@@ -537,6 +531,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      *
      * @param timeZone the time zone for formatting the string.  The timezone string must be a valid value specified in {@link ZoneId}.
      * @return a date string representation of this DateTime in the provided {@link ZoneId}.
+     * @throws DateTimeException if the zone ID has an invalid format
+     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
      * @see ZoneId
      */
     @NotNull
@@ -545,7 +541,9 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-        return toDateString(ZoneId.of(timeZone));
+
+        //noinspection ConstantConditions
+        return DateTimeUtils.formatDate(this, timeZone);
     }
 
     // endregion
