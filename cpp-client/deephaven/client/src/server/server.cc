@@ -15,7 +15,7 @@
 #include <arrow/array.h>
 #include <arrow/array/array_primitive.h>
 
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/config.pb.h"
 #include "deephaven/proto/config.grpc.pb.h"
 #include "deephaven/proto/session.pb.h"
@@ -25,10 +25,10 @@
 
 using namespace std;
 using arrow::flight::FlightClient;
-using deephaven::client::utility::bit_cast;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::bit_cast;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;

@@ -337,11 +337,11 @@ public class ConditionFilter extends AbstractConditionFilter {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
-                final Context sourceContexts[] = new Context[columnNames.length];
+                final Context[] sourceContexts = new Context[columnNames.length];
                 final SharedContext sharedContext = populateChunkGettersAndContexts(selection, fullSet, table, usePrev,
                         chunkGetters, sourceContexts);
                 final RowSetBuilderSequential resultBuilder = RowSetFactory.builderSequential();
-                final Chunk inputChunks[] = new Chunk[columnNames.length];
+                final Chunk[] inputChunks = new Chunk[columnNames.length];
                 while (rsIterator.hasMore()) {
                     final RowSequence currentChunkRowSequence = rsIterator.getNextRowSequenceWithLength(chunkSize);
                     for (int i = 0; i < chunkGetters.length; i++) {
@@ -352,6 +352,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                         sharedContext.reset();
                     }
                     try {
+                        // noinspection unchecked
                         final LongChunk<OrderedRowKeys> matchedIndices =
                                 filterKernel.filter(context, currentChunkRowSequence.asRowKeyChunk(), inputChunks);
                         resultBuilder.appendOrderedRowKeysChunk(matchedIndices);
@@ -360,7 +361,7 @@ public class ConditionFilter extends AbstractConditionFilter {
                                 + StringEscapeUtils.escapeJava(truncateLongFormula(formula)) + " }", e);
                     }
                 }
-                SafeCloseable.closeArray(sourceContexts);
+                SafeCloseable.closeAll(sourceContexts);
                 if (sharedContext != null) {
                     sharedContext.close();
                 }

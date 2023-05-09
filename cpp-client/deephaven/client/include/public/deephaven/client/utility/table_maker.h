@@ -19,7 +19,7 @@
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
 namespace internal {
@@ -200,7 +200,7 @@ const char * const TypeConverterTraits<std::optional<T>>::deephavenTypeName =
 template<typename T>
 TypeConverter TypeConverter::createNew(const std::vector<T> &values) {
   using deephaven::client::utility::okOrThrow;
-  using deephaven::client::utility::stringf;
+  using deephaven::dhcore::utility::stringf;
 
   typedef TypeConverterTraits<T> traits_t;
 

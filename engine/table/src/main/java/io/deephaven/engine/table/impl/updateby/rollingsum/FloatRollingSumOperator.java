@@ -48,8 +48,8 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatInfluencerValuesChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override
@@ -97,8 +97,8 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,

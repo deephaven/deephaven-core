@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
@@ -338,6 +339,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
             int numRightBitsToReserve) {
         return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+    }
+
+    @Override
+    public Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> exactMatches,
+            @NotNull RangeJoinMatch rangeMatch, @NotNull Collection<? extends Aggregation> aggregations) {
+        return coalesce().rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
     }
 
     @Override

@@ -3,7 +3,6 @@
  */
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicatePrimitiveCode;
 import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
@@ -34,6 +33,7 @@ public class ReplicateSortKernel {
 
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
+
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         final String objectRunPath = charToObject(
@@ -246,9 +246,7 @@ public class ReplicateSortKernel {
     private static void fixupObjectRuns(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        lines = fixupNeq(addImport(lines, "import java.util.Objects;"));
-
+        lines = fixupChunkAttributes(lines);
         FileUtils.writeLines(objectFile, lines);
     }
 
@@ -372,7 +370,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return 1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)lhs).compareTo(rhs);",
                 "    }",
                 "");
@@ -388,7 +386,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return -1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)rhs).compareTo(lhs);",
                 "    }");
 
@@ -405,10 +403,4 @@ public class ReplicateSortKernel {
                         m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2))),
                 "comparison functions", descendingComment);
     }
-
-    private static List<String> fixupNeq(List<String> lines) {
-        return applyFixup(lines, "neq", "\\s+return next != last;",
-                m -> Collections.singletonList("        return !Objects.equals(next, last);"));
-    }
-
 }

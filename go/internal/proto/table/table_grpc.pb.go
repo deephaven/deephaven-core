@@ -78,6 +78,8 @@ type TableServiceClient interface {
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of a range join operation.
+	RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
 	//
 	// Returns the result of an aggregate table operation.
@@ -382,6 +384,15 @@ func (c *tableServiceClient) AsOfJoinTables(ctx context.Context, in *AsOfJoinTab
 	return out, nil
 }
 
+func (c *tableServiceClient) RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Deprecated: Do not use.
 func (c *tableServiceClient) ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
@@ -605,6 +616,8 @@ type TableServiceServer interface {
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of a range join operation.
+	RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
 	//
 	// Returns the result of an aggregate table operation.
@@ -743,6 +756,9 @@ func (UnimplementedTableServiceServer) LeftJoinTables(context.Context, *LeftJoin
 }
 func (UnimplementedTableServiceServer) AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AsOfJoinTables not implemented")
+}
+func (UnimplementedTableServiceServer) RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RangeJoinTables not implemented")
 }
 func (UnimplementedTableServiceServer) ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ComboAggregate not implemented")
@@ -1282,6 +1298,24 @@ func _TableService_AsOfJoinTables_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_RangeJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RangeJoinTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).RangeJoinTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).RangeJoinTables(ctx, req.(*RangeJoinTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_ComboAggregate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ComboAggregateRequest)
 	if err := dec(in); err != nil {
@@ -1636,6 +1670,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AsOfJoinTables",
 			Handler:    _TableService_AsOfJoinTables_Handler,
+		},
+		{
+			MethodName: "RangeJoinTables",
+			Handler:    _TableService_RangeJoinTables_Handler,
 		},
 		{
 			MethodName: "ComboAggregate",

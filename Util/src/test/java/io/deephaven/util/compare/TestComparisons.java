@@ -90,4 +90,31 @@ public class TestComparisons {
         TestCase.assertTrue(FloatComparisons.gt(Float.NaN, Float.POSITIVE_INFINITY));
         TestCase.assertTrue(FloatComparisons.lt(Float.POSITIVE_INFINITY, Float.NaN));
     }
+
+    @Test
+    public void testDoubleDoubleComparisons() {
+        TestCase.assertTrue(DoubleComparisons.lt(QueryConstants.NULL_DOUBLE, 1.0));
+        TestCase.assertTrue(DoubleComparisons.gt(2.0, QueryConstants.NULL_DOUBLE));
+        TestCase.assertTrue(DoubleComparisons.eq(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE));
+        TestCase.assertTrue(DoubleComparisons.lt(2.0, 100));
+        TestCase.assertFalse(DoubleComparisons.gt(2.0, 100));
+        TestCase.assertTrue(DoubleComparisons.eq(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE));
+        TestCase.assertTrue(DoubleComparisons.eq(Double.NaN, Double.NaN));
+        TestCase.assertTrue(DoubleComparisons.lt(QueryConstants.NULL_DOUBLE, Double.NaN));
+        TestCase.assertTrue(DoubleComparisons.lt(1, Double.NaN));
+        TestCase.assertTrue(DoubleComparisons.eq(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.eq(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.gt(Double.POSITIVE_INFINITY, 7));
+        TestCase.assertTrue(DoubleComparisons.lt(Double.NEGATIVE_INFINITY, 7));
+        TestCase.assertTrue(DoubleComparisons.lt(7, Double.POSITIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.gt(7, Double.NEGATIVE_INFINITY));
+        TestCase.assertEquals(0, DoubleComparisons.compare(0, -0.0));
+        TestCase.assertEquals(0, DoubleComparisons.compare(-0.0, 0.0));
+        TestCase.assertTrue(DoubleComparisons.lt(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.gt(Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY));
+        TestCase.assertEquals(0, DoubleComparisons.compare(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY));
+        TestCase.assertEquals(0, DoubleComparisons.compare(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.gt(Double.NaN, Double.POSITIVE_INFINITY));
+        TestCase.assertTrue(DoubleComparisons.lt(Double.POSITIVE_INFINITY, Double.NaN));
+    }
 }

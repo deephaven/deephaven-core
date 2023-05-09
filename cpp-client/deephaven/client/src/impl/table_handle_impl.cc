@@ -3,9 +3,9 @@
  */
 #include "deephaven/client/impl/table_handle_impl.h"
 
-#include <condition_variable>
 #include <deque>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <arrow/flight/client.h>
@@ -19,18 +19,15 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/client.h"
 #include "deephaven/client/columns.h"
-#include "deephaven/client/chunk/chunk_filler.h"
-#include "deephaven/client/chunk/chunk_maker.h"
-#include "deephaven/client/container/row_sequence.h"
-#include "deephaven/client/table/table.h"
-#include "deephaven/client/ticking.h"
 #include "deephaven/client/subscription/subscribe_thread.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/callbacks.h"
-#include "deephaven/client/utility/misc.h"
-#include "deephaven/client/utility/utility.h"
-#include "deephaven/flatbuf/Barrage_generated.h"
+#include "deephaven/dhcore/chunk/chunk_maker.h"
+#include "deephaven/dhcore/container/row_sequence.h"
+#include "deephaven/dhcore/table/table.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
 using io::deephaven::proto::backplane::grpc::SortDescriptor;
@@ -43,38 +40,32 @@ using deephaven::client::impl::ColumnImpl;
 using deephaven::client::impl::DateTimeColImpl;
 using deephaven::client::impl::NumColImpl;
 using deephaven::client::impl::StrColImpl;
-using deephaven::client::chunk::ChunkFiller;
-using deephaven::client::chunk::ChunkMaker;
-using deephaven::client::column::ColumnSource;
-using deephaven::client::column::MutableColumnSource;
-using deephaven::client::container::RowSequence;
-using deephaven::client::container::RowSequenceBuilder;
-using deephaven::client::container::RowSequenceIterator;
 using deephaven::client::server::Server;
-using deephaven::client::table::Table;
-using deephaven::client::subscription::startSubscribeThread;
+using deephaven::client::subscription::SubscriptionThread;
 using deephaven::client::subscription::SubscriptionHandle;
-using deephaven::client::utility::Callback;
-using deephaven::client::utility::CBPromise;
-using deephaven::client::utility::ColumnDefinitions;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::getWhat;
-using deephaven::client::utility::makeReservedVector;
 using deephaven::client::utility::okOrThrow;
-using deephaven::client::utility::separatedList;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
-
-using io::deephaven::barrage::flatbuf::BarrageMessageType;
-using io::deephaven::barrage::flatbuf::BarrageModColumnMetadata;
-using io::deephaven::barrage::flatbuf::BarrageUpdateMetadata;
-using io::deephaven::barrage::flatbuf::ColumnConversionMode;
-using io::deephaven::barrage::flatbuf::CreateBarrageMessageWrapper;
-using io::deephaven::barrage::flatbuf::CreateBarrageSubscriptionOptions;
-using io::deephaven::barrage::flatbuf::CreateBarrageSubscriptionRequest;
+using deephaven::dhcore::chunk::ChunkMaker;
+using deephaven::dhcore::column::ColumnSource;
+using deephaven::dhcore::column::MutableColumnSource;
+using deephaven::dhcore::container::RowSequence;
+using deephaven::dhcore::container::RowSequenceBuilder;
+using deephaven::dhcore::container::RowSequenceIterator;
+using deephaven::dhcore::ElementTypeId;
+using deephaven::dhcore::table::Schema;
+using deephaven::dhcore::table::Table;
+using deephaven::dhcore::ticking::TickingCallback;
+using deephaven::dhcore::ticking::TickingUpdate;
+using deephaven::dhcore::utility::Callback;
+using deephaven::dhcore::utility::CBPromise;
+using deephaven::dhcore::utility::getWhat;
+using deephaven::dhcore::utility::makeReservedVector;
+using deephaven::dhcore::utility::separatedList;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client {
 namespace impl {
@@ -361,10 +352,9 @@ std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
   // is an error in the DoExchange invocation, the caller will get an exception here. The
   // remainder of the interaction (namely, the sending of a BarrageSubscriptionRequest and the
   // parsing of all the replies) is done on a newly-created thread dedicated to that job.
-  auto colDefs = lazyState_->getColumnDefinitions();
-  auto handle = startSubscribeThread(managerImpl_->server(), managerImpl_->flightExecutor().get(),
-      colDefs, ticket_, std::move(callback));
-
+  auto schema = lazyState_->getSchema();
+  auto handle = SubscriptionThread::start(managerImpl_->server(), managerImpl_->flightExecutor().get(),
+    schema, ticket_, std::move(callback));
   subscriptions_.insert(handle);
   return handle;
 }
@@ -409,11 +399,11 @@ void TableHandleImpl::unsubscribe(std::shared_ptr<SubscriptionHandle> handle) {
 }
 
 std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {
-  auto colDefs = lazyState_->getColumnDefinitions();
+  auto schema = lazyState_->getSchema();
   std::vector<std::shared_ptr<ColumnImpl>> result;
-  result.reserve(colDefs->vec().size());
-  for (const auto &cd : colDefs->vec()) {
-    result.push_back(ColumnImpl::create(cd.first));
+  result.reserve(schema->columns().size());
+  for (const auto &[name, type] : schema->columns()) {
+    result.push_back(ColumnImpl::create(name));
   }
   return result;
 }
@@ -421,51 +411,46 @@ std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {
 std::shared_ptr<NumColImpl> TableHandleImpl::getNumColImpl(std::string columnName) {
   lookupHelper(columnName,
       {
-          arrow::Type::INT8,
-          arrow::Type::INT16,
-          arrow::Type::INT32,
-          arrow::Type::INT64,
-          arrow::Type::UINT8,
-          arrow::Type::UINT16,
-          arrow::Type::UINT32,
-          arrow::Type::UINT64,
-          arrow::Type::FLOAT,
-          arrow::Type::DOUBLE,
+          ElementTypeId::INT8,
+          ElementTypeId::INT16,
+          ElementTypeId::INT32,
+          ElementTypeId::INT64,
+          ElementTypeId::FLOAT,
+          ElementTypeId::DOUBLE,
       });
   return NumColImpl::create(std::move(columnName));
 }
 
 std::shared_ptr<StrColImpl> TableHandleImpl::getStrColImpl(std::string columnName) {
-  lookupHelper(columnName, {arrow::Type::STRING});
+  lookupHelper(columnName, {ElementTypeId::STRING});
   return StrColImpl::create(std::move(columnName));
 }
 
 std::shared_ptr<DateTimeColImpl> TableHandleImpl::getDateTimeColImpl(std::string columnName) {
-  lookupHelper(columnName, {arrow::Type::DATE64});
+  lookupHelper(columnName, {ElementTypeId::TIMESTAMP});
   return DateTimeColImpl::create(std::move(columnName));
 }
 
-void TableHandleImpl::lookupHelper(const std::string &columnName,
-    std::initializer_list<arrow::Type::type> validTypes) {
-  auto colDefs = lazyState_->getColumnDefinitions();
-  auto ip = colDefs->map().find(columnName);
-  if (ip == colDefs->map().end()) {
+void TableHandleImpl::lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId> validTypes) {
+  auto schema = lazyState_->getSchema();
+  auto ip = schema->map().find(columnName);
+  if (ip == schema->map().end()) {
     auto message = stringf(R"(Column name "%o" is not in the table)", columnName);
     throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
-  auto actualType = ip->second->id();
+  auto actualType = ip->second;
   for (auto type : validTypes) {
     if (actualType == type) {
       return;
     }
   }
 
-  auto render = [](std::ostream &s, const arrow::Type::type item) {
+  auto render = [](std::ostream &s, ElementTypeId item) {
     // TODO(kosak): render this as a human-readable string.
-    s << item;
+    s << (int)item;
   };
   auto message = stringf("Column lookup for %o: Expected Arrow type: one of {%o}. Actual type %o",
-    columnName, separatedList(validTypes.begin(), validTypes.end(), ", ", render), actualType);
+    columnName, separatedList(validTypes.begin(), validTypes.end(), ", ", render), (int)actualType);
   throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
 }
 
@@ -516,18 +501,76 @@ void LazyState::waitUntilReady() {
   (void)ticketFuture_.value();
 }
 
-class GetColumnDefsCallback final :
+namespace {
+struct ArrowToElementTypeId final : public arrow::TypeVisitor {
+  arrow::Status Visit(const arrow::Int8Type &type) final {
+    typeId_ = ElementTypeId::INT8;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Int16Type &type) final {
+    typeId_ = ElementTypeId::INT16;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Int32Type &type) final {
+    typeId_ = ElementTypeId::INT32;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::Int64Type &type) final {
+    typeId_ = ElementTypeId::INT64;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::FloatType &type) final {
+    typeId_ = ElementTypeId::FLOAT;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::DoubleType &type) final {
+    typeId_ = ElementTypeId::DOUBLE;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::BooleanType &type) final {
+    typeId_ = ElementTypeId::BOOL;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::UInt16Type &type) final {
+    typeId_ = ElementTypeId::CHAR;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::StringType &type) final {
+    typeId_ = ElementTypeId::STRING;
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampType &type) final {
+    typeId_ = ElementTypeId::TIMESTAMP;
+    return arrow::Status::OK();
+  }
+
+
+  ElementTypeId typeId_ = ElementTypeId::INT8;  // arbitrary initializer
+};
+
+}  // namespace
+
+class GetSchemaCallback final :
     public SFCallback<Ticket>,
     public Callback<>,
-    public std::enable_shared_from_this<GetColumnDefsCallback> {
+    public std::enable_shared_from_this<GetSchemaCallback> {
 public:
-  GetColumnDefsCallback(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
-     CBPromise<std::shared_ptr<ColumnDefinitions>> colDefsPromise) : server_(std::move(server)),
-     flightExecutor_(std::move(flightExecutor)), colDefsPromise_(std::move(colDefsPromise)) {}
-  ~GetColumnDefsCallback() final = default;
+  GetSchemaCallback(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
+     CBPromise<std::shared_ptr<Schema>> schemaPromise) : server_(std::move(server)),
+     flightExecutor_(std::move(flightExecutor)), schemaPromise_(std::move(schemaPromise)) {}
+  ~GetSchemaCallback() final = default;
 
   void onFailure(std::exception_ptr ep) final {
-    colDefsPromise_.setError(std::move(ep));
+    schemaPromise_.setError(std::move(ep));
   }
 
   void onSuccess(Ticket ticket) final {
@@ -539,7 +582,7 @@ public:
     try {
       invokeHelper();
     } catch (...) {
-      colDefsPromise_.setError(std::current_exception());
+      schemaPromise_.setError(std::current_exception());
     }
   }
 
@@ -557,58 +600,57 @@ public:
     auto gsResult = server_->flightClient()->GetSchema(options, fd, &schemaResult);
     okOrThrow(DEEPHAVEN_EXPR_MSG(gsResult));
 
-    std::shared_ptr<arrow::Schema> schema;
-    auto schemaRes = schemaResult->GetSchema(nullptr, &schema);
+    std::shared_ptr<arrow::Schema> arrowSchema;
+    auto schemaRes = schemaResult->GetSchema(nullptr, &arrowSchema);
     okOrThrow(DEEPHAVEN_EXPR_MSG(schemaRes));
 
-    std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> colVec;
-    std::map<std::string, std::shared_ptr<arrow::DataType>> colMap;
+    std::vector<std::pair<std::string, ElementTypeId>> colVec;
 
-    for (const auto &f : schema->fields()) {
-      colVec.emplace_back(f->name(), f->type());
-      colMap[f->name()] = f->type();
+    for (const auto &f : arrowSchema->fields()) {
+      std::cout << "processing " << f->name() << '\n';
+      ArrowToElementTypeId v;
+      okOrThrow(DEEPHAVEN_EXPR_MSG(f->type()->Accept(&v)));
+      colVec.emplace_back(f->name(), v.typeId_);
     }
-    std::shared_ptr<ColumnDefinitions> colDefs(new ColumnDefinitions(std::move(colVec),
-        std::move(colMap)));
-    colDefsPromise_.setValue(std::move(colDefs));
+    auto schema = std::make_shared<Schema>(std::move(colVec));
+    schemaPromise_.setValue(std::move(schema));
   }
 
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> flightExecutor_;
-  CBPromise<std::shared_ptr<ColumnDefinitions>> colDefsPromise_;
+  CBPromise<std::shared_ptr<Schema>> schemaPromise_;
   Ticket ticket_;
 };
 
 LazyState::LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
     CBFuture<Ticket> ticketFuture) : server_(std::move(server)),
     flightExecutor_(std::move(flightExecutor)), ticketFuture_(std::move(ticketFuture)),
-    requestSent_(false), colDefsFuture_(colDefsPromise_.makeFuture()) {}
+    requestSent_(false), schemaFuture_(schemaPromise_.makeFuture()) {}
 
 LazyState::~LazyState() = default;
 
-std::shared_ptr<ColumnDefinitions> LazyState::getColumnDefinitions() {
+std::shared_ptr<Schema> LazyState::getSchema() {
   // Shortcut if we have column definitions
-  if (colDefsFuture_.valid()) {
+  if (schemaFuture_.valid()) {
     // value or exception
-    return colDefsFuture_.value();
+    return schemaFuture_.value();
   }
 
-  auto [cb, fut] = SFCallback<std::shared_ptr<ColumnDefinitions>>::createForFuture();
-  getColumnDefinitionsAsync(std::move(cb));
+  auto [cb, fut] = SFCallback<std::shared_ptr<Schema>>::createForFuture();
+  getSchemaAsync(std::move(cb));
   auto resultTuple = fut.get();
   return std::get<0>(resultTuple);
 }
 
-void LazyState::getColumnDefinitionsAsync(
-    std::shared_ptr<SFCallback<std::shared_ptr<ColumnDefinitions>>> cb) {
-  colDefsFuture_.invoke(std::move(cb));
+void LazyState::getSchemaAsync(
+    std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb) {
+  schemaFuture_.invoke(std::move(cb));
 
   if (requestSent_.test_and_set()) {
     return;
   }
 
-  auto cdCallback = std::make_shared<GetColumnDefsCallback>(server_, flightExecutor_,
-      std::move(colDefsPromise_));
+  auto cdCallback = std::make_shared<GetSchemaCallback>(server_, flightExecutor_, std::move(schemaPromise_));
   ticketFuture_.invoke(std::move(cdCallback));
 }
 }  // namespace internal

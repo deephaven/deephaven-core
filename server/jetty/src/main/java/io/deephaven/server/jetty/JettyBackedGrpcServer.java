@@ -25,9 +25,13 @@ import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnection;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -292,6 +296,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             httpConfig.addCustomizer(new SecureRequestCustomizer(sniHostCheck));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
+
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
             alpn.setDefaultProtocol(http11 != null ? http11.getProtocol() : h2.getProtocol());
             // The Jetty server is getting intermediate setup by default if none are configured. This is most similar to
@@ -322,6 +327,22 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Give connections extra time to shutdown, since we have an explicit server shutdown
         serverConnector.setShutdownIdleTimeout(serverConnector.getIdleTimeout());
+
+        // Override the h2 stream timeout with a specified value
+        serverConnector.addEventListener(new Connection.Listener() {
+            @Override
+            public void onOpened(Connection connection) {
+                if (connection instanceof HTTP2ServerConnection) {
+                    HTTP2Session session = (HTTP2Session) ((HTTP2Connection) connection).getSession();
+                    session.setStreamIdleTimeout(config.http2StreamIdleTimeoutOrDefault());
+                }
+            }
+
+            @Override
+            public void onClosed(Connection connection) {
+
+            }
+        });
 
         return serverConnector;
     }

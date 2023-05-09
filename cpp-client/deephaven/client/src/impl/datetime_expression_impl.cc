@@ -10,7 +10,7 @@
 #include "deephaven/client/impl/expression_impl.h"
 #include "deephaven/client/impl/escape_utils.h"
 
-using deephaven::client::DateTime;
+using deephaven::dhcore::DateTime;
 
 namespace deephaven::client {
 namespace impl {

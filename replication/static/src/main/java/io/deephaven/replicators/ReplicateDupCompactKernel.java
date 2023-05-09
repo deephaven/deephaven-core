@@ -140,11 +140,4 @@ public class ReplicateDupCompactKernel {
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         FileUtils.writeLines(objectFile, ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines)));
     }
-
-    @NotNull
-    private static List<String> fixupChunkAttributes(List<String> lines) {
-        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<Object, $1>"))
-                .collect(Collectors.toList());
-        return lines;
-    }
 }

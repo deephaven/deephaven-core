@@ -6,6 +6,7 @@ package io.deephaven.api.agg;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * A visitor to describe the input and aggregation {@link Pair column name pairs} for {@link Aggregation aggregations}.
@@ -22,9 +23,17 @@ public final class AggregationDescriptions implements Aggregation.Visitor {
         return descriptions.getOut();
     }
 
+    public static Map<String, String> of(Stream<? extends Aggregation> aggregations) {
+        final AggregationDescriptions descriptions = new AggregationDescriptions();
+        aggregations.forEach(a -> a.walk(descriptions));
+        return descriptions.getOut();
+    }
+
     private final Map<String, String> out = new LinkedHashMap<>();
 
-    Map<String, String> getOut() {
+    private AggregationDescriptions() {}
+
+    private Map<String, String> getOut() {
         return out;
     }
 

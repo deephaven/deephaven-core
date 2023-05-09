@@ -38,12 +38,11 @@ public abstract class RollingSumSpec extends RollingOpSpec {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
-    private static RollingSumSpec of(WindowScale revWindowScale) {
+    public static RollingSumSpec of(WindowScale revWindowScale) {
         return ImmutableRollingSumSpec.builder().revWindowScale(revWindowScale).build();
     }
 
-    private static RollingSumSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
+    public static RollingSumSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
         return ImmutableRollingSumSpec.builder().revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale).build();
     }
 

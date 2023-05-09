@@ -221,7 +221,7 @@ class SessionTestCase(BaseTestCase):
         dh_table = self.session.import_table(pa_table)
 
         with self.subTest("Create Input Table"):
-            keyed_input_t = self.session.input_table(schema=schema, key_cols=["f1"])
+            keyed_input_t = self.session.input_table(schema=schema, key_cols="f1")
             pa_table = keyed_input_t.to_arrow()
             self.assertEqual(schema, pa_table.schema)
 
@@ -232,7 +232,7 @@ class SessionTestCase(BaseTestCase):
             with self.assertRaises(ValueError):
                 self.session.input_table(schema=schema, init_table=append_input_t)
             with self.assertRaises(ValueError):
-                self.session.input_table(key_cols=["f0"])
+                self.session.input_table(key_cols="f0")
 
         with self.subTest("InputTable ops"):
             keyed_input_t.add(dh_table)

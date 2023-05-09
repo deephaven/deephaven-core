@@ -521,7 +521,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         @Override
         public void close() {
             avroChunk.close();
-            SafeCloseable.closeArray(fieldContexts);
+            SafeCloseable.closeAll(fieldContexts);
         }
     }
 }

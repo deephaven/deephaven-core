@@ -103,4 +103,9 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
         super.destroy();
         UpdateGraphProcessor.DEFAULT.removeSource(this);
     }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
+    }
 }

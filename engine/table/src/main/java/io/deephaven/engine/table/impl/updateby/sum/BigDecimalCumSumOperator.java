@@ -26,8 +26,8 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
 
@@ -58,8 +58,8 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
 }

@@ -21,12 +21,27 @@ import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class ByteRangeFilter extends AbstractRangeFilter {
+    public static ByteRangeFilter lt(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, false);
+    }
+
+    public static ByteRangeFilter leq(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, true);
+    }
+
+    public static ByteRangeFilter gt(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, false, true);
+    }
+
+    public static ByteRangeFilter geq(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, true, true);
+    }
+
     final byte upper;
     final byte lower;
 
     public ByteRangeFilter(String columnName, byte val1, byte val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(ByteComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -39,13 +54,13 @@ public class ByteRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeByteRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, false);
+                return lt(columnName, RangeConditionFilter.parseByteFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, true);
+                return leq(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, false, true);
+                return gt(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, true, true);
+                return geq(columnName, RangeConditionFilter.parseByteFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

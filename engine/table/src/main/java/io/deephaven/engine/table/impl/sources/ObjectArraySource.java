@@ -5,8 +5,6 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -66,7 +64,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
      * @param changedIndices indices in the dense table
      */
     @Override
-    public void prepareForParallelPopulation(RowSet changedIndices) {
+    public void prepareForParallelPopulation(RowSequence changedIndices) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");

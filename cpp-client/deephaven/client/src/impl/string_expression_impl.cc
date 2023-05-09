@@ -8,9 +8,9 @@
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/escape_utils.h"
 #include "deephaven/client/impl/expression_impl.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::utility::separatedList;
+using deephaven::dhcore::utility::separatedList;
 
 namespace deephaven::client {
 namespace impl {

@@ -9,7 +9,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -98,8 +97,8 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
     // endregion
 

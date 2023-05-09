@@ -12,6 +12,7 @@ import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
+import java.lang.Override;
 import java.util.List;
 
 /**
@@ -40,22 +41,37 @@ public interface InputTableServiceContextualAuthWiring {
     void checkPermissionDeleteTableFromInputTable(AuthContext authContext, DeleteTableRequest request,
             List<Table> sourceTables);
 
-    class AllowAll implements InputTableServiceContextualAuthWiring {
-        public void checkPermissionAddTableToInputTable(AuthContext authContext,
-                AddTableRequest request, List<Table> sourceTables) {}
+    /**
+     * A default implementation that funnels all requests to invoke {@code checkPermission}.
+     */
+    abstract class DelegateAll implements InputTableServiceContextualAuthWiring {
+        protected abstract void checkPermission(AuthContext authContext, List<Table> sourceTables);
 
-        public void checkPermissionDeleteTableFromInputTable(AuthContext authContext,
-                DeleteTableRequest request, List<Table> sourceTables) {}
-    }
-
-    class DenyAll implements InputTableServiceContextualAuthWiring {
         public void checkPermissionAddTableToInputTable(AuthContext authContext,
                 AddTableRequest request, List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
+            checkPermission(authContext, sourceTables);
         }
 
         public void checkPermissionDeleteTableFromInputTable(AuthContext authContext,
                 DeleteTableRequest request, List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+    }
+
+    /**
+     * A default implementation that allows all requests.
+     */
+    class AllowAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {}
+    }
+
+    /**
+     * A default implementation that denies all requests.
+     */
+    class DenyAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }

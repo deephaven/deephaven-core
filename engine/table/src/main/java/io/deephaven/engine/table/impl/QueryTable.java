@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -40,6 +41,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
@@ -53,6 +55,7 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -116,7 +119,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             public final T resultNode;
             public final TableUpdateListener resultListener; // may be null if parent is non-ticking
 
-            public Result(final @NotNull T resultNode) {
+            public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
@@ -127,7 +130,7 @@ public class QueryTable extends BaseTable<QueryTable> {
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
              */
-            public Result(final @NotNull T resultNode,
+            public Result(@NotNull final T resultNode,
                     final @Nullable TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
@@ -197,6 +200,31 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     private static final double MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD =
             Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
+
+    /**
+     * For unit tests we may like to force parallel where computation to exercise the multiple notification path.
+     */
+    static boolean FORCE_PARALLEL_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.forceParallelWhere", false);
+    /**
+     * For unit tests we may like to disable parallel where computation to exercise the single notification path.
+     */
+    static boolean DISABLE_PARALLEL_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableParallelWhere", false);
+
+
+    private static final ThreadLocal<Boolean> disableParallelWhereForThread = ThreadLocal.withInitial(() -> null);
+
+    /**
+     * The size of parallel where segments.
+     */
+    static long PARALLEL_WHERE_ROWS_PER_SEGMENT =
+            Configuration.getInstance().getLongWithDefault("QueryTable.parallelWhereRowsPerSegment", 1 << 16);
+    /**
+     * The size of parallel where segments.
+     */
+    static int PARALLEL_WHERE_SEGMENTS =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
 
     /**
      * You can chose to enable or disable the column parallel select and update.
@@ -719,6 +747,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private Table headOrTailBy(long nRows, boolean head, String... groupByColumns) {
+        checkInitiateOperation();
+
         Require.gtZero(nRows, "nRows");
 
         Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
@@ -885,7 +915,14 @@ public class QueryTable extends BaseTable<QueryTable> {
             Require.neqNull(whereListener, "whereListener").notifyChanges();
         }
 
-        private boolean refilterRequested() {
+        /**
+         * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
+         * the public API.
+         *
+         * @return true if this table must be fully refiltered
+         */
+        @InternalUseOnly
+        boolean refilterRequested() {
             return refilterUnmatchedRequested || refilterMatchedRequested;
         }
 
@@ -903,92 +940,118 @@ public class QueryTable extends BaseTable<QueryTable> {
         /**
          * Refilter relevant rows.
          *
-         * @param upstreamAdded RowSet of keys that were added upstream
-         * @param upstreamRemoved RowSet of keys that were removed
-         * @param upstreamModified RowSet of keys that were modified upstream
-         * @param shiftData Sequence of shifts that apply to keyspace
-         * @param modifiedColumnSet The set of columns that have any changes to indices in {@code modified}
+         * This method is not part of the public API, and is only exposed so that {@link WhereListener} can access it.
+         *
+         * @param upstream the upstream update
          */
-        private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
-                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+        @InternalUseOnly
+        void doRefilter(
+                final WhereListener listener,
+                final TableUpdate upstream) {
+            final TableUpdateImpl update = new TableUpdateImpl();
+            if (upstream == null) {
+                update.modifiedColumnSet = getModifiedColumnSetForUpdates();
+                update.modifiedColumnSet.clear();
+            } else {
+                // we need to hold on to the upstream update until we are completely done with it
+                upstream.acquire();
+                update.modifiedColumnSet = upstream.modifiedColumnSet();
+            }
 
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
             // columns have changed.
-            final WritableRowSet removed = upstreamRemoved == null ? RowSetFactory.empty()
-                    : upstreamRemoved.intersect(getRowSet());
-            getRowSet().writableCast().remove(removed);
+            update.removed = upstream == null ? RowSetFactory.empty()
+                    : upstream.removed().intersect(getRowSet());
+            getRowSet().writableCast().remove(update.removed);
 
             // Update our rowSet and compute removals due to splatting.
-            if (shiftData != null && shiftData.nonempty()) {
-                shiftData.apply(getRowSet().writableCast());
+            if (upstream != null && upstream.shifted().nonempty()) {
+                upstream.shifted().apply(getRowSet().writableCast());
             }
 
-            final WritableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
-                newMapping = filterRows(source.getRowSet(), source.getRowSet(), false, filters);
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeFilterExecution(source.getRowSet().copy());
+                filterExecution.scheduleCompletion(
+                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
-                // things that are added or removed are already reflected in source.build
-                try (final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet())) {
-                    // we must check rows that have been modified instead of just preserving them
-                    if (upstreamModified != null) {
-                        unmatchedRows.insert(upstreamModified);
-                    }
-                    newMapping = filterRows(unmatchedRows, unmatchedRows, false, filters);
+                // things that are added or removed are already reflected in source.getRowSet
+                final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
+                // we must check rows that have been modified instead of just preserving them
+                if (upstream != null) {
+                    unmatchedRows.insert(upstream.modified());
                 }
-                // add back what we previously matched, but for modifications and removals
-                try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
-                    if (upstreamAdded != null) {
-                        previouslyMatched.remove(upstreamAdded);
+                final RowSet unmatched = unmatchedRows.copy();
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
+                filterExecution.scheduleCompletion(fe -> {
+                    final WritableRowSet newMapping = fe.addedResult;
+                    // add back what we previously matched, but for modifications and removals
+                    try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
+                        if (upstream != null) {
+                            previouslyMatched.remove(upstream.added());
+                            previouslyMatched.remove(upstream.modified());
+                        }
+                        newMapping.insert(previouslyMatched);
                     }
-                    if (upstreamModified != null) {
-                        previouslyMatched.remove(upstreamModified);
-                    }
-                    newMapping.insert(previouslyMatched);
-                }
-
+                    completeRefilterUpdate(listener, upstream, update, fe.addedResult);
+                });
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
                 // modified rows
-                try (final WritableRowSet matchedRows = getRowSet().copy()) {
-                    if (upstreamAdded != null) {
-                        matchedRows.insert(upstreamAdded);
-                    }
-                    if (upstreamModified != null) {
-                        matchedRows.insert(upstreamModified);
-                    }
-                    newMapping = filterRows(matchedRows, matchedRows, false, filters);
+                final WritableRowSet matchedRows = getRowSet().copy();
+                if (upstream != null) {
+                    matchedRows.insert(upstream.added());
+                    matchedRows.insert(upstream.modified());
                 }
+                final RowSet matchedClone = matchedRows.copy();
+
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeFilterExecution(matchedClone);
+                filterExecution.scheduleCompletion(
+                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
             }
+        }
 
+        private void completeRefilterUpdate(
+                final WhereListener listener,
+                final TableUpdate upstream,
+                final TableUpdateImpl update,
+                final RowSet newMapping) {
             // Compute added/removed in post-shift keyspace.
-            final WritableRowSet added = newMapping.minus(getRowSet());
+            update.added = newMapping.minus(getRowSet());
             final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
-            // Update our rowSet in post-shift keyspace.
-            getRowSet().writableCast().update(added, postShiftRemovals);
+            // Update our index in post-shift keyspace.
+            getRowSet().writableCast().remove(postShiftRemovals);
+            getRowSet().writableCast().insert(update.added);
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
-            if (shiftData != null) {
-                shiftData.unapply(postShiftRemovals);
+            if (upstream != null) {
+                upstream.shifted().unapply(postShiftRemovals);
             }
-            removed.insert(postShiftRemovals);
+            update.removed.writableCast().insert(postShiftRemovals);
 
-            final WritableRowSet modified;
-            if (upstreamModified == null || upstreamModified.isEmpty()) {
-                modified = RowSetFactory.empty();
+            if (upstream == null || upstream.modified().isEmpty()) {
+                update.modified = RowSetFactory.empty();
             } else {
-                modified = upstreamModified.intersect(newMapping);
-                modified.remove(added);
+                update.modified = upstream.modified().intersect(newMapping);
+                update.modified.writableCast().remove(update.added);
             }
 
-            notifyListeners(new TableUpdateImpl(added, removed, modified,
-                    shiftData == null ? RowSetShiftData.EMPTY : shiftData, modifiedColumnSet));
+            update.shifted = upstream == null ? RowSetShiftData.EMPTY : upstream.shifted();
+
+            notifyListeners(update);
+            if (upstream != null) {
+                upstream.release();
+            }
+
+            listener.setFinalExecutionStep();
         }
 
         private void setWhereListener(MergedListener whereListener) {
@@ -1002,6 +1065,13 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {
+        if (filters.length == 0) {
+            if (isRefreshing()) {
+                manageWithCurrentScope();
+            }
+            return this;
+        }
+
         return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
                 () -> {
                     for (int fi = 0; fi < filters.length; ++fi) {
@@ -1055,19 +1125,68 @@ public class QueryTable extends BaseTable<QueryTable> {
                         initializeWithSnapshot("where", swapListener,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
-                                    final FilteredTable filteredTable;
-                                    try (final RowSet prevIfNeeded = usePrev ? rowSet.copyPrev() : null) {
-                                        final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
-                                        final TrackingRowSet currentMapping = filterRows(rowSetToUpdate,
-                                                rowSetToUpdate, usePrev, filters).toTracking();
-                                        filteredTable = new FilteredTable(currentMapping, this, filters);
+                                    final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
+
+                                    final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
+                                            new CompletableFuture<>();
+                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
+                                            this, filters, rowSetToUse.copy(), 0, rowSetToUse.size(), null, 0,
+                                            usePrev) {
+                                        @Override
+                                        void handleUncaughtException(Exception throwable) {
+                                            currentMappingFuture.completeExceptionally(throwable);
+                                        }
+                                    };
+                                    initialFilterExecution.scheduleCompletion(x -> {
+                                        if (x.exceptionResult != null) {
+                                            currentMappingFuture.completeExceptionally(x.exceptionResult);
+                                        } else {
+                                            currentMappingFuture.complete(x.addedResult.toTracking());
+                                        }
+                                    });
+
+                                    boolean cancelled = false;
+                                    TrackingWritableRowSet currentMapping = null;
+                                    try {
+                                        boolean done = false;
+                                        while (!done) {
+                                            try {
+                                                currentMapping = currentMappingFuture.get();
+                                                done = true;
+                                            } catch (InterruptedException e) {
+                                                // cancel the job and wait for it to finish cancelling
+                                                cancelled = true;
+                                                initialFilterExecution.setCancelled();
+                                            }
+                                        }
+                                    } catch (ExecutionException e) {
+                                        if (cancelled) {
+                                            throw new CancellationException("interrupted while filtering");
+                                        } else if (e.getCause() instanceof RuntimeException) {
+                                            throw (RuntimeException) e.getCause();
+                                        } else {
+                                            throw new UncheckedDeephavenException(e);
+                                        }
+                                    } finally {
+                                        // account for work done in alternative threads
+                                        final BasePerformanceEntry basePerformanceEntry =
+                                                initialFilterExecution.getBasePerformanceEntry();
+                                        if (basePerformanceEntry != null) {
+                                            final QueryPerformanceNugget outerNugget =
+                                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
+                                            if (outerNugget != null) {
+                                                outerNugget.addBaseEntry(basePerformanceEntry);
+                                            }
+                                        }
                                     }
+                                    currentMapping.initializePreviousValue();
+
+                                    final FilteredTable filteredTable =
+                                            new FilteredTable(currentMapping, this, filters);
 
                                     for (final WhereFilter filter : filters) {
-                                        filter.validateSafeForRefresh(this);
                                         filter.setRecomputeListener(filteredTable);
                                     }
-
                                     final boolean refreshingFilters =
                                             Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
                                     copyAttributes(filteredTable, CopyAttributeOperation.Filter);
@@ -1082,35 +1201,34 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                            Arrays.stream(filters)
+                                            Stream.of(filters)
                                                     .filter(f -> f instanceof NotificationQueue.Dependency)
                                                     .map(f -> (NotificationQueue.Dependency) f),
-                                            Arrays.stream(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                            Stream.of(filters)
+                                                    .filter(f -> f instanceof DependencyStreamProvider)
                                                     .flatMap(f -> ((DependencyStreamProvider) f)
                                                             .getDependencyStream()))
                                             .collect(Collectors.toList());
                                     if (swapListener != null) {
-                                        final ListenerRecorder recorder =
-                                                new ListenerRecorder("where(" + Arrays.toString(filters) + ")",
-                                                        QueryTable.this, filteredTable);
-                                        final WhereListener whereListener =
-                                                new WhereListener(recorder, dependencies, filteredTable);
+                                        final ListenerRecorder recorder = new ListenerRecorder(
+                                                "where(" + Arrays.toString(filters) + ")", QueryTable.this,
+                                                filteredTable);
+                                        final WhereListener whereListener = new WhereListener(
+                                                log, this, recorder, dependencies, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
+                                        filteredTable.addParentReference(swapListener);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
-                                        final StaticWhereListener whereListener =
-                                                new StaticWhereListener(dependencies, filteredTable);
+                                        final WhereListener whereListener = new WhereListener(
+                                                log, this, null, dependencies, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         filteredTable.addParentReference(whereListener);
                                     }
-
                                     result.setValue(filteredTable);
-
                                     return true;
                                 });
-
                         return result.getValue();
                     });
                 });
@@ -1280,10 +1398,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final JobScheduler jobScheduler;
-                    if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
-                            (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                                    && OperationInitializationThreadPool.NUM_THREADS > 1))
-                            && !OperationInitializationThreadPool.isInitializationThread()
+                    if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
+                            && OperationInitializationThreadPool.canParallelize()
                             && analyzer.allowCrossColumnParallelization()) {
                         jobScheduler = new OperationInitializationPoolJobScheduler();
                     } else {
@@ -1827,12 +1943,15 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table join(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
+    public Table join(
+            @NotNull final Table rightTable,
+            @NotNull final MatchPair[] columnsToMatch,
+            @NotNull final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve) {
         return memoizeResult(
-                MemoizedOperationKey.crossJoin(rightTableCandidate, columnsToMatch, columnsToAdd,
+                MemoizedOperationKey.crossJoin(rightTable, columnsToMatch, columnsToAdd,
                         numRightBitsToReserve),
-                () -> joinNoMemo(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+                () -> joinNoMemo(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve));
     }
 
     private Table joinNoMemo(
@@ -1900,6 +2019,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                 });
     }
 
+    @Override
+    public Table rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> exactMatches,
+            @NotNull final RangeJoinMatch rangeMatch,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        return getResult(new RangeJoinOperation(this, rightTable, exactMatches, rangeMatch, aggregations));
+    }
+
     /**
      * The triggerColumns are the column sources for the snapshot-triggering table. The baseColumns are the column
      * sources for the table being snapshotted. The triggerRowSet refers to snapshots that we want to take. Typically
@@ -1954,7 +2082,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {
-        checkInitiateOperation();
+        checkInitiateBinaryOperation(this, baseTable);
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
         final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
@@ -2111,10 +2239,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table snapshotIncrementalInternal(final Table base, final boolean doInitialSnapshot,
             final String... stampColumns) {
-        checkInitiateOperation();
+        checkInitiateBinaryOperation(this, base);
 
         final QueryTable baseTable = (QueryTable) (base instanceof UncoalescedTable ? base.coalesce() : base);
-        baseTable.checkInitiateOperation();
 
         // Use the given columns (if specified); otherwise an empty array means all of my columns
         final String[] useStampColumns = stampColumns.length == 0
@@ -2473,7 +2600,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final WritableRowSet newRowSet = getUngroupIndex(
                                         computeSize(getRowSet(), arrayColumns, vectorColumns, nullFill),
                                         RowSetFactory.builderRandom(), newBase, getRowSet())
-                                                .build();
+                                        .build();
                                 final TrackingWritableRowSet rowSet = result.getRowSet().writableCast();
                                 final RowSet added = newRowSet.minus(rowSet);
                                 final RowSet removed = rowSet.minus(newRowSet);
@@ -3271,120 +3398,18 @@ public class QueryTable extends BaseTable<QueryTable> {
         });
     }
 
-    private class WhereListener extends MergedListener {
-        private final FilteredTable result;
-        private final WritableRowSet currentMapping;
-        private final WhereFilter[] filters;
-        private final ModifiedColumnSet filterColumns;
-        private final ListenerRecorder recorder;
-
-        private WhereListener(ListenerRecorder recorder, Collection<NotificationQueue.Dependency> dependencies,
-                FilteredTable result) {
-            super(Collections.singleton(recorder), dependencies, "where(" + Arrays.toString(result.filters) + ")",
-                    result);
-            this.recorder = recorder;
-            this.result = result;
-            this.currentMapping = result.getRowSet().writableCast();
-            this.filters = result.filters;
-
-            boolean hasColumnArray = false;
-            final Set<String> filterColumnNames = new TreeSet<>();
-            for (WhereFilter filter : filters) {
-                hasColumnArray |= !filter.getColumnArrays().isEmpty();
-                filterColumnNames.addAll(filter.getColumns());
-            }
-            this.filterColumns = hasColumnArray ? null
-                    : newModifiedColumnSet(filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        }
-
-        @Override
-        public void process() {
-            ModifiedColumnSet sourceModColumns = recorder.getModifiedColumnSet();
-            if (sourceModColumns == null) {
-                sourceModColumns = result.getModifiedColumnSetForUpdates();
-                sourceModColumns.clear();
-            }
-
-            if (result.refilterRequested()) {
-                result.doRefilter(recorder.getAdded(), recorder.getRemoved(), recorder.getModified(),
-                        recorder.getShifted(),
-                        sourceModColumns);
-                return;
-            }
-
-            // intersect removed with pre-shift keyspace
-            final WritableRowSet removed = recorder.getRemoved().intersect(currentMapping);
-            currentMapping.remove(removed);
-
-            // shift keyspace
-            recorder.getShifted().apply(currentMapping);
-
-            // compute added against filters
-            final WritableRowSet added =
-                    filterRows(recorder.getAdded().copy().toTracking(), rowSet, false, filters);
-
-            // check which modified keys match filters (Note: filterColumns will be null if we must always check)
-            final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-            final RowSet matchingModifies = !runFilters ? RowSetFactory.empty()
-                    : filterRows(recorder.getModified().copy().toTracking(), rowSet, false, filters);
-
-            // which propagate as mods?
-            final WritableRowSet modified =
-                    (runFilters ? matchingModifies : recorder.getModified()).intersect(currentMapping);
-
-            // remaining matchingModifies are adds
-            added.insert(matchingModifies.minus(modified));
-
-            final WritableRowSet modsToRemove;
-            if (!runFilters) {
-                modsToRemove = RowSetFactory.empty();
-            } else {
-                modsToRemove = recorder.getModified().minus(matchingModifies);
-                modsToRemove.retain(currentMapping);
-            }
-            // note modsToRemove is currently in post-shift keyspace
-            currentMapping.update(added, modsToRemove);
-
-            // move modsToRemove into pre-shift keyspace and add to myRemoved
-            recorder.getShifted().unapply(modsToRemove);
-            removed.insert(modsToRemove);
-
-            ModifiedColumnSet modifiedColumnSet = sourceModColumns;
-            if (modified.isEmpty()) {
-                modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                modifiedColumnSet.clear();
-            }
-
-            // note shifts are pass-through since filter will never translate keyspace
-            result.notifyListeners(
-                    new TableUpdateImpl(added, removed, modified, recorder.getShifted(), modifiedColumnSet));
-        }
-    }
-
-    private static class StaticWhereListener extends MergedListener {
-        private final FilteredTable result;
-
-        private StaticWhereListener(Collection<NotificationQueue.Dependency> dependencies, FilteredTable result) {
-            super(Collections.emptyList(), dependencies, "where(" + Arrays.toString(result.filters) + ")", result);
-            this.result = result;
-        }
-
-        @Override
-        public void process() {
-            if (result.refilterRequested()) {
-                result.doRefilter(null, null, null, null, ModifiedColumnSet.ALL);
-            }
-        }
-    }
-
     private void checkInitiateOperation() {
-        if (isRefreshing()) {
+        checkInitiateOperation(this);
+    }
+
+    public static void checkInitiateOperation(@NotNull final Table table) {
+        if (table.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
 
-    static void checkInitiateOperation(Table other) {
-        if (other.isRefreshing()) {
+    public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
+        if (first.isRefreshing() || second.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
@@ -3411,5 +3436,15 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
+    }
+
+    public static SafeCloseable disableParallelWhereForThread() {
+        final Boolean oldValue = disableParallelWhereForThread.get();
+        disableParallelWhereForThread.set(true);
+        return () -> disableParallelWhereForThread.set(oldValue);
+    }
+
+    static Boolean isParallelWhereDisabledForThread() {
+        return disableParallelWhereForThread.get();
     }
 }

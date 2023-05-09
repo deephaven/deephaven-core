@@ -13,7 +13,7 @@ from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table
+from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase
 
 
@@ -619,6 +619,12 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
+        def verify_layout_hint(t: Table, layout_hint_str: str):
+            attrs = self.test_table.attributes()
+            attrs["LayoutHints"] = layout_hint_str
+            self.assertIsNotNone(t)
+            self.assertEquals(attrs, t.attributes())
+
         t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {
                 "name": "Group1",
@@ -635,19 +641,28 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
 
         t = self.test_table.layout_hints(front="e")
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
 
         t = self.test_table.layout_hints(front=["e"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.SHOW)
+        verify_layout_hint(t, "searchable=Show;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.HIDE)
+        verify_layout_hint(t, "searchable=Hide;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.DEFAULT)
+        verify_layout_hint(t, "")
 
         t = self.test_table.layout_hints()
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "")
 
         with self.assertRaises(DHError) as cm:
             t = self.test_table.layout_hints(front=["e"], back=True)
@@ -963,6 +978,33 @@ class TableTestCase(BaseTestCase):
         df = to_pandas(rt)
         self.assertEqual(df.loc[0]['Col'], 1)
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+    def test_await_update(self):
+        with self.assertRaises(DHError):
+            empty_table(10).await_update()
+
+        time_t = time_table("00:00:00.001")
+        updated = time_t.await_update()
+        self.assertTrue(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(1)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(-1)
+        self.assertFalse(updated)
+
+    def test_range_join(self):
+        aggs = [
+            group(cols=["GroupD=d"]),
+        ]
+        left_table = self.test_table.select_distinct()
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
+        result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
+        self.assertEqual(result_table.size, left_table.size)
+        self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
+
+        with self.assertRaises(DHError):
+            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
 
 
 if __name__ == "__main__":

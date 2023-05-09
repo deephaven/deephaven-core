@@ -8,8 +8,8 @@
 #include <functional>
 #include <memory>
 #include <mutex>
-#include "deephaven/client/utility/callbacks.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::utility {
 class Executor {
@@ -22,7 +22,7 @@ public:
   explicit Executor(Private);
   ~Executor();
 
-  typedef Callback<> callback_t;
+  typedef deephaven::dhcore::utility::Callback<> callback_t;
 
   void invoke(std::shared_ptr<callback_t> f);
 

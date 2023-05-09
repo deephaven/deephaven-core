@@ -72,6 +72,12 @@ class ColumnTestCase(BaseTestCase):
         self.assertIsNone(test_table.columns[0].component_type)
         self.assertEqual(test_table.columns[1].component_type, dtypes.double)
 
+    def test_vector_column(self):
+        t = empty_table(0).update_view("StringColumn=`abc`").group_by()
+        self.assertTrue(t.columns[0].data_type.j_name.endswith("ObjectVector"))
+        self.assertEqual(t.columns[0].component_type, dtypes.string)
+        self.assertIsNone(t.columns[0].data_type.qst_type)
+
     def test_numeric_columns(self):
         x = [MAX_BYTE, MAX_SHORT, MAX_INT, MAX_LONG, 1, 999999]
         n = len(x)

@@ -405,7 +405,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(fillFromContexts);
+            SafeCloseable.closeAll(fillFromContexts);
         }
     }
 
@@ -451,7 +451,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         public void close() {
             super.close();
             sharedContext.close();
-            SafeCloseable.closeArray(getContexts);
+            SafeCloseable.closeAll(getContexts);
         }
     }
 

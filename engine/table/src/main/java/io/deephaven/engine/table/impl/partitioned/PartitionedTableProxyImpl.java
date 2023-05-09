@@ -15,7 +15,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.PartitionedTable.Proxy;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -532,6 +531,14 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch, columnsToAdd, reverseAsOfJoinRule),
                 columnsToMatch.stream().limit(columnsToMatch.size() - 1).collect(Collectors.toList()));
+    }
+
+    @Override
+    public PartitionedTable.Proxy rangeJoin(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> exactMatches,
+            RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
+        return complexTransform(rightTable, (ct, ot) -> ct.rangeJoin(ot, exactMatches, rangeMatch, aggregations),
+                exactMatches);
     }
 
     @Override

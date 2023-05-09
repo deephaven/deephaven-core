@@ -25,7 +25,7 @@ public class SingleRangeTest {
     public void testIterator() {
         final long start = 10;
         final long end = 21;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final RowSet.Iterator it = ix.iterator();
         long expected = start;
         while (it.hasNext()) {
@@ -39,7 +39,7 @@ public class SingleRangeTest {
     public void testRangeIterator() {
         final long start = 10;
         final long end = 21;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final RowSet.RangeIterator it = ix.rangeIterator();
         assertTrue(it.hasNext());
         it.next();
@@ -52,34 +52,34 @@ public class SingleRangeTest {
     public void testRemoveIndex() {
         final long start = 10;
         final long end = 21;
-        TrackingWritableRowSetImpl ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        WritableRowSet ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start - 1, end + 1));
+        WritableRowSetImpl ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        WritableRowSet ix2 = new WritableRowSetImpl(SingleRange.make(start - 1, end + 1));
         ix.remove(ix2);
         assertEquals(OrderedLongSet.EMPTY, ix.getInnerSet());
 
-        ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start - 1, end - 1));
+        ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new WritableRowSetImpl(SingleRange.make(start - 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(end, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start + 1, end + 1));
+        ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new WritableRowSetImpl(SingleRange.make(start + 1, end + 1));
         ix.remove(ix2);
         assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(start, ix.firstRowKey());
         assertEquals(start, ix.lastRowKey());
 
-        ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start + 1, end - 1));
+        ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new WritableRowSetImpl(SingleRange.make(start + 1, end - 1));
         ix.remove(ix2);
         assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(2, ix.size());
         assertEquals(start, ix.firstRowKey());
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        ix = new WritableRowSetImpl(SingleRange.make(start, end));
         ix2 = RowSetFactory.empty();
         ix2.insertRange(10, 10);
         ix2.insertRange(21, 21);
@@ -92,7 +92,7 @@ public class SingleRangeTest {
     public void testRemoveKey() {
         final long start = 10;
         final long end = 21;
-        TrackingWritableRowSetImpl ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        WritableRowSetImpl ix = new WritableRowSetImpl(SingleRange.make(start, end));
         ix.remove(9);
         assertTrue(ix.getInnerSet() instanceof SingleRange);
         assertEquals(10, ix.firstRowKey());
@@ -114,7 +114,7 @@ public class SingleRangeTest {
         assertEquals(9, ix.size());
         assertTrue(ix.containsRange(11, 11));
         assertTrue(ix.containsRange(13, 20));
-        TrackingWritableRowSetImpl ix2 = new TrackingWritableRowSetImpl(SingleRange.make(9, 9));
+        WritableRowSetImpl ix2 = new WritableRowSetImpl(SingleRange.make(9, 9));
         ix2.remove(9);
         assertEquals(ix2.getInnerSet(), OrderedLongSet.EMPTY);
     }
@@ -126,13 +126,13 @@ public class SingleRangeTest {
             final long end2,
             final long startExpected,
             final long endExpected) {
-        final TrackingWritableRowSetImpl ix = new TrackingWritableRowSetImpl(SingleRange.make(start1, end1));
+        final WritableRowSetImpl ix = new WritableRowSetImpl(SingleRange.make(start1, end1));
         Runnable check = () -> {
             assertTrue(ix.getInnerSet() instanceof SingleRange);
             assertEquals(startExpected, ix.firstRowKey());
             assertEquals(endExpected, ix.lastRowKey());
         };
-        final RowSet ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start2, end2));
+        final RowSet ix2 = new WritableRowSetImpl(SingleRange.make(start2, end2));
         ix.insert(ix2);
         check.run();
         ix.clear();
@@ -147,8 +147,8 @@ public class SingleRangeTest {
         insertResultsInSingle(10, 20, 8, 9, 8, 20);
         final long start = 10;
         final long end = 20;
-        TrackingWritableRowSetImpl ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        RowSet ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start - 3, start - 2));
+        WritableRowSetImpl ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        RowSet ix2 = new WritableRowSetImpl(SingleRange.make(start - 3, start - 2));
         ix.insert(ix2);
         assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
@@ -156,8 +156,8 @@ public class SingleRangeTest {
         assertEquals(-3L, ix.find(start - 1));
         assertEquals(end, ix.lastRowKey());
 
-        ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
-        ix2 = new TrackingWritableRowSetImpl(SingleRange.make(end + 2, end + 3));
+        ix = new WritableRowSetImpl(SingleRange.make(start, end));
+        ix2 = new WritableRowSetImpl(SingleRange.make(end + 2, end + 3));
         ix.insert(ix2);
         assertTrue(ix.getInnerSet() instanceof SortedRanges);
         assertEquals(ix.size(), end - start + 1 + 2);
@@ -172,8 +172,8 @@ public class SingleRangeTest {
             final long start2,
             final long end2,
             final Consumer<RowSet> check) {
-        final WritableRowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start1, end1));
-        final RowSet ix2 = new TrackingWritableRowSetImpl(SingleRange.make(start2, end2));
+        final WritableRowSet ix = new WritableRowSetImpl(SingleRange.make(start1, end1));
+        final RowSet ix2 = new WritableRowSetImpl(SingleRange.make(start2, end2));
         ix.remove(ix2);
         check.accept(ix);
         ix.clear();
@@ -248,8 +248,8 @@ public class SingleRangeTest {
         removeResultsCheck(10, 20, 10, 20);
         removeResultsCheck(10, 20, 8, 11);
         removeResultsCheck(10, 20, 15, 25);
-        TrackingWritableRowSetImpl ix = new TrackingWritableRowSetImpl(SingleRange.make(10, 20));
-        RowSet ix2 = new TrackingWritableRowSetImpl(SingleRange.make(10, 20));
+        WritableRowSetImpl ix = new WritableRowSetImpl(SingleRange.make(10, 20));
+        RowSet ix2 = new WritableRowSetImpl(SingleRange.make(10, 20));
         ix.remove(ix2);
         assertEquals(OrderedLongSet.EMPTY, ix.getInnerSet());
         ix.insertRange(10, 20);
@@ -265,12 +265,12 @@ public class SingleRangeTest {
     public void testInvert() {
         final long start = 10;
         final long end = 30;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final RspBitmap rb = new RspBitmap();
         for (long i = start + 1; i <= end; i += 2) {
             rb.add(i);
         }
-        final WritableRowSet keys = new TrackingWritableRowSetImpl(rb);
+        final WritableRowSet keys = new WritableRowSetImpl(rb);
         final RowSet r = ix.invert(keys, 10);
         assertEquals(5, r.size());
         assertTrue(r.subsetOf(RowSetFactory.fromKeys(1, 3, 5, 7, 9)));
@@ -292,7 +292,7 @@ public class SingleRangeTest {
     public void testOrderedKeyIterator() {
         final long start = 10;
         final long end = 30;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
         int offset = 0;
@@ -320,7 +320,7 @@ public class SingleRangeTest {
     public void testRowSequence() {
         final long start = 10;
         final long end = 30;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         RowSequence rs = ix.getRowSequenceByKeyRange(8, 9);
         assertEquals(RowSequenceFactory.EMPTY, rs);
         rs = ix.getRowSequenceByKeyRange(31, 32);
@@ -376,7 +376,7 @@ public class SingleRangeTest {
     public void testSubindexByKey() {
         final long start = 10;
         final long end = 30;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         RowSet r = ix.subSetByKeyRange(5, 15);
         assertEquals(6, r.size());
         assertTrue(r.overlaps(RowSetFactory.fromRange(10, 15)));
@@ -398,7 +398,7 @@ public class SingleRangeTest {
     public void testSubindexByPos() {
         final long start = 10;
         final long end = 30;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         RowSet r = ix.subSetByPositionRange(0, 5 + 1);
         assertEquals(6, r.size());
         assertTrue(r.overlaps(RowSetFactory.fromRange(10, 15)));
@@ -433,9 +433,9 @@ public class SingleRangeTest {
     public void testSimpleBinarySearch() {
         final long start = 10;
         final long end = 30;
-        final RowSet six = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet six = new WritableRowSetImpl(SingleRange.make(start, end));
         checkBinarySearch(six);
-        final RowSet rbix = new TrackingWritableRowSetImpl(new RspBitmap(start, end));
+        final RowSet rbix = new WritableRowSetImpl(new RspBitmap(start, end));
         checkBinarySearch(rbix);
     }
 
@@ -444,7 +444,7 @@ public class SingleRangeTest {
         final long start = 10;
         final long end = 30;
         final long card = end - start + 1;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final long[] positions = new long[] {0, 1, card - 2, card - 1};
         final long[] expected = new long[] {10, 11, 29, 30};
         final long[] result = new long[4];
@@ -458,7 +458,7 @@ public class SingleRangeTest {
     public void testRowSequenceIteratorAdvanceRegression0() {
         final long start = 1000;
         final long end = 3000;
-        final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
+        final RowSet ix = new WritableRowSetImpl(SingleRange.make(start, end));
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
         assertTrue(rsIt.hasMore());
         final boolean valid = rsIt.advance(500);

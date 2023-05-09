@@ -40,7 +40,7 @@ import org.jetbrains.annotations.NotNull;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 // endregion extra imports
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.util.SafeCloseable.closeAll;
 
 // region class visibility
 /**
@@ -609,13 +609,13 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             // endmixin rehash
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(buildContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(buildContexts);
 
             hashChunk.close();
             tableLocationsChunk.close();
-            closeArray(writeThroughChunks);
+            closeAll(writeThroughChunks);
 
             sourcePositions.close();
             destinationLocationPositionInWriteThrough.close();
@@ -628,8 +628,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             chunkPositionsToCheckForEquality.close();
             overflowLocationForEqualityCheck.close();
             workingStateEntries.close();
-            closeArray(workingKeyChunks);
-            closeArray(overflowKeyChunks);
+            closeAll(workingKeyChunks);
+            closeAll(overflowKeyChunks);
             chunkPositionsForFetches.close();
             chunkPositionsToInsertInOverflow.close();
             tableLocationsToInsertInOverflow.close();
@@ -1508,9 +1508,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             stateSourceFillContext.close();
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(probeContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(probeContexts);
             hashChunk.close();
             tableLocationsChunk.close();
             workingStateEntries.close();
@@ -1519,7 +1519,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
             overflowLocations.close();
             chunkPositionsForFetches.close();
             equalValues.close();
-            closeArray(workingKeyChunks);
+            closeAll(workingKeyChunks);
             closeSharedContexts();
             // region probe context close
             keyIndices.close();

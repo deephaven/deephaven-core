@@ -160,7 +160,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
 
     @Override
     public String getDescription() {
-        return String.format("RollupTable(%s, %s)", source.getDescription(), Strings.of(groupByColumns));
+        return String.format("RollupTable(%s, %s)", source.getDescription(), Strings.ofColumnNames(groupByColumns));
     }
 
     @Override

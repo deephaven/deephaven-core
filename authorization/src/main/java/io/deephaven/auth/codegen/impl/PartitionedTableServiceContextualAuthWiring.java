@@ -13,6 +13,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.GetTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeRequest;
 import io.deephaven.proto.backplane.grpc.PartitionByRequest;
+import java.lang.Override;
 import java.util.List;
 
 /**
@@ -52,30 +53,42 @@ public interface PartitionedTableServiceContextualAuthWiring {
     void checkPermissionGetTable(AuthContext authContext, GetTableRequest request,
             List<Table> sourceTables);
 
-    class AllowAll implements PartitionedTableServiceContextualAuthWiring {
+    /**
+     * A default implementation that funnels all requests to invoke {@code checkPermission}.
+     */
+    abstract class DelegateAll implements PartitionedTableServiceContextualAuthWiring {
+        protected abstract void checkPermission(AuthContext authContext, List<Table> sourceTables);
+
         public void checkPermissionPartitionBy(AuthContext authContext, PartitionByRequest request,
-                List<Table> sourceTables) {}
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
 
         public void checkPermissionMerge(AuthContext authContext, MergeRequest request,
-                List<Table> sourceTables) {}
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
 
         public void checkPermissionGetTable(AuthContext authContext, GetTableRequest request,
-                List<Table> sourceTables) {}
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
     }
 
-    class DenyAll implements PartitionedTableServiceContextualAuthWiring {
-        public void checkPermissionPartitionBy(AuthContext authContext, PartitionByRequest request,
-                List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
+    /**
+     * A default implementation that allows all requests.
+     */
+    class AllowAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {}
+    }
 
-        public void checkPermissionMerge(AuthContext authContext, MergeRequest request,
-                List<Table> sourceTables) {
-            ServiceAuthWiring.operationNotAllowed();
-        }
-
-        public void checkPermissionGetTable(AuthContext authContext, GetTableRequest request,
-                List<Table> sourceTables) {
+    /**
+     * A default implementation that denies all requests.
+     */
+    class DenyAll extends DelegateAll {
+        @Override
+        protected void checkPermission(AuthContext authContext, List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
     }

@@ -14,7 +14,8 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 /**
- * Evaluates to {@code true} when all of the given {@link #filters() filters} evaluates to {@code true}.
+ * Evaluates to {@code true} when all of the {@link #filters() filters} evaluate to {@code true}, and {@code false} when
+ * any of the {@link #filters() filters} evaluates to {@code false}.
  */
 @Immutable
 @BuildableStyle
@@ -40,10 +41,23 @@ public abstract class FilterAnd extends FilterBase implements Iterable<Filter> {
     @Parameter
     public abstract List<Filter> filters();
 
+    /**
+     * Equivalent to an {@link FilterOr or-filter} with all {@link #filters() filters} inverted.
+     *
+     * @return the inverse filter
+     */
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final FilterOr invert() {
+        final FilterOr.Builder builder = FilterOr.builder();
+        for (Filter filter : filters()) {
+            builder.addFilters(filter.invert());
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

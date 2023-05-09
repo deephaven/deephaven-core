@@ -8,7 +8,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
@@ -24,6 +23,8 @@ import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -44,6 +45,7 @@ import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
@@ -669,6 +671,27 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public static WhereFilter stringContainsFilter(
+            String columnName,
+            String... values) {
+        return stringContainsFilter(MatchType.Regular, columnName, values);
+    }
+
+    public static WhereFilter stringContainsFilter(
+            MatchType matchType,
+            String columnName,
+            String... values) {
+        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
+    }
+
+    public static WhereFilter stringContainsFilter(
+            CaseSensitivity sensitivity,
+            MatchType matchType,
+            @NotNull String columnName,
+            String... values) {
+        return WhereFilterFactory.stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
+    }
+
     public void testStringContainsFilter() {
         Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -681,17 +704,22 @@ public class QueryTableTest extends QueryTableTestBase {
                 new StringGenerator()));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(table.where(filter.apply("S1.contains(`aab`)")),
-                        table.where(new StringContainsFilter("S1", "aab"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`m`)")),
-                        table.where(new StringContainsFilter("S2", "m"))),
-                new TableComparator(table.where(filter.apply("!S2.contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
-                new TableComparator(table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
+                new TableComparator(
+                        table.where(filter.apply("S1.contains(`aab`)")),
+                        table.where(stringContainsFilter("S1", "aab"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`m`)")),
+                        table.where(stringContainsFilter("S2", "m"))),
+                new TableComparator(
+                        table.where(filter.apply("!S2.contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
                                 MatchFilter.MatchType.Regular, "S2", "mA"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`mA`)")),
-                        table.where(new StringContainsFilter("S2", "mA"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`mA`)")),
+                        table.where(stringContainsFilter("S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -1628,107 +1656,6 @@ public class QueryTableTest extends QueryTableTestBase {
 
         TestCase.assertEquals(snappedOfSnap.size(), 2);
         TestCase.assertEquals(snappedOfSnap.getColumn("B").get(0), 2);
-    }
-
-    public void testWhereInDependency() {
-        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
-                col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
-
-        final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
-                col("A", 1, 2, 3), col("B", 2, 4, 6));
-        final Table setTable1 = setTable.where("A > 2");
-        final Table setTable2 = setTable.where("B > 6");
-
-        final DynamicWhereFilter dynamicFilter1 =
-                new DynamicWhereFilter((QueryTable) setTable1, true, MatchPairFactory.getExpressions("A"));
-        final DynamicWhereFilter dynamicFilter2 =
-                new DynamicWhereFilter((QueryTable) setTable2, true, MatchPairFactory.getExpressions("B"));
-
-        final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
-        final Table composed = tableToFilter.where(composedFilter);
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-        });
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(103), col("A", 5), col("B", 8));
-            setTable.notifyListeners(i(103), i(), i());
-
-            TestCase.assertFalse(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-            // this will do the notification for table; which should first fire the recorder for setTable1
-            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the recorder for setTable2
-            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            // this will do the notification for table; which should first fire the merged listener for 1
-            boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-
-            // the next notification should be the merged listener for setTable2
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-            // the dynamicFilter1 updates
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-            // the dynamicFilter2 updates
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-            // now that both filters are complete, we can run the composed listener
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
-
-            TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
-            TestCase.assertTrue(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
-
-            // and we are done
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertFalse(flushed);
-        });
-
-        TableTools.show(composed);
-
-        final Table expected =
-                TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
-
-        assertTableEquals(composed, expected);
     }
 
     public void testWhereInScope() {
@@ -2844,7 +2771,7 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.where("Sym=`aa`"));
             testMemoize(source, t -> t.where("Sym in `aa`, `bb`"));
             testMemoize(source,
-                    t -> t.where(FilterOr.of(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
+                    t -> t.where(Filter.or(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(DisjunctiveFilter
                     .makeDisjunctiveFilter(WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(ConjunctiveFilter

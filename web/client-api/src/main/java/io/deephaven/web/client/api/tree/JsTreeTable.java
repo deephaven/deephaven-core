@@ -899,7 +899,17 @@ public class JsTreeTable extends HasLifecycle {
         return promise.asPromise();
     }
 
+    @JsProperty(name = "isClosed")
+    public boolean isClosed() {
+        return closed;
+    }
+
     public void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+
         JsLog.debug("Closing tree table", this);
 
         connection.unregisterSimpleReconnectable(this);

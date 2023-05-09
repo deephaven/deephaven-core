@@ -4,12 +4,13 @@
 #include "deephaven/client/flight.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
-#include "deephaven/client/utility/utility.h"
 #include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
 using deephaven::client::utility::valueOrThrow;
+using deephaven::dhcore::utility::stringf;
 
 #include <memory>
 

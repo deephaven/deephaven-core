@@ -7,40 +7,8 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
-import io.deephaven.qst.table.AggregateAllTable;
-import io.deephaven.qst.table.AggregateTable;
-import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.DropColumnsTable;
-import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.HeadTable;
-import io.deephaven.qst.table.InputTable;
-import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LazyUpdateTable;
-import io.deephaven.qst.table.MergeTable;
-import io.deephaven.qst.table.NaturalJoinTable;
-import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ParentsVisitor;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
-import io.deephaven.qst.table.ReverseTable;
-import io.deephaven.qst.table.SelectDistinctTable;
-import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SnapshotTable;
-import io.deephaven.qst.table.SnapshotWhenTable;
-import io.deephaven.qst.table.SortTable;
-import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.*;
 import io.deephaven.qst.table.TableSpec.Visitor;
-import io.deephaven.qst.table.TailTable;
-import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.UngroupTable;
-import io.deephaven.qst.table.UpdateByTable;
-import io.deephaven.qst.table.UpdateTable;
-import io.deephaven.qst.table.UpdateViewTable;
-import io.deephaven.qst.table.ViewTable;
-import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereTable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -226,8 +194,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(JoinTable joinTable) {
         final TOPS left = ops(joinTable.left());
         final TABLE right = table(joinTable.right());
-        addOp(joinTable,
-                left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
+        if (joinTable.reserveBits().isPresent()) {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits().getAsInt()));
+        } else {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions()));
+        }
     }
 
     @Override
@@ -241,7 +214,15 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(ReverseAsOfJoinTable raj) {
         final TOPS left = ops(raj.left());
         final TABLE right = table(raj.right());
-        addOp(raj, left.exactJoin(right, raj.matches(), raj.additions()));
+        addOp(raj, left.raj(right, raj.matches(), raj.additions(), raj.rule()));
+    }
+
+    @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        final TOPS left = ops(rangeJoinTable.left());
+        final TABLE right = table(rangeJoinTable.right());
+        addOp(rangeJoinTable, left.rangeJoin(
+                right, rangeJoinTable.exactMatches(), rangeJoinTable.rangeMatch(), rangeJoinTable.aggregations()));
     }
 
     @Override

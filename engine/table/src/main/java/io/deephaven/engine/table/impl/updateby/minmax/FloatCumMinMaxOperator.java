@@ -32,8 +32,8 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatValueChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatValueChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override
@@ -69,7 +69,7 @@ public class FloatCumMinMaxOperator extends BaseFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

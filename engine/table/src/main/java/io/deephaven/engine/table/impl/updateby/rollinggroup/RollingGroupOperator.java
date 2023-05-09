@@ -89,7 +89,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(
+            SafeCloseable.closeAll(
                     groupRowSetSourceFillFromContext,
                     groupRowSetSourceOutputValues,
                     startSourceFillFromContext,
@@ -155,7 +155,7 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             // NOP
         }
 
@@ -297,7 +297,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int influencerChunkSize) {
         return new Context(chunkSize);
     }
 
