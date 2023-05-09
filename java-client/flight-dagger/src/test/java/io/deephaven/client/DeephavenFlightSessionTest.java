@@ -5,7 +5,6 @@ package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.client.impl.SchemaAdapter;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.TableCreator;
@@ -86,10 +85,10 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     @Test
     public void doPutStream() throws Exception {
         try (final TableHandle ten = flightSession.session().execute(TableSpec.empty(10).view("I=i"));
-             // DoGet
-             final FlightStream tenStream = flightSession.stream(ten);
-             // DoPut
-             final TableHandle tenAgain = flightSession.putExport(tenStream)) {
+                // DoGet
+                final FlightStream tenStream = flightSession.stream(ten);
+                // DoPut
+                final TableHandle tenAgain = flightSession.putExport(tenStream)) {
             BarrageUtil.ConvertedArrowSchema tenSchema = BarrageUtil.convertArrowSchema(ten.response());
             BarrageUtil.ConvertedArrowSchema tenAgainSchema = BarrageUtil.convertArrowSchema(tenAgain.response());
             assertThat(tenSchema.tableDef).isEqualTo(tenAgainSchema.tableDef);
