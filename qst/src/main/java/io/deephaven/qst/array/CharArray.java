@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.CharType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,17 @@ public final class CharArray extends PrimitiveArrayBase<Character> {
      */
     public final char[] values() {
         return values;
+    }
+
+    @Override
+    public Character value(int index) {
+        char value = values[index];
+        return value == QueryConstants.NULL_CHAR ? null : value;
+    }
+
+    @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_CHAR;
     }
 
     @Override

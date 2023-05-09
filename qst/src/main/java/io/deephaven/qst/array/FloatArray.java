@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.FloatType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,17 @@ public final class FloatArray extends PrimitiveArrayBase<Float> {
      */
     public final float[] values() {
         return values;
+    }
+
+    @Override
+    public Float value(int index) {
+        float value = values[index];
+        return value == QueryConstants.NULL_FLOAT ? null : value;
+    }
+
+    @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_FLOAT;
     }
 
     @Override

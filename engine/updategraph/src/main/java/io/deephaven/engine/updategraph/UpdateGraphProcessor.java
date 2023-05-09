@@ -567,6 +567,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
+     * @return whether unit test mode is allowed
+     */
+    public boolean isUnitTestModeAllowed() {
+        return ALLOW_UNIT_TEST_MODE;
+    }
+
+    /**
      * Enable the loop watchdog with the specified timeout. A value of 0 disables the watchdog.
      *
      * @implNote Any timeout less than 0 will be clamped to 0.
