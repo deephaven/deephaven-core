@@ -671,7 +671,7 @@ public class DateTimeUtils {
 
         long millis = dateTime.getMillis();
 
-        return (double) (millis + timeZone.getTimeZone().toTimeZone().getOffset(millis)) / 86400000 + 25569;
+        return (double) (millis + java.util.TimeZone.getTimeZone(timeZone.getZoneId()).getOffset(millis)) / 86400000 + 25569;
     }
 
     /**
@@ -688,7 +688,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        final java.util.TimeZone tz = timeZone.getTimeZone().toTimeZone();
+        final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone.getZoneId());
 
         //TODO: test this DST handling
         final long mpo = (long)((excel - 25569) * 86400000);
@@ -1072,8 +1072,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
-        return dateTime.toZonedDateTime(zone);
+        return dateTime.toZonedDateTime(timeZone.getZoneId());
     }
 
     /**

@@ -16,10 +16,7 @@ import java.util.List;
  * In Deephaven queries, these time zones can be referenced using short 2- or 3-character abbreviations.
  * For example, in the date time string '2023-04-05T10:13 NY', 'NY' refers to the #TZ_NY time zone.
  */
-//TODO: remove deprecated
-//TODO: remove Joda exposure / deprecated
 //TODO: test coverage
-//TODO: replace with ZoneId?
 public enum TimeZone {
     /**
      * America/New_York
@@ -128,6 +125,7 @@ public enum TimeZone {
      */
     public static TimeZone TZ_DEFAULT = TZ_NY;
 
+    //TODO: remove Joda exposure / deprecated
     private final DateTimeZone timeZone;
     private final ZoneId zoneId;
 
@@ -136,6 +134,7 @@ public enum TimeZone {
         this.zoneId = ZoneId.of(timeZone);
     }
 
+    //TODO: remove Joda exposure / deprecated
     /**
      * Returns the underlying Joda time zone for this TimeZone.
      *
@@ -146,6 +145,7 @@ public enum TimeZone {
         return timeZone;
     }
 
+    //TODO: rename to getTimeZone
     /**
      * Returns the {@link ZoneId} for this time zone;
      * 
@@ -153,33 +153,6 @@ public enum TimeZone {
      */
     public ZoneId getZoneId() {
         return zoneId;
-    }
-
-    /**
-     * Find the corresponding TimeZone for a given Joda DateTimeZone.
-     *
-     * @param dateTimeZone the time zone to search for
-     *
-     * @return the corresponding TimeZone, or null if none was found
-     */
-    @Deprecated
-    public static TimeZone lookup(DateTimeZone dateTimeZone) {
-        for (TimeZone zone : values()) {
-            if (zone.getTimeZone().equals(dateTimeZone)) {
-                return zone;
-            }
-        }
-        return lookupByOffset(dateTimeZone);
-    }
-
-    private static TimeZone lookupByOffset(DateTimeZone dateTimeZone) {
-        for (TimeZone zone : values()) {
-            if (zone.getTimeZone().getOffset(System.currentTimeMillis()) == dateTimeZone
-                    .getOffset(System.currentTimeMillis())) {
-                return zone;
-            }
-        }
-        return null;
     }
 
     /**
@@ -193,11 +166,14 @@ public enum TimeZone {
         final long now = System.currentTimeMillis();
 
         allZones.sort((t1, t2) -> {
-            int ret = t2.getTimeZone().getOffset(now) - t1.getTimeZone().getOffset(now);
+            final java.util.TimeZone tz1 = java.util.TimeZone.getTimeZone(t1.getZoneId());
+            final java.util.TimeZone tz2 = java.util.TimeZone.getTimeZone(t1.getZoneId());
+
+            int ret = tz2.getOffset(now) - tz1.getOffset(now);
             if (ret != 0) {
                 return ret;
             } else {
-                ret = t1.getTimeZone().getID().compareTo(t2.getTimeZone().getID());
+                ret = t1.getZoneId().getId().compareTo(t2.getZoneId().getId());
                 return ret != 0 ? ret : t1.name().compareTo(t2.name());
             }
         });
