@@ -3,8 +3,9 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
@@ -240,6 +241,8 @@ public class QueryTableRangeJoinTest {
                 new String[]{null, ">?@", "DEF", "IJK", "OPQ", "UVW", "[\\]"},
                 new String[]{null, "ABC", "DEF", "FGH", "LMN", "OPQ", "RST", "UVW", "XYZ"});
 
+        private static final int NUM_VALID_UNIQUE_RIGHT_VALUES = 8;
+
         private static final int[] EXPECTED_LT     = new int[] {1, 1,     3, 4, 6, 8, EMPTY, NULL_INT};
         private static final int[] EXPECTED_LEQ    = new int[] {1, 1,     2, 4, 5, 7, EMPTY, NULL_INT};
         private static final int[] EXPECTED_LEQAP  = new int[] {1, 1,     2, 3, 5, 7, 8,     NULL_INT};
@@ -373,16 +376,18 @@ public class QueryTableRangeJoinTest {
                     "RRI=(int) (BB < 20 ? (i / 2) % urCount : (i / 20) % urCount)",
                     "RRV=urValues[RRI]");
 
+            final RangeJoinMatch rangeJoinMatch = RangeJoinMatch.parse(rangeMatch);
+
             // Dense lefts
-            joinAndVerify(type, lt, rtSingles, rangeMatch);
-            joinAndVerify(type, lt, rtDoublesAndEmpties, rangeMatch);
-            joinAndVerify(type, lt, rtGrowing, rangeMatch);
+            joinAndVerify(type, lt, rtSingles, rangeJoinMatch);
+            joinAndVerify(type, lt, rtDoublesAndEmpties, rangeJoinMatch);
+            joinAndVerify(type, lt, rtGrowing, rangeJoinMatch);
 
             // Sparse lefts
             final Table ltSparse = sparsify(lt, 2);
-            joinAndVerify(type, ltSparse, rtSingles, rangeMatch);
-            joinAndVerify(type, ltSparse, rtDoublesAndEmpties, rangeMatch);
-            joinAndVerify(type, ltSparse, rtGrowing, rangeMatch);
+            joinAndVerify(type, ltSparse, rtSingles, rangeJoinMatch);
+            joinAndVerify(type, ltSparse, rtDoublesAndEmpties, rangeJoinMatch);
+            joinAndVerify(type, ltSparse, rtGrowing, rangeJoinMatch);
         }
     }
 
@@ -390,68 +395,113 @@ public class QueryTableRangeJoinTest {
             @NotNull final Type type,
             @NotNull final Table left,
             @NotNull final Table right,
-            @NotNull final String rangeMatch) {
+            @NotNull final RangeJoinMatch rangeMatch) {
         final String rrvFilter = type == Type.DOUBLE || type == Type.FLOAT
                 ? "!isNaN(RRV) && !isNull(RRV)"
                 : "!isNull(RRV)";
-        final Table result = left.rangeJoin(right, List.of("BB", rangeMatch), List.of(AggGroup("RRI", "RRV")))
-                .update("FirstRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(0)",
-                        "LastRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(RRI.size() - 1)")
-                .naturalJoin(right.where(rrvFilter).countBy("RightCount", "BB"), "BB", "RightCount");
-        final ColumnSource<Integer> expectedFirstsSource = result.getColumnSource("ExpectedFirstRRI", int.class);
-        final ColumnSource<Integer> expectedLastsSource = result.getColumnSource("ExpectedLastRRI", int.class);
-        final ColumnSource<Integer> actualFirstsSource = result.getColumnSource("FirstRRI", int.class);
-        final ColumnSource<Integer> actualLastsSource = result.getColumnSource("LastRRI", int.class);
-        final ColumnSource<Long> rightCountsSource = result.getColumnSource("RightCount", long.class);
+        final Collection<? extends JoinMatch> exactMatches = List.of(ColumnName.of("BB"));
+        final Table result = left.rangeJoin(right, exactMatches, rangeMatch, List.of(AggGroup("RRI", "RRV")))
+                .updateView(
+                        String.format("FirstRRV=(%s) (RRV == null || RRV.isEmpty() ? null : RRV.get(0))",
+                                type.className),
+                        String.format("LastRRV=(%s) (RRV == null || RRV.isEmpty() ? null : RRV.get(RRV.size() - 1))",
+                                type.className),
+                        "FirstRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(0)",
+                        "LastRRI=RRI == null ? null : RRI.isEmpty() ? -1 : RRI.get(RRI.size() - 1)",
+                        "RangeSize=RRI == null ? null : RRI.isEmpty() ? 0 : RRI.size()",
+                        "FirstIsPreceding=isNull(LSV) || isNull(FirstRRV) ? null : LSV > FirstRRV",
+                        "LastIsFollowing=isNull(LEV) || isNull(LastRRV) ? null : LEV < LastRRV")
+                .naturalJoin(right.where(rrvFilter).countBy("RightSize", "BB"), "BB", "RightSize");
+        final ColumnSource<Integer> expectedFirstRRISource = result.getColumnSource("ExpectedFirstRRI", int.class);
+        final ColumnSource<Integer> expectedLastRRISource = result.getColumnSource("ExpectedLastRRI", int.class);
+        final ColumnSource<Integer> actualFirstRRISource = result.getColumnSource("FirstRRI", int.class);
+        final ColumnSource<Integer> actualLastRRISource = result.getColumnSource("LastRRI", int.class);
+        final ColumnSource<Long> actualRangeSizeSource = result.getColumnSource("RangeSize", long.class);
+        final ColumnSource<Boolean> firstIsPrecedingSource = result.getColumnSource("FirstIsPreceding", Boolean.class);
+        final ColumnSource<Boolean> lastIsFollowingSource = result.getColumnSource("LastIsFollowing", Boolean.class);
+        final ColumnSource<Long> rightSizeSource = result.getColumnSource("RightSize", long.class);
         long rowPosition = 0;
         // @formatter:off
         try (final RowSequence.Iterator rowsIterator = result.getRowSet().getRowSequenceIterator();
              final SharedContext sharedContext = SharedContext.makeSharedContext();
-             final ChunkSource.GetContext expectedFirstsGetContext = expectedFirstsSource
+             final ChunkSource.GetContext expectedFirstRRIGetContext = expectedFirstRRISource
                      .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
-             final ChunkSource.GetContext expectedLastsGetContext = expectedLastsSource
+             final ChunkSource.GetContext expectedLastRRIGetContext = expectedLastRRISource
                      .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
-             final ChunkSource.GetContext actualFirstsGetContext = actualFirstsSource
+             final ChunkSource.GetContext actualFirstRRIGetContext = actualFirstRRISource
                      .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
-             final ChunkSource.GetContext actualLastsGetContext = actualLastsSource
+             final ChunkSource.GetContext actualLastRRIGetContext = actualLastRRISource
                      .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
-             final ChunkSource.GetContext rightCountsGetContext = rightCountsSource
+             final ChunkSource.GetContext actualRangeSizeGetContext = actualRangeSizeSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext firstIsPrecedingGetContext = firstIsPrecedingSource
+                     .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext lastIsFollowingGetContext = lastIsFollowingSource
+                .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext);
+             final ChunkSource.GetContext rightSizeGetContext = rightSizeSource
                      .makeGetContext(VERIFY_CHUNK_SIZE, sharedContext)) {
             // @formatter:on
             while (rowsIterator.hasMore()) {
                 final RowSequence rowsSlice = rowsIterator.getNextRowSequenceWithLength(VERIFY_CHUNK_SIZE);
-                final IntChunk<? extends Values> expectedFirstsChunk = expectedFirstsSource
-                        .getChunk(expectedFirstsGetContext, rowsSlice).asIntChunk();
-                final IntChunk<? extends Values> expectedLastsChunk = expectedLastsSource
-                        .getChunk(expectedLastsGetContext, rowsSlice).asIntChunk();
-                final IntChunk<? extends Values> actualFirstsChunk = actualFirstsSource
-                        .getChunk(actualFirstsGetContext, rowsSlice).asIntChunk();
-                final IntChunk<? extends Values> actualLastsChunk = actualLastsSource
-                        .getChunk(actualLastsGetContext, rowsSlice).asIntChunk();
-                final LongChunk<? extends Values> rightCountsChunk = rightCountsSource
-                        .getChunk(rightCountsGetContext, rowsSlice).asLongChunk();
+                final IntChunk<? extends Values> expectedFirstRRIChunk = expectedFirstRRISource
+                        .getChunk(expectedFirstRRIGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> expectedLastRRIChunk = expectedLastRRISource
+                        .getChunk(expectedLastRRIGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> actualFirstRRIChunk = actualFirstRRISource
+                        .getChunk(actualFirstRRIGetContext, rowsSlice).asIntChunk();
+                final IntChunk<? extends Values> actualLastRRIChunk = actualLastRRISource
+                        .getChunk(actualLastRRIGetContext, rowsSlice).asIntChunk();
+                final LongChunk<? extends Values> actualRangeSizeChunk = actualRangeSizeSource
+                        .getChunk(actualRangeSizeGetContext, rowsSlice).asLongChunk();
+                final ObjectChunk<Boolean, ? extends Values> firstIsPrecedingChunk = firstIsPrecedingSource
+                        .getChunk(firstIsPrecedingGetContext, rowsSlice).asObjectChunk();
+                final ObjectChunk<Boolean, ? extends Values> lastIsFollowingChunk = lastIsFollowingSource
+                        .getChunk(lastIsFollowingGetContext, rowsSlice).asObjectChunk();
+                final LongChunk<? extends Values> rightSizeChunk = rightSizeSource
+                        .getChunk(rightSizeGetContext, rowsSlice).asLongChunk();
 
                 final int sliceSize = rowsSlice.intSize();
                 for (int ii = 0; ii < sliceSize; ++ii) {
-                    final int expectedFirst = expectedFirstsChunk.get(ii);
-                    final int expectedLast = expectedLastsChunk.get(ii);
-                    final int actualFirst = actualFirstsChunk.get(ii);
-                    final int actualLast = actualLastsChunk.get(ii);
-                    final long rightSize = rightCountsChunk.get(ii);
+                    final int expectedFirstRRI = expectedFirstRRIChunk.get(ii);
+                    final int expectedLastRRI = expectedLastRRIChunk.get(ii);
+                    final int actualFirstRRI = actualFirstRRIChunk.get(ii);
+                    final int actualLastRRI = actualLastRRIChunk.get(ii);
+                    final long actualRangeSize = actualRangeSizeChunk.get(ii);
+                    final Boolean firstIsPreceding = firstIsPrecedingChunk.get(ii);
+                    final Boolean lastIsFollowing = lastIsFollowingChunk.get(ii);
+                    final long rightSize = rightSizeChunk.get(ii);
 
                     try {
-                        if (expectedFirst == NULL_INT || expectedLast == NULL_INT) {
-                            assertThat(actualFirst).isEqualTo(NULL_INT);
-                            assertThat(actualLast).isEqualTo(NULL_INT);
+                        if (expectedFirstRRI == NULL_INT || expectedLastRRI == NULL_INT) {
+                            assertThat(actualFirstRRI).isEqualTo(NULL_INT);
+                            assertThat(actualLastRRI).isEqualTo(NULL_INT);
                         } else if (rightSize == 0 || rightSize == NULL_LONG) {
-                            assertThat(actualFirst).isEqualTo(EMPTY);
-                            assertThat(actualLast).isEqualTo(EMPTY);
-                        } else if (expectedFirst == EMPTY || expectedLast == EMPTY) {
-                            assertThat(actualFirst).isEqualTo(EMPTY);
-                            assertThat(actualLast).isEqualTo(EMPTY);
+                            assertThat(actualFirstRRI).isEqualTo(EMPTY);
+                            assertThat(actualLastRRI).isEqualTo(EMPTY);
+                        } else if (expectedFirstRRI == EMPTY || expectedLastRRI == EMPTY) {
+                            assertThat(actualFirstRRI).isEqualTo(EMPTY);
+                            assertThat(actualLastRRI).isEqualTo(EMPTY);
                         } else {
-                            assertThat(actualFirst).isEqualTo(expectedFirst);
-                            assertThat(actualLast).isEqualTo(expectedLast);
+                            assertThat(actualFirstRRI).isEqualTo(expectedFirstRRI);
+                            assertThat(actualLastRRI).isEqualTo(expectedLastRRI);
+
+                            Assert.eqZero(rightSize % Type.NUM_VALID_UNIQUE_RIGHT_VALUES,
+                                    "rightSize % Type.NUM_VALID_UNIQUE_RIGHT_VALUES");
+                            final long multiplier = rightSize / Type.NUM_VALID_UNIQUE_RIGHT_VALUES;
+                            int adjustment = 0;
+                            if (Boolean.TRUE.equals(firstIsPreceding)) {
+                                assertThat(rangeMatch.rangeStartRule())
+                                        .isEqualTo(RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING);
+                                ++adjustment;
+                            }
+                            if (Boolean.TRUE.equals(lastIsFollowing)) {
+                                assertThat(rangeMatch.rangeEndRule())
+                                        .isEqualTo(RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING);
+                                ++adjustment;
+                            }
+                            final int indexRangeSize = actualLastRRI - actualFirstRRI + 1;
+                            final long expectedRangeSize = adjustment + (indexRangeSize - adjustment) * multiplier;
+                            assertThat(actualRangeSize).isEqualTo(expectedRangeSize);
                         }
                     } catch (AssertionFailedError e) {
                         throw new AssertionFailedError(String.format("Failure for type %s at row position %s",
