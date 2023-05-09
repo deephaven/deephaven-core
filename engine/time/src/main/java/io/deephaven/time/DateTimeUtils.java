@@ -43,6 +43,7 @@ public class DateTimeUtils {
     //TODO: review function subsections for missing functions
     //TODO: methods to use ZoneId instead of just TimeZone
     //TODO: remove TZ_DEFAULT / add @see for TZ_DEFUALT
+    //TODO: add String timeZone methods? -- probably No
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -874,6 +875,7 @@ public class DateTimeUtils {
      * @param nanos nanoseconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -926,6 +928,7 @@ public class DateTimeUtils {
      * @param micros microseconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -977,6 +980,7 @@ public class DateTimeUtils {
      * @param millis milliseconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -1029,6 +1033,7 @@ public class DateTimeUtils {
      * @param seconds seconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -1078,6 +1083,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -1257,52 +1263,6 @@ public class DateTimeUtils {
                 .toInstant(); // Instant
     }
 
-//    /**
-//     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-//     *
-//     * @param dateTime date time to convert.
-//     * @param timeZone time zone.
-//     * @return {@link ZonedDateTime}, or null if any input is null.
-//     */
-//    @ScriptApi
-//    @Nullable
-//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable ZoneId timeZone) {
-//        if (dateTime == null || timeZone == null) {
-//            return null;
-//        }
-//
-//        return ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone);
-//    }
-
-//    /**
-//     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-//     *
-//     * @param dateTime date time to convert.
-//     * @param timeZone time zone.
-//     * @return {@link ZonedDateTime}, or null if any input is null.
-//     */
-//    @ScriptApi
-//    @Nullable
-//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable TimeZone timeZone) {
-//        if (dateTime == null || timeZone == null) {
-//            return null;
-//        }
-//
-//        return toZonedDateTime(dateTime, timeZone.getZoneId());
-//    }
-
-//    /**
-//     * Converts a {@link DateTime} to a {@link ZonedDateTime} using the default time zone.
-//     *
-//     * @param dateTime date time to convert.
-//     * @return {@link ZonedDateTime}, or null if any input is null.
-//     */
-//    @ScriptApi
-//    @Nullable
-//    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime) {
-//        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
-//    }
-
     /**
      * Converts a date time to a {@link ZonedDateTime}.
      *
@@ -1342,6 +1302,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link ZonedDateTime}, or null if any input is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
@@ -1404,23 +1365,6 @@ public class DateTimeUtils {
         return toZonedDateTime(dateTime, timeZone).toLocalDate();
     }
 
-//    /**
-//     * Converts a date time to a {@link LocalDate} with the specified time zone.
-//     *
-//     * @param dateTime date time to convert.
-//     * @param timeZone time zone.
-//     * @return {@link LocalDate}, or null if any input is null.
-//     */
-//    @Nullable
-//    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-//        if(dateTime == null || timeZone == null){
-//            return null;
-//        }
-//
-//        //noinspection ConstantConditions
-//        return toZonedDateTime(dateTime, timeZone).toLocalDate();
-//    }
-
     /**
      * Converts a date time to a {@link LocalDate} with the specified time zone.
      *
@@ -1443,6 +1387,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link LocalDate}, or null if any input is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
     public LocalDate toLocalDate(@Nullable final DateTime dateTime) {
@@ -1492,6 +1437,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link LocalDate}, or null if any input is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
     public LocalDate toLocalDate(@Nullable final Instant dateTime) {
@@ -1501,23 +1447,6 @@ public class DateTimeUtils {
 
         return toLocalDate(dateTime, TimeZone.TZ_DEFAULT);
     }
-
-    //    /**
-//     * Converts a date time to a {@link LocalDate} with the default time zone.
-//     *
-//     * @param dateTime date time to convert.
-//     * @param timeZone time zone.
-//     * @return {@link LocalDate}, or null if any input is null.
-//     */
-//    @Nullable
-//    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-//        if(dateTime == null || timeZone == null){
-//            return null;
-//        }
-//
-//        //noinspection ConstantConditions
-//        return toZonedDateTime(dateTime).toLocalDate();
-//    }
 
     /**
      * Converts a date time to a {@link LocalDate} with the time zone in the {@link ZonedDateTime}.
@@ -1569,6 +1498,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link LocalTime}, or null if any input is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
     public LocalTime toLocalTime(@Nullable final Instant dateTime) {
@@ -1613,6 +1543,7 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @return {@link LocalTime}, or null if any input is null.
+     * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
     public LocalTime toLocalTime(@Nullable final DateTime dateTime) {
@@ -2484,6 +2415,88 @@ public class DateTimeUtils {
         return ret;
     }
 
+    /**
+     * Converts a time zone string to a {@link TimeZone}.
+     *
+     * @param s string to be converted
+     * @return a {@link TimeZone} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @see TimeZone
+     */
+    @ScriptApi
+    @Nullable
+    public static TimeZone parseTimeZoneQuiet(@Nullable final String s) {
+        if( s == null){
+            return null;
+        }
+
+        try {
+            return TimeZone.valueOf(s);
+        } catch (Exception ex){
+            return null;
+        }
+    }
+
+    /**
+     * Converts a time zone string to a {@link TimeZone}.
+     *
+     * @param s string to be converted
+     * @return a {@link TimeZone} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted.
+     * @see TimeZone
+     */
+    @ScriptApi
+    @NotNull
+    public static TimeZone parseTimeZone(@Nullable final String s) {
+        final TimeZone ret = parseTimeZoneQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse time zone : " + s);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Converts a time zone string to a {@link ZoneId}.
+     *
+     * @param s string to be converted
+     * @return a {@link ZoneId} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @see ZoneId
+     */
+    @ScriptApi
+    @Nullable
+    public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
+        if( s == null){
+            return null;
+        }
+
+        try {
+            return ZoneId.of(s);
+        } catch (Exception ex){
+            return null;
+        }
+    }
+
+    /**
+     * Converts a time zone string to a {@link ZoneId}.
+     *
+     * @param s string to be converted
+     * @return a {@link ZoneId} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted.
+     * @see ZoneId
+     */
+    @ScriptApi
+    @NotNull
+    public static ZoneId parseTimeZoneId(@Nullable final String s) {
+        final ZoneId ret = parseTimeZoneIdQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse time zone : " + s);
+        }
+
+        return ret;
+    }
+
     // endregion
 
     // region Format Times
@@ -2542,26 +2555,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
-     * @see ZoneId
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final String timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDateTime(dateTime, ZoneId.of(timeZone));
-    }
-
-    /**
      * Returns a DateTime formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
@@ -2593,26 +2586,6 @@ public class DateTimeUtils {
         }
 
         return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone));
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
-     * @see ZoneId
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final String timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDate(dateTime, ZoneId.of(timeZone));
     }
 
     /**

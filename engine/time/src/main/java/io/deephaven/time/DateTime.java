@@ -23,12 +23,16 @@ import java.util.Date;
  * It is stored as a signed 64-bit long, representing nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT).
  * This provides a range from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC.
  * The minimum long value is reserved for representing null values and therefore is not permitted as a valid time.
+ *
+ * @see DateTimeUtils
  */
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
     //TODO: curate API
     //TODO: test coverage
+    //TODO: can methods be removed from here?
+    //TODO: remove String timeZone methods?
 
     private static final long serialVersionUID = -9077991715632523353L;
 
@@ -199,6 +203,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * Convert this DateTime to a {@link ZonedDateTime} with the system default time zone.
      *
      * @return a {@link ZonedDateTime}
+     * @see TimeZone#TZ_DEFAULT
      */
     @NotNull
     public ZonedDateTime toZonedDateTime() {
@@ -258,6 +263,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * Convert this DateTime to a {@link LocalDate} with the system default time zone.
      *
      * @return the {@link LocalDate}
+     * @see TimeZone#TZ_DEFAULT
      */
     @NotNull
     public LocalDate toLocalDate() {
@@ -305,11 +311,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     //TODO remove TZ_DEFAULT methods?
-    //TODO: document TZ_DEFAULT with @see?
     /**
      * Convert this DateTime to a {@link LocalTime} with the system default time zone.
      *
      * @return the {@link LocalTime}
+     * @see TimeZone#TZ_DEFAULT
      */
     @NotNull
     public LocalTime toLocalTime() {
@@ -465,18 +471,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
      * @return a string representation of this DateTime
      * @see ZoneId
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     * @throws RuntimeException if the timeZone is null or cannot be converted.
      */
     @NotNull
     public String toString(@NotNull final String timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-
-        //noinspection ConstantConditions
-        return DateTimeUtils.formatDateTime(this, timeZone);
+        return DateTimeUtils.formatDateTime(this, DateTimeUtils.parseTimeZone(timeZone));
     }
 
     /**
@@ -485,6 +484,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
      * @return a date string representation of this DateTime in the default time zone.
+     * @see TimeZone#TZ_DEFAULT
      */
     @NotNull
     public String toDateString() {
@@ -535,19 +535,13 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      *
      * @param timeZone the time zone for formatting the string.  The timezone string must be a valid value specified in {@link ZoneId}.
      * @return a date string representation of this DateTime in the provided {@link ZoneId}.
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
+     * @throws RuntimeException if the timeZone is null or cannot be converted.
      * @see ZoneId
      */
     @NotNull
     public String toDateString(@NotNull final String timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-
         //noinspection ConstantConditions
-        return DateTimeUtils.formatDate(this, timeZone);
+        return DateTimeUtils.formatDate(this, DateTimeUtils.parseTimeZone(timeZone));
     }
 
     // endregion
