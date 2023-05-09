@@ -79,8 +79,10 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        }
 
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
@@ -113,6 +115,10 @@ public abstract class DeephavenApiServerTestBase {
             server.server().join();
         } finally {
             LogBufferGlobal.clear(logBuffer);
+        }
+
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 
