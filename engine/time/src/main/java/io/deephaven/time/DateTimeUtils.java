@@ -1623,12 +1623,13 @@ public class DateTimeUtils {
             return null;
         }
 
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis());
+        final org.joda.time.Period p = period.getJodaPeriod();
+
         if (period.isPositive()) {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
+            return new DateTime(millisToNanos(dt.plus(p).getMillis()) + dateTime.getNanosPartial());
         } else {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
+            return new DateTime(millisToNanos(dt.minus(p).getMillis()) + dateTime.getNanosPartial());
         }
     }
 
@@ -1666,12 +1667,13 @@ public class DateTimeUtils {
             return null;
         }
 
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis());
+        final org.joda.time.Period p = period.getJodaPeriod();
+
         if (period.isPositive()) {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
+            return new DateTime(millisToNanos(dt.minus(p).getMillis()) + dateTime.getNanosPartial());
         } else {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
+            return new DateTime(millisToNanos(dt.plus(p).getMillis()) + dateTime.getNanosPartial());
         }
     }
 
@@ -2651,7 +2653,8 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfSecond()) + dateTime.getNanosPartial();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return millisToNanos(dt.getMillisOfSecond()) + dateTime.getNanosPartial();
     }
 
     /**
@@ -2685,7 +2688,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getMillisOfSecond();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getMillisOfSecond();
     }
 
     /**
@@ -2702,7 +2706,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getSecondOfMinute();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getSecondOfMinute();
     }
 
     /**
@@ -2719,7 +2724,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getMinuteOfHour();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getMinuteOfHour();
     }
 
     /**
@@ -2736,7 +2742,8 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfDay()) + dateTime.getNanosPartial();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return millisToNanos(dt.getMillisOfDay()) + dateTime.getNanosPartial();
     }
 
     /**
@@ -2753,7 +2760,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getMillisOfDay();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getMillisOfDay();
     }
 
     /**
@@ -2770,7 +2778,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getSecondOfDay();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getSecondOfDay();
     }
 
     /**
@@ -2787,7 +2796,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getMinuteOfDay();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getMinuteOfDay();
     }
 
     /**
@@ -2804,7 +2814,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getHourOfDay();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getHourOfDay();
     }
 
     /**
@@ -2821,7 +2832,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getDayOfWeek();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getDayOfWeek();
     }
 
     /**
@@ -2838,7 +2850,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getDayOfMonth();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getDayOfMonth();
     }
 
     /**
@@ -2855,7 +2868,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getDayOfYear();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getDayOfYear();
     }
 
     /**
@@ -2872,7 +2886,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getMonthOfYear();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getMonthOfYear();
     }
 
     /**
@@ -2888,7 +2903,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getYear();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getYear();
     }
 
     /**
@@ -2904,7 +2920,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
+        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
+        return dt.getYearOfCentury();
     }
 
     /**

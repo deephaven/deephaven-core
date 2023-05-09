@@ -29,10 +29,6 @@ public class TestDateTime extends BaseArrayTestCase {
 
         TestCase.assertEquals(new Date(jodaDateTime.getMillis()), dateTime.getDate());
 
-        TestCase.assertEquals(jodaDateTime, dateTime.getJodaDateTime());
-
-        TestCase.assertEquals(TimeZone.TZ_NY.getTimeZone(), dateTime.getJodaDateTime(TimeZone.TZ_NY).getZone());
-
         TestCase.assertTrue(new DateTime(123456).equals(new DateTime(123456)));
 
         TestCase.assertEquals(-1, new DateTime(123456).compareTo(new DateTime(123457)));

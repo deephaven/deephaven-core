@@ -380,41 +380,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     // endregion
 
-    // region Joda DateTime flavors
-
-    //TODO: remove deprecated JODA
-    /**
-     * Convert this DateTime to a Joda DateTime.
-     *
-     * This DateTime will be truncated to milliseconds.
-     *
-     * @return a Joda DateTime representing this DateTime
-     * @deprecated use {@link #toZonedDateTime(ZoneId)} instead
-     */
-    @Deprecated
-    public org.joda.time.DateTime getJodaDateTime() {
-        return new org.joda.time.DateTime(getMillis());
-    }
-
-    //TODO: remove deprecated JODA
-    /**
-     * Convert this DateTime to a Joda DateTime.
-     *
-     * This DateTime will be truncated to milliseconds.
-     *
-     * @param timeZone the timezone for the created Joda DateTime
-     *
-     * @return a Joda DateTime representing this DateTime
-     * @deprecated use {@link #toZonedDateTime(ZoneId)} instead
-     */
-    @Deprecated
-    public org.joda.time.DateTime getJodaDateTime(TimeZone timeZone) {
-        return new org.joda.time.DateTime(getMillis(), timeZone.getTimeZone());
-    }
-
-    // endregion
-
-
     // region String formatting
 
     @Override
