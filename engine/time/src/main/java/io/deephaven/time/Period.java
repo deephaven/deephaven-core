@@ -3,6 +3,8 @@
  */
 package io.deephaven.time;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -29,11 +31,10 @@ public class Period implements Comparable<Period>, Serializable {
      * Create a new Period initialized to the provided period string.
      *
      * @param s string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
-     *          one minute, 1WT1H for one week plus one hour.
+     *          one minute, 1WT1H for one week plus one hour.  For seconds, n can be a decimal representing partial
+     *          seconds down to the nanosecond.
      */
-    //TODO: how are subseconds done?
-    //TODO: null annotations
-    public Period(String s) {
+    public Period(@NotNull String s) {
         char[] ret = s.toCharArray();
 
         for (int i = 0; i < ret.length; i++) {
@@ -50,27 +51,27 @@ public class Period implements Comparable<Period>, Serializable {
     }
 
     private void init() {
-        isPositive = periodString.charAt(0) != '-'
+        isPositive = periodString.charAt(0) != '-';
         duration = java.time.Duration.parse("P" + (isPositive() ? periodString : periodString.substring(1)));
     }
 
-    //TODO: document
-    //TODO: remove?
-    //TODO: null annotations
     /**
-     * Get the {@link java.time.Duration} associated with this period.  The {@link java.time.Duration}
-     * @return
+     * Get the {@link java.time.Duration} associated with this period.  The {@link java.time.Duration} is the
+     * absolute value of the period and must be interpreted with {@link #isPositive()}.
+     *
+     * @return duration.
+     * @see #isPositive()
      */
+    @NotNull
     java.time.Duration getDuration() {
         return duration;
     }
 
-    //TOOD: clean up all plus / minus math
-    //TODO: get rid of the isPositive and just let Duration do it.
     /**
      * Determines if the time period is positive.
      *
      * @return true if the period is positive, and false otherwise.
+     * @see #getDuration()
      */
     public boolean isPositive() {
         return isPositive;

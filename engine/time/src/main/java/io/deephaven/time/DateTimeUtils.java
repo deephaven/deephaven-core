@@ -1923,7 +1923,8 @@ public class DateTimeUtils {
     //TODO: think through parseNanos vs parseNanosQuiet
     /**
      * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
-     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
+     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for
+     * one week plus one hour.  For seconds, n can be a decimal representing partial seconds down to the nanosecond.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
