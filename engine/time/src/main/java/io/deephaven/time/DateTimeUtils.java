@@ -39,6 +39,7 @@ public class DateTimeUtils {
     //TODO: methods to use ZoneId instead of just TimeZone
     //TODO: remove TZ_DEFAULT / add @see for TZ_DEFUALT
     //TODO: add String timeZone methods? -- probably No
+    //TODO: parse more generalized timezone
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -2413,6 +2414,7 @@ public class DateTimeUtils {
             // ignore
         }
         try {
+            //TODO: support zone ID as well
             TimeZone timeZone = null;
             String dateTimeString = null;
             if (DATETIME_PATTERN.matcher(s).matches()) {
@@ -2427,17 +2429,8 @@ public class DateTimeUtils {
             if (timeZone == null) {
                 return null;
             }
-            //TODO: can this be simplified using LocalDateTime?
-            int decimalIndex = dateTimeString.indexOf('.');
-            if (decimalIndex == -1) {
-                //TODO: is this correct?
-                return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
-            } else {
-                final long subsecondNanos = parseNanosInternal(dateTimeString.substring(decimalIndex + 1));
 
-                //TODO: is this correct?
-                return toDateTime(java.time.LocalDateTime.parse(dateTimeString.substring(0, decimalIndex)).atZone(timeZone.getZoneId()));
-            }
+            return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
         } catch (Exception e) {
             // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
         }
@@ -2807,9 +2800,18 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
+    //TODO: get rid of parsing the TimeZone?
+    //TODO: rename
     public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
         if( s == null){
             return null;
+        }
+
+        //TODO: needed -- support the inverse for creating a TimeZone?
+        final @Nullable TimeZone tz = parseTimeZoneQuiet(s);
+
+        if( tz != null ){
+            return tz.getZoneId();
         }
 
         try {

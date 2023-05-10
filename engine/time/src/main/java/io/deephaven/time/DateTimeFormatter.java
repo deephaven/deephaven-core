@@ -17,7 +17,8 @@ public class DateTimeFormatter {
     //TODO: test coverage
 
     private final String pattern;
-    private final Map<ZoneId, java.time.format.DateTimeFormatter> formatCache = new HashMap<>(3);
+    private final Map<TimeZone, java.time.format.DateTimeFormatter> formatCacheTZ = new HashMap<>(3);
+    private final Map<ZoneId, java.time.format.DateTimeFormatter> formatCacheID = new HashMap<>(3);
 
     /**
      * Creates a new date time formatter using the default time zone.
@@ -52,7 +53,12 @@ public class DateTimeFormatter {
     }
 
     private java.time.format.DateTimeFormatter getFormatter(ZoneId tz) {
-        return formatCache.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
+        return formatCacheID.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
+                .ofPattern(pattern.replaceAll("%t", '\'' + tz.getId() + '\'')));
+    }
+
+    private java.time.format.DateTimeFormatter getFormatter(TimeZone tz) {
+        return formatCacheTZ.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
                 .ofPattern(pattern.replaceAll("%t", '\'' + tz.toString().substring(3) + '\'')));
     }
 
@@ -77,7 +83,7 @@ public class DateTimeFormatter {
      */
     @NotNull
     public String format(@NotNull final DateTime dateTime, @NotNull final TimeZone timeZone) {
-        return format(dateTime, timeZone.getZoneId());
+        return dateTime.toInstant().atZone(timeZone.getZoneId()).format(getFormatter(timeZone));
     }
 
     /**
@@ -94,7 +100,9 @@ public class DateTimeFormatter {
 
     @Override
     public String toString() {
-        return format(DateTime.now());
+        return "DateTimeFormatter{" +
+                "pattern='" + pattern + '\'' +
+                '}';
     }
 
     /**

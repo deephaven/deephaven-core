@@ -8,7 +8,6 @@ package io.deephaven.time;
  *
  * @see DateTimeFormatter
  */
-//TODO: document
 //TODO: test coverage
 public enum DateTimeFormatters {
     // @formatter:off
