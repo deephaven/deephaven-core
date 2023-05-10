@@ -40,6 +40,7 @@ public class DateTimeUtils {
     //TODO: remove TZ_DEFAULT / add @see for TZ_DEFUALT
     //TODO: add String timeZone methods? -- probably No
     //TODO: parse more generalized timezone
+    //TODO: what are the @ScriptApi annotations???
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -303,7 +304,7 @@ public class DateTimeUtils {
         return Objects.requireNonNullElse(clock, Clock.system());
     }
 
-    //TODO: what are the script annotations???
+    //TODO: instant
     /**
      * Provides the current {@link DateTime} according to the current clock.
      * Under most circumstances, this method will return the current system time, but during replay simulations,
@@ -320,6 +321,7 @@ public class DateTimeUtils {
         return DateTime.of(currentClock());
     }
 
+    //TODO: instant
     /**
      * Provides the current {@link DateTime}, with millisecond resolution, according to the current clock.
      * Under most circumstances, this method will return the current system time, but during replay simulations,
@@ -336,6 +338,7 @@ public class DateTimeUtils {
         return DateTime.ofMillis(currentClock());
     }
 
+    //TODO: instant
     /**
      * Provides the current {@link DateTime} according to the system clock.
      * Note that the system time may not be desirable during replay simulations.
@@ -349,6 +352,7 @@ public class DateTimeUtils {
         return DateTime.now();
     }
 
+    //TODO: instant
     /**
      * Provides the current {@link DateTime}, with millisecond resolution, according to the system clock.
      * Note that the system time may not be desirable during replay simulations.
@@ -368,15 +372,15 @@ public class DateTimeUtils {
      */
     private abstract static class CachedDate {
 
-        final TimeZone timeZone;
+        final ZoneId timeZone;
         String value;
         long valueExpirationTimeMillis;
 
-        private CachedDate(@NotNull final TimeZone timeZone) {
+        private CachedDate(@NotNull final ZoneId timeZone) {
             this.timeZone = timeZone;
         }
 
-        private TimeZone getTimeZone() {
+        private ZoneId getTimeZone() {
             return timeZone;
         }
 
@@ -396,7 +400,7 @@ public class DateTimeUtils {
 
     private static class CachedCurrentDate extends CachedDate {
 
-        private CachedCurrentDate(@NotNull final TimeZone timeZone) {
+        private CachedCurrentDate(@NotNull final ZoneId timeZone) {
             super(timeZone);
         }
 
@@ -410,32 +414,65 @@ public class DateTimeUtils {
     }
 
     private static class CachedDateKey<CACHED_DATE_TYPE extends CachedDate>
-            extends KeyedObjectKey.Basic<TimeZone, CACHED_DATE_TYPE> {
+            extends KeyedObjectKey.Basic<ZoneId, CACHED_DATE_TYPE> {
 
         @Override
-        public TimeZone getKey(final CACHED_DATE_TYPE cachedDate) {
+        public ZoneId getKey(final CACHED_DATE_TYPE cachedDate) {
             return cachedDate.timeZone;
         }
     }
 
-    private static final KeyedObjectHashMap<TimeZone, CachedCurrentDate> cachedCurrentDates =
+    private static final KeyedObjectHashMap<ZoneId, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
     //TODO: have these return local time?
-    //TODO: use default timezone
     /**
      * Provides the current date according to the current clock.
      * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
+     * @param timeZone time zone.
      * @see #currentClock()
      * @see #setClock(Clock)
-     * @return the current date according to the current clock formatted as "yyyy-MM-dd".
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd".
      */
     @ScriptApi
     @NotNull
     public static String today(@NotNull final TimeZone timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone.getZoneId(), CachedCurrentDate::new).get();
+    }
+
+    //TODO: have these return local time?
+    /**
+     * Provides the current date according to the current clock.
+     * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
+     * this method can return the date according to replay time.
+     *
+     * @param timeZone time zone.
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd".
+     */
+    @ScriptApi
+    @NotNull
+    public static String today(@NotNull final ZoneId timeZone) {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
+    }
+
+    //TODO: have these return local time?
+    /**
+     * Provides the current date according to the current clock and the default time zone.
+     * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
+     * this method can return the date according to replay time.
+     *
+     * @see #currentClock()
+     * @see #setClock(Clock)
+     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd".
+     */
+    @ScriptApi
+    @NotNull
+    public static String today() {
+        return today(TimeZone.TZ_DEFAULT);
     }
 
     // endregion
