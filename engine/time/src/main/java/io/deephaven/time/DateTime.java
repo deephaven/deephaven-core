@@ -29,10 +29,7 @@ import java.util.Date;
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
-    //TODO: curate API
     //TODO: test coverage
-    //TODO: can methods be removed from here?
-    //TODO: remove String timeZone methods?
 
     private static final long serialVersionUID = -9077991715632523353L;
 
