@@ -68,7 +68,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return new WritableLongChunk<>(data, offset, size);
     }
 
-    WritableLongChunk(long[] data, int offset, int capacity) {
+    protected WritableLongChunk(long[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

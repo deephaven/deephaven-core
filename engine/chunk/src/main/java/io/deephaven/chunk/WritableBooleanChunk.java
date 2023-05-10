@@ -65,7 +65,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return new WritableBooleanChunk<>(data, offset, size);
     }
 
-    WritableBooleanChunk(boolean[] data, int offset, int capacity) {
+    protected WritableBooleanChunk(boolean[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

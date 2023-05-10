@@ -68,7 +68,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
         return new WritableIntChunk<>(data, offset, size);
     }
 
-    WritableIntChunk(int[] data, int offset, int capacity) {
+    protected WritableIntChunk(int[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

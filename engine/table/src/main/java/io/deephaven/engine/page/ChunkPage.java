@@ -5,12 +5,13 @@ package io.deephaven.engine.page;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-public interface ChunkPage<ATTR extends Any> extends Page.WithDefaults<ATTR>, Chunk<ATTR>,
+public interface ChunkPage<ATTR extends Any> extends Page.WithDefaults<ATTR>, WritableChunk<ATTR>,
         DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     @Override

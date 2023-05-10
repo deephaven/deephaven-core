@@ -68,7 +68,7 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         return new WritableFloatChunk<>(data, offset, size);
     }
 
-    WritableFloatChunk(float[] data, int offset, int capacity) {
+    protected WritableFloatChunk(float[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

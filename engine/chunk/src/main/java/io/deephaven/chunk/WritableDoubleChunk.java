@@ -68,7 +68,7 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
         return new WritableDoubleChunk<>(data, offset, size);
     }
 
-    WritableDoubleChunk(double[] data, int offset, int capacity) {
+    protected WritableDoubleChunk(double[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

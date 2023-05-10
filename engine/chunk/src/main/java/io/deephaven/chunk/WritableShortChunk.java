@@ -68,7 +68,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return new WritableShortChunk<>(data, offset, size);
     }
 
-    WritableShortChunk(short[] data, int offset, int capacity) {
+    protected WritableShortChunk(short[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
