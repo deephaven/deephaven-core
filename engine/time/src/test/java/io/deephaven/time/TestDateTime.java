@@ -68,15 +68,6 @@ public class TestDateTime extends BaseArrayTestCase {
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
-        { // EST - supported by joda; not java.time
-            String zoneId = "EST";
-            try {
-                TestCase.assertEquals("2016-11-05", dateTime.toDateString(zoneId));
-                TestCase.fail("Should have thrown an exception for invalid zone");
-            } catch (ZoneRulesException ignored) {
-            }
-        }
-
         { // UTC
             String zoneId = "UTC";
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(TimeZone.TZ_UTC));

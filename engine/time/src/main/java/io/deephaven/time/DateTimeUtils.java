@@ -33,7 +33,6 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 @SuppressWarnings({"RegExpRedundantEscape", "unused"})
 public class DateTimeUtils {
     //TODO: rename class
-    //TODO: remove Joda exposure
     //TODO: test coverage
     //TODO: review function subsections for consistency
     //TODO: review function subsections for missing functions
@@ -97,15 +96,15 @@ public class DateTimeUtils {
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
 
     /**
-     * JODA date time format.
+     * Java date time format.
      */
-    private static final java.time.format.DateTimeFormatter JODA_DATE_TIME_FORMAT =
+    private static final java.time.format.DateTimeFormatter JAVA_DATE_TIME_FORMAT =
             java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /**
-     * JODA date format.
+     * Java date format.
      */
-    private static final java.time.format.DateTimeFormatter JODA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final java.time.format.DateTimeFormatter JAVA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     // endregion
 
@@ -403,8 +402,9 @@ public class DateTimeUtils {
         @Override
         void update(final long currentTimeMillis) {
             value = formatDate(epochMillisToDateTime(currentTimeMillis), timeZone);
-            valueExpirationTimeMillis = new org.joda.time.DateTime(currentTimeMillis, timeZone.getTimeZone())
-                    .withFieldAdded(DurationFieldType.days(), 1).withTimeAtStartOfDay().getMillis();
+
+            //noinspection ConstantConditions
+            valueExpirationTimeMillis = dateTimeAtMidnight( epochNanosToDateTime(millisToNanos(currentTimeMillis) + DAY), timeZone).getMillis();
         }
     }
 
@@ -2875,7 +2875,7 @@ public class DateTimeUtils {
         }
 
         //noinspection ConstantConditions
-        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime))
+        return JAVA_DATE_TIME_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime))
                 + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
@@ -2912,7 +2912,7 @@ public class DateTimeUtils {
         }
 
         //noinspection ConstantConditions
-        return JODA_DATE_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime));
+        return JAVA_DATE_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime));
     }
 
     /**

@@ -4,7 +4,6 @@
 package io.deephaven.time;
 
 import org.jetbrains.annotations.NotNull;
-import org.joda.time.DateTimeZone;
 
 import java.time.ZoneId;
 import java.util.Arrays;
@@ -125,27 +124,12 @@ public enum TimeZone {
      */
     public static TimeZone TZ_DEFAULT = TZ_NY;
 
-    //TODO: remove Joda exposure / deprecated
-    private final DateTimeZone timeZone;
     private final ZoneId zoneId;
 
     private TimeZone(final @NotNull String timeZone) {
-        this.timeZone = DateTimeZone.forID(timeZone);
         this.zoneId = ZoneId.of(timeZone);
     }
 
-    //TODO: remove Joda exposure / deprecated
-    /**
-     * Returns the underlying Joda time zone for this TimeZone.
-     *
-     * @return the underlying Joda time zone.
-     */
-    @Deprecated
-    public DateTimeZone getTimeZone() {
-        return timeZone;
-    }
-
-    //TODO: rename to getTimeZone
     /**
      * Returns the {@link ZoneId} for this time zone;
      * 
