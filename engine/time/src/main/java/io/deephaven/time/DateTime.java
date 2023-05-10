@@ -471,7 +471,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-        //noinspection ConstantConditions
         return DateTimeUtils.formatDate(this, timeZone);
     }
 
