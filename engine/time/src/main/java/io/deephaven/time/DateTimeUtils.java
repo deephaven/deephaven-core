@@ -102,13 +102,13 @@ public class DateTimeUtils {
     /**
      * JODA date time format.
      */
-    private static final org.joda.time.format.DateTimeFormatter JODA_DATE_TIME_FORMAT =
-            DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final java.time.format.DateTimeFormatter JODA_DATE_TIME_FORMAT =
+            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     /**
      * JODA date format.
      */
-    private static final org.joda.time.format.DateTimeFormatter JODA_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+    private static final java.time.format.DateTimeFormatter JODA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     // endregion
 
@@ -2430,15 +2430,16 @@ public class DateTimeUtils {
             if (timeZone == null) {
                 return null;
             }
+            //TODO: can this be simplified using LocalDateTime?
             int decimalIndex = dateTimeString.indexOf('.');
             if (decimalIndex == -1) {
-                return new DateTime(
-                        millisToNanos(new org.joda.time.DateTime(dateTimeString, timeZone.getTimeZone()).getMillis()));
+                //TODO: is this correct?
+                return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
             } else {
                 final long subsecondNanos = parseNanosInternal(dateTimeString.substring(decimalIndex + 1));
 
-                return new DateTime(millisToNanos(new org.joda.time.DateTime(dateTimeString.substring(0, decimalIndex),
-                        timeZone.getTimeZone()).getMillis()) + subsecondNanos);
+                //TODO: is this correct?
+                return toDateTime(java.time.LocalDateTime.parse(dateTimeString.substring(0, decimalIndex)).atZone(timeZone.getZoneId()));
             }
         } catch (Exception e) {
             // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
@@ -2815,7 +2816,7 @@ public class DateTimeUtils {
         }
 
         try {
-            return ZoneId.of(s);
+            return ZoneId.of(s, ZoneId.SHORT_IDS);
         } catch (Exception ex){
             return null;
         }
@@ -2876,7 +2877,8 @@ public class DateTimeUtils {
             return null;
         }
 
-        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getTimeZone()).print(dateTime.getMillis())
+        //noinspection ConstantConditions
+        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime))
                 + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
@@ -2912,7 +2914,8 @@ public class DateTimeUtils {
             return null;
         }
 
-        return JODA_DATE_FORMAT.withZone(timeZone.getTimeZone()).print(dateTime.getMillis());
+        //noinspection ConstantConditions
+        return JODA_DATE_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime));
     }
 
     /**
@@ -3029,8 +3032,8 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return millisToNanos(dt.getMillisOfSecond()) + dateTime.getNanosPartial();
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getNano();
     }
 
     /**
@@ -3064,8 +3067,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getMillisOfSecond();
+        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
     }
 
     /**
@@ -3082,8 +3084,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getSecondOfMinute();
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getSecond();
     }
 
     /**
@@ -3100,8 +3102,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getMinuteOfHour();
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getMinute();
     }
 
     /**
@@ -3118,8 +3120,9 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return millisToNanos(dt.getMillisOfDay()) + dateTime.getNanosPartial();
+        final @Nullable ZonedDateTime dt = toZonedDateTime(dateTime, timeZone);
+        //noinspection ConstantConditions
+        return dt.getHour()*HOUR + dt.getMinute()*MINUTE + dt.getSecond()*SECOND + dt.getNano();
     }
 
     /**
@@ -3136,8 +3139,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getMillisOfDay();
+        //noinspection ConstantConditions
+        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
     }
 
     /**
@@ -3154,8 +3157,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getSecondOfDay();
+        //noinspection ConstantConditions
+        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
     }
 
     /**
@@ -3172,8 +3175,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getMinuteOfDay();
+        return secondOfDay(dateTime,timeZone) / 60;
     }
 
     /**
@@ -3190,8 +3192,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getHourOfDay();
+        return toZonedDateTime(dateTime, timeZone).getHour();
     }
 
     /**
@@ -3208,8 +3209,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getDayOfWeek();
+        return toZonedDateTime(dateTime, timeZone).getDayOfWeek().getValue();
     }
 
     /**
@@ -3226,8 +3226,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getDayOfMonth();
+        return toZonedDateTime(dateTime, timeZone).getDayOfMonth();
     }
 
     /**
@@ -3244,8 +3243,8 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getDayOfYear();
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getDayOfYear();
     }
 
     /**
@@ -3262,8 +3261,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getMonthOfYear();
+        return toZonedDateTime(dateTime, timeZone).getMonthValue();
     }
 
     /**
@@ -3279,8 +3277,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getYear();
+        return toZonedDateTime(dateTime, timeZone).getYear();
     }
 
     /**
@@ -3296,8 +3293,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis(), timeZone.getTimeZone());
-        return dt.getYearOfCentury();
+        return year(dateTime, timeZone) % 100;
     }
 
     /**
@@ -3315,8 +3311,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return new DateTime(millisToNanos(new DateMidnight(dateTime.getMillis(), timeZone.getTimeZone()).getMillis())
-                + dateTime.getNanosPartial());
+        return toDateTime(toZonedDateTime(dateTime, timeZone).toLocalDate().atStartOfDay(timeZone.getZoneId()));
     }
 
     // endregion

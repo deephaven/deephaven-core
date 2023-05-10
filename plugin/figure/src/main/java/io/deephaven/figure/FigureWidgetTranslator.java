@@ -544,7 +544,7 @@ public class FigureWidgetTranslator {
         final BusinessCalendar businessCalendar = axisTransform.getBusinessCalendar();
         final BusinessCalendarDescriptor.Builder businessCalendarDescriptor = BusinessCalendarDescriptor.newBuilder();
         businessCalendarDescriptor.setName(businessCalendar.name());
-        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getTimeZone().getID());
+        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getZoneId().getId());
         Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
             if (dayOfWeek == BusinessCalendarDescriptor.DayOfWeek.UNRECOGNIZED) {
                 return false;
@@ -568,10 +568,12 @@ public class FigureWidgetTranslator {
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
-                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getStartTime().getMillis());
-                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getEndTime().getMillis());
+                        //noinspection ConstantConditions
+                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getZoneId())
+                                .format(DateTimeUtils.toInstant(bp.getStartTime()));
+                        //noinspection ConstantConditions
+                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getZoneId())
+                                .format(DateTimeUtils.toInstant(bp.getEndTime()));
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);
                         businessPeriod.setClose(close);

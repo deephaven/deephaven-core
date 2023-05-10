@@ -440,7 +440,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      */
     @NotNull
     public String toString(@NotNull final String timeZone) {
-        return DateTimeUtils.formatDateTime(this, DateTimeUtils.parseTimeZone(timeZone));
+        return DateTimeUtils.formatDateTime(this, DateTimeUtils.parseTimeZoneId(timeZone));
     }
 
     /**
@@ -505,8 +505,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      */
     @NotNull
     public String toDateString(@NotNull final String timeZone) {
-        //noinspection ConstantConditions
-        return DateTimeUtils.formatDate(this, DateTimeUtils.parseTimeZone(timeZone));
+        return DateTimeUtils.formatDate(this, DateTimeUtils.parseTimeZoneId(timeZone));
     }
 
     // endregion

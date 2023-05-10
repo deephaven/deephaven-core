@@ -58,7 +58,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertTrue(DateTimeUtils.isBefore(dateTime1, dateTime2));
         TestCase.assertFalse(DateTimeUtils.isBefore(dateTime2, dateTime1));
         TestCase.assertFalse(DateTimeUtils.isBefore(null, dateTime2));
-        TestCase.assertFalse(DateTimeUtils.isBefore(null, null));
+        TestCase.assertFalse(DateTimeUtils.isBefore((DateTime) null, null));
         TestCase.assertFalse(DateTimeUtils.isBefore(dateTime1, null));
     }
 
@@ -72,7 +72,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertFalse(DateTimeUtils.isAfter(dateTime1, dateTime2));
         TestCase.assertTrue(DateTimeUtils.isAfter(dateTime2, dateTime1));
         TestCase.assertFalse(DateTimeUtils.isAfter(null, dateTime2));
-        TestCase.assertFalse(DateTimeUtils.isAfter(null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfter((DateTime) null, null));
         TestCase.assertFalse(DateTimeUtils.isAfter(dateTime1, null));
     }
 
@@ -669,7 +669,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testZonedDateTime() {
         final DateTime dateTime1 = DateTimeUtils.parseDateTime("2015-07-31T20:40 NY");
         final ZonedDateTime zonedDateTime1 =
-                ZonedDateTime.of(2015, 7, 31, 20, 40, 0, 0, TimeZone.TZ_NY.getTimeZone().toTimeZone().toZoneId());
+                ZonedDateTime.of(2015, 7, 31, 20, 40, 0, 0, TimeZone.TZ_NY.getZoneId());
         TestCase.assertEquals(zonedDateTime1, DateTimeUtils.toZonedDateTime(dateTime1, TimeZone.TZ_NY));
         TestCase.assertEquals(dateTime1, DateTimeUtils.toDateTime(zonedDateTime1));
 
