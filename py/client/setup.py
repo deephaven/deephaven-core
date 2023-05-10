@@ -12,7 +12,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name='pydeephaven',
-    version='0.24.0',
+    version='0.24.1',
     description='The Deephaven Python Client',
     long_description=README,
     long_description_content_type="text/markdown",
