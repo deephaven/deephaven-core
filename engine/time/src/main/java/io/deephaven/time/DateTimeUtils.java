@@ -213,6 +213,15 @@ public class DateTimeUtils {
         /**
          * Creates a new overflow exception.
          *
+         * @param cause cause of the overflow.
+         */
+        private DateTimeOverflowException(@NotNull final Throwable cause) {
+            super("Operation failed due to overflow", cause);
+        }
+
+        /**
+         * Creates a new overflow exception.
+         *
          * @param message error string.
          */
         private DateTimeOverflowException(@NotNull final String message) {
@@ -1589,14 +1598,39 @@ public class DateTimeUtils {
 
     // region Time Arithmetic
 
+    //todo add ZonedDateTime?
+
     /**
-     * Adds nanoseconds to a {@link DateTime}.
+     * Adds nanoseconds to a date time.
      *
-     * @param dateTime starting {@link DateTime} value.
+     * @param dateTime starting date time value.
      * @param nanos number of nanoseconds to add.
-     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} plus the specified number
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
      *      of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant plus(@Nullable final Instant dateTime, final long nanos) {
+        if (dateTime == null || nanos == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return dateTime.plusNanos(nanos);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds nanoseconds to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param nanos number of nanoseconds to add.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1609,12 +1643,78 @@ public class DateTimeUtils {
     }
 
     /**
-     * Adds a time period to a {@link DateTime}.
+     * Adds a time period to a date time.
      *
-     * @param dateTime starting {@link DateTime} value.
+     * @param dateTime starting date time value.
      * @param period time period.
-     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} plus the specified time period.
-     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant plus(@Nullable final Instant dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            return dateTime.plus(period);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant plus(@Nullable final Instant dateTime, @Nullable final Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            if (period.isPositive()) {
+                return dateTime.plus(period.getDuration());
+            } else {
+                return dateTime.minus(period.getDuration());
+            }
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(plus(toInstant(dateTime), period));
+    }
+
+    /**
+     * Adds a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1623,33 +1723,45 @@ public class DateTimeUtils {
             return null;
         }
 
-        //TODO: clean up and generalize all plus / minus math
-        final Instant dt = dateTime.toInstant();
+        return toDateTime(plus(toInstant(dateTime), period));
+    }
 
-        if (period.isPositive()) {
-            return toDateTime(
-                    dt.plus(period.getDuration())
-            );
-        } else {
-            return toDateTime(
-                    dt.minus(period.getDuration())
-            );
+    /**
+     * Subtracts nanoseconds from a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param nanos number of nanoseconds to subtract.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant minus(@Nullable final Instant dateTime, final long nanos) {
+        if (dateTime == null || nanos == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return dateTime.minusNanos(nanos);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
         }
     }
 
     /**
-     * Subtracts nanoseconds from a {@link DateTime}.
+     * Subtracts nanoseconds from a date time.
      *
-     * @param dateTime starting {@link DateTime} value.
+     * @param dateTime starting date time value.
      * @param nanos number of nanoseconds to subtract.
-     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} minus the specified number
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
      *      of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
     public static DateTime minus(@Nullable final DateTime dateTime, final long nanos) {
-        if (dateTime == null || -nanos == NULL_LONG) {
+        if (dateTime == null || nanos == NULL_LONG) {
             return null;
         }
 
@@ -1657,12 +1769,78 @@ public class DateTimeUtils {
     }
 
     /**
-     * Subtracts a time period from a {@link DateTime}.
+     * Subtracts a time period to a date time.
      *
-     * @param dateTime starting {@link DateTime} value.
+     * @param dateTime starting date time value.
      * @param period time period.
-     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} minus the specified time period.
-     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant minus(@Nullable final Instant dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            return dateTime.minus(period);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant minus(@Nullable final Instant dateTime, @Nullable final Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            if (period.isPositive()) {
+                return dateTime.minus(period.getDuration());
+            } else {
+                return dateTime.plus(period.getDuration());
+            }
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(minus(toInstant(dateTime), period));
+    }
+
+    /**
+     * Subtracts a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1671,24 +1849,31 @@ public class DateTimeUtils {
             return null;
         }
 
-        final Instant dt = dateTime.toInstant();
-
-        if (period.isPositive()) {
-            return toDateTime(
-                    dt.minus(period.getDuration())
-            );
-        } else {
-            return toDateTime(
-                    dt.plus(period.getDuration())
-            );
-        }
+        return toDateTime(minus(toInstant(dateTime), period));
     }
 
     /**
-     * Subtract one time from another and return the difference in nanoseconds.
+     * Subtract one date time from another and return the difference in nanoseconds.
      *
-     * @param dateTime1 first {@link DateTime}.
-     * @param dateTime2 second {@link DateTime}.
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return NULL_LONG;
+        }
+
+        return checkUnderflowMinus(epochNanos(dateTime1), epochNanos(dateTime2), true);
+    }
+
+    /**
+     * Subtract one date time from another and return the difference in nanoseconds.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
@@ -1702,7 +1887,20 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in nanoseconds between two {@link DateTime} values.
+     * Returns the difference in nanoseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffNanos(@Nullable final Instant start, @Nullable final Instant end) {
+        return minus(end, start);
+    }
+
+    /**
+     * Returns the difference in nanoseconds between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1715,7 +1913,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in microseconds between two {@link DateTime} values.
+     * Returns the difference in microseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffMicros(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMicros(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in microseconds between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1732,7 +1947,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in milliseconds between two {@link DateTime} values.
+     * Returns the difference in milliseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffMillis(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMillis(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in milliseconds between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1749,7 +1981,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in seconds between two {@link DateTime} values.
+     * Returns the difference in seconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffSeconds(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / SECOND;
+    }
+
+    /**
+     * Returns the difference in seconds between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1766,7 +2015,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in minutes between two {@link DateTime} values.
+     * Returns the difference in minutes between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffMinutes(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / MINUTE;
+    }
+
+    /**
+     * Returns the difference in minutes between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1783,7 +2049,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in days between two {@link DateTime} values.
+     * Returns the difference in days between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffDays(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / DAY;
+    }
+
+    /**
+     * Returns the difference in days between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1800,7 +2083,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in years (365-days) between two {@link DateTime} values.
+     * Returns the difference in years (365-days) between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffYears(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) * YEARS_PER_NANO;
+    }
+
+    /**
+     * Returns the difference in years (365-days) between two date time values.
      *
      * @param start start time.
      * @param end end time.
@@ -1821,10 +2121,27 @@ public class DateTimeUtils {
     // region Comparisons
 
     /**
-     * Evaluates whether one {@link DateTime} value is before a second {@link DateTime} value.
+     * Evaluates whether one date time value is before a second date time value.
      *
-     * @param dateTime1 first {@link DateTime}.
-     * @param dateTime2 second {@link DateTime}.
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or before dateTime1.
+     */
+    @ScriptApi
+    public static boolean isBefore(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.isBefore(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is before a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
      * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
      *      to or before dateTime1.
      */
@@ -1838,10 +2155,27 @@ public class DateTimeUtils {
     }
 
     /**
-     * Evaluates whether one {@link DateTime} value is before or equal to a second {@link DateTime} value.
+     * Evaluates whether one date time value is before or equal to a second date time value.
      *
-     * @param dateTime1 first {@link DateTime}.
-     * @param dateTime2 second {@link DateTime}.
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is before dateTime1.
+     */
+    @ScriptApi
+    public static boolean isBeforeOrEqual(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.isBefore(dateTime2) || dateTime1.equals(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is before or equal to a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
      * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
      *      is before dateTime1.
      */
@@ -1855,10 +2189,27 @@ public class DateTimeUtils {
     }
 
     /**
-     * Evaluates whether one {@link DateTime} value is after a second {@link DateTime} value.
+     * Evaluates whether one date time value is after a second date time value.
      *
-     * @param dateTime1 first {@link DateTime}.
-     * @param dateTime2 second {@link DateTime}.
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or after dateTime1.
+     */
+    @ScriptApi
+    public static boolean isAfter(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.isAfter(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is after a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
      * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
      *      to or after dateTime1.
      */
@@ -1872,10 +2223,27 @@ public class DateTimeUtils {
     }
 
     /**
-     * Evaluates whether one {@link DateTime} value is after or equal to a second {@link DateTime} value.
+     * Evaluates whether one date time value is after or equal to a second date time value.
      *
-     * @param dateTime1 first {@link DateTime}.
-     * @param dateTime2 second {@link DateTime}.
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is after dateTime1.
+     */
+    @ScriptApi
+    public static boolean isAfterOrEqual(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.isAfter(dateTime2) || dateTime1.equals(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is after or equal to a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
      * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
      *      is after dateTime1.
      */
@@ -1995,7 +2363,6 @@ public class DateTimeUtils {
                 final Period period = new Period(s);
 
                 try {
-                    //TODO: clean up math
                     return StrictMath.multiplyExact(period.getDuration().toNanos(),
                             period.isPositive() ? 1L : -1L);
                 } catch (ArithmeticException ex) {
