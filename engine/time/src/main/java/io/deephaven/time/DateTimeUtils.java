@@ -13,9 +13,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.joda.time.DateMidnight;
-import org.joda.time.DurationFieldType;
-import org.joda.time.format.DateTimeFormat;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;

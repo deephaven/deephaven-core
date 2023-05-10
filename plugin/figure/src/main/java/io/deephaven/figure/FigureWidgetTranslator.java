@@ -56,10 +56,10 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesPlotStyle
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceType;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.StringMapWithDefault;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatter;
 
 import java.awt.*;
 import java.time.DayOfWeek;
@@ -79,7 +79,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class FigureWidgetTranslator {
-    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
+    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
