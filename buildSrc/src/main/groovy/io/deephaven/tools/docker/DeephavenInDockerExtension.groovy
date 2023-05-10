@@ -44,6 +44,11 @@ public abstract class DeephavenInDockerExtension {
 
     abstract MapProperty<String, String> getEnvVars();
 
+    /**
+     * Makes the exposed port available to other docker tasks. Rather than hardcode a particular
+     * port, docker will select one (allowing for multiple parallel running instances), and expose
+     * it here after the "waitForPort" task is complete.
+     */
     abstract Property<Integer> getPort();
 
     @Inject
@@ -72,6 +77,8 @@ public abstract class DeephavenInDockerExtension {
             task.containerName.set containerName.get()
             task.hostConfig.network.set networkName.get()
             task.envVars.set(this.getEnvVars())
+
+            // In the jetty image, port 10000 is the http server
             task.exposePorts("tcp", [10000])
             task.hostConfig.portBindings.set(["10000"])
         }
