@@ -13,7 +13,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("1dT1h", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("P1dT1h"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("P1dT1h"), period.getDuration());
 
         TestCase.assertTrue(period.isPositive());
 
@@ -23,7 +23,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("T1h", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("PT1h"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("PT1h"), period.getDuration());
 
         TestCase.assertTrue(period.isPositive());
 
@@ -33,7 +33,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("1d", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("P1d"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("P1d"), period.getDuration());
 
         TestCase.assertTrue(period.isPositive());
 
@@ -43,7 +43,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("-1dT1h", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("P1dT1h"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("P1dT1h"), period.getDuration());
 
         TestCase.assertFalse(period.isPositive());
 
@@ -53,7 +53,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("-T1h", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("PT1h"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("PT1h"), period.getDuration());
 
         TestCase.assertFalse(period.isPositive());
 
@@ -63,7 +63,7 @@ public class TestPeriod extends BaseArrayTestCase {
 
         TestCase.assertEquals("-1d", period.toString());
 
-        TestCase.assertEquals(new org.joda.time.Period("P1d"), period.getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("P1d"), period.getDuration());
 
         TestCase.assertFalse(period.isPositive());
 

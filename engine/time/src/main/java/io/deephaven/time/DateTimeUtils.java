@@ -1623,13 +1623,17 @@ public class DateTimeUtils {
             return null;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis());
-        final org.joda.time.Period p = period.getJodaPeriod();
+        //TODO: clean up and generalize all plus / minus math
+        final Instant dt = dateTime.toInstant();
 
         if (period.isPositive()) {
-            return new DateTime(millisToNanos(dt.plus(p).getMillis()) + dateTime.getNanosPartial());
+            return toDateTime(
+                    dt.plus(period.getDuration())
+            );
         } else {
-            return new DateTime(millisToNanos(dt.minus(p).getMillis()) + dateTime.getNanosPartial());
+            return toDateTime(
+                    dt.minus(period.getDuration())
+            );
         }
     }
 
@@ -1667,13 +1671,16 @@ public class DateTimeUtils {
             return null;
         }
 
-        final org.joda.time.DateTime dt = new org.joda.time.DateTime(dateTime.getMillis());
-        final org.joda.time.Period p = period.getJodaPeriod();
+        final Instant dt = dateTime.toInstant();
 
         if (period.isPositive()) {
-            return new DateTime(millisToNanos(dt.minus(p).getMillis()) + dateTime.getNanosPartial());
+            return toDateTime(
+                    dt.minus(period.getDuration())
+            );
         } else {
-            return new DateTime(millisToNanos(dt.plus(p).getMillis()) + dateTime.getNanosPartial());
+            return toDateTime(
+                    dt.plus(period.getDuration())
+            );
         }
     }
 
@@ -1987,8 +1994,9 @@ public class DateTimeUtils {
                 final Period period = new Period(s);
 
                 try {
-                    return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
-                            period.isPositive() ? 1_000_000L : -1_000_000L);
+                    //TODO: clean up math
+                    return StrictMath.multiplyExact(period.getDuration().toNanos(),
+                            period.isPositive() ? 1L : -1L);
                 } catch (ArithmeticException ex) {
                     throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
                 }

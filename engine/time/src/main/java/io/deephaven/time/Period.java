@@ -12,14 +12,11 @@ import java.io.Serializable;
  */
 public class Period implements Comparable<Period>, Serializable {
     //TODO: test coverage
-    //TODO: replace fully with java.time.Period?
 
     private String periodString;
 
-    //TODO: replaced by java.time.Period
-    //TODO: see https://stackoverflow.com/questions/47217098/converting-org-joda-time-period-to-java-time-period
-    //TODO: https://docs.oracle.com/javase/8/docs/api/java/time/Period.html#parse-java.lang.CharSequence-
-    private transient org.joda.time.Period period = null;
+    private transient boolean isPositive;
+    private transient java.time.Duration duration = null;
 
     /**
      * Constructor for serialization / deserialization.  This should not be used.
@@ -34,6 +31,8 @@ public class Period implements Comparable<Period>, Serializable {
      * @param s string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
      *          one minute, 1WT1H for one week plus one hour.
      */
+    //TODO: how are subseconds done?
+    //TODO: null annotations
     public Period(String s) {
         char[] ret = s.toCharArray();
 
@@ -47,26 +46,34 @@ public class Period implements Comparable<Period>, Serializable {
 
         this.periodString = new String(ret).intern();
 
-        initPeriod();
+        init();
     }
 
-    private void initPeriod() {
-        period = new org.joda.time.Period("P" + (isPositive() ? periodString : periodString.substring(1)));
+    private void init() {
+        isPositive = periodString.charAt(0) != '-'
+        duration = java.time.Duration.parse("P" + (isPositive() ? periodString : periodString.substring(1)));
     }
 
-    //TODO: remove Joda exposure / deprecated
-    @Deprecated
-    public org.joda.time.Period getJodaPeriod() {
-        return period;
+    //TODO: document
+    //TODO: remove?
+    //TODO: null annotations
+    /**
+     * Get the {@link java.time.Duration} associated with this period.  The {@link java.time.Duration}
+     * @return
+     */
+    java.time.Duration getDuration() {
+        return duration;
     }
 
+    //TOOD: clean up all plus / minus math
+    //TODO: get rid of the isPositive and just let Duration do it.
     /**
      * Determines if the time period is positive.
      *
      * @return true if the period is positive, and false otherwise.
      */
     public boolean isPositive() {
-        return periodString.charAt(0) != '-';
+        return isPositive;
     }
 
     @Override
@@ -94,6 +101,6 @@ public class Period implements Comparable<Period>, Serializable {
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        initPeriod();
+        init();
     }
 }

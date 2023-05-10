@@ -467,11 +467,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testParsePeriodQuiet() throws Exception {
-        TestCase.assertEquals(new org.joda.time.Period("PT1s"),
-                DateTimeUtils.parsePeriodQuiet("T1S").getJodaPeriod());
-        TestCase.assertEquals(new org.joda.time.Period("P1wT1m"),
-                DateTimeUtils.parsePeriodQuiet("1WT1M").getJodaPeriod());
-        TestCase.assertEquals(new org.joda.time.Period("P1w"), DateTimeUtils.parsePeriodQuiet("1W").getJodaPeriod());
+        TestCase.assertEquals(java.time.Duration.parse("PT1s"),
+                DateTimeUtils.parsePeriodQuiet("T1S").getDuration());
+        TestCase.assertEquals(java.time.Duration.parse("P1wT1m"),
+                DateTimeUtils.parsePeriodQuiet("1WT1M").getDuration());
+        TestCase.assertEquals(java.time.Duration.parse("P1w"), DateTimeUtils.parsePeriodQuiet("1W").getDuration());
 
         TestCase.assertEquals(null, DateTimeUtils.parsePeriodQuiet("-"));
     }
