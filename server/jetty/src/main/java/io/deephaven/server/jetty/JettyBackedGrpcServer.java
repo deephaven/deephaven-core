@@ -62,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -97,9 +98,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // For the Web UI, cache everything in the static folder
         // https://create-react-app.dev/docs/production-build/#static-file-caching
-        context.addFilter(NoCacheFilter.class, "/ide/*", EnumSet.noneOf(DispatcherType.class));
+        for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/")) {
+            context.addFilter(NoCacheFilter.class, appRoot + "*", EnumSet.noneOf(DispatcherType.class));
+            context.addFilter(CacheFilter.class, appRoot + "assets/*", EnumSet.noneOf(DispatcherType.class));
+        }
         context.addFilter(NoCacheFilter.class, "/jsapi/*", EnumSet.noneOf(DispatcherType.class));
-        context.addFilter(CacheFilter.class, "/ide/assets/*", EnumSet.noneOf(DispatcherType.class));
         context.addFilter(DropIfModifiedSinceHeader.class, "/*", EnumSet.noneOf(DispatcherType.class));
 
         context.setSecurityHandler(new ConstraintSecurityHandler());
