@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;

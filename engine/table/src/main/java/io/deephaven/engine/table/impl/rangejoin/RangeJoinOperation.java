@@ -7,7 +7,7 @@ import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationPairs;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;

@@ -4,7 +4,7 @@
 package io.deephaven.csv;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;

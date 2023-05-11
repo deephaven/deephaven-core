@@ -1757,7 +1757,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table renameColumns(Collection<io.deephaven.api.agg.Pair> columns) {
+    public Table renameColumns(Collection<io.deephaven.api.Pair> columns) {
         return renameColumnsImpl(MatchPair.fromPairs(columns));
     }
 

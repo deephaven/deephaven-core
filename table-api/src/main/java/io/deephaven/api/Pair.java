@@ -1,9 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.api.agg;
-
-import io.deephaven.api.ColumnName;
+package io.deephaven.api;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -13,9 +11,6 @@ import java.util.stream.Collectors;
 
 /**
  * A column pair represents an {@link #input() input} and an {@link #output() output} column.
- *
- * @see ColumnAggregation
- * @see ColumnAggregations
  */
 public interface Pair extends Serializable {
 

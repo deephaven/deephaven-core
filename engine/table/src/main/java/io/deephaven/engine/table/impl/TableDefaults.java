@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -15,7 +15,6 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;

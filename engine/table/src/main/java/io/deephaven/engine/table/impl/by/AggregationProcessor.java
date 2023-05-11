@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
