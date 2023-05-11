@@ -216,6 +216,8 @@ public class JettyBackedGrpcServer implements GrpcServer {
             // The default of 32 bytes seems a bit small.
             gzipHandler.setMinGzipSize(1024);
             // The GzipHandler documentation says GET is the default, but the constructor shows both GET and POST.
+            // This should ensure our gRPC messages don't get compressed for now, but we may need to be more explicit in
+            // the future as gRPC can technically operate over GET.
             gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
             // Otherwise, the other defaults seem reasonable.
             gzipHandler.setHandler(handlers);
