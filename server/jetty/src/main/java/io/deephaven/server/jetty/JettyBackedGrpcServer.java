@@ -96,8 +96,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         }
         context.setInitParameter(DefaultServlet.CONTEXT_INIT + "dirAllowed", "false");
 
-        // For the Web UI, cache everything in the static folder
-        // https://create-react-app.dev/docs/production-build/#static-file-caching
+        // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/")) {
             context.addFilter(NoCacheFilter.class, appRoot + "*", EnumSet.noneOf(DispatcherType.class));
             context.addFilter(CacheFilter.class, appRoot + "assets/*", EnumSet.noneOf(DispatcherType.class));
