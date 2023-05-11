@@ -25,6 +25,7 @@ import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.parser.RateControl;
@@ -34,6 +35,8 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -41,6 +44,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -205,7 +209,21 @@ public class JettyBackedGrpcServer implements GrpcServer {
         JsPlugins.maybeAdd(handlers::addHandler);
         // Set up /*
         handlers.addHandler(context);
-        jetty.setHandler(handlers);
+
+        final Handler handler;
+        if (config.httpCompressionOrDefault()) {
+            final GzipHandler gzipHandler = new GzipHandler();
+            // The default of 32 bytes seems a bit small.
+            gzipHandler.setMinGzipSize(1024);
+            // The GzipHandler documentation says GET is the default, but the constructor shows both GET and POST.
+            gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
+            // Otherwise, the other defaults seem reasonable.
+            gzipHandler.setHandler(handlers);
+            handler = gzipHandler;
+        } else {
+            handler = handlers;
+        }
+        jetty.setHandler(handler);
     }
 
     @Override
