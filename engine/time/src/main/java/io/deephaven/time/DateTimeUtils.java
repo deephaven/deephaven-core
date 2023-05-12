@@ -106,6 +106,12 @@ public class DateTimeUtils {
      */
     private static final java.time.format.DateTimeFormatter JAVA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    /**
+     * Default date style.
+     */
+    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
+            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
+
     // endregion
 
     // region Constants
@@ -4738,7 +4744,7 @@ public class DateTimeUtils {
 
     // endregion
 
-    // region Time Bins
+    // region Binning
 
     /**
      * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
@@ -5247,12 +5253,103 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Parse
 
+    //TODO: review docstrings in this section
+    //TODO: java docs stuff like this as "Parses the string argument as a <type>.?
 
+    //TODO: Better docs
+    /**
+     * Converts a time zone string to a {@link TimeZone}.
+     *
+     * @param s string to be converted
+     * @return a {@link TimeZone} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted.
+     * @see TimeZone
+     */
+    @ScriptApi
+    @NotNull
+    public static TimeZone parseTimeZone(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse time zone (null): " + s);
+        }
 
-            *** start here ***
+        try {
+            return TimeZone.valueOf(s);
+        } catch (Exception ex){
+            throw new RuntimeException("Cannot parse time zone: " + s, ex);
+        }
+    }
 
-    // region Parse Times
+    //TODO: Better docs
+    /**
+     * Converts a time zone string to a {@link TimeZone}.
+     *
+     * @param s string to be converted
+     * @return a {@link TimeZone} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @see TimeZone
+     */
+    @ScriptApi
+    @Nullable
+    public static TimeZone parseTimeZoneQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseTimeZone(s);
+        } catch (Exception ex){
+            return null;
+        }
+    }
+
+    //TODO: Better docs
+    /**
+     * Converts a time zone string to a {@link ZoneId}.
+     *
+     * @param s string to be converted
+     * @return a {@link ZoneId} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted.
+     * @see ZoneId
+     */
+    @ScriptApi
+    @NotNull
+    public static ZoneId parseTimeZoneId(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse time zone ID (null): " + s);
+        }
+
+        *** should also try parsing timezone
+
+        try {
+            return ZoneId.of(s, ZoneId.SHORT_IDS);
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot parse time zone ID: " + s, ex);
+        }
+    }
+
+    /**
+     * Converts a time zone string to a {@link ZoneId}.
+     *
+     * @param s string to be converted
+     * @return a {@link ZoneId} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @see ZoneId
+     */
+    @ScriptApi
+    @Nullable
+    public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseTimeZoneId(s);
+        } catch (Exception ex){
+            return null;
+        }
+    }
 
     /**
      * Converts a String of digits of any length to a nanoseconds long value. Will ignore anything longer than 9 digits,
@@ -5282,9 +5379,11 @@ public class DateTimeUtils {
         return result;
     }
 
-    //TODO: think through parseNanos vs parseNanosQuiet
+    //TODO: better docs
+    //TODO does this support negative durations?
+    //TODO: can we exceed -MAX VALUE?
     /**
-     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
+     * Converts a time duration string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
      * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for
      * one week plus one hour.  For seconds, n can be a decimal representing partial seconds down to the nanosecond.
      *
@@ -5293,25 +5392,12 @@ public class DateTimeUtils {
      * @throws RuntimeException if the string cannot be parsed.
      */
     @ScriptApi
-    public static long parseNanos(@Nullable final String s) {
-        long ret = parseNanosQuiet(s);
-
-        if (ret == NULL_LONG) {
-            throw new RuntimeException("Cannot parse time : " + s);
+    public static long parseNanos(@NotNull String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse time: " + s);
         }
 
-        return ret;
-    }
-
-    /**
-     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
-     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
-     *
-     * @param s string to be converted.
-     * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
-     */
-    @ScriptApi
-    public static long parseNanosQuiet(@Nullable String s) {
         try {
             if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
                 long multiplier = 1;
@@ -5344,11 +5430,11 @@ public class DateTimeUtils {
 
                 if (tokens.length == 2) { // hh:mm
                     return multiplier
-                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1]))
+                            * (1000000000L * (3600L * Integer.parseInt(tokens[0]) + 60L * Integer.parseInt(tokens[1]))
                             + dayNanos + subsecondNanos);
                 } else if (tokens.length == 3) { // hh:mm:ss
                     return multiplier
-                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1])
+                            * (1000000000L * (3600L * Integer.parseInt(tokens[0]) + 60L * Integer.parseInt(tokens[1])
                             + Integer.parseInt(tokens[2])) + dayNanos + subsecondNanos);
                 }
             }
@@ -5357,85 +5443,40 @@ public class DateTimeUtils {
                 final Period period = new Period(s);
 
                 try {
-                    return StrictMath.multiplyExact(period.getDuration().toNanos(),
-                            period.isPositive() ? 1L : -1L);
+                    return StrictMath.multiplyExact(period.getDuration().toNanos(), period.isPositive() ? 1L : -1L);
                 } catch (ArithmeticException ex) {
                     throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
                 }
             }
         } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+            throw new RuntimeException("Cannot parse time : " + s, e);
         }
 
-        return NULL_LONG;
+        throw new RuntimeException("Should not get here.  Please report this as a bug.");
     }
 
-    //TODO: think through parseDateTime vs parseDateTimeQuiet
-
+    //TODO: better docs
     /**
-     * Converts a datetime string to a date time.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
-     *
-     * @param s string to be converted
-     * @return a {@link DateTime} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
-     */
-    @ScriptApi
-    @NotNull
-    public static DateTime parseDateTime(@Nullable final String s) {
-        DateTime ret = parseDateTimeQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse datetime : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a datetime string to a {@link DateTime}.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
+     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
      *
      * @param s string to be converted.
-     * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
      */
     @ScriptApi
-    @Nullable
-    public static DateTime parseDateTimeQuiet(@Nullable final String s) {
-        try {
-            return DateTime.of(Instant.parse(s));
-        } catch (DateTimeParseException e) {
-            // ignore
+    public static long parseNanosQuiet(@Nullable String s) {
+        if (s == null || s.length() <= 1) {
+            return NULL_LONG;
         }
+
         try {
-            //TODO: support zone ID as well
-            TimeZone timeZone = null;
-            String dateTimeString = null;
-            if (DATETIME_PATTERN.matcher(s).matches()) {
-                int spaceIndex = s.indexOf(' ');
-                if (spaceIndex == -1) { // no timezone
-                    return null;
-                }
-                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
-                dateTimeString = s.substring(0, spaceIndex);
-            }
-
-            if (timeZone == null) {
-                return null;
-            }
-
-            return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
+            return parseNanos(s);
         } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+            return NULL_LONG;
         }
-
-        return null;
     }
 
-    //TODO: think through parsePeriod vs parsePeriodQuiet
-
+    //TODO: document negative values
     /**
      * Converts a string into a time {@link Period}.
      *
@@ -5446,16 +5487,25 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static Period parsePeriod(@Nullable final String s) {
-        Period ret = parsePeriodQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse period : " + s);
+    public static Period parsePeriod(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse period (null): " + s);
         }
 
-        return ret;
+        try {
+            if (PERIOD_PATTERN.matcher(s).matches()) {
+                return new Period(s);
+            }
+
+            throw new RuntimeException("Period does not match expected pattern");
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot parse period: " + s, ex);
+        }
     }
 
+    //TODO: better docs
+    //TODO: document negative values
     /**
      * Converts a string into a time {@link Period}.
      *
@@ -5471,14 +5521,80 @@ public class DateTimeUtils {
         }
 
         try {
-            if (PERIOD_PATTERN.matcher(s).matches()) {
-                return new Period(s);
-            }
+            return parsePeriod(s);
         } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+            return null;
+        }
+    }
+
+    //TODO: Better docs
+    /**
+     * Converts a datetime string to a date time.
+     * <p>
+     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     *
+     * @param s date time string.
+     * @return a {@link DateTime} represented by the input string.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    @ScriptApi
+    @NotNull
+    public static DateTime parseDateTime(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse datetime (null): " + s);
         }
 
-        return null;
+        try {
+            return DateTime.of(Instant.parse(s));
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
+
+        try {
+            //TODO: support zone ID as well
+            TimeZone timeZone = null;
+            String dateTimeString = null;
+            if (DATETIME_PATTERN.matcher(s).matches()) {
+                int spaceIndex = s.indexOf(' ');
+                if (spaceIndex == -1) {
+                    throw new RuntimeException("No time zone provided");
+                }
+                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
+                dateTimeString = s.substring(0, spaceIndex);
+            }
+
+            if (timeZone == null) {
+                throw new RuntimeException("No matching time zone");
+            }
+
+            return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
+        } catch (Exception ex){
+            throw new RuntimeException("Cannot parse datetime: " + s, ex);
+        }
+    }
+
+    //TODO: Better docs
+    /**
+     * Converts a datetime string to a {@link DateTime}.
+     * <p>
+     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     *
+     * @param s date time string.
+     * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime parseDateTimeQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseDateTime(s);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
     }
 
     private enum DateGroupId {
@@ -5493,8 +5609,8 @@ public class DateTimeUtils {
         Fraction(9, ChronoField.MILLI_OF_SECOND);
         //TODO MICRO and NANOs are not supported! -- fix and unit test!
 
-        public final int id;
-        public final ChronoField field;
+        final int id;
+        final ChronoField field;
 
         DateGroupId(int id, @NotNull ChronoField field) {
             this.id = id;
@@ -5502,29 +5618,61 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: rename this quiet and provide a loud version
+    //TODO: Better docs
+    /**
+     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+     *
+     * @param s time string.
+     * @return {@link ChronoField} for the finest units in the string (e.g. "10:00:00" would yield SecondOfMinute).
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    @ScriptApi
+    @NotNull
+    public static ChronoField parseTimePrecision(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse time precision (null): " + s);
+        }
+
+        try {
+            Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(s);
+            if (dtMatcher.matches()) {
+                DateGroupId[] parts = DateGroupId.values();
+                for (int i = parts.length - 1; i >= 0; i--) {
+                    String part = dtMatcher.group(parts[i].id);
+                    if (part != null && !part.isEmpty()) {
+                        return parts[i].field;
+                    }
+                }
+            }
+
+            throw new RuntimeException("Time precision does not match expected pattern");
+        }catch (Exception ex) {
+            throw new RuntimeException("Cannot parse time precision: " + s, ex);
+        }
+    }
+
+    //TODO: Better docs
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
      * @param s time string.
      * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
-     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
+     *      string (e.g. "10:00:00" would yield SecondOfMinute).
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
      */
     @ScriptApi
-    //TODO: @Nullable
-    public static ChronoField parseTimePrecision(final String s) {
-        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(s);
-        if (dtMatcher.matches()) {
-            DateGroupId[] parts = DateGroupId.values();
-            for (int i = parts.length - 1; i >= 0; i--) {
-                String part = dtMatcher.group(parts[i].id);
-                if (part != null && !part.isEmpty()) {
-                    return parts[i].field;
-                }
-            }
+    @Nullable
+    public static ChronoField parseTimePrecisionQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
         }
 
-        return null;
+        try {
+            return parseTimePrecision(s);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -5546,9 +5694,6 @@ public class DateTimeUtils {
         YMD
     }
 
-    //TODO: add to Format Patterns?
-    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
     @Nullable
     private static LocalDate matchStdDate(@NotNull final Pattern pattern, @NotNull final String s) {
@@ -5562,17 +5707,31 @@ public class DateTimeUtils {
         return null;
     }
 
+    //TODO: Better docs
     /**
      * Converts a string into a local date.
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
      *
+     * A local date is a date without a time or time zone.
+     *
      * @param s date string.
      * @param dateStyle style the date string is formatted in.
-     * @return local date, or null if the string can not be parsed.
+     * @return local date.
+     * @throws RuntimeException if the string cannot be parsed.
      */
     @ScriptApi
-    @Nullable
-    public static LocalDate parseDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
+    @NotNull
+    public static LocalDate parseDate(@NotNull final String s, @NotNull final DateStyle dateStyle) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse date (null): " + s);
+        }
+
+        //noinspection ConstantConditions
+        if (dateStyle == null) {
+            throw new RuntimeException("Cannot parse date (null style): " + s);
+        }
+
         try {
             LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
             if (localDate != null) {
@@ -5610,7 +5769,7 @@ public class DateTimeUtils {
                         yearFinal2DigitsGroup = "part1sub2";
                         break;
                     default:
-                        throw new IllegalStateException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
+                        throw new RuntimeException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
                 }
                 final int year;
                 // for 2 digit years, lean on java's standard interpretation
@@ -5623,12 +5782,56 @@ public class DateTimeUtils {
                 final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
                 return LocalDate.of(year, month, dayOfMonth);
             }
+
+            throw new RuntimeException("Date does not match expected pattern");
         } catch (Exception ex) {
-            return null;
+            throw new RuntimeException("Cannot parse date: " + s, ex);
         }
-        return null;
     }
 
+    //TODO: Better docs
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * @param s date string.
+     * @param dateStyle style the date string is formatted in.
+     * @return local date, or null if the string can not be parsed.
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate parseDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
+        if (s == null || s.length() <= 1 || dateStyle == null) {
+            return null;
+        }
+
+        try {
+            return parseDateQuiet(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    //TODO: Better docs
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * A local date is a date without a time or time zone.
+     *
+     * The date string is formatted using the default date style.
+     *
+     * @param s date string.
+     * @return local date parsed according to the default date style.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDate parseDate(@NotNull final String s) {
+        return parseDate(s, DEFAULT_DATE_STYLE);
+    }
+
+    //TODO: Better docs
     /**
      * Converts a string into a local date.
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
@@ -5646,64 +5849,25 @@ public class DateTimeUtils {
         return parseDateQuiet(s, DEFAULT_DATE_STYLE);
     }
 
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * A local date is a date without a time or time zone.
-     *
-     * @param s date string.
-     * @param dateStyle style the date string is formatted in.
-     * @return local date.
-     * @throws RuntimeException if the string cannot be parsed.
-     */
-    @ScriptApi
-    @NotNull
-    public static LocalDate parseDate(@Nullable final String s, @Nullable final DateStyle dateStyle) {
-        final LocalDate ret = parseDateQuiet(s, dateStyle);
 
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * A local date is a date without a time or time zone.
-     *
-     * The date string is formatted using the default date style.
-     *
-     * @param s date string.
-     * @return local date parsed according to the default date style.
-     * @throws RuntimeException if the string cannot be parsed.
-     */
-    @ScriptApi
-    @NotNull
-    public static LocalDate parseDate(@Nullable final String s) {
-        final LocalDate ret = parseDateQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
+    //TODO: Better docs
     /**
      * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
      *
      * A local time is the time that would be read from a clock and does not have a date or timezone.
      *
      * @param s string to be converted
-     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @return a {@link LocalTime} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
      */
     @ScriptApi
-    @Nullable
-    public static LocalTime parseLocalTimeQuiet(@Nullable final String s) {
+    @NotNull
+    public static LocalTime parseLocalTime(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse local time (null): " + s);
+        }
+
         try {
             final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
             if (matcher.matches()) {
@@ -5719,122 +5883,34 @@ public class DateTimeUtils {
                 }
                 return LocalTime.of(hour, minute, second, nanos);
             }
+
+            throw new RuntimeException("Local time does not match expected pattern");
         } catch (Exception ex) {
-            return null;
+            throw new RuntimeException("Cannot parse local time: " + s, ex);
         }
-        return null;
     }
 
+    //TODO: Better docs
     /**
      * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
      *
      * A local time is the time that would be read from a clock and does not have a date or timezone.
      *
      * @param s string to be converted
-     * @return a {@link LocalTime} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
-     */
-    @ScriptApi
-    @NotNull
-    public static LocalTime parseLocalTime(@Nullable final String s) {
-        LocalTime ret = parseLocalTimeQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse local time : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a time zone string to a {@link TimeZone}.
-     *
-     * @param s string to be converted
-     * @return a {@link TimeZone} represented by the input string, or null if the format is not recognized or an exception occurs.
-     * @see TimeZone
+     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
      */
     @ScriptApi
     @Nullable
-    public static TimeZone parseTimeZoneQuiet(@Nullable final String s) {
-        if( s == null){
+    public static LocalTime parseLocalTimeQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
             return null;
         }
 
         try {
-            return TimeZone.valueOf(s);
-        } catch (Exception ex){
+            return parseLocalTime(s);
+        } catch (Exception e) {
             return null;
         }
-    }
-
-    /**
-     * Converts a time zone string to a {@link TimeZone}.
-     *
-     * @param s string to be converted
-     * @return a {@link TimeZone} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted.
-     * @see TimeZone
-     */
-    @ScriptApi
-    @NotNull
-    public static TimeZone parseTimeZone(@Nullable final String s) {
-        final TimeZone ret = parseTimeZoneQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse time zone : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a time zone string to a {@link ZoneId}.
-     *
-     * @param s string to be converted
-     * @return a {@link ZoneId} represented by the input string, or null if the format is not recognized or an exception occurs.
-     * @see ZoneId
-     */
-    @ScriptApi
-    @Nullable
-    //TODO: get rid of parsing the TimeZone?
-    //TODO: rename
-    public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
-        if( s == null){
-            return null;
-        }
-
-        //TODO: needed -- support the inverse for creating a TimeZone?
-        final @Nullable TimeZone tz = parseTimeZoneQuiet(s);
-
-        if( tz != null ){
-            return tz.getZoneId();
-        }
-
-        try {
-            return ZoneId.of(s, ZoneId.SHORT_IDS);
-        } catch (Exception ex){
-            return null;
-        }
-    }
-
-    /**
-     * Converts a time zone string to a {@link ZoneId}.
-     *
-     * @param s string to be converted
-     * @return a {@link ZoneId} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted.
-     * @see ZoneId
-     */
-    @ScriptApi
-    @NotNull
-    public static ZoneId parseTimeZoneId(@Nullable final String s) {
-        final ZoneId ret = parseTimeZoneIdQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse time zone : " + s);
-        }
-
-        return ret;
     }
 
     // endregion

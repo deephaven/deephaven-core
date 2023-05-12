@@ -530,7 +530,7 @@ public class WhereFilterFactory {
             }
 
             if (dateLower != null) {
-                final ChronoField finestUnit = DateTimeUtils.parseTimePrecision(valString);
+                final ChronoField finestUnit = DateTimeUtils.parseTimePrecisionQuiet(valString);
                 dateUpper = finestUnit == null ? dateLower : dateLower.plus(1, finestUnit.getBaseUnit());
             }
 
