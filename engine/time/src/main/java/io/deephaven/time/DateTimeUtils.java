@@ -3208,6 +3208,1536 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Chronology
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int nanosOfMilli(@Nullable final DateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) dateTime.getNanosPartial();
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int nanosOfMilli(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) dateTime.getNanosPartial();
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int nanosOfMilli(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) dateTime.getNanosPartial();
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the millisecond.
+     * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int microsOfMilli(@Nullable final DateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the millisecond.
+     * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int microsOfMilli(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the millisecond.
+     * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    @ScriptApi
+    public static int microsOfMilli(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long nanosOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long nanosOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long nanosOfSecond(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getNano();
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long microsOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long microsOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static long microsOfSecond(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static int millisOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static int millisOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    @ScriptApi
+    public static int millisOfSecond(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfSecond(dateTime));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    @ScriptApi
+    public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return toZonedDateTime(dateTime, timeZone).getSecond();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    @ScriptApi
+    public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getSecond();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    @ScriptApi
+    public static int secondOfMinute(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return toZonedDateTime(dateTime, timeZone).getSecond();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    @ScriptApi
+    public static int secondOfMinute(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getSecond();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    @ScriptApi
+    public static int secondOfMinute(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getSecond();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    @ScriptApi
+    public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return toZonedDateTime(dateTime, timeZone).getMinute();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    @ScriptApi
+    public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getMinute();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    @ScriptApi
+    public static int minuteOfHour(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return toZonedDateTime(dateTime, timeZone).getMinute();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    @ScriptApi
+    public static int minuteOfHour(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        //noinspection ConstantConditions
+        return toZonedDateTime(dateTime, timeZone).getMinute();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    @ScriptApi
+    public static int minuteOfHour(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getMinute();
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getHour()*HOUR + dateTime.getMinute()*MINUTE + dateTime.getSecond()*SECOND + dateTime.getNano();
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null ) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToMillis(nanosOfDay(dateTime));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) nanosToSeconds(nanosOfDay(dateTime));
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return secondOfDay(dateTime,timeZone) / 60;
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return secondOfDay(dateTime,timeZone) / 60;
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return secondOfDay(dateTime,timeZone) / 60;
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return secondOfDay(dateTime,timeZone) / 60;
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return secondOfDay(dateTime) / 60;
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return hourOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return hourOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return hourOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return hourOfDay(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null ) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getHour();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    @ScriptApi
+    public static int dayOfWeek(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getDayOfMonth();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dayOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getDayOfYear();
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return monthOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return monthOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return monthOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return monthOfYear(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getMonthValue();
+    }
+
+    /**
+     * Returns the year for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    @ScriptApi
+    public static int year(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the year for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    @ScriptApi
+    public static int year(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the year for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    @ScriptApi
+    public static int year(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the year for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    @ScriptApi
+    public static int year(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the year for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    @ScriptApi
+    public static int year(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getYear();
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(dateTime, timeZone) % 100;
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(dateTime, timeZone) % 100;
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(dateTime, timeZone) % 100;
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(dateTime, timeZone) % 100;
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(dateTime) % 100;
+    }
+
+    /**
+     * Returns a date time for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @param timeZone time zone.
+     * @return null if either input is null; otherwise a date time representing the prior midnight in the
+     *      specified time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return toDateTime(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+    }
+
+    /**
+     * Returns a date time for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @param timeZone time zone.
+     * @return null if either input is null; otherwise a date time representing the prior midnight in the
+     *      specified time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return toDateTime(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+    }
+
+    /**
+     * Returns a date time for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @param timeZone time zone.
+     * @return null if either input is null; otherwise a date time representing the prior midnight in the
+     *      specified time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return toInstant(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+    }
+
+    /**
+     * Returns a date time for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @param timeZone time zone.
+     * @return null if either input is null; otherwise a date time representing the prior midnight in the
+     *      specified time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return toInstant(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+    }
+
+    /**
+     * Returns a date time for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @return null if either input is null; otherwise a date time representing the prior midnight in the
+     *      specified time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime dateTimeAtMidnight(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.toLocalDate().atStartOfDay(dateTime.getZone());
+    }
+
+    // endregion
+
             *** start here ***
 
     // region Parse Times
@@ -3331,7 +4861,7 @@ public class DateTimeUtils {
     //TODO: think through parseDateTime vs parseDateTimeQuiet
 
     /**
-     * Converts a datetime string to a {@link DateTime}.
+     * Converts a datetime string to a date time.
      * <p>
      * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
      *
@@ -3797,6 +5327,8 @@ public class DateTimeUtils {
 
     // endregion
 
+            *** start here ***
+
     // region Format Times
 
     /**
@@ -3936,339 +5468,8 @@ public class DateTimeUtils {
 
     // endregion
 
-    // region Chronology
 
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
-     *
-     * @param dateTime time.
-     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the millisecond.
-     */
-    @ScriptApi
-    public static int nanosOfMilli(@Nullable final DateTime dateTime) {
-        if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns the number of microseconds that have elapsed since the top of the millisecond.
-     * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
-     *
-     * @param dateTime time.
-     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
-     *      elapsed since the top of the millisecond.
-     */
-    @ScriptApi
-    public static int microsOfMilli(@Nullable final DateTime dateTime) {
-        if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getNano();
-    }
-
-    /**
-     * Returns the number of microseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the minute.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the minute.
-     */
-    @ScriptApi
-    public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getSecond();
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the hour.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the hour.
-     */
-    @ScriptApi
-    public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getMinute();
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        final @Nullable ZonedDateTime dt = toZonedDateTime(dateTime, timeZone);
-        //noinspection ConstantConditions
-        return dt.getHour()*HOUR + dt.getMinute()*MINUTE + dt.getSecond()*SECOND + dt.getNano();
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return secondOfDay(dateTime,timeZone) / 60;
-    }
-
-    /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return toZonedDateTime(dateTime, timeZone).getHour();
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the week for a {@link DateTime} in the specified time zone, with 1 being
-     * Monday and 7 being Sunday.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-     */
-    @ScriptApi
-    public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return toZonedDateTime(dateTime, timeZone).getDayOfWeek().getValue();
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the month for a {@link DateTime} and specified time zone.
-     * The first day of the month returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-     */
-    @ScriptApi
-    public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return toZonedDateTime(dateTime, timeZone).getDayOfMonth();
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
-     * The first day of the year returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-     */
-    @ScriptApi
-    public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getDayOfYear();
-    }
-
-    /**
-     * Returns a 1-based int value of the month of the year (Julian date) for a {@link DateTime} in the specified time zone.
-     * January is 1, February is 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-     */
-    @ScriptApi
-    public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return toZonedDateTime(dateTime, timeZone).getMonthValue();
-    }
-
-    /**
-     * Returns the year for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-     */
-    @ScriptApi
-    public static int year(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return toZonedDateTime(dateTime, timeZone).getYear();
-    }
-
-    /**
-     * Returns the year of the century (two-digit year) for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-     */
-    @ScriptApi
-    public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return year(dateTime, timeZone) % 100;
-    }
-
-    /**
-     * Returns a {@link DateTime} for the prior midnight in the specified time zone.
-     *
-     * @param dateTime time to compute the prior midnight for.
-     * @param timeZone time zone.
-     * @return null if either input is null; otherwise a {@link DateTime} representing the prior midnight in the
-     *      specified time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return toDateTime(toZonedDateTime(dateTime, timeZone).toLocalDate().atStartOfDay(timeZone.getZoneId()));
-    }
-
-    // endregion
-
+            *** start here ***
     // region Time Bins
 
     /**
