@@ -13,7 +13,6 @@ import java.io.Serializable;
  * A time period that can be expressed in an easily human-readable format.
  */
 public class Period implements Comparable<Period>, Serializable {
-    //TODO: test coverage
 
     private String periodString;
 
@@ -91,8 +90,16 @@ public class Period implements Comparable<Period>, Serializable {
     }
 
     @Override
-    public int compareTo(Period dateTime) {
-        return periodString.compareTo(dateTime.periodString);
+    public int compareTo(Period period) {
+        if( isPositive && period.isPositive) {
+            return duration.compareTo(period.duration);
+        } else if( !isPositive && !period.isPositive){
+            return -duration.compareTo(period.duration);
+        } if(isPositive && !period.isPositive){
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
     @Override

@@ -32,14 +32,8 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 //TODO: @SuppressWarnings("unused")
 @SuppressWarnings({"RegExpRedundantEscape", "unused"})
 public class DateTimeUtils {
-    //TODO: rename class
     //TODO: test coverage
-    //TODO: review function subsections for consistency
-    //TODO: review function subsections for missing functions
-    //TODO: methods to use ZoneId instead of just TimeZone
-    //TODO: remove TZ_DEFAULT / add @see for TZ_DEFUALT
-    //TODO: add String timeZone methods? -- probably No
-    //TODO: parse more generalized timezone
+    //TODO: remove TZ_DEFAULT / add @see for TZ_DEFAULT
     //TODO: what are the @ScriptApi annotations???
 
     // region Format Patterns
@@ -74,7 +68,7 @@ public class DateTimeUtils {
             Pattern.compile("^L([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
 
     /**
-     * Matches datetimes.
+     * Matches date times.
      */
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
             "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z]+");
@@ -90,7 +84,7 @@ public class DateTimeUtils {
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
 
     /**
-     * Matches datetimes.
+     * Matches date times.
      */
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
@@ -1671,7 +1665,7 @@ public class DateTimeUtils {
     /**
      * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
      *
-     * @param micros micrseconds since Epoch.
+     * @param micros microseconds since Epoch.
      * @param timeZone time zone.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
@@ -2118,7 +2112,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an Excel time represented as a double to a {@link DateTime} using the default time zone..
+     * Converts an Excel time represented as a double to a {@link DateTime} using the default time zone.
      *
      * @param excel excel time represented as a double.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime} using the default time zone.
@@ -2164,7 +2158,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an Excel time represented as a double to an {@link Instant} using the default time zone..
+     * Converts an Excel time represented as a double to an {@link Instant} using the default time zone.
      *
      * @param excel excel time represented as a double.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link Instant} using the default time zone.
@@ -2210,7 +2204,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an Excel time represented as a double to a {@link ZonedDateTime} using the default time zone..
+     * Converts an Excel time represented as a double to a {@link ZonedDateTime} using the default time zone.
      *
      * @param excel excel time represented as a double.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime} using the default time zone.
@@ -2631,7 +2625,7 @@ public class DateTimeUtils {
      * @param dateTime1 first date time.
      * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long minus(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
@@ -2648,7 +2642,7 @@ public class DateTimeUtils {
      * @param dateTime1 first date time.
      * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
@@ -2665,7 +2659,7 @@ public class DateTimeUtils {
      * @param dateTime1 first date time.
      * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
@@ -2682,7 +2676,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffNanos(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2695,7 +2689,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffNanos(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2708,7 +2702,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffNanos(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2721,7 +2715,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMicros(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2738,7 +2732,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMicros(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2755,7 +2749,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMicros(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2772,7 +2766,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMillis(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2789,7 +2783,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMillis(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2806,7 +2800,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffSeconds(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2823,7 +2817,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffSeconds(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2840,7 +2834,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffSeconds(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2857,7 +2851,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffMinutes(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2874,7 +2868,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffMinutes(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2891,7 +2885,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffMinutes(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2908,7 +2902,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffDays(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2925,7 +2919,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffDays(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2942,7 +2936,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffDays(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2959,7 +2953,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYears(@Nullable final DateTime start, @Nullable final DateTime end) {
@@ -2976,7 +2970,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYears(@Nullable final Instant start, @Nullable final Instant end) {
@@ -2993,7 +2987,7 @@ public class DateTimeUtils {
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYears(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -3245,7 +3239,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return (int) dateTime.getNanosPartial();
+        return nanosOfMilli(toDateTime(dateTime));
     }
 
     /**
@@ -3261,7 +3255,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return (int) dateTime.getNanosPartial();
+        return nanosOfMilli(toDateTime(dateTime));
     }
 
     /**
@@ -3295,7 +3289,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+        return microsOfMilli(toDateTime(dateTime));
     }
 
     /**
@@ -3312,7 +3306,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+        return microsOfMilli(toDateTime(dateTime));
     }
 
     /**
@@ -5321,7 +5315,11 @@ public class DateTimeUtils {
             throw new RuntimeException("Cannot parse time zone ID (null): " + s);
         }
 
-        *** should also try parsing timezone
+        try {
+            return parseTimeZone(s).getZoneId();
+        } catch (Exception ex){
+            // ignore
+        }
 
         try {
             return ZoneId.of(s, ZoneId.SHORT_IDS);
@@ -5915,33 +5913,4 @@ public class DateTimeUtils {
 
     // endregion
 
-
-
-
-    //TODO: RENAME: getZonedDateTime : toZonedDateTime
-    //TODO: RENAME: makeZonedDateTime : epochNanosToZonedDateTime
-    //TODO: ADD: epochMicrosToZonedDateTime
-    //TODO: ADD: epochMillisToZonedDateTime
-    //TODO: ADD: epochSecondsToZonedDateTime
-    //TODO: RENAME makeInstant : epochNanosToInstant
-    //TODO: ADD epochMicrosToInstant
-    //TODO: ADD epochMillisToInstant
-    //TODO: ADD epochSecondsToInstant
-    //TODO: RENAME: convertLocalTimeQuiet : parseLocalTimeQuiet
-    //TODO: ADD: parseLocalTime
-    //TODO: RENAME: convertDate : parseDate
-    //TODO: RENAME: convertDateQuiet : parseDateQuiet
-    //TODO: RENAME: toEpochNano : epochNanos
-    //TODO: RENAME: getFinestDefinedUnit : parseTimePrecision
-    //TODO: RENAME: convertExpression : replace TimeLiteralReplacedExpression.convertExpression
-    //TODO: RENAME: autoEpochToTime : epochAutoToDateTime
-    //TODO: RENAME: autoEpochToNanos : epochAutoToEpochNanos
-    //TODO: RIP: millisToDateAtMidnight: replace with dateTimeAtMidnight(epochMillisToDateTime(millis), timeZone)
-    //TODO: RIP: cappedTimeOffset : replace with: max(dt+p,cap)
-    //TODO: RIP: expressionToNanos : replace with parseNanos or parseDateTime, note that it no longer parses datetimes (which was a bad idea)
-    //TODO: RIP: createFormatter: deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
-    //TODO: RIP: getPartitionFromTimestampMillis: deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
-    //TODO: RIP: getPartitionFromTimestampMicros : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
-    //TODO: RIP: getPartitionFromTimestampNanos : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
-    //TODO: RIP: getPartitionFromTimestampSeconds : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
 }

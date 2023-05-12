@@ -69,4 +69,24 @@ public class TestPeriod extends BaseArrayTestCase {
 
     }
 
+    public void testEqualsCompare() {
+        Period p1 = new Period("2D");
+        Period p2 = new Period("1D");
+        Period p3 = new Period("-1D");
+        Period p4 = new Period("-2D");
+        Period p1_2 = new Period("2D");
+
+        assertEquals(p1, p1);
+        assertEquals(p1, p1_2);
+        assertFalse(p1.equals(p2));
+        assertEquals(1, p1.compareTo(p2));
+        assertEquals(-1, p2.compareTo(p1));
+        assertEquals(0, p1.compareTo(p1));
+        assertEquals(0, p1.compareTo(p1_2));
+        assertEquals(1, p3.compareTo(p4));
+        assertEquals(-1, p4.compareTo(p3));
+        assertEquals(1, p1.compareTo(p4));
+        assertEquals(-1, p4.compareTo(p1));
+    }
+
 }

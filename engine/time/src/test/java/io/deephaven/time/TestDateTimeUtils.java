@@ -25,7 +25,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(jodaDateTime.getMillis(), DateTimeUtils.epochMillis(dateTime));
 
-        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis(null));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((DateTime)null));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((Instant)null));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((ZonedDateTime) null));
     }
 
     public void testNanos() throws Exception {
@@ -531,7 +533,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.lowerBin(time, 5 * minute));
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:00:00 NY"),
                 DateTimeUtils.lowerBin(time, hour));
-        TestCase.assertEquals(null, DateTimeUtils.lowerBin(null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((DateTime) null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((Instant) null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute));
         TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, io.deephaven.util.QueryConstants.NULL_LONG));
 
         TestCase.assertEquals(DateTimeUtils.lowerBin(time, second),
@@ -546,7 +550,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY"),
                 DateTimeUtils.lowerBin(time, 5 * minute, minute));
-        TestCase.assertEquals(null, DateTimeUtils.lowerBin(null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((DateTime) null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((Instant) null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute, minute));
         TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, QueryConstants.NULL_LONG, minute));
         TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, 5 * minute, QueryConstants.NULL_LONG));
 
@@ -566,7 +572,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(time, 5 * minute));
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T07:00:00 NY"),
                 DateTimeUtils.upperBin(time, hour));
-        TestCase.assertEquals(null, DateTimeUtils.upperBin(null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((DateTime) null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((Instant) null, 5 * minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute));
         TestCase.assertEquals(null, DateTimeUtils.upperBin(time, io.deephaven.util.QueryConstants.NULL_LONG));
 
         TestCase.assertEquals(DateTimeUtils.upperBin(time, second),
@@ -581,7 +589,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY"),
                 DateTimeUtils.upperBin(time, 5 * minute, minute));
-        TestCase.assertEquals(null, DateTimeUtils.upperBin(null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((DateTime) null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((Instant) null, 5 * minute, minute));
+        TestCase.assertEquals(null, DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute, minute));
         TestCase.assertEquals(null, DateTimeUtils.upperBin(time, io.deephaven.util.QueryConstants.NULL_LONG, minute));
         TestCase.assertEquals(null, DateTimeUtils.upperBin(time, 5 * minute, QueryConstants.NULL_LONG));
 
