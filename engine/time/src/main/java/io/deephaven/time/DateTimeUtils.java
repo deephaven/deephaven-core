@@ -277,6 +277,15 @@ public class DateTimeUtils {
         return l1 - l2;
     }
 
+    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
+        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+            throw new DateTimeOverflowException("Numeric overflow detected during conversion of " + epochSecond
+                    + " to nanoseconds");
+        }
+
+        return epochSecond * 1_000_000_000L + nanoOfSecond;
+    }
+
     // endregion
 
     // region Clock
@@ -1907,24 +1916,45 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Conversions: Excel
 
-    *** start here ***
+    private static double epochMillisToExcelTime(final long millis, final ZoneId timeZone) {
+        return (double) (millis + java.util.TimeZone.getTimeZone(timeZone).getOffset(millis)) / 86400000 + 25569;
+    }
 
+    private static long excelTimeToEpochMillis(final double excel, final ZoneId timeZone) {
+        final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone);
 
-    //TODO: name
-
-    // region Conversions: XXX
-
-    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
-
-
+        //TODO: test this DST handling
+        final long mpo = (long)((excel - 25569) * 86400000);
+        final long o = tz.getOffset(mpo);
+        final long m = mpo - o;
+        final long o2 = tz.getOffset(m);
+        return mpo-o2;
+    }
 
     /**
      * Converts a date time to an Excel time represented as a double.
      *
      * @param dateTime date time to convert.
-     * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
-     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        return epochMillisToExcelTime(epochMillis(dateTime), timeZone);
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
      */
     @ScriptApi
     public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
@@ -1932,9 +1962,136 @@ public class DateTimeUtils {
             return 0.0;
         }
 
-        long millis = dateTime.getMillis();
+        return toExcelTime(dateTime, timeZone.getZoneId());
+    }
 
-        return (double) (millis + java.util.TimeZone.getTimeZone(timeZone.getZoneId()).getOffset(millis)) / 86400000 + 25569;
+    /**
+     * Converts a date time to an Excel time represented as a double in the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
+     * @see TimeZone#TZ_DEFAULT
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final DateTime dateTime) {
+        if( dateTime == null){
+            return 0.0;
+        }
+
+        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        return epochMillisToExcelTime(epochMillis(dateTime), timeZone);
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        return toExcelTime(dateTime, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double in the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
+     * @see TimeZone#TZ_DEFAULT
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final Instant dateTime) {
+        if( dateTime == null){
+            return 0.0;
+        }
+
+        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final ZonedDateTime dateTime, @Nullable final ZoneId timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        return epochMillisToExcelTime(epochMillis(dateTime), timeZone);
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone time zone to use when interpreting the date time.
+     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final ZonedDateTime dateTime, @Nullable final TimeZone timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        return toExcelTime(dateTime, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts a date time to an Excel time represented as a double in the default time zone.
+     *
+     * @param dateTime date time to convert.
+     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
+     * @see TimeZone#TZ_DEFAULT
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final ZonedDateTime dateTime) {
+        if( dateTime == null){
+            return 0.0;
+        }
+
+        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts an Excel time represented as a double to a {@link DateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime excelToDateTime(final double excel, @Nullable final ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
+        return epochNanosToDateTime(excelTimeToEpochMillis(excel, timeZone));
     }
 
     /**
@@ -1951,38 +2108,136 @@ public class DateTimeUtils {
             return null;
         }
 
-        final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone.getZoneId());
-
-        //TODO: test this DST handling
-        final long mpo = (long)((excel - 25569) * 86400000);
-        final long o = tz.getOffset(mpo);
-        final long m = mpo - o;
-        final long o2 = tz.getOffset(m);
-        final long m2 = mpo-o2;
-        return epochMillisToDateTime(m2);
+        return excelToDateTime(excel, timeZone.getZoneId());
     }
 
+    /**
+     * Converts an Excel time represented as a double to a {@link DateTime} using the default time zone..
+     *
+     * @param excel excel time represented as a double.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime} using the default time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime excelToDateTime(final double excel) {
+        return excelToDateTime(excel, TimeZone.TZ_DEFAULT);
+    }
 
-
-    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
-        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
-            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
-                    + " to nanoseconds");
+    /**
+     * Converts an Excel time represented as a double to an {@link Instant}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to an {@link Instant}.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant excelToInstant(final double excel, @Nullable final ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
         }
 
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
+        return epochNanosToInstant(excelTimeToEpochMillis(excel, timeZone));
     }
 
+    /**
+     * Converts an Excel time represented as a double to an {@link Instant}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to an {@link Instant}.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant excelToInstant(final double excel, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
 
+        return excelToInstant(excel, timeZone.getZoneId());
+    }
 
+    /**
+     * Converts an Excel time represented as a double to an {@link Instant} using the default time zone..
+     *
+     * @param excel excel time represented as a double.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link Instant} using the default time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant excelToInstant(final double excel) {
+        return excelToInstant(excel, TimeZone.TZ_DEFAULT);
+    }
 
+    /**
+     * Converts an Excel time represented as a double to a {@link ZonedDateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime excelToZonedDateTime(final double excel, @Nullable final ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
+        return epochNanosToZonedDateTime(excelTimeToEpochMillis(excel, timeZone));
+    }
+
+    /**
+     * Converts an Excel time represented as a double to a {@link ZonedDateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime excelToZonedDateTime(final double excel, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
+        return excelToZonedDateTime(excel, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts an Excel time represented as a double to a {@link ZonedDateTime} using the default time zone..
+     *
+     * @param excel excel time represented as a double.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime} using the default time zone.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime excelToZonedDateTime(final double excel) {
+        return excelToZonedDateTime(excel, TimeZone.TZ_DEFAULT);
+    }
 
 
     // endregion
 
-    // region Time Arithmetic
+    // region Arithmetic
 
-    //todo add ZonedDateTime?
+    /**
+     * Adds nanoseconds to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param nanos number of nanoseconds to add.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, final long nanos) {
+        if (dateTime == null || nanos == NULL_LONG) {
+            return null;
+        }
+
+        return new DateTime(checkOverflowPlus(dateTime.getNanos(), nanos, false));
+    }
 
     /**
      * Adds nanoseconds to a date time.
@@ -2018,12 +2273,57 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime plus(@Nullable final DateTime dateTime, final long nanos) {
+    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, final long nanos) {
         if (dateTime == null || nanos == NULL_LONG) {
             return null;
         }
 
-        return new DateTime(checkOverflowPlus(dateTime.getNanos(), nanos, false));
+        try {
+            return dateTime.plusNanos(nanos);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+
+
+
+    //TODO: import java.time.Duration!
+
+    /**
+     * Adds a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(plus(toInstant(dateTime), period));
+    }
+
+    /**
+     * Adds a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(plus(toInstant(dateTime), period));
     }
 
     /**
@@ -2084,12 +2384,16 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final java.time.Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
 
-        return toDateTime(plus(toInstant(dateTime), period));
+        try {
+            return dateTime.plus(period);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
     }
 
     /**
@@ -2102,12 +2406,39 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Period period) {
+    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Period period) {
         if (dateTime == null || period == null) {
             return null;
         }
 
-        return toDateTime(plus(toInstant(dateTime), period));
+        try {
+            if (period.isPositive()) {
+                return dateTime.plus(period.getDuration());
+            } else {
+                return dateTime.minus(period.getDuration());
+            }
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts nanoseconds from a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param nanos number of nanoseconds to subtract.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, final long nanos) {
+        if (dateTime == null || nanos == NULL_LONG) {
+            return null;
+        }
+
+        return new DateTime(checkUnderflowMinus(dateTime.getNanos(), nanos, true));
     }
 
     /**
@@ -2144,12 +2475,52 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime minus(@Nullable final DateTime dateTime, final long nanos) {
+    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, final long nanos) {
         if (dateTime == null || nanos == NULL_LONG) {
             return null;
         }
 
-        return new DateTime(checkUnderflowMinus(dateTime.getNanos(), nanos, true));
+        try {
+            return dateTime.minusNanos(nanos);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(minus(toInstant(dateTime), period));
+    }
+
+    /**
+     * Subtracts a time period to a date time.
+     *
+     * @param dateTime starting date time value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        return toDateTime(minus(toInstant(dateTime), period));
     }
 
     /**
@@ -2210,12 +2581,16 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final java.time.Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
 
-        return toDateTime(minus(toInstant(dateTime), period));
+        try {
+            return dateTime.minus(period);
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
     }
 
     /**
@@ -2228,12 +2603,37 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Period period) {
+    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Period period) {
         if (dateTime == null || period == null) {
             return null;
         }
 
-        return toDateTime(minus(toInstant(dateTime), period));
+        try {
+            if (period.isPositive()) {
+                return dateTime.minus(period.getDuration());
+            } else {
+                return dateTime.plus(period.getDuration());
+            }
+        } catch (Exception ex){
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtract one date time from another and return the difference in nanoseconds.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long minus(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return NULL_LONG;
+        }
+
+        return checkUnderflowMinus(dateTime1.getNanos(), dateTime2.getNanos(), true);
     }
 
     /**
@@ -2262,12 +2662,25 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static long minus(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+    public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return NULL_LONG;
         }
 
-        return checkUnderflowMinus(dateTime1.getNanos(), dateTime2.getNanos(), true);
+        return checkUnderflowMinus(epochNanos(dateTime1), epochNanos(dateTime2), true);
+    }
+
+    /**
+     * Returns the difference in nanoseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffNanos(@Nullable final DateTime start, @Nullable final DateTime end) {
+        return minus(end, start);
     }
 
     /**
@@ -2292,8 +2705,25 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static long diffNanos(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static long diffNanos(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         return minus(end, start);
+    }
+
+    /**
+     * Returns the difference in microseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffMicros(@Nullable final DateTime start, @Nullable final DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMicros(diffNanos(start, end));
     }
 
     /**
@@ -2322,29 +2752,12 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static long diffMicros(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static long diffMicros(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_LONG;
         }
 
         return nanosToMicros(diffNanos(start, end));
-    }
-
-    /**
-     * Returns the difference in milliseconds between two date time values.
-     *
-     * @param start start time.
-     * @param end end time.
-     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
-     */
-    @ScriptApi
-    public static long diffMillis(@Nullable final Instant start, @Nullable final Instant end) {
-        if (start == null || end == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
-        }
-
-        return nanosToMillis(diffNanos(start, end));
     }
 
     /**
@@ -2362,6 +2775,40 @@ public class DateTimeUtils {
         }
 
         return nanosToMillis(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in milliseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static long diffMillis(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMillis(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in seconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffSeconds(@Nullable final DateTime start, @Nullable final DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / SECOND;
     }
 
     /**
@@ -2390,12 +2837,29 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffSeconds(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static double diffSeconds(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
 
         return (double) diffNanos(start, end) / SECOND;
+    }
+
+    /**
+     * Returns the difference in minutes between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffMinutes(@Nullable final DateTime start, @Nullable final DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / MINUTE;
     }
 
     /**
@@ -2424,12 +2888,29 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffMinutes(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static double diffMinutes(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
 
         return (double) diffNanos(start, end) / MINUTE;
+    }
+
+    /**
+     * Returns the difference in days between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffDays(@Nullable final DateTime start, @Nullable final DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / DAY;
     }
 
     /**
@@ -2458,12 +2939,29 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffDays(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static double diffDays(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
 
         return (double) diffNanos(start, end) / DAY;
+    }
+
+    /**
+     * Returns the difference in years (365-days) between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffYears(@Nullable final DateTime start, @Nullable final DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) * YEARS_PER_NANO;
     }
 
     /**
@@ -2492,7 +2990,7 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffYears(@Nullable final DateTime start, @Nullable final DateTime end) {
+    public static double diffYears(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
@@ -2501,6 +2999,8 @@ public class DateTimeUtils {
     }
 
     // endregion
+
+    *** start here ***
 
     // region Comparisons
 
