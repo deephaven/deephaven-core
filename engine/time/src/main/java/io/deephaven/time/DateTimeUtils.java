@@ -4985,6 +4985,268 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Format
+
+    /**
+     * Pads a string with zeros.
+     *
+     * @param str string.
+     * @param length desired time string length.
+     * @return input string padded with zeros to the desired length.  If the input string is longer than the
+     *      desired length, the input string is returned.
+     */
+    @ScriptApi
+    @NotNull
+    static String padZeros(@NotNull final String str, final int length) {
+        if (length <= str.length()) {
+            return str;
+        }
+        return "0".repeat(length - str.length()) + str;
+    }
+
+    /**
+     * Returns a nanosecond duration formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     *
+     * @param nanos nanoseconds.
+     * @return the nanosecond duration formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     */
+    @ScriptApi
+    @NotNull
+    public static String formatNanos(long nanos) {
+        StringBuilder buf = new StringBuilder(25);
+
+        if (nanos < 0) {
+            buf.append('-');
+            nanos = -nanos;
+        }
+
+        int days = (int) (nanos / 86400000000000L);
+
+        nanos %= 86400000000000L;
+
+        int hours = (int) (nanos / 3600000000000L);
+
+        nanos %= 3600000000000L;
+
+        int minutes = (int) (nanos / 60000000000L);
+
+        nanos %= 60000000000L;
+
+        int seconds = (int) (nanos / 1000000000L);
+
+        nanos %= 1000000000L;
+
+        if (days != 0) {
+            buf.append(days).append('T');
+        }
+
+        buf.append(hours).append(':').append(padZeros(String.valueOf(minutes), 2)).append(':')
+                .append(padZeros(String.valueOf(seconds), 2));
+
+        if (nanos != 0) {
+            buf.append('.').append(padZeros(String.valueOf(nanos), 9));
+        }
+
+        return buf.toString();
+    }
+
+    //TODO: format millis
+    //TODO: format micros
+    //TODO: format seconds
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDateTime(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDateTime(toZonedDateTime(dateTime, timeZone), timeZone);
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDateTime(toInstant(dateTime), timeZone);
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDateTime(toZonedDateTime(dateTime, timeZone), timeZone);
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDateTime(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        final long nanosPartial = toDateTime(dateTime).getNanosPartial();
+        return ISO_LOCAL_DATE.format(dateTime)
+                + padZeros(String.valueOf(nanosPartial), 6) + " " + dateTime.getZone().getId();
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    @ScriptApi
+    @Nullable
+    private static String formatDateTime(@Nullable final ZonedDateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        //noinspection ConstantConditions
+        final long nanosPartial = toDateTime(dateTime).getNanosPartial();
+        return ISO_LOCAL_DATE.format(dateTime)
+                + padZeros(String.valueOf(nanosPartial), 6) + " " + timeZone.toString().substring(3);
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDate(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDate(toZonedDateTime(dateTime, timeZone.getZoneId()));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDate(toZonedDateTime(dateTime, timeZone));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return formatDate(toZonedDateTime(dateTime, timeZone.getZoneId()));
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(dateTime);
+    }
+
+    // endregion
+
 
 
 
@@ -5577,146 +5839,6 @@ public class DateTimeUtils {
 
     // endregion
 
-            *** start here ***
-
-    // region Format Times
-
-    /**
-     * Pads a string with zeros.
-     *
-     * @param str string.
-     * @param length desired time string length.
-     * @return input string padded with zeros to the desired length.  If the input string is longer than the
-     *      desired length, the input string is returned.
-     */
-    @ScriptApi
-    @NotNull
-    static String padZeros(@NotNull final String str, final int length) {
-        if (length <= str.length()) {
-            return str;
-        }
-        return "0".repeat(length - str.length()) + str;
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        //noinspection ConstantConditions
-        return JAVA_DATE_TIME_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime))
-                + padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone))
-                + padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-    */
-    @ScriptApi
-    @Nullable
-    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        //noinspection ConstantConditions
-        return JAVA_DATE_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime));
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone));
-    }
-
-    /**
-     * Returns nanoseconds formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
-     *
-     * @param nanos nanoseconds.
-     * @return the nanoseconds formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
-     */
-    @ScriptApi
-    @NotNull
-    public static String formatNanos(long nanos) {
-        StringBuilder buf = new StringBuilder(25);
-
-        if (nanos < 0) {
-            buf.append('-');
-            nanos = -nanos;
-        }
-
-        int days = (int) (nanos / 86400000000000L);
-
-        nanos %= 86400000000000L;
-
-        int hours = (int) (nanos / 3600000000000L);
-
-        nanos %= 3600000000000L;
-
-        int minutes = (int) (nanos / 60000000000L);
-
-        nanos %= 60000000000L;
-
-        int seconds = (int) (nanos / 1000000000L);
-
-        nanos %= 1000000000L;
-
-        if (days != 0) {
-            buf.append(days).append('T');
-        }
-
-        buf.append(hours).append(':').append(padZeros(String.valueOf(minutes), 2)).append(':')
-                .append(padZeros(String.valueOf(seconds), 2));
-
-        if (nanos != 0) {
-            buf.append('.').append(padZeros(String.valueOf(nanos), 9));
-        }
-
-        return buf.toString();
-    }
-
-    // endregion
 
 
 
