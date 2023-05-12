@@ -75,7 +75,7 @@ def testGoClient = Docker.registerDockerTask(project, 'testGoClient') {
                       ''')
         copyFile('.', '/project/')
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '8080'
+        environmentVariable 'DH_PORT', '10000'
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
