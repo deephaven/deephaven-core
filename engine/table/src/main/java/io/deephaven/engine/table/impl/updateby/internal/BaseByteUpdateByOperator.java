@@ -5,6 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;

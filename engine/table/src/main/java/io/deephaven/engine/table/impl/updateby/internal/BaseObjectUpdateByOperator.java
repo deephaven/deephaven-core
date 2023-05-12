@@ -5,6 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import io.deephaven.chunk.Chunk;

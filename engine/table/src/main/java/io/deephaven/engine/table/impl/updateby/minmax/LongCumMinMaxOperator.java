@@ -9,14 +9,13 @@ import io.deephaven.engine.table.ColumnSource;
 import java.util.Map;
 import java.util.Collections;
 import io.deephaven.time.DateTime;
-import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;

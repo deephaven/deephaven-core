@@ -8,7 +8,6 @@ import io.deephaven.api.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import org.jetbrains.annotations.NotNull;
 

@@ -9,7 +9,7 @@ import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.api.expression.ExpressionException;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;

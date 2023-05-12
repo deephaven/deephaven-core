@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.minmax;
 
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectBinaryOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
