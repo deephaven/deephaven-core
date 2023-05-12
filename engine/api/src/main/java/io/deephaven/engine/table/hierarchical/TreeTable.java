@@ -45,9 +45,9 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * Get a new TreeTable with {@code columns} designated for node-level filtering, in addition to any columns already
      * so-designated on {@code this} TreeTable.
      * <p>
-     * Filters specified via {@link #withFilters(Collection)}, typically from the UI, that only use the designated
-     * node-level filtering columns will be applied to the nodes during snapshots. If no node-filter columns are
-     * designated, no filters will be handled at node level.
+     * Filters specified via {@link #withFilter(Filter)}, typically from the UI, that only use the designated node-level
+     * filtering columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
+     * filters will be handled at node level.
      * <p>
      * Filters that include other columns are handled by filtering the source table in a ancestor-preserving manner and
      * re-applying the tree operation to the result to produce a new TreeTable. Users of orphan promotion or other

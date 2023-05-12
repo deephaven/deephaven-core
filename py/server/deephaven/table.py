@@ -24,7 +24,7 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
-from deephaven.filters import Filter
+from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.ugp import auto_locking_ctx
@@ -38,7 +38,7 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
+_JPair = jpy.get_type("io.deephaven.api.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
@@ -144,9 +144,8 @@ class _FilterOperationsRecorder(Protocol):
 
     def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
-        filters = to_sequence(filters)
         j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
-        return self.__class__(j_filter_ops_recorder.where(filters))
+        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
 
 class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
@@ -248,12 +247,7 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
-            filters = to_sequence(filters)
-            if filters and isinstance(filters[0], str):
-                filters = Filter.from_(filters)
-            filters = j_array_list(filters)
-
-            return RollupTable(j_rollup_table=self.j_rollup_table.withFilters(filters),
+            return RollupTable(j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
                                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
@@ -345,12 +339,7 @@ class TreeTable(JObjectWrapper):
         """
 
         try:
-            filters = to_sequence(filters)
-            if filters and isinstance(filters[0], str):
-                filters = Filter.from_(filters)
-            filters = j_array_list(filters)
-
-            return TreeTable(j_tree_table=self.j_tree_table.withFilters(filters), id_col=self.id_col,
+            return TreeTable(j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter), id_col=self.id_col,
                              parent_col=self.parent_col)
         except Exception as e:
             raise DHError(e, "with_filters operation on TreeTable failed.") from e
@@ -922,11 +911,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                if filters and isinstance(filters[0], str):
-                    j_table = self.j_table.where(*filters)
-                else:
-                    j_table = self.j_table.where(j_array_list(filters))
-                return Table(j_table=j_table)
+                return Table(j_table=self.j_table.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -972,12 +957,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
-    def where_one_of(self, filters: Union[str, Sequence[str]] = None) -> Table:
+    def where_one_of(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> Table:
         """The where_one_of method creates a new table containing rows from the source table, where the rows match at
         least one filter.
 
         Args:
-            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -988,9 +973,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(
-                    j_table=self.j_table.where(j_array_list([_JFilterOr.of(_JFilter.from_(*filters))]))
-                )
+                return Table(j_table=self.j_table.where(or_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 

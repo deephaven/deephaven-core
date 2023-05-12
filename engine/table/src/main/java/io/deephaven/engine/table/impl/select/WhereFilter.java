@@ -39,10 +39,6 @@ public interface WhereFilter extends Filter {
         return Arrays.stream(filters).map(WhereFilter::copy).toArray(WhereFilter[]::new);
     }
 
-    static Collection<WhereFilter> copyFrom(Collection<WhereFilter> filters) {
-        return filters.stream().map(WhereFilter::copy).collect(Collectors.toList());
-    }
-
     @InternalUseOnly
     static WhereFilter[] fromInternal(Filter filter) {
         return from(FilterToListImpl.of(filter));
