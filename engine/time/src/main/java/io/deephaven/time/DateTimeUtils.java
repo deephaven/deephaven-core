@@ -3000,9 +3000,24 @@ public class DateTimeUtils {
 
     // endregion
 
-    *** start here ***
-
     // region Comparisons
+
+    /**
+     * Evaluates whether one date time value is before a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or before dateTime1.
+     */
+    @ScriptApi
+    public static boolean isBefore(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() < dateTime2.getNanos();
+    }
 
     /**
      * Evaluates whether one date time value is before a second date time value.
@@ -3030,12 +3045,29 @@ public class DateTimeUtils {
      *      to or before dateTime1.
      */
     @ScriptApi
-    public static boolean isBefore(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+    public static boolean isBefore(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
 
-        return dateTime1.getNanos() < dateTime2.getNanos();
+        return dateTime1.isBefore(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is before or equal to a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is before dateTime1.
+     */
+    @ScriptApi
+    public static boolean isBeforeOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() <= dateTime2.getNanos();
     }
 
     /**
@@ -3064,12 +3096,29 @@ public class DateTimeUtils {
      *      is before dateTime1.
      */
     @ScriptApi
-    public static boolean isBeforeOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+    public static boolean isBeforeOrEqual(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
 
-        return dateTime1.getNanos() <= dateTime2.getNanos();
+        return dateTime1.isBefore(dateTime2) || dateTime1.equals(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is after a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or after dateTime1.
+     */
+    @ScriptApi
+    public static boolean isAfter(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() > dateTime2.getNanos();
     }
 
     /**
@@ -3098,12 +3147,29 @@ public class DateTimeUtils {
      *      to or after dateTime1.
      */
     @ScriptApi
-    public static boolean isAfter(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+    public static boolean isAfter(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
 
-        return dateTime1.getNanos() > dateTime2.getNanos();
+        return dateTime1.isAfter(dateTime2);
+    }
+
+    /**
+     * Evaluates whether one date time value is after or equal to a second date time value.
+     *
+     * @param dateTime1 first date time.
+     * @param dateTime2 second date time.
+     * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is after dateTime1.
+     */
+    @ScriptApi
+    public static boolean isAfterOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() >= dateTime2.getNanos();
     }
 
     /**
@@ -3132,15 +3198,17 @@ public class DateTimeUtils {
      *      is after dateTime1.
      */
     @ScriptApi
-    public static boolean isAfterOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
+    public static boolean isAfterOrEqual(@Nullable final ZonedDateTime dateTime1, @Nullable ZonedDateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
 
-        return dateTime1.getNanos() >= dateTime2.getNanos();
+        return dateTime1.isAfter(dateTime2) || dateTime1.equals(dateTime2);
     }
 
     // endregion
+
+            *** start here ***
 
     // region Parse Times
 
