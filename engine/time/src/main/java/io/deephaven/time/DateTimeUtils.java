@@ -1471,18 +1471,6 @@ public class DateTimeUtils {
         return dateTime.toEpochSecond();
     }
 
-    // endregion
-
-
-    *** start here ***
-
-
-    //TODO: name
-
-    // region Conversions: XXX
-
-    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
-
     /**
      * Converts nanoseconds from the Epoch to a {@link DateTime}.
      *
@@ -1542,102 +1530,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time to an Excel time represented as a double.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
-     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if( dateTime == null || timeZone == null){
-            return 0.0;
-        }
-
-        long millis = dateTime.getMillis();
-
-        return (double) (millis + java.util.TimeZone.getTimeZone(timeZone.getZoneId()).getOffset(millis)) / 86400000 + 25569;
-    }
-
-    /**
-     * Converts an Excel time represented as a double to a {@link DateTime}.
-     *
-     * @param excel excel time represented as a double.
-     * @param timeZone time zone to use when interpreting the Excel time.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime excelToDateTime(final double excel, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone.getZoneId());
-
-        //TODO: test this DST handling
-        final long mpo = (long)((excel - 25569) * 86400000);
-        final long o = tz.getOffset(mpo);
-        final long m = mpo - o;
-        final long o2 = tz.getOffset(m);
-        final long m2 = mpo-o2;
-        return epochMillisToDateTime(m2);
-    }
-
-    /**
-     * Converts an offset from the Epoch to a nanoseconds from the Epoch.  The offset can be in milliseconds, microseconds,
-     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-     *
-     * @param epochOffset time offset from the Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      offset from the Epoch converted to nanoseconds from the Epoch.
-     */
-    @ScriptApi
-    public static long epochAutoToEpochNanos(final long epochOffset) {
-        if (epochOffset == NULL_LONG) {
-            return epochOffset;
-        }
-        final long absEpoch = Math.abs(epochOffset);
-        if (absEpoch > 1000 * TimeConstants.MICROTIME_THRESHOLD) { // Nanoseconds
-            return epochOffset;
-        }
-        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD) { // Microseconds
-            return 1000 * epochOffset;
-        }
-        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD / 1000) { // Milliseconds
-            return 1000 * 1000 * epochOffset;
-        }
-        // Seconds
-        return 1000 * 1000 * 1000 * epochOffset;
-    }
-
-    /**
-     * Converts an offset from the Epoch to a {@link DateTime}.  The offset can be in milliseconds, microseconds,
-     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-     *
-     * @param epochOffset time offset from the Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      offset from the Epoch converted to a {@link DateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime epochAutoToDateTime(final long epochOffset) {
-        if( epochOffset == NULL_LONG ){
-            return null;
-        }
-        return new DateTime(epochAutoToEpochNanos(epochOffset));
-    }
-
-    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
-        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
-            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
-                    + " to nanoseconds");
-        }
-
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
-    }
-
-    /**
      * Converts nanoseconds from the Epoch to an {@link Instant}.
      *
      * @param nanos nanoseconds since Epoch.
@@ -1692,17 +1584,20 @@ public class DateTimeUtils {
     /**
      * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
      *
-     * Uses the default timezone.
-     *
      * @param nanos nanoseconds since Epoch.
+     * @param timeZone time zone.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
-        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, final ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
+        // noinspection ConstantConditions
+        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
     }
 
     /**
@@ -1726,53 +1621,17 @@ public class DateTimeUtils {
     /**
      * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
      *
-     * @param nanos nanoseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, final ZoneId timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        // noinspection ConstantConditions
-        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
      * Uses the default timezone.
      *
-     * @param micros microseconds since Epoch.
+     * @param nanos nanoseconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
      * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
-        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param micros micrseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
+        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
     }
 
     /**
@@ -1795,19 +1654,55 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param micros micrseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
      *
      * Uses the default timezone.
      *
-     * @param millis milliseconds since Epoch.
+     * @param micros microseconds since Epoch.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
      * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
-        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
+        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, final @Nullable ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
+        // noinspection ConstantConditions
+        return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
     }
 
     /**
@@ -1831,36 +1726,35 @@ public class DateTimeUtils {
     /**
      * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
      *
+     * Uses the default timezone.
+     *
      * @param millis milliseconds since Epoch.
-     * @param timeZone time zone.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, final @Nullable ZoneId timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        // noinspection ConstantConditions
-        return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
+        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
     }
 
     /**
      * Converts seconds from the Epoch to a {@link ZonedDateTime}.
      *
-     * Uses the default timezone.
-     *
      * @param seconds seconds since Epoch.
+     * @param timeZone time zone.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
-        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, final @Nullable ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+        // noinspection ConstantConditions
+        return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
     }
 
     /**
@@ -1883,20 +1777,205 @@ public class DateTimeUtils {
     /**
      * Converts seconds from the Epoch to a {@link ZonedDateTime}.
      *
+     * Uses the default timezone.
+     *
      * @param seconds seconds since Epoch.
-     * @param timeZone time zone.
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, final @Nullable ZoneId timeZone) {
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
+        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts an offset from the Epoch to a nanoseconds from the Epoch.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to nanoseconds from the Epoch.
+     */
+    @ScriptApi
+    public static long epochAutoToEpochNanos(final long epochOffset) {
+        if (epochOffset == NULL_LONG) {
+            return epochOffset;
+        }
+        final long absEpoch = Math.abs(epochOffset);
+        if (absEpoch > 1000 * TimeConstants.MICROTIME_THRESHOLD) { // Nanoseconds
+            return epochOffset;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD) { // Microseconds
+            return 1000 * epochOffset;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD / 1000) { // Milliseconds
+            return 1000 * 1000 * epochOffset;
+        }
+        // Seconds
+        return 1000 * 1000 * 1000 * epochOffset;
+    }
+
+    /**
+     * Converts an offset from the Epoch to a {@link DateTime}.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to a {@link DateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime epochAutoToDateTime(final long epochOffset) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
+        return epochNanosToDateTime(epochAutoToEpochNanos(epochOffset));
+    }
+
+    /**
+     * Converts an offset from the Epoch to an {@link Instant}.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to an {@link Instant}.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant epochAutoToInstant(final long epochOffset) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
+        return epochNanosToInstant(epochAutoToEpochNanos(epochOffset));
+    }
+
+    /**
+     * Converts an offset from the Epoch to a {@link ZonedDateTime}.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @param timeZone time zone.
+     * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, ZoneId timeZone) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
+        return epochNanosToZonedDateTime(epochAutoToEpochNanos(epochOffset), timeZone);
+    }
+
+    /**
+     * Converts an offset from the Epoch to a {@link ZonedDateTime}.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @param timeZone time zone.
+     * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, TimeZone timeZone) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
+        return epochAutoToZonedDateTime(epochOffset, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts an offset from the Epoch to a {@link ZonedDateTime} using the default time zone.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to a {@link ZonedDateTime} using the default time zone.
+     * @see TimeZone#TZ_DEFAULT
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
+        return epochAutoToZonedDateTime(epochOffset, TimeZone.TZ_DEFAULT);
+    }
+
+    // endregion
+
+
+    *** start here ***
+
+
+    //TODO: name
+
+    // region Conversions: XXX
+
+    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
+
+
+
+    /**
+     * Converts a date time to an Excel time represented as a double.
+     *
+     * @param dateTime date time to convert.
+     * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
+     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
+     */
+    @ScriptApi
+    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
+        long millis = dateTime.getMillis();
+
+        return (double) (millis + java.util.TimeZone.getTimeZone(timeZone.getZoneId()).getOffset(millis)) / 86400000 + 25569;
+    }
+
+    /**
+     * Converts an Excel time represented as a double to a {@link DateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone time zone to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime excelToDateTime(final double excel, @Nullable final TimeZone timeZone) {
         if(timeZone == null){
             return null;
         }
-        // noinspection ConstantConditions
-        return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
+
+        final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone.getZoneId());
+
+        //TODO: test this DST handling
+        final long mpo = (long)((excel - 25569) * 86400000);
+        final long o = tz.getOffset(mpo);
+        final long m = mpo - o;
+        final long o2 = tz.getOffset(m);
+        final long m2 = mpo-o2;
+        return epochMillisToDateTime(m2);
     }
+
+
+
+    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
+        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
+                    + " to nanoseconds");
+        }
+
+        return epochSecond * 1_000_000_000L + nanoOfSecond;
+    }
+
+
+
+
 
 
     // endregion
