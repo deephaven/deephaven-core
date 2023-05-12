@@ -698,7 +698,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return new DateTime(DateTimeUtils.epochNanos(dateTime));
+        return new DateTime(epochNanos(dateTime));
     }
 
     /**
@@ -718,12 +718,12 @@ public class DateTimeUtils {
         int nanos = dateTime.getNano();
         long seconds = dateTime.toEpochSecond();
 
-        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
+        long limit = (Long.MAX_VALUE - nanos) / SECOND;
         if (seconds >= limit) {
             throw new DateTimeOverflowException("Overflow: cannot convert " + dateTime + " to new DateTime");
         }
 
-        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
+        return new DateTime(nanos + (seconds * SECOND));
     }
 
     /**
@@ -1289,20 +1289,13 @@ public class DateTimeUtils {
 
     // endregion
 
-    *** start here ***
-
-
-    //TODO: name
-
-    // region Conversions: XXX
-
-    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
+    // region Conversions: Epoch
 
     /**
-     * Returns nanoseconds from the Epoch for a {@link DateTime} value.
+     * Returns nanoseconds from the Epoch for a date time value.
      *
-     * @param dateTime {@link DateTime} to compute the Epoch offset for.
-     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
      */
     @ScriptApi
     public static long epochNanos(@Nullable final DateTime dateTime) {
@@ -1314,10 +1307,40 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns microseconds from the Epoch for a {@link DateTime} value.
+     * Returns nanoseconds from the Epoch for a date time value.
      *
-     * @param dateTime {@link DateTime} to compute the Epoch offset for.
-     * @return microseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochNanos(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.getEpochSecond(), dateTime.getNano());
+    }
+
+    /**
+     * Returns nanoseconds from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
+    }
+
+    /**
+     * Returns microseconds from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
      */
     @ScriptApi
     public static long epochMicros(@Nullable final DateTime dateTime) {
@@ -1325,14 +1348,44 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return nanosToMicros(dateTime.getNanos());
+        return nanosToMicros(epochNanos(dateTime));
     }
 
     /**
-     * Returns milliseconds from the Epoch for a {@link DateTime} value.
+     * Returns microseconds from the Epoch for a date time value.
      *
-     * @param dateTime {@link DateTime} to compute the Epoch offset for.
-     * @return milliseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochMicros(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(epochNanos(dateTime));
+    }
+
+    /**
+     * Returns microseconds from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochMicros(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(epochNanos(dateTime));
+    }
+
+    /**
+     * Returns milliseconds from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
      */
     @ScriptApi
     public static long epochMillis(@Nullable final DateTime dateTime) {
@@ -1344,10 +1397,40 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns seconds since from the Epoch for a {@link DateTime} value.
+     * Returns milliseconds from the Epoch for a date time value.
      *
-     * @param dateTime {@link DateTime} to compute the Epoch offset for.
-     * @return seconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochMillis(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.toEpochMilli();
+    }
+
+    /**
+     * Returns milliseconds from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochMillis(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMillis(epochNanos(dateTime));
+    }
+
+    /**
+     * Returns seconds since from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
      */
     @ScriptApi
     public static long epochSeconds(@Nullable final DateTime dateTime) {
@@ -1357,6 +1440,48 @@ public class DateTimeUtils {
 
         return dateTime.getMillis() / 1000;
     }
+
+    /**
+     * Returns seconds since from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochSeconds(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getEpochSecond();
+    }
+
+    /**
+     * Returns seconds since from the Epoch for a date time value.
+     *
+     * @param dateTime date time to compute the Epoch offset for.
+     * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
+     */
+    @ScriptApi
+    public static long epochSeconds(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.toEpochSecond();
+    }
+
+    // endregion
+
+
+    *** start here ***
+
+
+    //TODO: name
+
+    // region Conversions: XXX
+
+    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
 
     /**
      * Converts nanoseconds from the Epoch to a {@link DateTime}.
@@ -1510,36 +1635,6 @@ public class DateTimeUtils {
         }
 
         return epochSecond * 1_000_000_000L + nanoOfSecond;
-    }
-
-    /**
-     * Returns nanoseconds from the Epoch for an {@link Instant} value.
-     *
-     * @param dateTime {@link Instant} to compute the Epoch offset for.
-     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
-     */
-    @ScriptApi
-    public static long epochNanos(@Nullable final Instant dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(dateTime.getEpochSecond(), dateTime.getNano());
-    }
-
-    /**
-     * Returns nanoseconds from the Epoch for a {@link ZonedDateTime} value.
-     *
-     * @param dateTime {@link ZonedDateTime} to compute the Epoch offset for.
-     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link ZonedDateTime} is null.
-     */
-    @ScriptApi
-    public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
     }
 
     /**
@@ -3090,7 +3185,7 @@ public class DateTimeUtils {
 
         //noinspection ConstantConditions
         return JAVA_DATE_TIME_FORMAT.withZone(timeZone.getZoneId()).format(toInstant(dateTime))
-                + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
+                + padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**
@@ -3108,7 +3203,7 @@ public class DateTimeUtils {
         }
 
         return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(dateTime.toInstant(), timeZone))
-                + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
+                + padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**
