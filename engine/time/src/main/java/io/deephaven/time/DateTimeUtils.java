@@ -4738,6 +4738,256 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Time Bins
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime lowerBin(@Nullable final DateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToDateTime(Numeric.lowerBin(epochNanos(dateTime), intervalNanos));
+    }
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant lowerBin(@Nullable final Instant dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToInstant(Numeric.lowerBin(epochNanos(dateTime), intervalNanos));
+    }
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime lowerBin(@Nullable final ZonedDateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToZonedDateTime(Numeric.lowerBin(epochNanos(dateTime), intervalNanos), dateTime.getZone());
+    }
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime lowerBin(final @Nullable DateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToDateTime(Numeric.lowerBin(epochNanos(dateTime) - offset, intervalNanos) + offset);
+    }
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant lowerBin(final @Nullable Instant dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToInstant(Numeric.lowerBin(epochNanos(dateTime) - offset, intervalNanos) + offset);
+    }
+
+    /**
+     * Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the start of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the start of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime lowerBin(final @Nullable ZonedDateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToZonedDateTime(Numeric.lowerBin(epochNanos(dateTime) - offset, intervalNanos) + offset, dateTime.getZone());
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime upperBin(final @Nullable DateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToDateTime(Numeric.upperBin(epochNanos(dateTime), intervalNanos));
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant upperBin(final @Nullable Instant dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToInstant(Numeric.upperBin(epochNanos(dateTime), intervalNanos));
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime upperBin(final @Nullable ZonedDateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToZonedDateTime(Numeric.upperBin(epochNanos(dateTime), intervalNanos), dateTime.getZone());
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static DateTime upperBin(@Nullable final DateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG
+                || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToDateTime(Numeric.upperBin(epochNanos(dateTime) - offset, intervalNanos) + offset);
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant upperBin(@Nullable final Instant dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG
+                || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToInstant(Numeric.upperBin(epochNanos(dateTime) - offset, intervalNanos) + offset);
+    }
+
+    /**
+     * Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date time value for the end of the
+     * five-minute window that contains the input date time.
+     *
+     * @param dateTime date time for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a date time representing the end of the window.
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime upperBin(@Nullable final ZonedDateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG
+                || offset == NULL_LONG) {
+            return null;
+        }
+
+        return epochNanosToZonedDateTime(Numeric.upperBin(epochNanos(dateTime) - offset, intervalNanos) + offset, dateTime.getZone());
+    }
+
+    // endregion
+
+
+
+
             *** start here ***
 
     // region Parse Times
@@ -5469,91 +5719,6 @@ public class DateTimeUtils {
     // endregion
 
 
-            *** start here ***
-    // region Time Bins
-
-    /**
-     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
-     * five-minute window that contains the input date time.
-     *
-     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos size of the window in nanoseconds.
-     * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime lowerBin(@Nullable final DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == NULL_LONG) {
-            return null;
-        }
-
-        return epochNanosToDateTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
-     * five-minute window that contains the input date time.
-     *
-     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos size of the window in nanoseconds.
-     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-     *        one minute.
-     * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime lowerBin(final @Nullable DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
-            return null;
-        }
-
-        return epochNanosToDateTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
-     * five-minute window that contains the input date time.
-     *
-     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos size of the window in nanoseconds.
-     * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime upperBin(final @Nullable DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == NULL_LONG) {
-            return null;
-        }
-
-        return epochNanosToDateTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
-     * five-minute window that contains the input date time.
-     *
-     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos size of the window in nanoseconds.
-     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-     *        one minute.
-     * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime upperBin(@Nullable final DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == NULL_LONG
-                || offset == NULL_LONG) {
-            return null;
-        }
-
-        return epochNanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
-    }
-
-    // endregion
 
     //TODO: RENAME: getZonedDateTime : toZonedDateTime
     //TODO: RENAME: makeZonedDateTime : epochNanosToZonedDateTime
