@@ -212,7 +212,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         BaseTable redefined = redefine(newDefinitionInternal);
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareQueryTableReference((PartitionAwareSourceTable) redefined)

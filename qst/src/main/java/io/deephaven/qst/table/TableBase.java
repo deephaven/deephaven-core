@@ -138,7 +138,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public TableSpec rangeJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,
+    public final TableSpec rangeJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,
             RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
         return RangeJoinTable.builder().left(this).right(rightTable).addAllExactMatches(exactMatches)
                 .rangeMatch(rangeMatch).addAllAggregations(aggregations).build();
@@ -165,7 +165,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final SelectTable select() {
+    public final TableSpec select() {
         return SelectTable.builder().parent(this).build();
     }
 

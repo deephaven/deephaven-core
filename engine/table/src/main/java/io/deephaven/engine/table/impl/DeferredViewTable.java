@@ -289,7 +289,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());

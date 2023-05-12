@@ -291,9 +291,9 @@ public interface Table extends
     @ConcurrentMethod
     Table dropColumnFormats();
 
-    Table renameColumns(Collection<Pair> columns);
+    Table renameColumns(Collection<Pair> pairs);
 
-    Table renameColumns(String... columns);
+    Table renameColumns(String... pairs);
 
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 

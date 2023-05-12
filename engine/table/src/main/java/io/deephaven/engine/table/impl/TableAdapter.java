@@ -219,7 +219,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table renameColumns(Collection<Pair> columns) {
+    default Table renameColumns(Collection<Pair> pairs) {
         return throwUnsupported();
     }
 

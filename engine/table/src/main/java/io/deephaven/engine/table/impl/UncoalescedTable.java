@@ -271,8 +271,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table renameColumns(Collection<Pair> columns) {
-        return coalesce().renameColumns(columns);
+    public Table renameColumns(Collection<Pair> pairs) {
+        return coalesce().renameColumns(pairs);
     }
 
     @Override

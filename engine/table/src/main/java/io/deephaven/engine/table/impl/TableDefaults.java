@@ -182,8 +182,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table renameColumns(String... columns) {
-        return renameColumns(Pair.from(columns));
+    default Table renameColumns(String... pairs) {
+        return renameColumns(Pair.from(pairs));
     }
 
     @Override
