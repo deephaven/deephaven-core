@@ -102,7 +102,8 @@ public class CharChunkHolderPage<ATTR extends Any>
     }
 
     /**
-     * Get a writable chunk slice of this page's data storage, starting at the end of the currently-visible range.
+     * Get a writable chunk slice of this page's data storage, starting at the end of the currently-visible range, to be
+     * used for appending new data.
      *
      * @param expectedCurrentSize The expected current size of the visible data in this page, used to assert correctness
      * @return A chunk to fill with new data
@@ -113,9 +114,11 @@ public class CharChunkHolderPage<ATTR extends Any>
     }
 
     /**
-     * Accept an appended slice of data to the currently-visible range for this page.
+     * Accept an appended slice of data to the currently-visible range for this page. Ownership of {@code slice}
+     * transfers to the callee.
      *
-     * @param slice The slice chunk of data, which must have been returned by {@link #getSliceForAppend(int)}
+     * @param slice The slice chunk of data, which must have been returned by {@link #getSliceForAppend(int)}; ownership
+     *        transfers to the callee
      * @param expectedCurrentSize The expected current size of the visible data in this page, used to assert correctness
      */
     public final void acceptAppend(@NotNull final CharChunk<ATTR> slice, final int expectedCurrentSize) {
