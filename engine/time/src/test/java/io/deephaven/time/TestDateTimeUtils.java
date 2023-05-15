@@ -7,11 +7,11 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.util.Locale;
 import java.util.Map;
+
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class TestDateTimeUtils extends BaseArrayTestCase {
 
@@ -348,12 +348,188 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet(null));
     }
 
+    public void testParseNanos() {
+        final String[] times = {
+                "12:00",
+                "12:00:00",
+                "12:00:00.123",
+                "12:00:00.1234",
+                "12:00:00.123456789",
+                "2:00",
+                "2:00:00",
+                "2:00:00",
+                "2:00:00.123",
+                "2:00:00.1234",
+                "2:00:00.123456789",
+                "3T2:00",
+                "3T2:00:00",
+                "3T2:00:00.123",
+                "3T2:00:00.123456789",
+                "15:25:49.064106107",
+        };
+
+        for(boolean isNeg : new boolean[]{false, true}) {
+            for (String t : times) {
+                long offset = 0;
+                String lts = t;
+
+                if (t.contains("T")) {
+                    lts = t.split("T")[1];
+                    offset = Long.parseLong(t.split("T")[0]) * DateTimeUtils.DAY;
+                }
+
+                if (lts.indexOf(":") == 1) {
+                    lts = "0" + lts;
+                }
+
+                if(isNeg) {
+                    t = "-" + t;
+                }
+
+                final long sign = isNeg ? -1 : 1;
+                TestCase.assertEquals(sign*(LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanos(t));
+            }
+        }
+
+        final String[] periods = {
+                "T1h43s",
+                "-T1h43s",
+        };
+
+            for (String p : periods) {
+                final Period pp = DateTimeUtils.parsePeriod(p);
+                TestCase.assertEquals(pp.isPositive() ? pp.getDuration().toNanos() : -pp.getDuration().toNanos(), DateTimeUtils.parseNanos(p));
+            }
+
+        try {
+            DateTimeUtils.parseNanos("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseNanos(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+    }
+
+    public void testParseNanosQuiet() {
+        final String[] times = {
+                "12:00",
+                "12:00:00",
+                "12:00:00.123",
+                "12:00:00.1234",
+                "12:00:00.123456789",
+                "2:00",
+                "2:00:00",
+                "2:00:00",
+                "2:00:00.123",
+                "2:00:00.1234",
+                "2:00:00.123456789",
+                "3T2:00",
+                "3T2:00:00",
+                "3T2:00:00.123",
+                "3T2:00:00.123456789",
+                "15:25:49.064106107",
+        };
+
+        for(boolean isNeg : new boolean[]{false, true}) {
+            for (String t : times) {
+                long offset = 0;
+                String lts = t;
+
+                if (t.contains("T")) {
+                    lts = t.split("T")[1];
+                    offset = Long.parseLong(t.split("T")[0]) * DateTimeUtils.DAY;
+                }
+
+                if (lts.indexOf(":") == 1) {
+                    lts = "0" + lts;
+                }
+
+                if(isNeg) {
+                    t = "-" + t;
+                }
+
+                final long sign = isNeg ? -1 : 1;
+                TestCase.assertEquals(sign*(LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanosQuiet(t));
+            }
+        }
+
+        final String[] periods = {
+                "T1h43s",
+                "-T1h43s",
+        };
+
+        for (String p : periods) {
+            final Period pp = DateTimeUtils.parsePeriod(p);
+            TestCase.assertEquals(pp.isPositive() ? pp.getDuration().toNanos() : -pp.getDuration().toNanos(), DateTimeUtils.parseNanosQuiet(p));
+        }
+
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet("JUNK"));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet(null));
+    }
+
+    //todo parse nanos quiet
+
+    public void testParsePeriod() {
+        final String[] periods = {
+                "T1S",
+                "T4H1S",
+                "4DT1S",
+//                "2W3DT4H2S",
+                "2Y5DT3H6M7S",
+                //TODO: Year, Month, Week, and partial seconds don't work
+//                "2Y3M4W5DT3H6M7.655S",
+//                "1WT1M",
+//                "1W",
+        };
+
+        //TODO: our negative periods do not match the negative durations...  we don't prefix a P...
+        TestCase.fail("Period format does not match duration");
+        TestCase.fail("Duration format does not support Year, Month, and Week");
+        TestCase.fail("Do not support Partial Seconds");
+        TestCase.fail("Do not support negative in the same way that Duration does.");
+
+        for(boolean isNeg : new boolean[]{false, true}) {
+            for (String p : periods) {
+                if(isNeg) {
+                    p = "-" + p;
+                }
+
+                final Period pp = DateTimeUtils.parsePeriod(p);
+                final Duration d = Duration.parse("P"+p);
 
 
+                TestCase.assertEquals("Period: " + p, d, pp.getDuration());
+                TestCase.assertEquals("Period: " + p, isNeg, !pp.isPositive());
+            }
+        }
 
+        try {
+            DateTimeUtils.parsePeriod(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+    }
 
+    public void testParsePeriodQuiet() {
+        TestCase.fail("not implemented");
+    }
 
+    public void testParseTimePrecision() {
+        TestCase.fail("not implemented");
+    }
 
+    public void testParseTimePrecisionQuiet() {
+        TestCase.fail("not implemented");
+    }
 
 //    public void testMillis() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
@@ -643,75 +819,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //    }
 //
 
-//    public void testParseNanosQuiet() throws Exception {
-//        TestCase.assertEquals(new LocalTime("12:00").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("12:00"));
-//        TestCase.assertEquals(new LocalTime("12:00:00").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("12:00:00"));
-//        TestCase.assertEquals(new LocalTime("12:00:00.123").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("12:00:00.123"));
-//        TestCase.assertEquals(new LocalTime("12:00:00.123").getMillisOfDay() * 1000000L + 400000,
-//                DateTimeUtils.parseNanosQuiet("12:00:00.1234"));
-//        TestCase.assertEquals(new LocalTime("12:00:00.123").getMillisOfDay() * 1000000L + 456789,
-//                DateTimeUtils.parseNanosQuiet("12:00:00.123456789"));
-//
-//        TestCase.assertEquals(new LocalTime("2:00").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("2:00"));
-//        TestCase.assertEquals(new LocalTime("2:00:00").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("2:00:00"));
-//        TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L,
-//                DateTimeUtils.parseNanosQuiet("2:00:00.123"));
-//        TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L + 400000,
-//                DateTimeUtils.parseNanosQuiet("2:00:00.1234"));
-//        TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L + 456789,
-//                DateTimeUtils.parseNanosQuiet("2:00:00.123456789"));
-//
-//        TestCase.assertEquals(
-//                new LocalTime("2:00").getMillisOfDay() * 1000000L + 3L * 1000000 * DateUtil.MILLIS_PER_DAY,
-//                DateTimeUtils.parseNanosQuiet("3T2:00"));
-//        TestCase.assertEquals(
-//                new LocalTime("2:00:00").getMillisOfDay() * 1000000L + 3L * 1000000 * DateUtil.MILLIS_PER_DAY,
-//                DateTimeUtils.parseNanosQuiet("3T2:00:00"));
-//        TestCase.assertEquals(
-//                new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L + 3L * 1000000 * DateUtil.MILLIS_PER_DAY,
-//                DateTimeUtils.parseNanosQuiet("3T2:00:00.123"));
-//        TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L + 400000
-//                + 3L * 1000000 * DateUtil.MILLIS_PER_DAY, DateTimeUtils.parseNanosQuiet("3T2:00:00.1234"));
-//        TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L + 456789
-//                + 3L * 1000000 * DateUtil.MILLIS_PER_DAY, DateTimeUtils.parseNanosQuiet("3T2:00:00.123456789"));
-//
-//        TestCase.assertEquals(55549064106107L, DateTimeUtils.parseNanosQuiet("15:25:49.064106107"));
-//    }
-//
-//    public void testParseNanos() throws Exception {
-//        DateTimeUtils.parseNanos("12:00"); // shouldn't have an exception
-//
-//        try {
-//            DateTimeUtils.parseNanos("12");
-//            TestCase.fail("Should have thrown an exception");
-//        } catch (Exception e) {
-//        }
-//    }
-//
-//    public void testParsePeriodQuiet() throws Exception {
-//        TestCase.assertEquals(java.time.Duration.parse("PT1s"),
-//                DateTimeUtils.parsePeriodQuiet("T1S").getDuration());
-//        TestCase.assertEquals(java.time.Duration.parse("P1wT1m"),
-//                DateTimeUtils.parsePeriodQuiet("1WT1M").getDuration());
-//        TestCase.assertEquals(java.time.Duration.parse("P1w"), DateTimeUtils.parsePeriodQuiet("1W").getDuration());
-//
-//        TestCase.assertEquals(null, DateTimeUtils.parsePeriodQuiet("-"));
-//    }
-//
-//    public void testParsePeriod() throws Exception {
-//        DateTimeUtils.parsePeriod("T1S"); // shouldn't have an exception
-//
-//        try {
-//            DateTimeUtils.parsePeriod("1S");
-//            TestCase.fail("Should have thrown an exception");
-//        } catch (Exception e) {
-//        }
-//    }
+
 //
 //    public void testTimeFormat() throws Exception {
 //        TestCase.assertEquals("12:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00")));
