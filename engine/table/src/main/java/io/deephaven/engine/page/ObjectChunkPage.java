@@ -19,27 +19,43 @@ public class ObjectChunkPage<T, ATTR extends Any> extends WritableObjectChunk<T,
     private final long mask;
     private final long firstRow;
 
-    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(long beginRow, T[] data, int offset, int capacity, long mask) {
-        return new ObjectChunkPage<>(beginRow, data, offset, capacity, mask);
+    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(
+            final long firstRow,
+            @NotNull final T[] data,
+            final int offset,
+            final int capacity,
+            final long mask) {
+        return new ObjectChunkPage<>(firstRow, data, offset, capacity, mask);
     }
 
-    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(long beginRow, T[] data, long mask) {
-        return new ObjectChunkPage<>(beginRow, data, 0, data.length, mask);
+    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(
+            final long firstRow,
+            @NotNull final T[] data,
+            final long mask) {
+        return new ObjectChunkPage<>(firstRow, data, 0, data.length, mask);
     }
 
-    private ObjectChunkPage(long firstRow, T[] data, int offset, int capacity, long mask) {
-        super(data, offset, Require.lt(capacity, "capacity", Integer.MAX_VALUE, "INT_MAX"));
+    private ObjectChunkPage(
+            final long firstRow,
+            @NotNull final T[] data,
+            final int offset,
+            final int capacity,
+            final long mask) {
+        super(data, offset, capacity);
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
     }
 
     @Override
-    public final void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super ATTR> destination, @NotNull RowSequence rowSequence) {
+    public final void fillChunkAppend(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super ATTR> destination,
+            @NotNull final RowSequence rowSequence) {
         WritableObjectChunk<T, ? super ATTR> to = destination.asWritableObjectChunk();
 
         if (rowSequence.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
-            rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeEndKey) ->
-                    to.appendTypedChunk(this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
+            rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeEndKey) -> to.appendTypedChunk(
+                    this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
         } else {
             rowSequence.forEachRowKey((final long key) -> {
                 to.add(get(getChunkOffset(key)));
