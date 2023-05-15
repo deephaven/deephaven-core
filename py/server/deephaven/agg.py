@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List, Union, Any
 
 import jpy
 
@@ -14,6 +14,7 @@ from deephaven.jcompat import to_sequence
 _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")
 _JPair = jpy.get_type("io.deephaven.api.Pair")
+_JUnionObject = jpy.get_type("io.deephaven.api.object.UnionObject")
 
 
 class Aggregation:
@@ -201,31 +202,39 @@ def max_(cols: Union[str, List[str]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.max(), cols=cols)
 
 
-def median(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Create a Median aggregation.
+def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = True) -> Aggregation:
+    """Create a Median aggregation which computes the median value within an aggregation group for each of the
+    given column.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
+        average_evenly_divided (bool): when the group size is an even number, whether to average the two middle values
+            for the output value, default is True. when set to False, use the smaller value. This flag is only valid for
+            numeric types.
 
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=_JAggSpec.median(), cols=cols)
+    return Aggregation(j_agg_spec=_JAggSpec.median(average_evenly_divided), cols=cols)
 
 
-def pct(percentile: float, cols: Union[str, List[str]] = None) -> Aggregation:
-    """Create a Percentile aggregation.
+def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_divided: bool = False) -> Aggregation:
+    """Create a Percentile aggregation which computes the percentile value within an aggregation group for each of
+    the given columns.
 
     Args:
         percentile (float): the percentile used for calculation
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
+        average_evenly_divided (bool): when the percentile is 0.5 and the group size is an even number, whether to
+            average the two middle values for the output value, default is False, meaning to use the smaller value.
+            This flag is only valid for numeric types.
 
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=_JAggSpec.percentile(percentile), cols=cols)
+    return Aggregation(j_agg_spec=_JAggSpec.percentile(percentile, average_evenly_divided), cols=cols)
 
 
 def sorted_first(order_by: str, cols: Union[str, List[str]] = None) -> Aggregation:
@@ -269,17 +278,29 @@ def std(cols: Union[str, List[str]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.std(), cols=cols)
 
 
-def unique(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Create a Unique aggregation.
+def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, null_sentinel: Any = None) -> Aggregation:
+    """Create a Unique aggregation which computes the single unique value within an aggregation group for each of
+    the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
+    result is null.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
+        include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
+            aggregation group are unique, default is False.
+        null_sentinel (Any): the non-null sentinel value to substitute null when include_nulls is True, default is None
 
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=_JAggSpec.unique(), cols=cols)
+    if include_nulls:
+        if null_sentinel:
+            null_sentinel = _JUnionObject.of(null_sentinel)
+        else:
+            raise DHError(message="when include_nulls is True, a non-null sentinel value must be provided.")
+        return Aggregation(j_agg_spec=_JAggSpec.unique(include_nulls, null_sentinel), cols=cols)
+    else:
+        return Aggregation(j_agg_spec=_JAggSpec.unique(), cols=cols)
 
 
 def var(cols: Union[str, List[str]] = None) -> Aggregation:
