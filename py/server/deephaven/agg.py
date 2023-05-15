@@ -122,17 +122,19 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
 
 
-def count_distinct(cols: Union[str, List[str]] = None) -> Aggregation:
-    """Create a Count Distinct aggregation.
+def count_distinct(cols: Union[str, List[str]] = None, count_nulls: bool = False) -> Aggregation:
+    """Create a Count Distinct aggregation which computes the count of distinct values within an aggregation group for
+    each of the given columns.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
+        count_nulls (bool): whether null values should be counted, default is False
 
     Returns:
         an aggregation
     """
-    return Aggregation(j_agg_spec=_JAggSpec.countDistinct(), cols=cols)
+    return Aggregation(j_agg_spec=_JAggSpec.countDistinct(count_nulls), cols=cols)
 
 
 def first(cols: Union[str, List[str]] = None) -> Aggregation:
@@ -204,7 +206,7 @@ def max_(cols: Union[str, List[str]] = None) -> Aggregation:
 
 def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = True) -> Aggregation:
     """Create a Median aggregation which computes the median value within an aggregation group for each of the
-    given column.
+    given columns.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
@@ -342,3 +344,18 @@ def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
         an aggregation
     """
     return Aggregation(j_agg_spec=_JAggSpec.wsum(wcol), cols=cols)
+
+
+def distinct(cols: Union[str, List[str]] = None, include_nulls: bool = False) -> Aggregation:
+    """Create a Distinct aggregation which computes the distinct values within an aggregation group for each of the
+    given columns.
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+            default is None, only valid when used in Table agg_all_by operation
+        include_nulls (bool): whether nulls should be included as distinct values, default is False
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_agg_spec=_JAggSpec.distinct(include_nulls), cols=cols)

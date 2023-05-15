@@ -7,7 +7,7 @@ from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition, unique
+    var, formula, partition, unique, count_distinct, distinct
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
@@ -1012,15 +1012,19 @@ class TableTestCase(BaseTestCase):
         aggs = [
             median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
             pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
-            unique(cols=["ua = a", "ub = b"], include_nulls=True, null_sentinel=-1)
-        ]
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, null_sentinel=-1),
+            count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
+            distinct(cols=["da = a", "db = b"], include_nulls=True),
+            ]
         rt = test_table.agg_by(aggs=aggs, by=["c"])
         self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
 
         aggs_default = [
             median(cols=["ma = a", "mb = b"]),
             pct(0.20, cols=["pa = a", "pb = b"]),
-            unique(cols=["ua = a", "ub = b"])
+            unique(cols=["ua = a", "ub = b"]),
+            count_distinct(cols=["csa = a", "csb = b"]),
+            distinct(cols=["da = a", "db = b"]),
         ]
 
         for agg_option, agg_default in zip(aggs, aggs_default):
