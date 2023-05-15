@@ -77,7 +77,11 @@ public class ReplicateSourcesAndChunks {
         replicateObjectSizedChunk();
 
         charToAll("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
-        replicateObjectChunkPage();
+        replicateObjectChunkPage("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+
+        charToAll("extensions/source-support/src/main/java/io/deephaven/generic/page/CharChunkHolderPage.java");
+        replicateObjectChunkPage(
+                "extensions/source-support/src/main/java/io/deephaven/generic/page/CharChunkHolderPage.java");
 
         replicateChunks();
         replicateWritableChunks();
@@ -113,9 +117,8 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(classFile, lines);
     }
 
-    private static void replicateObjectChunkPage() throws IOException {
-        String path = ReplicatePrimitiveCode
-                .charToObject("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+    private static void replicateObjectChunkPage(final String charPath) throws IOException {
+        String path = ReplicatePrimitiveCode.charToObject(charPath);
         final File classFile = new File(path);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
