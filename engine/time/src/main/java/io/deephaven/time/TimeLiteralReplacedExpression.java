@@ -90,24 +90,9 @@ public class TimeLiteralReplacedExpression {
                 instanceVariablesString.append("        private DateTime _date").append(dateTimeIndex)
                         .append("=DateTimeUtils.toDateTime(\"")
                         .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
-                newVariables.put("_date" + dateTimeIndex, DateTime.class);
+                newVariables.put("_dateTime" + dateTimeIndex, DateTime.class);
 
                 dateTimeIndex++;
-            } else if (DateTimeUtils.parseDateQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
-                instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
-                        .append("=DateTimeUtils.convertDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_localDate" + localDateIndex, LocalDate.class);
-                localDateIndex++;
-            } else if (DateTimeUtils.parseNanosQuiet(s) != NULL_LONG) {
-                matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
-                instanceVariablesString.append("        private long _time").append(timeIndex)
-                        .append("=DateTimeUtils.convertTime(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_time" + timeIndex, long.class);
-
-                timeIndex++;
             } else if (DateTimeUtils.parsePeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
                 instanceVariablesString.append("        private Period _period").append(periodIndex)
@@ -117,7 +102,23 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_period" + periodIndex, Period.class);
 
                 periodIndex++;
+            } else if (DateTimeUtils.parseNanosQuiet(s) != NULL_LONG) {
+                matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
+                instanceVariablesString.append("        private long _time").append(timeIndex)
+                        .append("=DateTimeUtils.convertTime(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
+                        .append("\");\n");
+                newVariables.put("_time" + timeIndex, long.class);
+
+                timeIndex++;
+            } else if (DateTimeUtils.parseDateQuiet(s) != null) {
+                matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
+                instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
+                        .append("=DateTimeUtils.convertDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
+                        .append("\");\n");
+                newVariables.put("_localDate" + localDateIndex, LocalDate.class);
+                localDateIndex++;
             } else if (DateTimeUtils.parseLocalTimeQuiet(s) != null) {
+                //TODO: unreachable?
                 matcher.appendReplacement(convertedFormula, "_localTime" + timeIndex);
                 instanceVariablesString.append("        private java.time.LocalTime _localTime").append(timeIndex)
                         .append("=DateTimeUtils.convertLocalTime(\"")

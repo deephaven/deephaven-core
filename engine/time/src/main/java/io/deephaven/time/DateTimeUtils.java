@@ -5590,7 +5590,8 @@ public class DateTimeUtils {
 
         try {
             return parseDateTime(s);
-        } catch (DateTimeParseException e) {
+        } catch (Exception e) {
+            System.out.println("EX: " + e.getCause()); //TODO: remove
             return null;
         }
     }
@@ -5804,7 +5805,7 @@ public class DateTimeUtils {
         }
 
         try {
-            return parseDateQuiet(s);
+            return parseDate(s, dateStyle);
         } catch (Exception e) {
             return null;
         }
