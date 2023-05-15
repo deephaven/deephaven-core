@@ -15,7 +15,6 @@ import java.util.List;
  * In Deephaven queries, these time zones can be referenced using short 2- or 3-character abbreviations.
  * For example, in the date time string '2023-04-05T10:13 NY', 'NY' refers to the #TZ_NY time zone.
  */
-//TODO: test coverage
 public enum TimeZone {
     /**
      * America/New_York
@@ -126,7 +125,7 @@ public enum TimeZone {
 
     private final ZoneId zoneId;
 
-    private TimeZone(final @NotNull String timeZone) {
+    TimeZone(final @NotNull String timeZone) {
         this.zoneId = ZoneId.of(timeZone);
     }
 
@@ -151,7 +150,7 @@ public enum TimeZone {
 
         allZones.sort((t1, t2) -> {
             final java.util.TimeZone tz1 = java.util.TimeZone.getTimeZone(t1.getZoneId());
-            final java.util.TimeZone tz2 = java.util.TimeZone.getTimeZone(t1.getZoneId());
+            final java.util.TimeZone tz2 = java.util.TimeZone.getTimeZone(t2.getZoneId());
 
             int ret = tz2.getOffset(now) - tz1.getOffset(now);
             if (ret != 0) {
