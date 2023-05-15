@@ -14,7 +14,6 @@ import java.util.Map;
  * String formatter for {@link DateTime}.
  */
 public class DateTimeFormatter {
-    //TODO: test coverage
 
     private final String pattern;
     private final Map<TimeZone, java.time.format.DateTimeFormatter> formatCacheTZ = new HashMap<>(3);

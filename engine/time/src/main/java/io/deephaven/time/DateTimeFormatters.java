@@ -8,7 +8,6 @@ package io.deephaven.time;
  *
  * @see DateTimeFormatter
  */
-//TODO: test coverage
 public enum DateTimeFormatters {
     // @formatter:off
     /** ISO date plus time format with a 'T" separating the date and time, 9 sub-second digits and, the time zone. */
@@ -68,8 +67,8 @@ public enum DateTimeFormatters {
 
     private final DateTimeFormatter formatter;
 
-    private DateTimeFormatters(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits,
-            final boolean hasTZ) {
+    DateTimeFormatters(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits,
+                       final boolean hasTZ) {
         this.formatter = new DateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
     }
 

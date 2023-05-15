@@ -29,7 +29,6 @@ import java.util.Date;
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
-    //TODO: test coverage
 
     private static final long serialVersionUID = -9077991715632523353L;
 

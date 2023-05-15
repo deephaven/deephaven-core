@@ -10,7 +10,6 @@ import java.io.*;
 import java.time.*;
 import java.util.Date;
 
-//TODO: kill joda
 public class TestDateTime extends BaseArrayTestCase {
 
     public void testConstructor() {
