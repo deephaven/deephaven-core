@@ -38,7 +38,7 @@ public class DateTimeUtils {
 
     // region Format Patterns
 
-    // The following 3 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
+    // The following 4 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
     // the date, to avoid confusion with DateTime literals.
 
     /** Matches yyyy-MM-dd. */
@@ -46,7 +46,7 @@ public class DateTimeUtils {
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])-(?<month>[0-9][0-9])-(?<day>[0-9][0-9])$");
 
     /** Matches yyyyMMdd (consistent with ISO dates). */
-    private static final Pattern STD_DATE_PATTERN2 =
+    private static final Pattern NOSEP_DATE_PATTERN =
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])(?<month>[0-9][0-9])(?<day>[0-9][0-9])$");
 
     /**
@@ -56,6 +56,14 @@ public class DateTimeUtils {
     private static final Pattern SLASH_DATE_PATTERN =
             Pattern.compile(
                     "^(?<part1>[0-9]?[0-9](?<part1sub2>[0-9][0-9])?)\\/(?<part2>[0-9]?[0-9])\\/(?<part3>[0-9]?[0-9](?<part3sub2>[0-9][0-9])?)$");
+
+    /**
+     * Matches variations of month-day-year or day-month-year or year-month-day - how this is interpreted depends on the
+     * DateTimeUtils.dateStyle system property.
+     */
+    private static final Pattern DASH_DATE_PATTERN =
+            Pattern.compile(
+                    "^(?<part1>[0-9]?[0-9](?<part1sub2>[0-9][0-9])?)\\-(?<part2>[0-9]?[0-9])\\-(?<part3>[0-9]?[0-9](?<part3sub2>[0-9][0-9])?)$");
 
     /** DateTimeFormatter for use when interpreting two digit years (we use Java's rules). */
     private static final DateTimeFormatter TWO_DIGIT_YR_FORMAT = DateTimeFormatter.ofPattern("yy");
@@ -100,6 +108,7 @@ public class DateTimeUtils {
      */
     private static final java.time.format.DateTimeFormatter JAVA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    //TODO: make public?
     /**
      * Default date style.
      */
@@ -5693,25 +5702,69 @@ public class DateTimeUtils {
         YMD
     }
 
-
-    @Nullable
-    private static LocalDate matchStdDate(@NotNull final Pattern pattern, @NotNull final String s) {
-        final Matcher matcher = pattern.matcher(s);
-        if (matcher.matches()) {
-            final int year = Integer.parseInt(matcher.group("year"));
-            final int month = Integer.parseInt(matcher.group("month"));
-            final int dayOfMonth = Integer.parseInt(matcher.group("day"));
-            return LocalDate.of(year, month, dayOfMonth);
+    // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
+    // system date style setting (for example Europeans often write dates as d/m/y).
+    @NotNull
+    private static LocalDate matchLocalDate(final Matcher matcher, final DateStyle dateStyle) {
+        final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
+        // note we have nested groups which allow us to detect 2 vs 4 digit year
+        // (groups 2 and 5 are the optional last 2 digits)
+        switch (dateStyle) {
+            case MDY:
+                dayGroup = "part2";
+                monthGroup = "part1";
+                yearGroup = "part3";
+                yearFinal2DigitsGroup = "part3sub2";
+                break;
+            case DMY:
+                dayGroup = "part1";
+                monthGroup = "part2";
+                yearGroup = "part3";
+                yearFinal2DigitsGroup = "part3sub2";
+                break;
+            case YMD:
+                dayGroup = "part3";
+                monthGroup = "part2";
+                yearGroup = "part1";
+                yearFinal2DigitsGroup = "part1sub2";
+                break;
+            default:
+                throw new RuntimeException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
         }
-        return null;
+        final int year;
+        // for 2 digit years, lean on java's standard interpretation
+        if (matcher.group(yearFinal2DigitsGroup) == null) {
+            year = Year.parse(matcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
+        } else {
+            year = Integer.parseInt(matcher.group(yearGroup));
+        }
+        final int month = Integer.parseInt(matcher.group(monthGroup));
+        final int dayOfMonth = Integer.parseInt(matcher.group(dayGroup));
+        return LocalDate.of(year, month, dayOfMonth);
     }
 
-    //TODO: Better docs
     /**
      * Converts a string into a local date.
+     * A local date is a date without a time or time zone.
+     *
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
      *
-     * A local date is a date without a time or time zone.
+     * Supported formats:
+     * - YYYY-MM-DD
+     * - YYYYMMDD
+     * - YYYY/MM/DD
+     * - MM/DD/YYYY
+     * - MM-DD-YYYY
+     * - DD/MM/YYYY
+     * - DD-MM-YYYY
+     * - YY/MM/DD
+     * - YY-MM-DD
+     * - MM/DD/YY
+     * - MM-DD-YY
+     * - DD/MM/YY
+     * - DD-MM-YY
+     *
+     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
      *
      * @param s date string.
      * @param dateStyle style the date string is formatted in.
@@ -5720,66 +5773,42 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static LocalDate parseDate(@NotNull final String s, @NotNull final DateStyle dateStyle) {
+    public static LocalDate parseDate(@NotNull final String s, @Nullable final DateStyle dateStyle) {
         //noinspection ConstantConditions
         if (s == null) {
             throw new RuntimeException("Cannot parse date (null): " + s);
         }
 
-        //noinspection ConstantConditions
-        if (dateStyle == null) {
-            throw new RuntimeException("Cannot parse date (null style): " + s);
-        }
-
         try {
-            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
-            if (localDate != null) {
-                return localDate;
-            }
-            localDate = matchStdDate(STD_DATE_PATTERN2, s);
-            if (localDate != null) {
-                return localDate;
+                final Matcher stdMatcher = STD_DATE_PATTERN.matcher(s);
+                if(stdMatcher.matches()) {
+                    final int year = Integer.parseInt(stdMatcher.group("year"));
+                    final int month = Integer.parseInt(stdMatcher.group("month"));
+                    final int dayOfMonth = Integer.parseInt(stdMatcher.group("day"));
+                    return LocalDate.of(year, month, dayOfMonth);
+                }
+
+                final Matcher nosepMatcher = NOSEP_DATE_PATTERN.matcher(s);
+                if(nosepMatcher.matches()) {
+                    final int year = Integer.parseInt(nosepMatcher.group("year"));
+                    final int month = Integer.parseInt(nosepMatcher.group("month"));
+                    final int dayOfMonth = Integer.parseInt(nosepMatcher.group("day"));
+                    return LocalDate.of(year, month, dayOfMonth);
+                }
+
+            //noinspection ConstantConditions
+            if (dateStyle == null) {
+                throw new RuntimeException("Cannot parse date (null style): " + s);
             }
 
-            // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
-            // system date style setting (for example Europeans often write dates as d/m/y).
+            final Matcher dashMatcher = DASH_DATE_PATTERN.matcher(s);
+            if (dashMatcher.matches()) {
+                return matchLocalDate(dashMatcher, dateStyle);
+            }
+
             final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
             if (slashMatcher.matches()) {
-                final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
-                // note we have nested groups which allow us to detect 2 vs 4 digit year
-                // (groups 2 and 5 are the optional last 2 digits)
-                switch (dateStyle) {
-                    case MDY:
-                        dayGroup = "part2";
-                        monthGroup = "part1";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case DMY:
-                        dayGroup = "part1";
-                        monthGroup = "part2";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case YMD:
-                        dayGroup = "part3";
-                        monthGroup = "part2";
-                        yearGroup = "part1";
-                        yearFinal2DigitsGroup = "part1sub2";
-                        break;
-                    default:
-                        throw new RuntimeException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
-                }
-                final int year;
-                // for 2 digit years, lean on java's standard interpretation
-                if (slashMatcher.group(yearFinal2DigitsGroup) == null) {
-                    year = Year.parse(slashMatcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
-                } else {
-                    year = Integer.parseInt(slashMatcher.group(yearGroup));
-                }
-                final int month = Integer.parseInt(slashMatcher.group(monthGroup));
-                final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
-                return LocalDate.of(year, month, dayOfMonth);
+                return matchLocalDate(slashMatcher, dateStyle);
             }
 
             throw new RuntimeException("Date does not match expected pattern");
@@ -5788,10 +5817,29 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
      * Converts a string into a local date.
+     * A local date is a date without a time or time zone.
+     *
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * Supported formats:
+     * - YYYY-MM-DD
+     * - YYYYMMDD
+     * - YYYY/MM/DD
+     * - MM/DD/YYYY
+     * - MM-DD-YYYY
+     * - DD/MM/YYYY
+     * - DD-MM-YYYY
+     * - YY/MM/DD
+     * - YY-MM-DD
+     * - MM/DD/YY
+     * - MM-DD-YY
+     * - DD/MM/YY
+     * - DD-MM-YY
+     *
+     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     *
      *
      * @param s date string.
      * @param dateStyle style the date string is formatted in.
@@ -5811,14 +5859,29 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
+     * Converts a string into a local date using the default date style.
      * A local date is a date without a time or time zone.
      *
-     * The date string is formatted using the default date style.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * Supported formats:
+     * - YYYY-MM-DD
+     * - YYYYMMDD
+     * - YYYY/MM/DD
+     * - MM/DD/YYYY
+     * - MM-DD-YYYY
+     * - DD/MM/YYYY
+     * - DD-MM-YYYY
+     * - YY/MM/DD
+     * - YY-MM-DD
+     * - MM/DD/YY
+     * - MM-DD-YY
+     * - DD/MM/YY
+     * - DD-MM-YY
+     *
+     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     *
      *
      * @param s date string.
      * @return local date parsed according to the default date style.
@@ -5830,14 +5893,29 @@ public class DateTimeUtils {
         return parseDate(s, DEFAULT_DATE_STYLE);
     }
 
-    //TODO: Better docs
     /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
+     * Converts a string into a local date using the default date style.
      * A local date is a date without a time or time zone.
      *
-     * The date string is formatted using the default date style.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * Supported formats:
+     * - YYYY-MM-DD
+     * - YYYYMMDD
+     * - YYYY/MM/DD
+     * - MM/DD/YYYY
+     * - MM-DD-YYYY
+     * - DD/MM/YYYY
+     * - DD-MM-YYYY
+     * - YY/MM/DD
+     * - YY-MM-DD
+     * - MM/DD/YY
+     * - MM-DD-YY
+     * - DD/MM/YY
+     * - DD-MM-YY
+     *
+     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     *
      *
      * @param s date string.
      * @return local date parsed according to the default date style, or null if the string can not be parsed.
