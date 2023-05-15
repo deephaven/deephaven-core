@@ -3,7 +3,7 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkHolderPage and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ChunkHolderPageChar and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.generic.page;
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
  * Append-only {@link Page} implementation that permanently wraps an array for data storage, atomically replacing "view"
  * {@link Chunk chunks} with larger ones as the page is extended.
  */
-public class ShortChunkHolderPage<ATTR extends Any>
+public class ChunkHolderPageShort<ATTR extends Any>
         implements Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     private final long mask;
@@ -30,7 +30,7 @@ public class ShortChunkHolderPage<ATTR extends Any>
 
     private volatile ShortChunk<ATTR> currentView;
 
-    protected ShortChunkHolderPage(final long mask, final long firstRow, @NotNull final short[] storage) {
+    protected ChunkHolderPageShort(final long mask, final long firstRow, @NotNull final short[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

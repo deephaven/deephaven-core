@@ -1,6 +1,11 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ChunkHolderPageChar and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.generic.page;
 
 import io.deephaven.base.verify.Assert;
@@ -16,25 +21,25 @@ import org.jetbrains.annotations.NotNull;
  * Append-only {@link Page} implementation that permanently wraps an array for data storage, atomically replacing "view"
  * {@link Chunk chunks} with larger ones as the page is extended.
  */
-public class CharChunkHolderPage<ATTR extends Any>
+public class ChunkHolderPageObject<T, ATTR extends Any>
         implements Page.WithDefaults<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     private final long mask;
     private final long firstRow;
-    private final char[] storage;
+    private final T[] storage;
 
-    private volatile CharChunk<ATTR> currentView;
+    private volatile ObjectChunk<T, ATTR> currentView;
 
-    protected CharChunkHolderPage(final long mask, final long firstRow, @NotNull final char[] storage) {
+    protected ChunkHolderPageObject(final long mask, final long firstRow, @NotNull final T[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;
-        currentView = CharChunk.getEmptyChunk();
+        currentView = ObjectChunk.getEmptyChunk();
     }
 
     @Override
     public final ChunkType getChunkType() {
-        return ChunkType.Char;
+        return ChunkType.Object;
     }
 
     @Override
@@ -78,7 +83,7 @@ public class CharChunkHolderPage<ATTR extends Any>
             @NotNull final GetContext context,
             final long firstKey,
             final long lastKey) {
-        final CharChunk<ATTR> localView = currentView;
+        final ObjectChunk<T, ATTR> localView = currentView;
         return localView.slice(getChunkOffset(firstKey), Math.toIntExact(lastKey - firstKey + 1));
     }
 
@@ -87,8 +92,8 @@ public class CharChunkHolderPage<ATTR extends Any>
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super ATTR> destination,
             @NotNull final RowSequence rowSequence) {
-        final WritableCharChunk<? super ATTR> to = destination.asWritableCharChunk();
-        final CharChunk<ATTR> localView = currentView;
+        final WritableObjectChunk<T, ? super ATTR> to = destination.asWritableObjectChunk();
+        final ObjectChunk<T, ATTR> localView = currentView;
 
         if (rowSequence.getAverageRunLengthEstimate() >= Chunk.SYSTEM_ARRAYCOPY_THRESHOLD) {
             rowSequence.forAllRowKeyRanges((final long firstRowKey, final long lastRowKey) -> to.appendTypedChunk(
@@ -108,9 +113,9 @@ public class CharChunkHolderPage<ATTR extends Any>
      * @param expectedCurrentSize The expected current size of the visible data in this page, used to assert correctness
      * @return A chunk to fill with new data
      */
-    public final WritableCharChunk<ATTR> getSliceForAppend(final int expectedCurrentSize) {
+    public final WritableObjectChunk<T, ATTR> getSliceForAppend(final int expectedCurrentSize) {
         Assert.eq(expectedCurrentSize, "expectedCurrentSize", size(), "current size");
-        return WritableCharChunk.writableChunkWrap(storage, expectedCurrentSize, storage.length - expectedCurrentSize);
+        return WritableObjectChunk.writableChunkWrap(storage, expectedCurrentSize, storage.length - expectedCurrentSize);
     }
 
     /**
@@ -121,9 +126,9 @@ public class CharChunkHolderPage<ATTR extends Any>
      *        transfers to the callee
      * @param expectedCurrentSize The expected current size of the visible data in this page, used to assert correctness
      */
-    public final void acceptAppend(@NotNull final CharChunk<ATTR> slice, final int expectedCurrentSize) {
+    public final void acceptAppend(@NotNull final ObjectChunk<T, ATTR> slice, final int expectedCurrentSize) {
         Assert.eq(expectedCurrentSize, "expectedCurrentSize", size(), "current size");
         Assert.assertion(slice.isAlias(storage), "slice.isAlias(storage)");
-        currentView = CharChunk.chunkWrap(storage, 0, expectedCurrentSize + slice.size());
+        currentView = ObjectChunk.chunkWrap(storage, 0, expectedCurrentSize + slice.size());
     }
 }

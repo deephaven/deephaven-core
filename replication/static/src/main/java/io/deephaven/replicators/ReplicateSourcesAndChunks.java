@@ -79,9 +79,9 @@ public class ReplicateSourcesAndChunks {
         charToAll("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
         replicateObjectChunkPage("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
 
-        charToAll("extensions/source-support/src/main/java/io/deephaven/generic/page/CharChunkHolderPage.java");
+        charToAll("extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
         replicateObjectChunkPage(
-                "extensions/source-support/src/main/java/io/deephaven/generic/page/CharChunkHolderPage.java");
+                "extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
 
         replicateChunks();
         replicateWritableChunks();
