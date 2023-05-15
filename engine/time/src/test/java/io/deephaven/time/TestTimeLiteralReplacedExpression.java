@@ -84,4 +84,17 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
                 "        private long _time1=DateTimeUtils.convertTime(\"04:21\");\n", tlre.getInstanceVariablesString());
     }
 
+    public void testConvertExpressionTimeAddition2() throws Exception {
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'12:00' + 'T4H'");
+        TestCase.assertEquals("_time0 + _period0", tlre.getConvertedFormula());
+
+        final HashMap<String, Class<?>> newVars = new HashMap<>();
+        newVars.put("_time0", long.class);
+        newVars.put("_period0", Period.class);
+        TestCase.assertEquals(newVars, tlre.getNewVariables());
+
+        TestCase.assertEquals("        private long _time0=DateTimeUtils.convertTime(\"12:00\");\n" +
+                "        private Period _period0=DateTimeUtils.convertPeriod(\"T4H\");\n", tlre.getInstanceVariablesString());
+    }
+
 }
