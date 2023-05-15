@@ -80,7 +80,7 @@ public class DateTimeUtils {
      * Matches date times.
      */
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
-            "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z]+");
+            "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z_/]+");
     /**
      * Matches times and durations.
      */
@@ -5560,23 +5560,24 @@ public class DateTimeUtils {
         }
 
         try {
-            //TODO: support zone ID as well
-            TimeZone timeZone = null;
-            String dateTimeString = null;
             if (DATETIME_PATTERN.matcher(s).matches()) {
                 int spaceIndex = s.indexOf(' ');
                 if (spaceIndex == -1) {
                     throw new RuntimeException("No time zone provided");
                 }
-                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
-                dateTimeString = s.substring(0, spaceIndex);
+
+                final String dateTimeString = s.substring(0, spaceIndex);
+                final String timeZoneString = s.substring(spaceIndex+1);
+                final ZoneId timeZone = parseTimeZoneIdQuiet(timeZoneString);
+
+                if (timeZone == null) {
+                    throw new RuntimeException("No matching time zone: " + timeZoneString);
+                }
+
+                return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone).toInstant());
             }
 
-            if (timeZone == null) {
-                throw new RuntimeException("No matching time zone");
-            }
-
-            return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone.getZoneId()).toInstant());
+            throw new RuntimeException("DateTime does not match expected pattern");
         } catch (Exception ex){
             throw new RuntimeException("Cannot parse datetime: " + s, ex);
         }

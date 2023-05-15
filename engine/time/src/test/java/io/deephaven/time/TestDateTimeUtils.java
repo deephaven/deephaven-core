@@ -8,7 +8,9 @@ import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Map;
 
 public class TestDateTimeUtils extends BaseArrayTestCase {
@@ -239,7 +241,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
     }
 
-    public void testParseTimeZoneIdQuet() {
+    public void testParseTimeZoneIdQuiet() {
         for (TimeZone tz : TimeZone.values()) {
             TestCase.assertEquals(tz.getZoneId(), DateTimeUtils.parseTimeZoneIdQuiet(tz.toString().split("_")[1]));
         }
@@ -254,6 +256,104 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet(null));
     }
+
+    public void testParseDateTime() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for(String tz : tzs) {
+            for(String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZoneId(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTime.of(zdt.toInstant()), DateTimeUtils.parseDateTime(s));
+            }
+        }
+
+        try {
+            DateTimeUtils.parseDateTime("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            DateTimeUtils.parseDateTime("2010-01-01T12:11");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            DateTimeUtils.parseDateTime("2010-01-01T12:11 JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseDateTime(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+    }
+
+    public void testParseDateTimeQuiet() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for(String tz : tzs) {
+            for(String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZoneId(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTime.of(zdt.toInstant()), DateTimeUtils.parseDateTimeQuiet(s));
+            }
+        }
+
+        TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet("JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:11"));
+        TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:11 JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet(null));
+    }
+
+
+
+
+
+
+
 
 //    public void testMillis() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
@@ -542,91 +642,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //                DateTimeUtils.parseDate("9999-12-31"));
 //    }
 //
-//    public void testParseDateTimeQuiet() throws Exception {
-//        TestCase.assertEquals(
-//                new DateTime(
-//                        new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/New_York")).getMillis()
-//                                * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01 NY"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/New_York")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00 NY"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/New_York")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.1 NY"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
-//                        .getMillis() * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.123 NY"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
-//                        .getMillis() * 1000000
-//                        + 400000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.1234 NY"));
-//        TestCase.assertEquals(
-//                new DateTime(
-//                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/New_York"))
-//                                .getMillis()
-//                                * 1000000 + 456789),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.123456789 NY"));
-//
-//        TestCase.assertEquals(
-//                new DateTime(new org.joda.time.DateTime("2010-01-01", DateTimeZone.forID("America/Chicago")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01 MN"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00", DateTimeZone.forID("America/Chicago")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00 MN"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.1", DateTimeZone.forID("America/Chicago")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.1 MN"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis()
-//                        * 1000000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.123 MN"));
-//        TestCase.assertEquals(new DateTime(
-//                new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago")).getMillis()
-//                        * 1000000
-//                        + 400000),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.1234 MN"));
-//        TestCase.assertEquals(
-//                new DateTime(
-//                        new org.joda.time.DateTime("2010-01-01T12:00:00.123", DateTimeZone.forID("America/Chicago"))
-//                                .getMillis()
-//                                * 1000000 + 456789),
-//                DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:00:00.123456789 MN"));
-//
-//        TestCase.assertEquals(new DateTime(1503343549064106107L),
-//                DateTimeUtils.parseDateTimeQuiet("2017-08-21T15:25:49.064106107 NY"));
-//
-//        // assertEquals(new DateTime(new DateTime("2010-01-01T12:00:00.123", DateTimeZone.UTC).getMillis()*1000000),
-//        // DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123+0000"));
-//        // assertEquals(new DateTime(new DateTime("2010-01-01T12:00:00.123",
-//        // DateTimeZone.forID("America/New_York")).getMillis()*1000000),
-//        // DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123-0400"));
-//        // assertEquals(new DateTime(new DateTime("2010-01-01T12:00:00.123",
-//        // DateTimeZone.forID("Asia/Seoul")).getMillis()*1000000),
-//        // DateTimeUtils.convertDateTimeQuiet("2010-01-01T12:00:00.123+0900"));
-//    }
-//
-//    public void testParseDateTime() throws Exception {
-//        DateTimeUtils.parseDateTime("2010-01-01 NY"); // shouldn't have an exception
-//
-//        try {
-//            DateTimeUtils.parseDateTime("2010-01-01");
-//            TestCase.fail("Should have thrown an exception");
-//        } catch (Exception e) {
-//        }
-//
-//        TestCase.assertEquals("DateTimeUtils.convertDateTime(\"2262-04-11T19:47:16.854775807 NY\").getNanos()",
-//                Long.MAX_VALUE,
-//                DateTimeUtils.parseDateTime("2262-04-11T19:47:16.854775807 NY").getNanos());
-//    }
-//
+
 //    public void testParseNanosQuiet() throws Exception {
 //        TestCase.assertEquals(new LocalTime("12:00").getMillisOfDay() * 1000000L,
 //                DateTimeUtils.parseNanosQuiet("12:00"));
