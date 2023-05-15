@@ -5,8 +5,11 @@ package io.deephaven.time;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Map;
 
 public class TestDateTimeUtils extends BaseArrayTestCase {
 
@@ -51,7 +54,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         try{
-            //noinspection ConstantConditions
             DateTimeUtils.parseDate("JUNK", null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex){
@@ -177,6 +179,80 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertNull(DateTimeUtils.parseLocalTimeQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseLocalTimeQuiet(null));
+    }
+
+    public void testParseTimeZone() {
+        for (TimeZone tz : TimeZone.values()) {
+            TestCase.assertEquals(tz, DateTimeUtils.parseTimeZone(tz.toString().split("_")[1]));
+        }
+
+        try {
+            DateTimeUtils.parseTimeZone("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseTimeZone(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+    }
+
+    public void testParseTimeZoneQuiet() {
+        for (TimeZone tz : TimeZone.values()) {
+            TestCase.assertEquals(tz, DateTimeUtils.parseTimeZoneQuiet(tz.toString().split("_")[1]));
+        }
+
+        TestCase.assertNull(DateTimeUtils.parseTimeZoneQuiet("JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseTimeZoneQuiet(null));
+    }
+
+    public void testParseTimeZoneId() {
+        for (TimeZone tz : TimeZone.values()) {
+            TestCase.assertEquals(tz.getZoneId(), DateTimeUtils.parseTimeZoneId(tz.toString().split("_")[1]));
+        }
+
+        for(Map.Entry<String,String> e : ZoneId.SHORT_IDS.entrySet()) {
+            TestCase.assertEquals(ZoneId.of(e.getKey(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneId(e.getKey()));
+            TestCase.assertEquals(ZoneId.of(e.getValue(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneId(e.getValue()));
+        }
+
+        TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZoneId("America/Denver"));
+
+        try {
+            DateTimeUtils.parseTimeZoneId("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseTimeZoneId(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+    }
+
+    public void testParseTimeZoneIdQuet() {
+        for (TimeZone tz : TimeZone.values()) {
+            TestCase.assertEquals(tz.getZoneId(), DateTimeUtils.parseTimeZoneIdQuiet(tz.toString().split("_")[1]));
+        }
+
+        for(Map.Entry<String,String> e : ZoneId.SHORT_IDS.entrySet()) {
+            TestCase.assertEquals(ZoneId.of(e.getKey(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneIdQuiet(e.getKey()));
+            TestCase.assertEquals(ZoneId.of(e.getValue(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneIdQuiet(e.getValue()));
+        }
+
+        TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZoneIdQuiet("America/Denver"));
+
+        TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet("JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet(null));
     }
 
 //    public void testMillis() throws Exception {

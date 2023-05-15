@@ -32,6 +32,7 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 //TODO: @SuppressWarnings("unused")
 @SuppressWarnings({"RegExpRedundantEscape", "unused"})
 public class DateTimeUtils {
+    //TODO: replace null checks with: Objects.requireNonNull(...)
     //TODO: test coverage
     //TODO: remove TZ_DEFAULT / add @see for TZ_DEFAULT
     //TODO: what are the @ScriptApi annotations???
@@ -5279,7 +5280,7 @@ public class DateTimeUtils {
         }
 
         try {
-            return TimeZone.valueOf(s);
+            return TimeZone.valueOf("TZ_"+s);
         } catch (Exception ex){
             throw new RuntimeException("Cannot parse time zone: " + s, ex);
         }
