@@ -210,24 +210,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     /**
      * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
      *
-     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return a {@link ZonedDateTime}
-     * @see ZoneId
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime(@NotNull final String timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return toZonedDateTime(ZoneId.of(timeZone));
-    }
-
-    /**
-     * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
-     *
      * @param timeZone time zone.
      * @return a {@link ZonedDateTime}
      */
@@ -265,20 +247,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     @NotNull
     public LocalDate toLocalDate() {
         return toLocalDate(TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Convert this DateTime to a {@link LocalDate} with the specified time zone.
-     *
-     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return the {@link LocalDate}
-     * @see ZoneId
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
-     */
-    @NotNull
-    public LocalDate toLocalDate(@NotNull final String timeZone) {
-        return toLocalDate(ZoneId.of(timeZone));
     }
 
     /**
@@ -322,24 +290,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     /**
      * Convert this DateTime to a {@link LocalTime} with the specified time zone.
      *
-     * @param timeZone time zone.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return the {@link LocalTime}
-     * @see ZoneId
-     * @throws DateTimeException if the zone ID has an invalid format
-     * @throws ZoneRulesException if the zone ID is a region ID that cannot be found
-     */
-    @NotNull
-    public LocalTime toLocalTime(@NotNull final String timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return toLocalTime(ZoneId.of(timeZone));
-    }
-
-    /**
-     * Convert this DateTime to a {@link LocalTime} with the specified time zone.
-     *
      * @param timeZone time zone.
      * @return the {@link LocalTime}
      */
@@ -371,7 +321,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      */
     @Deprecated
     @NotNull
-    public Date getDate() {
+    public Date toDate() {
         return new Date(getMillis());
     }
 
@@ -400,7 +350,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-
+        //noinspection ConstantConditions
         return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
@@ -420,27 +370,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-
+        //noinspection ConstantConditions
         return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
-    /**
-     * Converts this DateTime into a String using the provided time zone.
-     *
-     * The date time will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
-     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
-     *
-     * @param timeZone the time zone for formatting the string.  The time zone string must be a valid value specified in {@link ZoneId}.
-     * @return a string representation of this DateTime
-     * @see ZoneId
-     * @throws RuntimeException if the timeZone is null or cannot be converted.
-     */
-    @NotNull
-    public String toString(@NotNull final String timeZone) {
-        return DateTimeUtils.formatDateTime(this, DateTimeUtils.parseTimeZoneId(timeZone));
-    }
-
-    /**
+   /**
      * Converts this DateTime into a date String using the default time zone.
      *
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
@@ -468,6 +402,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
+        //noinspection ConstantConditions
         return DateTimeUtils.formatDate(this, timeZone);
     }
 
@@ -486,22 +421,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
+        //noinspection ConstantConditions
         return DateTimeUtils.formatDate(this, timeZone);
-    }
-
-    /**
-     * Converts this DateTime into a date String using the provided time zone.
-     *
-     * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
-     *
-     * @param timeZone the time zone for formatting the string.  The timezone string must be a valid value specified in {@link ZoneId}.
-     * @return a date string representation of this DateTime in the provided {@link ZoneId}.
-     * @throws RuntimeException if the timeZone is null or cannot be converted.
-     * @see ZoneId
-     */
-    @NotNull
-    public String toDateString(@NotNull final String timeZone) {
-        return DateTimeUtils.formatDate(this, DateTimeUtils.parseTimeZoneId(timeZone));
     }
 
     // endregion

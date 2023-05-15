@@ -6,6 +6,8 @@ package io.deephaven.time;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 
+import java.io.*;
+
 public class TestPeriod extends BaseArrayTestCase {
 
     public void testAll() throws Exception {
@@ -87,6 +89,22 @@ public class TestPeriod extends BaseArrayTestCase {
         assertEquals(-1, p4.compareTo(p3));
         assertEquals(1, p1.compareTo(p4));
         assertEquals(-1, p4.compareTo(p1));
+
+        assertEquals(p1.hashCode(), "2d".hashCode());
+    }
+
+    public void testSerialization() throws IOException, ClassNotFoundException {
+        final Period obj = new Period("2D");
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(baos);
+        oos.writeObject(obj);
+        oos.close();
+        final byte[] b = baos.toByteArray();
+        ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        ObjectInputStream ois = new ObjectInputStream(bais);
+        Period o = (Period) ois.readObject();
+        assertEquals(obj, o);
     }
 
 }
