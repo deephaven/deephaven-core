@@ -133,6 +133,15 @@ public abstract class JettyConfig implements ServerConfig {
     @Nullable
     public abstract Boolean http1();
 
+    /**
+     * Include sniHostCheck.
+     */
+    @Nullable
+    @Default
+    public Boolean sniHostCheck() {
+        return true;
+    }
+
     public abstract OptionalLong http2StreamIdleTimeout();
 
     /**
@@ -184,5 +193,7 @@ public abstract class JettyConfig implements ServerConfig {
         Builder http1(Boolean http1);
 
         Builder http2StreamIdleTimeout(long timeoutInMillis);
+
+        Builder sniHostCheck(Boolean sniHostCheck);
     }
 }
