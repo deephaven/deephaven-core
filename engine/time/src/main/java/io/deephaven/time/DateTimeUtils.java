@@ -604,7 +604,7 @@ public class DateTimeUtils {
         if (seconds == NULL_LONG) {
             return NULL_LONG;
         }
-        return seconds / 1_000_000;
+        return seconds * 1_000_000;
     }
 
     /**
@@ -636,7 +636,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return micros * 1000L;
+        return micros / 1000L;
     }
 
     /**
@@ -652,7 +652,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return seconds / 1_000L;
+        return seconds * 1_000L;
     }
 
     /**

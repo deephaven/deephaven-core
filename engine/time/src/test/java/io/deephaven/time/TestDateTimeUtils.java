@@ -690,8 +690,119 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-3T2:00:00.123456789")));
     }
 
+    public void testMicrosToMillis() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000L, DateTimeUtils.microsToMillis(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsToMillis(NULL_LONG));
+    }
 
+    public void testMicrosToNanos() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000L, DateTimeUtils.microsToNanos(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsToNanos(NULL_LONG));
 
+        try{
+            DateTimeUtils.millisToNanos(Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+
+        try{
+            DateTimeUtils.microsToNanos(-Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+    }
+
+    public void testMicrosToSeconds() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000_000L, DateTimeUtils.microsToSeconds(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsToSeconds(NULL_LONG));
+    }
+
+    public void testMillisToMicros() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000L, DateTimeUtils.millisToMicros(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.millisToMicros(NULL_LONG));
+    }
+
+    public void testMillisToNanos() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000_000L, DateTimeUtils.millisToNanos(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.millisToNanos(NULL_LONG));
+
+        try{
+            DateTimeUtils.millisToNanos(Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+
+        try{
+            DateTimeUtils.millisToNanos(-Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+    }
+
+    public void testMillisToSeconds() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000L, DateTimeUtils.millisToSeconds(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.millisToSeconds(NULL_LONG));
+    }
+
+    public void testNanosToMicros() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000L, DateTimeUtils.nanosToMicros(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosToMicros(NULL_LONG));
+    }
+
+    public void testNanosToMillis() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000_000L, DateTimeUtils.nanosToMillis(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosToMillis(NULL_LONG));
+    }
+
+    public void testNanosToSeconds() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v/1_000_000_000L, DateTimeUtils.nanosToSeconds(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosToSeconds(NULL_LONG));
+    }
+
+    public void testSecondsToNanos() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000_000_000L, DateTimeUtils.secondsToNanos(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.secondsToNanos(NULL_LONG));
+
+        try{
+            DateTimeUtils.secondsToNanos(Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+
+        try{
+            DateTimeUtils.secondsToNanos(-Long.MAX_VALUE/2);
+            TestCase.fail("Should throw an exception");
+        }catch (DateTimeUtils.DateTimeOverflowException ex){
+            //pass
+        }
+    }
+
+    public void testSecondsToMicros() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000_000L, DateTimeUtils.secondsToMicros(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.secondsToMicros(NULL_LONG));
+    }
+
+    public void testSecondsToMillis() {
+        final long v = 1234567890;
+        TestCase.assertEquals(v*1_000L, DateTimeUtils.secondsToMillis(v));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.secondsToMillis(NULL_LONG));
+    }
 
 
 //    public void testMillis() throws Exception {
