@@ -1012,7 +1012,7 @@ class TableTestCase(BaseTestCase):
         aggs = [
             median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
             pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
-            unique(cols=["ua = a", "ub = b"], include_nulls=True, null_sentinel=-1),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
             count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
             distinct(cols=["da = a", "db = b"], include_nulls=True),
             ]
@@ -1034,7 +1034,7 @@ class TableTestCase(BaseTestCase):
                 self.assertFalse(table_equals(rt_option, rt_default))
 
         with self.assertRaises(DHError):
-            agg = unique(cols=["ua = a", "ub = b"], include_nulls=True, null_sentinel=None)
+            agg = unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=None)
 
 
 if __name__ == "__main__":

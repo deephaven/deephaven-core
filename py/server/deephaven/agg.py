@@ -229,9 +229,9 @@ def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_di
         percentile (float): the percentile used for calculation
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
-        average_evenly_divided (bool): when the percentile is 0.5 and the group size is an even number, whether to
-            average the two middle values for the output value, default is False, meaning to use the smaller value.
-            This flag is only valid for numeric types.
+        average_evenly_divided (bool): when the percentile splits the group into two halves, whether to average the two
+            middle values for the output value, default is False, meaning to use the smaller value. This flag is only
+            valid for numeric types.
 
     Returns:
         an aggregation
@@ -280,29 +280,31 @@ def std(cols: Union[str, List[str]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.std(), cols=cols)
 
 
-def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, null_sentinel: Any = None) -> Aggregation:
+def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, non_unique_sentinel: Any = None) -> Aggregation:
     """Create a Unique aggregation which computes the single unique value within an aggregation group for each of
     the given columns. If all values in a column are null, or if there is more than one distinct value in a column, the
-    result is null.
+    result is null or the specified non_unique_sentinel value.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        null_sentinel (Any): the non-null sentinel value to substitute null when include_nulls is True, default is None
+        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists, default is None, must be
+            a non-None value when include_nulls is True.
 
     Returns:
         an aggregation
     """
-    if include_nulls:
-        if null_sentinel:
-            null_sentinel = _JUnionObject.of(null_sentinel)
-        else:
+
+    if non_unique_sentinel is None:
+        if include_nulls:
             raise DHError(message="when include_nulls is True, a non-null sentinel value must be provided.")
-        return Aggregation(j_agg_spec=_JAggSpec.unique(include_nulls, null_sentinel), cols=cols)
+        else:
+            return Aggregation(j_agg_spec=_JAggSpec.unique(), cols=cols)
     else:
-        return Aggregation(j_agg_spec=_JAggSpec.unique(), cols=cols)
+        non_unique_sentinel = _JUnionObject.of(non_unique_sentinel)
+        return Aggregation(j_agg_spec=_JAggSpec.unique(include_nulls, non_unique_sentinel), cols=cols)
 
 
 def var(cols: Union[str, List[str]] = None) -> Aggregation:
@@ -348,7 +350,7 @@ def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
 
 def distinct(cols: Union[str, List[str]] = None, include_nulls: bool = False) -> Aggregation:
     """Create a Distinct aggregation which computes the distinct values within an aggregation group for each of the
-    given columns.
+    given columns and stores them as vectors.
 
     Args:
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
