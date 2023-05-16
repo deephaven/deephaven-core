@@ -5,11 +5,9 @@ package io.deephaven.time;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 import java.time.temporal.ChronoField;
-import java.util.Locale;
 import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -578,7 +576,124 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.parseTimePrecisionQuiet(null));
     }
 
-    
+    public void testFormatDate() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2021-02-03T11:23:32.456789 NY");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_NY);
+        final ZonedDateTime dt4 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(dt1, TimeZone.TZ_NY));
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(dt1, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertEquals("2021-02-04", DateTimeUtils.formatDate(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04", DateTimeUtils.formatDate(dt1, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(dt2, TimeZone.TZ_NY));
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(dt2, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertEquals("2021-02-04", DateTimeUtils.formatDate(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04", DateTimeUtils.formatDate(dt2, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals("2021-02-03", DateTimeUtils.formatDate(dt3));
+        TestCase.assertEquals("2021-02-04", DateTimeUtils.formatDate(dt4));
+
+        TestCase.assertNull(DateTimeUtils.formatDate((DateTime) null, TimeZone.TZ_NY));
+        TestCase.assertNull(DateTimeUtils.formatDate((DateTime) null, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.formatDate(dt1, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.formatDate(dt1, (ZoneId) null));
+
+        TestCase.assertNull(DateTimeUtils.formatDate((Instant) null, TimeZone.TZ_NY));
+        TestCase.assertNull(DateTimeUtils.formatDate((Instant) null, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.formatDate(dt2, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.formatDate(dt2, (ZoneId) null));
+
+        TestCase.assertNull(DateTimeUtils.formatDate(null));
+    }
+
+    public void testFormatDateTime() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2021-02-03T11:23:32.45678912 NY");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_NY);
+        final ZonedDateTime dt4 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals("2021-02-04T01:00:00.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:00 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:00.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:01.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:01 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:01.300000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:01.3 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456700000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.4567 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456780000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.45678 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.456789 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789100 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.4567891 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.45678912 NY"), TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789123 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseDateTime("2021-02-03T11:23:32.456789123 NY"), TimeZone.TZ_JP));
+
+        TestCase.assertEquals("2021-02-03T11:23:32.456789120 NY", DateTimeUtils.formatDateTime(dt1, TimeZone.TZ_NY));
+        TestCase.assertEquals("2021-02-03T11:23:32.456789120 America/New_York", DateTimeUtils.formatDateTime(dt1, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 Asia/Tokyo", DateTimeUtils.formatDateTime(dt1, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals("2021-02-03T11:23:32.456789120 NY", DateTimeUtils.formatDateTime(dt2, TimeZone.TZ_NY));
+        TestCase.assertEquals("2021-02-03T11:23:32.456789120 America/New_York", DateTimeUtils.formatDateTime(dt2, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 Asia/Tokyo", DateTimeUtils.formatDateTime(dt2, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals("2021-02-03T11:23:32.456789120 America/New_York", DateTimeUtils.formatDateTime(dt3));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 Asia/Tokyo", DateTimeUtils.formatDateTime(dt4));
+
+        TestCase.assertNull(DateTimeUtils.formatDateTime((DateTime) null, TimeZone.TZ_NY));
+        TestCase.assertNull(DateTimeUtils.formatDateTime((DateTime) null, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.formatDateTime(dt1, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.formatDateTime(dt1, (ZoneId) null));
+
+        TestCase.assertNull(DateTimeUtils.formatDateTime((Instant) null, TimeZone.TZ_NY));
+        TestCase.assertNull(DateTimeUtils.formatDateTime((Instant) null, TimeZone.TZ_NY.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.formatDateTime(dt2, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.formatDateTime(dt2, (ZoneId) null));
+
+        TestCase.assertNull(DateTimeUtils.formatDateTime(null));
+
+        TestCase.fail("Clean up time zone handling");
+    }
+
+    public void testFormatNanos() {
+        TestCase.assertEquals("12:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00")));
+        TestCase.assertEquals("12:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00")));
+        TestCase.assertEquals("12:00:00.123000000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123")));
+        TestCase.assertEquals("12:00:00.123400000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.1234")));
+        TestCase.assertEquals("12:00:00.123456789",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123456789")));
+
+        TestCase.assertEquals("2:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00")));
+        TestCase.assertEquals("2:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00")));
+        TestCase.assertEquals("2:00:00.123000000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123")));
+        TestCase.assertEquals("2:00:00.123400000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.1234")));
+        TestCase.assertEquals("2:00:00.123456789",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123456789")));
+
+        TestCase.assertEquals("3T2:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00")));
+        TestCase.assertEquals("3T2:00:00",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00")));
+        TestCase.assertEquals("3T2:00:00.123000000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123")));
+        TestCase.assertEquals("3T2:00:00.123400000",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.1234")));
+        TestCase.assertEquals("3T2:00:00.123456789",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123456789")));
+        TestCase.assertEquals("-3T2:00:00.123456789",
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-3T2:00:00.123456789")));
+    }
+
+
+
+
+
 //    public void testMillis() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
 //
@@ -868,34 +983,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //
 
 
-//
-//    public void testTimeFormat() throws Exception {
-//        TestCase.assertEquals("12:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00")));
-//        TestCase.assertEquals("12:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00")));
-//        TestCase.assertEquals("12:00:00.123000000",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123")));
-//        TestCase.assertEquals("12:00:00.123400000",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.1234")));
-//        TestCase.assertEquals("12:00:00.123456789",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123456789")));
-//
-//        TestCase.assertEquals("2:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00")));
-//        TestCase.assertEquals("2:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00")));
-//        TestCase.assertEquals("2:00:00.123000000", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123")));
-//        TestCase.assertEquals("2:00:00.123400000",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.1234")));
-//        TestCase.assertEquals("2:00:00.123456789",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123456789")));
-//
-//        TestCase.assertEquals("3T2:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00")));
-//        TestCase.assertEquals("3T2:00:00", DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00")));
-//        TestCase.assertEquals("3T2:00:00.123000000",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123")));
-//        TestCase.assertEquals("3T2:00:00.123400000",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.1234")));
-//        TestCase.assertEquals("3T2:00:00.123456789",
-//                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123456789")));
-//    }
+
 //
 //    public void testFormatDate() throws Exception {
 //        TestCase.assertEquals("2010-01-01",

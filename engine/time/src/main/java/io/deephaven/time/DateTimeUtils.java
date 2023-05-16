@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
 /**
  * Functions for working with time.
@@ -5064,6 +5065,23 @@ public class DateTimeUtils {
     //TODO: format micros
     //TODO: format seconds
 
+    private static String formatDateTimeInternal(final ZonedDateTime dateTime, final String timeZone){
+        final String ldt = ISO_LOCAL_DATE_TIME.format(dateTime);
+
+        final StringBuilder sb = new StringBuilder();
+
+        sb.append(ldt);
+
+        int pad = 29-ldt.length();
+
+        if(ldt.length() == 19) {
+            sb.append(".");
+            pad--;
+        }
+
+        return sb.append("0".repeat(Math.max(0, pad))).append(" ").append(timeZone).toString();
+    }
+
     /**
      * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
@@ -5145,10 +5163,9 @@ public class DateTimeUtils {
             return null;
         }
 
-        //noinspection ConstantConditions
-        final long nanosPartial = toDateTime(dateTime).getNanosPartial();
-        return ISO_LOCAL_DATE.format(dateTime)
-                + padZeros(String.valueOf(nanosPartial), 6) + " " + dateTime.getZone().getId();
+        //TODO: auto lookup of TimeZone or short ID based on Zone?
+
+        return formatDateTimeInternal(dateTime, dateTime.getZone().getId());
     }
 
     /**
@@ -5165,10 +5182,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        //noinspection ConstantConditions
-        final long nanosPartial = toDateTime(dateTime).getNanosPartial();
-        return ISO_LOCAL_DATE.format(dateTime)
-                + padZeros(String.valueOf(nanosPartial), 6) + " " + timeZone.toString().substring(3);
+        return formatDateTimeInternal(dateTime, timeZone.toString().substring(3));
     }
 
     /**
