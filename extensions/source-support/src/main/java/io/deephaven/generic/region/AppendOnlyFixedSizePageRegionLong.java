@@ -70,18 +70,15 @@ public class AppendOnlyFixedSizePageRegionLong<ATTR extends Any>
     @NotNull
     private ChunkHolderPageLong<ATTR> getPageContaining(final long rowKey) {
         final long firstRowPosition = rowKey & mask();
-        final long totalSize = accessor.size();
         final int pageIndex = Math.toIntExact(firstRowPosition / pageSize);
         if (pageIndex >= MAX_ARRAY_SIZE) {
             throw new UnsupportedOperationException(String.format(
                     "Cannot support more than %s pages, increase page size from %s", MAX_ARRAY_SIZE, pageSize));
         }
         final long pageFirstRowInclusive = (long) pageIndex * pageSize;
-        final long pageLastRowExclusive = Math.min(totalSize, (pageIndex + 1L) * pageSize);
-        final int minimumSize = Math.toIntExact(pageLastRowExclusive - pageFirstRowInclusive);
 
         final ChunkHolderPageLong<ATTR> pageHolder = ensurePage(pageIndex, pageFirstRowInclusive);
-        ensureFilled(pageHolder, pageFirstRowInclusive, minimumSize);
+        ensureFilled(pageHolder, pageIndex, pageFirstRowInclusive);
         return pageHolder;
     }
 
@@ -117,22 +114,32 @@ public class AppendOnlyFixedSizePageRegionLong<ATTR extends Any>
 
     private void ensureFilled(
             @NotNull final ChunkHolderPageLong<ATTR> pageHolder,
-            final long pageFirstRowInclusive,
-            final int minimumSize) {
+            final int pageIndex,
+            final long pageFirstRowInclusive) {
+
+        // If this page is already as full as it can be, don't interact with the accessor at all
+        if (pageHolder.size() >= pageSize) {
+            return;
+        }
+
+        final long regionSize = accessor.size();
+        final long pageLastRowExclusive = Math.min(regionSize, (pageIndex + 1L) * pageSize);
+        final int thisPageSize = Math.toIntExact(pageLastRowExclusive - pageFirstRowInclusive);
+
         // Check the current size
-        if (pageHolder.size() >= minimumSize) {
+        if (pageHolder.size() >= thisPageSize) {
             return;
         }
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (pageHolder) {
             // Ensure that we have enough data available
             final int currentSize = pageHolder.size();
-            if (currentSize >= minimumSize) {
+            if (currentSize >= thisPageSize) {
                 return;
             }
             // Fill the necessary page suffix
             final WritableLongChunk<ATTR> destination = pageHolder.getSliceForAppend(currentSize);
-            accessor.readChunkPage(pageFirstRowInclusive + currentSize, minimumSize - currentSize, destination);
+            accessor.readChunkPage(pageFirstRowInclusive + currentSize, thisPageSize - currentSize, destination);
             pageHolder.acceptAppend(destination, currentSize);
         }
     }
