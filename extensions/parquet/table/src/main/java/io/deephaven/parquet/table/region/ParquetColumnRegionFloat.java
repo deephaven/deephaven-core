@@ -32,7 +32,7 @@ public final class ParquetColumnRegionFloat<ATTR extends Any> extends ParquetCol
         try {
             return page.asFloatChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving float at table float rowSet " + elementIndex
+            throw new TableDataException("Error retrieving float at table row key " + elementIndex
                     + ", from a parquet table", e);
         }
     }

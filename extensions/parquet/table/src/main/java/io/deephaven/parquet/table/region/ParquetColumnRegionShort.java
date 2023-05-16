@@ -32,7 +32,7 @@ public final class ParquetColumnRegionShort<ATTR extends Any> extends ParquetCol
         try {
             return page.asShortChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving short at table short rowSet " + elementIndex
+            throw new TableDataException("Error retrieving short at table row key " + elementIndex
                     + ", from a parquet table", e);
         }
     }

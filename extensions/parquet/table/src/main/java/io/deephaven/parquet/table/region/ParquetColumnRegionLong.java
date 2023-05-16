@@ -32,7 +32,7 @@ public final class ParquetColumnRegionLong<ATTR extends Any> extends ParquetColu
         try {
             return page.asLongChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving long at table long rowSet " + elementIndex
+            throw new TableDataException("Error retrieving long at table row key " + elementIndex
                     + ", from a parquet table", e);
         }
     }

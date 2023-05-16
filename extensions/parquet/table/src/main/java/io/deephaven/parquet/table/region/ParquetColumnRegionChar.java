@@ -27,7 +27,7 @@ public final class ParquetColumnRegionChar<ATTR extends Any> extends ParquetColu
         try {
             return page.asCharChunk().get(page.getChunkOffset(elementIndex));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving char at table char rowSet " + elementIndex
+            throw new TableDataException("Error retrieving char at table row key " + elementIndex
                     + ", from a parquet table", e);
         }
     }
