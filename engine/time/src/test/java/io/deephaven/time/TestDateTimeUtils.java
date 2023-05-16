@@ -1482,6 +1482,183 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
 
+        public void testLowerBin() {
+        final long second = 1000000000L;
+        final long minute = 60 * second;
+        final long hour = 60 * minute;
+        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
+
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:14:01 NY"),
+                DateTimeUtils.lowerBin(time, second));
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:10:00 NY"),
+                DateTimeUtils.lowerBin(time, 5 * minute));
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:00:00 NY"),
+                DateTimeUtils.lowerBin(time, hour));
+            TestCase.assertNull(DateTimeUtils.lowerBin((DateTime) null, 5 * minute));
+            TestCase.assertNull(DateTimeUtils.lowerBin(time, NULL_LONG));
+
+            final Instant instant = DateTimeUtils.toInstant(time);
+            
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.lowerBin(time, second)),
+                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second), second));
+        
+            TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:14:01 NY")),
+                    DateTimeUtils.lowerBin(instant, second));
+            TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:10:00 NY")),
+                    DateTimeUtils.lowerBin(instant, 5 * minute));
+            TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:00:00 NY")),
+                    DateTimeUtils.lowerBin(instant, hour));
+            TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, 5 * minute));
+            TestCase.assertNull(DateTimeUtils.lowerBin(instant, NULL_LONG));
+
+            TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second),
+                    DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second), second));
+
+            final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(time, TimeZone.TZ_AL);
+
+            TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.lowerBin(time, second), TimeZone.TZ_AL),
+                    DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second), second));
+
+            TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:14:01 NY"), TimeZone.TZ_AL),
+                    DateTimeUtils.lowerBin(zdt, second));
+            TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:10:00 NY"), TimeZone.TZ_AL),
+                    DateTimeUtils.lowerBin(zdt, 5 * minute));
+            TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:00:00 NY"), TimeZone.TZ_AL),
+                    DateTimeUtils.lowerBin(zdt, hour));
+            TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute));
+            TestCase.assertNull(DateTimeUtils.lowerBin(zdt, NULL_LONG));
+
+            TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second),
+                    DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second), second));
+
+        }
+
+    public void testLowerBinWithOffset() {
+        final long second = 1000000000L;
+        final long minute = 60 * second;
+        final long hour = 60 * minute;
+        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
+
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY"),
+                DateTimeUtils.lowerBin(time, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((DateTime) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(time, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(time, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.lowerBin(time, second, second),
+                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(time, second, second), second, second));
+
+        final Instant instant = DateTimeUtils.toInstant(time);
+
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY")),
+                DateTimeUtils.lowerBin(instant, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((Instant) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(instant, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.lowerBin(instant, second, second),
+                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(instant, second, second), second, second));
+
+        final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(time, TimeZone.TZ_AL);
+
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY"), TimeZone.TZ_AL),
+                DateTimeUtils.lowerBin(zdt, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.lowerBin(zdt, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.lowerBin(zdt, second, second),
+                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(zdt, second, second), second, second));
+    }
+
+    public void testUpperBin() {
+        final long second = 1000000000L;
+        final long minute = 60 * second;
+        final long hour = 60 * minute;
+        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
+
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:14:02 NY"),
+                DateTimeUtils.upperBin(time, second));
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:15:00 NY"),
+                DateTimeUtils.upperBin(time, 5 * minute));
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T07:00:00 NY"),
+                DateTimeUtils.upperBin(time, hour));
+        TestCase.assertNull(DateTimeUtils.upperBin((DateTime) null, 5 * minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(time, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(time, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second), second));
+
+        final Instant instant = DateTimeUtils.toInstant(time);
+
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:14:02 NY")),
+                DateTimeUtils.upperBin(instant, second));
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:15:00 NY")),
+                DateTimeUtils.upperBin(instant, 5 * minute));
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T07:00:00 NY")),
+                DateTimeUtils.upperBin(instant, hour));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, 5 * minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second), second));
+
+        final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(time, TimeZone.TZ_AL);
+
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:14:02 NY"), TimeZone.TZ_AL),
+                DateTimeUtils.upperBin(zdt, second));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:15:00 NY"), TimeZone.TZ_AL),
+                DateTimeUtils.upperBin(zdt, 5 * minute));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T07:00:00 NY"), TimeZone.TZ_AL),
+                DateTimeUtils.upperBin(zdt, hour));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second), second));
+    }
+
+    public void testUpperBinWithOffset() {
+        final long second = 1000000000L;
+        final long minute = 60 * second;
+        final long hour = 60 * minute;
+        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
+
+        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY"),
+                DateTimeUtils.upperBin(time, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((DateTime) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(time, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(time, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(time, second, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
+
+        final Instant instant = DateTimeUtils.toInstant(time);
+
+        TestCase.assertEquals(DateTimeUtils.toInstant(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY")),
+                DateTimeUtils.upperBin(instant, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((Instant) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(instant, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(instant, second, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(instant, second, second), second, second));
+
+        final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(time, TimeZone.TZ_AL);
+
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY"), TimeZone.TZ_AL),
+                DateTimeUtils.upperBin(zdt, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, NULL_LONG, minute));
+        TestCase.assertNull(DateTimeUtils.upperBin(zdt, 5 * minute, NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.upperBin(zdt, second, second),
+                DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second, second), second, second));
+    }
+
+
+
+
 //    public void testMillis() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
 //
@@ -1751,83 +1928,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //                DateTimeUtils.formatDate(DateTimeUtils.parseDateTimeQuiet("2010-01-01 NY"), TimeZone.TZ_NY));
 //    }
 //
-//    public void testLowerBin() {
-//        final long second = 1000000000L;
-//        final long minute = 60 * second;
-//        final long hour = 60 * minute;
-//        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
-//
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:14:01 NY"),
-//                DateTimeUtils.lowerBin(time, second));
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:10:00 NY"),
-//                DateTimeUtils.lowerBin(time, 5 * minute));
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:00:00 NY"),
-//                DateTimeUtils.lowerBin(time, hour));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((DateTime) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((Instant) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, io.deephaven.util.QueryConstants.NULL_LONG));
-//
-//        TestCase.assertEquals(DateTimeUtils.lowerBin(time, second),
-//                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(time, second), second));
-//    }
-//
-//    public void testLowerBinWithOffset() {
-//        final long second = 1000000000L;
-//        final long minute = 60 * second;
-//        final long hour = 60 * minute;
-//        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
-//
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY"),
-//                DateTimeUtils.lowerBin(time, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((DateTime) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((Instant) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin((ZonedDateTime) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, QueryConstants.NULL_LONG, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.lowerBin(time, 5 * minute, QueryConstants.NULL_LONG));
-//
-//        TestCase.assertEquals(DateTimeUtils.lowerBin(time, second, second),
-//                DateTimeUtils.lowerBin(DateTimeUtils.lowerBin(time, second, second), second, second));
-//    }
-//
-//    public void testUpperBin() {
-//        final long second = 1000000000L;
-//        final long minute = 60 * second;
-//        final long hour = 60 * minute;
-//        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
-//
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:14:02 NY"),
-//                DateTimeUtils.upperBin(time, second));
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:15:00 NY"),
-//                DateTimeUtils.upperBin(time, 5 * minute));
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T07:00:00 NY"),
-//                DateTimeUtils.upperBin(time, hour));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((DateTime) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((Instant) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin(time, io.deephaven.util.QueryConstants.NULL_LONG));
-//
-//        TestCase.assertEquals(DateTimeUtils.upperBin(time, second),
-//                DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second), second));
-//    }
-//
-//    public void testUpperBinWithOffset() {
-//        final long second = 1000000000L;
-//        final long minute = 60 * second;
-//        final long hour = 60 * minute;
-//        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
-//
-//        TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY"),
-//                DateTimeUtils.upperBin(time, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((DateTime) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((Instant) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin(time, io.deephaven.util.QueryConstants.NULL_LONG, minute));
-//        TestCase.assertEquals(null, DateTimeUtils.upperBin(time, 5 * minute, QueryConstants.NULL_LONG));
-//
-//        TestCase.assertEquals(DateTimeUtils.upperBin(time, second, second),
-//                DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
-//    }
+
 //
 //
 //    /**
