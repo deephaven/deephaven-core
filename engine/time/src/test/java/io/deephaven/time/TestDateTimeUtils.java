@@ -1656,7 +1656,309 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(zdt, second, second), second, second));
     }
 
+    @SuppressWarnings("ConstantConditions")
+    public void testPlus() {
+        final DateTime dateTime = DateTimeUtils.parseDateTime("2010-01-01T12:13:14.999123456 JP");
+        final Instant instant = DateTimeUtils.toInstant(dateTime);
+        final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(dateTime, TimeZone.TZ_AL);
 
+        TestCase.assertEquals(dateTime.getNanos() + 54321L, DateTimeUtils.plus(dateTime, 54321L).getNanos());
+        TestCase.assertEquals(dateTime.getNanos() - 54321L, DateTimeUtils.plus(dateTime, -54321L).getNanos());
+
+        TestCase.assertEquals(dateTime.getNanos() + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, 54321L)));
+        TestCase.assertEquals(dateTime.getNanos() - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, -54321L)));
+
+        TestCase.assertEquals(dateTime.getNanos() + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, 54321L)));
+        TestCase.assertEquals(dateTime.getNanos() - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, -54321L)));
+
+        Period period = new Period("T1h");
+        Duration duration = Duration.parse("PT1h");
+
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.plus(dateTime, duration).getNanos());
+
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
+
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(dateTime, duration)));
+
+        period = new Period("-T1h");
+        duration = Duration.parse("PT-1h");
+
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.plus(dateTime, duration).getNanos());
+
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
+
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
+
+        TestCase.assertNull(DateTimeUtils.plus(dateTime, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.plus(dateTime, (Period) null));
+        TestCase.assertNull(DateTimeUtils.plus(dateTime, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.plus((DateTime) null, period));
+        TestCase.assertNull(DateTimeUtils.plus((DateTime) null, duration));
+
+        TestCase.assertNull(DateTimeUtils.plus(instant, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.plus(instant, (Period) null));
+        TestCase.assertNull(DateTimeUtils.plus(instant, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.plus((Instant) null, period));
+        TestCase.assertNull(DateTimeUtils.plus((Instant) null, duration));
+
+        TestCase.assertNull(DateTimeUtils.plus(zdt, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.plus(zdt, (Period) null));
+        TestCase.assertNull(DateTimeUtils.plus(zdt, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.plus((ZonedDateTime) null, period));
+        TestCase.assertNull(DateTimeUtils.plus((ZonedDateTime) null, duration));
+
+        // overflow plus
+        DateTimeUtils.plus(new DateTime(Long.MAX_VALUE - 10), 10); // edge at max
+        try {
+            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), new Period("T1s"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), Duration.ofNanos(1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L-10), 10); // edge at max
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), new Period("T1s"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), Duration.ofNanos(1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.plus(new DateTime(Long.MIN_VALUE + 10), -10); // edge at min
+        try {
+            DateTimeUtils.plus(new DateTime(Long.MIN_VALUE), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 10), -10); // edge at max
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 0), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 0), new Period("-T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 0), Duration.ofNanos(-1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public void testMinus() throws Exception {
+        final DateTime dateTime1 = DateTimeUtils.parseDateTime("2010-01-01T12:13:14.999123456 JP");
+        final DateTime dateTime2 = DateTimeUtils.parseDateTime("2010-01-01T13:13:14.999123456 JP");
+        final Instant instant1 = DateTimeUtils.toInstant(dateTime1);
+        final Instant instant2 = DateTimeUtils.toInstant(dateTime2);
+        final ZonedDateTime zdt1 = DateTimeUtils.toZonedDateTime(dateTime1, TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = DateTimeUtils.toZonedDateTime(dateTime2, TimeZone.TZ_AL);
+
+        TestCase.assertEquals(dateTime1.getNanos() -  54321L, DateTimeUtils.minus(dateTime1, 54321L).getNanos());
+        TestCase.assertEquals(dateTime2.getNanos() +  54321L, DateTimeUtils.minus(dateTime2, -54321L).getNanos());
+
+        TestCase.assertEquals(dateTime1.getNanos() -  54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, 54321L)));
+        TestCase.assertEquals(dateTime2.getNanos() +  54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant2, -54321L)));
+
+        TestCase.assertEquals(dateTime1.getNanos() -  54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, 54321L)));
+        TestCase.assertEquals(dateTime2.getNanos() +  54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt2, -54321L)));
+
+        TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(dateTime1, dateTime2));
+        TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(dateTime2, dateTime1));
+
+        TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(instant1, instant2));
+        TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(instant2, instant1));
+
+        TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(zdt1, zdt2));
+        TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(zdt2, zdt1));
+
+        Period period = new Period("T1h");
+        Duration duration = Duration.parse("PT1h");
+
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.minus(dateTime1, duration).getNanos());
+
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
+
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
+
+        period = new Period("-T1h");
+        duration = Duration.parse("PT-1h");
+
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.minus(dateTime1, duration).getNanos());
+
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
+
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
+
+        TestCase.assertNull(DateTimeUtils.minus(dateTime1, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.minus(dateTime1, (Period) null));
+        TestCase.assertNull(DateTimeUtils.minus(dateTime1, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.minus((DateTime) null, period));
+        TestCase.assertNull(DateTimeUtils.minus((DateTime) null, duration));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.minus(dateTime1, (DateTime) null));
+
+        TestCase.assertNull(DateTimeUtils.minus(instant1, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.minus(instant1, (Period) null));
+        TestCase.assertNull(DateTimeUtils.minus(instant1, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.minus((Instant) null, period));
+        TestCase.assertNull(DateTimeUtils.minus((Instant) null, duration));
+        TestCase.assertEquals( NULL_LONG, DateTimeUtils.minus(instant1, (Instant) null));
+
+        TestCase.assertNull(DateTimeUtils.minus(zdt1, NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.minus(zdt1, (Period) null));
+        TestCase.assertNull(DateTimeUtils.minus(zdt1, (Duration) null));
+        TestCase.assertNull(DateTimeUtils.minus((ZonedDateTime) null, period));
+        TestCase.assertNull(DateTimeUtils.minus((ZonedDateTime) null, duration));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.minus(zdt1, (ZonedDateTime) null));
+
+        // overflow minus
+        DateTimeUtils.minus(new DateTime(Long.MAX_VALUE - 10), -10); // edge at max
+        try {
+            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), new Period("-T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), Duration.ofNanos(-1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L-10), -10); // edge at max
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), new Period("-T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), Duration.ofNanos(-1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.minus(new DateTime(Long.MIN_VALUE + 10), 10); // edge at min
+        try {
+            DateTimeUtils.minus(new DateTime(Long.MIN_VALUE), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
+        DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 10), 10); // edge at min
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 0), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 0), new Period("T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 0), Duration.ofNanos(1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+    }
+
+
+
+
+
+
+//    diffDays
+//            diffDays
+//    diffDays
+//            diffMicros
+//    diffMicros
+//            diffMicros
+//    diffMillis
+//            diffMillis
+//    diffMinutes
+//            diffMinutes
+//    diffMinutes
+//            diffNanos
+//    diffNanos
+//            diffNanos
+//    diffSeconds
+//            diffSeconds
+//    diffSeconds
+//            diffYears
+//    diffYears
+//            diffYears
+
+
+    public void testArithmetic(){
+        TestCase.fail();
+    }
+
+    public void testCronology(){
+        TestCase.fail();
+    }
 
 
 //    public void testMillis() throws Exception {
@@ -1692,75 +1994,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //    }
 //
 
-//    public void testPlus() throws Exception {
-//        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//
-//        DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
-//
-//        Period period = new Period("T1h");
-//
-//        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
-//
-//        period = new Period("-T1h");
-//
-//        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
-//
-//
-//        // overflow plus
-//        DateTimeUtils.plus(new DateTime(Long.MAX_VALUE - 10), 10); // edge at max
-//        try {
-//            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), 1);
-//            TestCase.fail("This should have overflowed");
-//        } catch (DateTimeUtils.DateTimeOverflowException e) {
-//            // ok
-//        }
-//
-//        DateTimeUtils.plus(new DateTime(Long.MIN_VALUE + 10), -10); // edge at min
-//        try {
-//            DateTimeUtils.plus(new DateTime(Long.MIN_VALUE), -1);
-//            TestCase.fail("This should have overflowed");
-//        } catch (DateTimeUtils.DateTimeOverflowException e) {
-//            // ok
-//        }
-//    }
-//
-//    public void testMinus() throws Exception {
-//        org.joda.time.DateTime jodaDateTime1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jodaDateTime2 = new org.joda.time.DateTime("2010-01-01T13:13:14.999");
-//
-//        DateTime dateTime1 = new DateTime(jodaDateTime1.getMillis() * 1000000 + 123456);
-//        DateTime dateTime2 = new DateTime(jodaDateTime2.getMillis() * 1000000 + 123456);
-//
-//        TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(dateTime1, dateTime2));
-//        TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(dateTime2, dateTime1));
-//
-//        Period period = new Period("T1h");
-//
-//        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
-//
-//        period = new Period("-T1h");
-//
-//        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
-//
-//
-//
-//        // overflow minus
-//        DateTimeUtils.minus(new DateTime(Long.MAX_VALUE - 10), -10); // edge at max
-//        try {
-//            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), -1);
-//            TestCase.fail("This should have overflowed");
-//        } catch (DateTimeUtils.DateTimeOverflowException e) {
-//            // ok
-//        }
-//
-//        DateTimeUtils.minus(new DateTime(Long.MIN_VALUE + 10), 10); // edge at min
-//        try {
-//            DateTimeUtils.minus(new DateTime(Long.MIN_VALUE), 1);
-//            TestCase.fail("This should have overflowed");
-//        } catch (DateTimeUtils.DateTimeOverflowException e) {
-//            // ok
-//        }
-//    }
+
 //
 //    public void testDiff() throws Exception {
 //        org.joda.time.DateTime jodaDateTime1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
