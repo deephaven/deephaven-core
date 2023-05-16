@@ -344,6 +344,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     }
 
     @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation) {
+        return updateBy(control, Collections.singletonList(operation),
+                Collections.emptyList());
+    }
+
+    @Override
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
@@ -356,6 +362,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     default TOPS updateBy(final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
+                ColumnName.from(byColumns));
+    }
+
+    @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation, final String... byColumns) {
+        return updateBy(control, Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
