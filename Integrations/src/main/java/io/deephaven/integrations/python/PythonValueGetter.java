@@ -50,7 +50,7 @@ class PythonValueGetter {
             return QueryConstants.NULL_INT;
         }
         long ll = valueIn.getLongValue();
-        if (ll > Integer.MAX_VALUE || ll < Integer.MIN_VALUE) {
+        if ((int) ll != ll) {
             throw new ArithmeticException("The PyObject value is outside Integer range.");
         }
         return (int) ll;
@@ -61,7 +61,7 @@ class PythonValueGetter {
             return QueryConstants.NULL_SHORT; // NB: should there be a getShortValue() in jpy?
         }
         long ll = valueIn.getLongValue();
-        if (ll > Short.MAX_VALUE || ll < Short.MIN_VALUE) {
+        if ((short) ll != ll) {
             throw new ArithmeticException("The PyObject value is outside Short range.");
         }
         return (short) ll;
@@ -72,7 +72,7 @@ class PythonValueGetter {
             return QueryConstants.NULL_BYTE; // NB: should there be a getByteValue() in jpy?
         }
         long ll = valueIn.getLongValue();
-        if (ll > Byte.MAX_VALUE || ll < Byte.MIN_VALUE) {
+        if ((byte) ll != ll) {
             throw new ArithmeticException("The PyObject value is outside Byte range.");
         }
         return (byte) ll;
