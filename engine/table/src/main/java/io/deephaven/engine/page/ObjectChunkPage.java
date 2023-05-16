@@ -14,7 +14,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-public class ObjectChunkPage<T, ATTR extends Any> extends WritableObjectChunk<T, ATTR> implements ChunkPage<ATTR> {
+public class ObjectChunkPage<T, ATTR extends Any> extends ObjectChunk<T, ATTR> implements ChunkPage<ATTR> {
 
     private final long mask;
     private final long firstRow;
