@@ -4,8 +4,10 @@
 package io.deephaven.time;
 
 import io.deephaven.base.CompareUtils;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 import java.time.temporal.ChronoField;
@@ -1427,6 +1429,57 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(z1, null));
     }
 
+    public void testClock() {
+        final long nanos = 123456789123456789L;
+        final @NotNull Clock initial = DateTimeUtils.currentClock();
+
+        try {
+            final io.deephaven.base.clock.Clock clock = new io.deephaven.base.clock.Clock() {
+
+                @Override
+                public long currentTimeMillis() {
+                    return nanos / DateTimeUtils.MILLI;
+                }
+
+                @Override
+                public long currentTimeMicros() {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public long currentTimeNanos() {
+                    return nanos;
+                }
+
+                @Override
+                public Instant instantNanos() {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public Instant instantMillis() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+            DateTimeUtils.setClock(clock);
+            TestCase.assertEquals(clock, DateTimeUtils.currentClock());
+
+            TestCase.assertEquals(new DateTime(nanos), DateTimeUtils.now());
+            TestCase.assertEquals(new DateTime((nanos/DateTimeUtils.MILLI)*DateTimeUtils.MILLI), DateTimeUtils.nowMillisResolution());
+
+            TestCase.assertTrue(Math.abs(DateTime.now().getNanos() - DateTimeUtils.nowSystem().getNanos()) < 1_000_000L);
+            TestCase.assertTrue(Math.abs(DateTime.nowMillis().getNanos() - DateTimeUtils.nowSystemMillisResolution().getNanos()) < 1_000_000L);
+
+            TestCase.assertEquals(DateTimeUtils.formatDate(new DateTime(nanos), TimeZone.TZ_AL), DateTimeUtils.today(TimeZone.TZ_AL));
+            TestCase.assertEquals(DateTimeUtils.formatDate(new DateTime(nanos), TimeZone.TZ_AL), DateTimeUtils.today(TimeZone.TZ_AL.getZoneId()));
+            TestCase.assertEquals(DateTimeUtils.today(TimeZone.TZ_DEFAULT), DateTimeUtils.today());
+        } catch (Exception ex) {
+            DateTimeUtils.setClock(initial);
+            throw ex;
+        }
+
+        DateTimeUtils.setClock(initial);
+    }
 
 
 //    public void testMillis() throws Exception {
