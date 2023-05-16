@@ -54,7 +54,14 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
+        // TODO: complete properly (DHC ticket #3666)
         @Override
+        public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
+            return null;
+        }
+
+        @Override
+
         public UpdateByColumn.UpdateBySpec visit(FillBySpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setFill(UpdateByFill.getDefaultInstance()).build();
         }
