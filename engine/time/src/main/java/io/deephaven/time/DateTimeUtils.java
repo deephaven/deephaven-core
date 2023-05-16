@@ -2044,40 +2044,7 @@ public class DateTimeUtils {
      * Converts a date time to an Excel time represented as a double.
      *
      * @param dateTime date time to convert.
-     * @param timeZone time zone to use when interpreting the date time.
      * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final ZonedDateTime dateTime, @Nullable final ZoneId timeZone) {
-        if( dateTime == null || timeZone == null){
-            return 0.0;
-        }
-
-        return epochMillisToExcelTime(epochMillis(dateTime), timeZone);
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone to use when interpreting the date time.
-     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final ZonedDateTime dateTime, @Nullable final TimeZone timeZone) {
-        if( dateTime == null || timeZone == null){
-            return 0.0;
-        }
-
-        return toExcelTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double in the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
-     * @see TimeZone#TZ_DEFAULT
      */
     @ScriptApi
     public static double toExcelTime(@Nullable final ZonedDateTime dateTime) {
@@ -2085,7 +2052,7 @@ public class DateTimeUtils {
             return 0.0;
         }
 
-        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
+        return toExcelTime(toInstant(dateTime), dateTime.getZone());
     }
 
     /**
@@ -2102,7 +2069,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return epochNanosToDateTime(excelTimeToEpochMillis(excel, timeZone));
+        return epochMillisToDateTime(excelTimeToEpochMillis(excel, timeZone));
     }
 
     /**
@@ -2148,7 +2115,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return epochNanosToInstant(excelTimeToEpochMillis(excel, timeZone));
+        return epochMillisToInstant(excelTimeToEpochMillis(excel, timeZone));
     }
 
     /**
@@ -2194,7 +2161,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return epochNanosToZonedDateTime(excelTimeToEpochMillis(excel, timeZone));
+        return epochMillisToZonedDateTime(excelTimeToEpochMillis(excel, timeZone), timeZone);
     }
 
     /**

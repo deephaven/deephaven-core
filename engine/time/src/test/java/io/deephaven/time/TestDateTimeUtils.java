@@ -3,6 +3,7 @@
  */
 package io.deephaven.time;
 
+import io.deephaven.base.CompareUtils;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 
@@ -992,8 +993,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(nanos, DateTimeUtils.epochNanos(dt1));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanos((DateTime) null));
@@ -1011,8 +1010,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(micros, DateTimeUtils.epochMicros(dt1));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMicros((DateTime) null));
@@ -1030,8 +1027,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(millis, DateTimeUtils.epochMillis(dt1));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMillis((DateTime) null));
@@ -1049,8 +1044,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(seconds, DateTimeUtils.epochSeconds(dt1));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochSeconds((DateTime) null));
@@ -1064,12 +1057,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testEpochNanosTo() {
         final long nanos = 123456789123456789L;
-        final long seconds = DateTimeUtils.nanosToSeconds(nanos);
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(dt1, DateTimeUtils.epochNanosToDateTime(nanos));
         TestCase.assertNull(DateTimeUtils.epochNanosToDateTime(NULL_LONG));
@@ -1094,8 +1084,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(dt1, DateTimeUtils.epochMicrosToDateTime(micros));
         TestCase.assertNull(DateTimeUtils.epochMicrosToDateTime(NULL_LONG));
@@ -1120,8 +1108,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(dt1, DateTimeUtils.epochMillisToDateTime(millis));
         TestCase.assertNull(DateTimeUtils.epochMillisToDateTime(NULL_LONG));
@@ -1146,8 +1132,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dt1 = new DateTime(nanos);
         final Instant dt2 = Instant.ofEpochSecond(0, nanos);
         final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
-        final LocalDate ld = LocalDate.of(1973,11,30);
-        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
         TestCase.assertEquals(dt1, DateTimeUtils.epochSecondsToDateTime(seconds));
         TestCase.assertNull(DateTimeUtils.epochSecondsToDateTime(NULL_LONG));
@@ -1213,10 +1197,79 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG));
     }
 
+    public void testToExcelTime() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2010-06-15T16:00:00 NY");
+        final Instant dt2 = DateTimeUtils.toInstant(dt1);
+        final ZonedDateTime dt3 = DateTimeUtils.toZonedDateTime(dt1, TimeZone.TZ_AL);
 
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_NY)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_NY.getZoneId())));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_CT)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_CT.getZoneId())));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_MN)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_MN.getZoneId())));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((DateTime) null, TimeZone.TZ_MN));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((DateTime) null, TimeZone.TZ_MN.getZoneId()));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime(dt1, (TimeZone) null));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime(dt1, (ZoneId) null));
 
-//            epochAutoToEpochNanos
+        TestCase.assertEquals(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_DEFAULT), DateTimeUtils.toExcelTime(dt1));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((DateTime) null));
 
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_NY)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_NY.getZoneId())));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_CT)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_CT.getZoneId())));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_MN)));
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_MN.getZoneId())));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((Instant) null, TimeZone.TZ_MN));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((Instant) null, TimeZone.TZ_MN.getZoneId()));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime(dt2, (TimeZone) null));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime(dt2, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_DEFAULT), DateTimeUtils.toExcelTime(dt2));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((Instant) null));
+
+        TestCase.assertTrue(
+                CompareUtils.doubleEquals(DateTimeUtils.toExcelTime(dt2, TimeZone.TZ_AL), DateTimeUtils.toExcelTime(dt3)));
+        TestCase.assertEquals(0.0, DateTimeUtils.toExcelTime((ZonedDateTime) null));
+    }
+
+    public void testExcelTimeTo() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2010-06-15T16:23:45.678 NY");
+        final Instant dt2 = DateTimeUtils.toInstant(dt1);
+        final ZonedDateTime dt3 = DateTimeUtils.toZonedDateTime(dt1, TimeZone.TZ_AL);
+
+        TestCase.assertEquals(dt1, DateTimeUtils.excelToDateTime(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL));
+        TestCase.assertEquals(dt1, DateTimeUtils.excelToDateTime(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL.getZoneId()));
+        TestCase.assertTrue(DateTimeUtils.epochMillis(dt1) - DateTimeUtils.epochMillis(DateTimeUtils.excelToDateTime(DateTimeUtils.toExcelTime(dt1))) <= 1);
+        TestCase.assertNull(DateTimeUtils.excelToDateTime(123.4, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.excelToDateTime(123.4, (ZoneId) null));
+
+        TestCase.assertEquals(dt2, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL));
+        TestCase.assertEquals(dt2, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL.getZoneId()));
+        TestCase.assertTrue(DateTimeUtils.epochMillis(dt2) - DateTimeUtils.epochMillis(DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt2))) <= 1);
+        TestCase.assertNull(DateTimeUtils.excelToInstant(123.4, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.excelToInstant(123.4, (ZoneId) null));
+
+        TestCase.assertEquals(dt3, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL));
+        TestCase.assertEquals(dt3, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt1, TimeZone.TZ_AL), TimeZone.TZ_AL.getZoneId()));
+        TestCase.assertTrue(DateTimeUtils.epochMillis(dt3) - DateTimeUtils.epochMillis(DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt1))) <= 1);
+        TestCase.assertNull(DateTimeUtils.excelToZonedDateTime(123.4, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.excelToZonedDateTime(123.4, (ZoneId) null));
+    }
 
 
 //    public void testMillis() throws Exception {
@@ -1593,13 +1646,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //                DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
 //    }
 //
-//    public void testDateTimeToExcel() {
-//        DateTime time = DateTimeUtils.parseDateTime("2010-06-15T16:00:00 NY");
-//        TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.toExcelTime(time, TimeZone.TZ_NY)));
-//        TestCase.assertTrue(
-//                CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(time, TimeZone.TZ_CT)));
-//        TestCase.assertTrue(CompareUtils.doubleEquals(40344.625, DateTimeUtils.toExcelTime(time, TimeZone.TZ_MN)));
-//    }
 //
 //    /**
 //     * Test autoEpcohTime with the given epoch time.
