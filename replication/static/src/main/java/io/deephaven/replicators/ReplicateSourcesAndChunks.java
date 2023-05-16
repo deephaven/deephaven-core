@@ -125,7 +125,8 @@ public class ReplicateSourcesAndChunks {
                 "<ATTR extends Any>", "<T, ATTR extends Any>",
                 " <ATTR", " <T, ATTR",
                 "Object\\[]", "T[]",
-                "Object value", "T value");
+                "Object value", "T value",
+                "Object get\\(", "T get(");
         lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^,>]+)>", "ObjectChunk<T, $1>"))
                 .collect(Collectors.toList());
         lines = lines.stream().map(x -> x.replaceAll("ObjectChunkPage<([^,>]+)>", "ObjectChunkPage<T, $1>"))

@@ -49,7 +49,7 @@ public class ChunkHolderPageChar<ATTR extends Any>
      * @implNote This page is known to be backed by chunk, so {@code currentView.size()} is an int, and so is the
      *           offset.
      */
-    public final int getChunkOffset(final long row) {
+    private int getChunkOffset(final long row) {
         return (int) getRowOffset(row);
     }
 
@@ -61,16 +61,16 @@ public class ChunkHolderPageChar<ATTR extends Any>
     /**
      * @return The current size of this page
      */
-    public int size() {
+    public final int size() {
         return currentView.size();
     }
 
     /**
-     * @param row Any row contained on this page
-     * @return The last row currently available on this page
+     * @param rowKey The row key to retrieve the value for
+     * @return The value at {@code rowKey}
      */
-    public final long lastRow(final long row) {
-        return (row & ~mask()) | (firstRowOffset() + size() - 1);
+    public final char get(final long rowKey) {
+        return currentView.get(getChunkOffset(rowKey));
     }
 
     @Override
@@ -78,8 +78,7 @@ public class ChunkHolderPageChar<ATTR extends Any>
             @NotNull final GetContext context,
             final long firstKey,
             final long lastKey) {
-        final CharChunk<ATTR> localView = currentView;
-        return localView.slice(getChunkOffset(firstKey), Math.toIntExact(lastKey - firstKey + 1));
+        return currentView.slice(getChunkOffset(firstKey), Math.toIntExact(lastKey - firstKey + 1));
     }
 
     @Override
