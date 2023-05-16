@@ -30,7 +30,7 @@ public class ChunkHolderPageDouble<ATTR extends Any>
 
     private volatile DoubleChunk<ATTR> currentView;
 
-    protected ChunkHolderPageDouble(final long mask, final long firstRow, @NotNull final double[] storage) {
+    public ChunkHolderPageDouble(final long mask, final long firstRow, @NotNull final double[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

@@ -30,7 +30,7 @@ public class ChunkHolderPageFloat<ATTR extends Any>
 
     private volatile FloatChunk<ATTR> currentView;
 
-    protected ChunkHolderPageFloat(final long mask, final long firstRow, @NotNull final float[] storage) {
+    public ChunkHolderPageFloat(final long mask, final long firstRow, @NotNull final float[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

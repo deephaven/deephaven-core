@@ -30,7 +30,7 @@ public class ChunkHolderPageObject<T, ATTR extends Any>
 
     private volatile ObjectChunk<T, ATTR> currentView;
 
-    protected ChunkHolderPageObject(final long mask, final long firstRow, @NotNull final T[] storage) {
+    public ChunkHolderPageObject(final long mask, final long firstRow, @NotNull final T[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

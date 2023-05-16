@@ -25,7 +25,7 @@ public class ChunkHolderPageChar<ATTR extends Any>
 
     private volatile CharChunk<ATTR> currentView;
 
-    protected ChunkHolderPageChar(final long mask, final long firstRow, @NotNull final char[] storage) {
+    public ChunkHolderPageChar(final long mask, final long firstRow, @NotNull final char[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

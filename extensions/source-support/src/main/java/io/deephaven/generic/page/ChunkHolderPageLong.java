@@ -30,7 +30,7 @@ public class ChunkHolderPageLong<ATTR extends Any>
 
     private volatile LongChunk<ATTR> currentView;
 
-    protected ChunkHolderPageLong(final long mask, final long firstRow, @NotNull final long[] storage) {
+    public ChunkHolderPageLong(final long mask, final long firstRow, @NotNull final long[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

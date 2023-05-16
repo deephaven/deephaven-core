@@ -30,7 +30,7 @@ public class ChunkHolderPageShort<ATTR extends Any>
 
     private volatile ShortChunk<ATTR> currentView;
 
-    protected ChunkHolderPageShort(final long mask, final long firstRow, @NotNull final short[] storage) {
+    public ChunkHolderPageShort(final long mask, final long firstRow, @NotNull final short[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

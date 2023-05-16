@@ -30,7 +30,7 @@ public class ChunkHolderPageBoolean<ATTR extends Any>
 
     private volatile BooleanChunk<ATTR> currentView;
 
-    protected ChunkHolderPageBoolean(final long mask, final long firstRow, @NotNull final boolean[] storage) {
+    public ChunkHolderPageBoolean(final long mask, final long firstRow, @NotNull final boolean[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;

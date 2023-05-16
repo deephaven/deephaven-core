@@ -30,7 +30,7 @@ public class ChunkHolderPageByte<ATTR extends Any>
 
     private volatile ByteChunk<ATTR> currentView;
 
-    protected ChunkHolderPageByte(final long mask, final long firstRow, @NotNull final byte[] storage) {
+    public ChunkHolderPageByte(final long mask, final long firstRow, @NotNull final byte[] storage) {
         this.mask = mask;
         this.firstRow = Require.inRange(firstRow, "firstRow", mask, "mask");
         this.storage = storage;
