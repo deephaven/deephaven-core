@@ -1,0 +1,12 @@
+Package: rdeephaven
+Type: Package
+Title: What the Package Does in One 'Title Case' Line
+Version: 1.0
+Date: 2023-05-12
+Author: Your Name
+Maintainer: Your Name <your@email.com>
+Description: One paragraph description of what the package does as one or more full sentences.
+License: GPL (>= 2)
+Depends: Rcpp (>= 1.0.10)
+Imports: Rcpp (>= 1.0.10)
+LinkingTo: Rcpp

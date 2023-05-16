@@ -1,0 +1,71 @@
+$(info The name of the shared library to be created is: $(SHLIB))
+
+DEPENDENCY_DIRS = -L../lib/cpp-dependencies/local/abseil/lib \
+	-L../lib/cpp-dependencies/local/arrow/lib \
+	-L../lib/cpp-dependencies/local/cares/lib \
+	-L../lib/cpp-dependencies/local/gflags/lib \
+	-L../lib/cpp-dependencies/local/grpc/lib \
+	-L../lib/cpp-dependencies/local/immer/lib \
+	-L../lib/cpp-dependencies/local/protobuf/lib \
+	-L../lib/cpp-dependencies/local/re2/lib \
+	-L../lib/cpp-dependencies/local/zlib/lib
+
+DEPENDENCY_LIBS = -lclient -lprotobufd -larrow_flight -larrow -larrow_bundled_dependencies -lgrpc++ \
+	-lgrpc -laddress_sorting -lgpr -lupb -labsl_raw_hash_set -labsl_hashtablez_sampler -labsl_exponential_biased \
+	-lgrpc -laddress_sorting -lgpr -lupb -labsl_raw_hash_set -labsl_hashtablez_sampler -labsl_exponential_biased \
+	-labsl_hash -labsl_city -labsl_wyhash -labsl_statusor -labsl_bad_variant_access -l/home/kosak/dhcpp/local/grpc/lib/libgpr \
+	-l/home/kosak/dhcpp/local/grpc/lib/libupb -labsl_status -labsl_random_distributions -labsl_random_seed_sequences \
+	-labsl_random_internal_pool_urbg -labsl_random_internal_randen -labsl_random_internal_randen_hwaes \
+	-labsl_random_internal_randen_hwaes_impl -labsl_random_internal_randen_slow -labsl_random_internal_platform  \
+	-labsl_random_internal_seed_material -labsl_random_seed_gen_exception -labsl_cord -labsl_bad_optional_access \
+	-labsl_str_format_internal -labsl_synchronization -labsl_stacktrace -labsl_symbolize -labsl_debugging_internal \
+	-labsl_demangle_internal -labsl_graphcycles_internal -labsl_malloc_internal -labsl_time -labsl_strings -labsl_throw_delegate \
+	-labsl_int128 -labsl_strings_internal -labsl_base -labsl_raw_logging_internal -labsl_log_severity -labsl_spinlock_wait \
+	-labsl_civil_time -labsl_time_zone -lssl -lre2 -lcares -lprotocd -lprotobuf-lited
+
+
+# tells the compiler where to look for additional include directories
+PKG_CXXFLAGS = -I/usr/share/R/include \
+	-I/usr/local/lib/R/site-library/Rcpp/include \
+    -I"../lib/cpp-client/deephaven/client/include/public" \
+	-I"../lib/cpp-client/deephaven/dhcore/include/public"
+
+# list of required libraries, including deephaven and associated dependencies
+PKG_LIBS = $(LAPACK_LIBS) \
+	$(BLAS_LIBS) \
+	$(FLIBS) \
+	$(SHLIB_OPENMP_CXXFLAGS) \
+	$(R_CPPFLAGS) \
+	$(R_CXXFLAGS) \
+	$(DEPENDENCY_DIRS) \
+	$(DEPENDENCY_LIBS) \
+	-L../lib/cpp-client/deephaven/build/client/dhcore_dir -ldhcore \
+	-L../lib/cpp-client/deephaven/build/client -lclient
+
+CC = `"${R_HOME}/bin/R" CMD config CC`
+CFLAGS = `"${R_HOME}/bin/R" CMD config CFLAGS`
+CXX17 = `"${R_HOME}/bin/R" CMD config CXX17`
+CXX17STD=`"${R_HOME}/bin/R" CMD config CXX17STD`
+CXXFLAGS = `"${R_HOME}/bin/R" CMD config CXX17FLAGS`
+
+# set C++ standard
+CXX_STD = CXX17
+# all src directory c++ source files
+SOURCES = $(wildcard *.cpp)
+# compiled objects to link
+OBJECTS = $(SOURCES:.cpp=.o)
+
+all: $(SHLIB) ../lib/cpp-client/deephaven/build/client/dhcore_dir/libdhcore.a ../lib/cpp-client/deephaven/build/client/libclient.a
+
+# creates package shared library?
+# $(SHLIB): $(OBJECTS) $(PKG_LIBS)
+
+# builds our library
+# ../lib/lib.a:
+#	(cd ../lib && make)
+	
+# return to a clean checkout state, intermediate and terminal steps.
+# removing $(SHLIB) results in failed compilation, we need dhc.so
+#clean:
+#	(cd ../lib && make clean)
+#	rm -f *.o *.so

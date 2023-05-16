@@ -1,0 +1,3 @@
+useDynLib(rdeephaven, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+exportPattern("^[[:alpha:]]+")
