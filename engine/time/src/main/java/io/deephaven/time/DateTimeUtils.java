@@ -1882,8 +1882,8 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, ZoneId timeZone) {
-        if( epochOffset == NULL_LONG ){
+    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, @Nullable ZoneId timeZone) {
+        if( epochOffset == NULL_LONG || timeZone == null ){
             return null;
         }
         return epochNanosToZonedDateTime(epochAutoToEpochNanos(epochOffset), timeZone);
@@ -1900,8 +1900,8 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, TimeZone timeZone) {
-        if( epochOffset == NULL_LONG ){
+    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, @Nullable TimeZone timeZone) {
+        if( epochOffset == NULL_LONG || timeZone == null){
             return null;
         }
         return epochAutoToZonedDateTime(epochOffset, timeZone.getZoneId());

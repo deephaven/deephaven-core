@@ -987,7 +987,235 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.toZonedDateTime(ld, null));
     }
 
+    public void testEpochNanos() {
+        final long nanos = 123456789123456789L;
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
 
+        TestCase.assertEquals(nanos, DateTimeUtils.epochNanos(dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanos((DateTime) null));
+
+        TestCase.assertEquals(nanos, DateTimeUtils.epochNanos(dt2));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanos((Instant) null));
+
+        TestCase.assertEquals(nanos, DateTimeUtils.epochNanos(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochNanos((ZonedDateTime) null));
+    }
+
+    public void testEpochMicros() {
+        final long nanos = 123456789123456789L;
+        final long micros = DateTimeUtils.nanosToMicros(nanos);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(micros, DateTimeUtils.epochMicros(dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMicros((DateTime) null));
+
+        TestCase.assertEquals(micros, DateTimeUtils.epochMicros(dt2));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMicros((Instant) null));
+
+        TestCase.assertEquals(micros, DateTimeUtils.epochMicros(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMicros((ZonedDateTime) null));
+    }
+
+    public void testEpochMillis() {
+        final long nanos = 123456789123456789L;
+        final long millis = DateTimeUtils.nanosToMillis(nanos);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(millis, DateTimeUtils.epochMillis(dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMillis((DateTime) null));
+
+        TestCase.assertEquals(millis, DateTimeUtils.epochMillis(dt2));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMillis((Instant) null));
+
+        TestCase.assertEquals(millis, DateTimeUtils.epochMillis(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochMillis((ZonedDateTime) null));
+    }
+
+    public void testEpochSeconds() {
+        final long nanos = 123456789123456789L;
+        final long seconds = DateTimeUtils.nanosToSeconds(nanos);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(seconds, DateTimeUtils.epochSeconds(dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochSeconds((DateTime) null));
+
+        TestCase.assertEquals(seconds, DateTimeUtils.epochSeconds(dt2));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochSeconds((Instant) null));
+
+        TestCase.assertEquals(seconds, DateTimeUtils.epochSeconds(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochSeconds((ZonedDateTime) null));
+    }
+
+    public void testEpochNanosTo() {
+        final long nanos = 123456789123456789L;
+        final long seconds = DateTimeUtils.nanosToSeconds(nanos);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(dt1, DateTimeUtils.epochNanosToDateTime(nanos));
+        TestCase.assertNull(DateTimeUtils.epochNanosToDateTime(NULL_LONG));
+
+        TestCase.assertEquals(dt2, DateTimeUtils.epochNanosToInstant(nanos));
+        TestCase.assertNull(DateTimeUtils.epochNanosToInstant(NULL_LONG));
+
+        TestCase.assertEquals(dt3, DateTimeUtils.epochNanosToZonedDateTime(nanos, TimeZone.TZ_JP));
+        TestCase.assertEquals(dt3, DateTimeUtils.epochNanosToZonedDateTime(nanos, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(NULL_LONG, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(NULL_LONG, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(nanos, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.epochNanosToZonedDateTime(nanos, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT), DateTimeUtils.epochNanosToZonedDateTime(nanos));
+    }
+
+    public void testEpochMicrosTo() {
+        long nanos = 123456789123456789L;
+        final long micros = DateTimeUtils.nanosToMicros(nanos);
+        nanos = DateTimeUtils.microsToNanos(micros);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(dt1, DateTimeUtils.epochMicrosToDateTime(micros));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToDateTime(NULL_LONG));
+
+        TestCase.assertEquals(dt2, DateTimeUtils.epochMicrosToInstant(micros));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToInstant(NULL_LONG));
+
+        TestCase.assertEquals(dt3, DateTimeUtils.epochMicrosToZonedDateTime(micros, TimeZone.TZ_JP));
+        TestCase.assertEquals(dt3, DateTimeUtils.epochMicrosToZonedDateTime(micros, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(NULL_LONG, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(NULL_LONG, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(micros, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.epochMicrosToZonedDateTime(micros, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT), DateTimeUtils.epochMicrosToZonedDateTime(micros));
+    }
+
+    public void testEpochMillisTo() {
+        long nanos = 123456789123456789L;
+        final long millis = DateTimeUtils.nanosToMillis(nanos);
+        nanos = DateTimeUtils.millisToNanos(millis);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(dt1, DateTimeUtils.epochMillisToDateTime(millis));
+        TestCase.assertNull(DateTimeUtils.epochMillisToDateTime(NULL_LONG));
+
+        TestCase.assertEquals(dt2, DateTimeUtils.epochMillisToInstant(millis));
+        TestCase.assertNull(DateTimeUtils.epochMillisToInstant(NULL_LONG));
+
+        TestCase.assertEquals(dt3, DateTimeUtils.epochMillisToZonedDateTime(millis, TimeZone.TZ_JP));
+        TestCase.assertEquals(dt3, DateTimeUtils.epochMillisToZonedDateTime(millis, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(NULL_LONG, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(NULL_LONG, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(millis, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.epochMillisToZonedDateTime(millis, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT), DateTimeUtils.epochMillisToZonedDateTime(millis));
+    }
+
+    public void testEpochSecondsTo() {
+        long nanos = 123456789123456789L;
+        final long seconds = DateTimeUtils.nanosToSeconds(nanos);
+        nanos = DateTimeUtils.secondsToNanos(seconds);
+        final DateTime dt1 = new DateTime(nanos);
+        final Instant dt2 = Instant.ofEpochSecond(0, nanos);
+        final ZonedDateTime dt3 = dt2.atZone(TimeZone.TZ_JP.getZoneId());
+        final LocalDate ld = LocalDate.of(1973,11,30);
+        final LocalTime lt = LocalTime.of(6,33,9, 123456789);
+
+        TestCase.assertEquals(dt1, DateTimeUtils.epochSecondsToDateTime(seconds));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToDateTime(NULL_LONG));
+
+        TestCase.assertEquals(dt2, DateTimeUtils.epochSecondsToInstant(seconds));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToInstant(NULL_LONG));
+
+        TestCase.assertEquals(dt3, DateTimeUtils.epochSecondsToZonedDateTime(seconds, TimeZone.TZ_JP));
+        TestCase.assertEquals(dt3, DateTimeUtils.epochSecondsToZonedDateTime(seconds, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToZonedDateTime(NULL_LONG, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToZonedDateTime(NULL_LONG, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToZonedDateTime(seconds, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.epochSecondsToZonedDateTime(seconds, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT), DateTimeUtils.epochSecondsToZonedDateTime(seconds));
+    }
+
+    public void testEpochAutoTo() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-02T12:13:14.1345 NY");
+        final long nanos = DateTimeUtils.epochNanos(dt1);
+        final long micros = DateTimeUtils.epochMicros(dt1);
+        final long millis = DateTimeUtils.epochMillis(dt1);
+        final long seconds = DateTimeUtils.epochSeconds(dt1);
+        final DateTime dt1u = DateTimeUtils.epochMicrosToDateTime(micros);
+        final DateTime dt1m = DateTimeUtils.epochMillisToDateTime(millis);
+        final DateTime dt1s = DateTimeUtils.epochSecondsToDateTime(seconds);
+
+        TestCase.assertEquals(nanos, DateTimeUtils.epochAutoToEpochNanos(nanos));
+        TestCase.assertEquals((nanos/DateTimeUtils.MICRO)*DateTimeUtils.MICRO, DateTimeUtils.epochAutoToEpochNanos(micros));
+        TestCase.assertEquals((nanos/DateTimeUtils.MILLI)*DateTimeUtils.MILLI, DateTimeUtils.epochAutoToEpochNanos(millis));
+        TestCase.assertEquals((nanos/DateTimeUtils.SECOND)*DateTimeUtils.SECOND, DateTimeUtils.epochAutoToEpochNanos(seconds));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochAutoToEpochNanos(NULL_LONG));
+
+        TestCase.assertEquals(dt1, DateTimeUtils.epochAutoToDateTime(nanos));
+        TestCase.assertEquals(dt1u, DateTimeUtils.epochAutoToDateTime(micros));
+        TestCase.assertEquals(dt1m, DateTimeUtils.epochAutoToDateTime(millis));
+        TestCase.assertEquals(dt1s, DateTimeUtils.epochAutoToDateTime(seconds));
+        TestCase.assertNull(DateTimeUtils.epochAutoToDateTime(NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.toInstant(dt1), DateTimeUtils.epochAutoToInstant(nanos));
+        TestCase.assertEquals(DateTimeUtils.toInstant(dt1u), DateTimeUtils.epochAutoToInstant(micros));
+        TestCase.assertEquals(DateTimeUtils.toInstant(dt1m), DateTimeUtils.epochAutoToInstant(millis));
+        TestCase.assertEquals(DateTimeUtils.toInstant(dt1s), DateTimeUtils.epochAutoToInstant(seconds));
+        TestCase.assertNull(DateTimeUtils.epochAutoToInstant(NULL_LONG));
+
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(nanos, TimeZone.TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(nanos, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1u, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(micros, TimeZone.TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1u, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(micros, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1m, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(millis, TimeZone.TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1m, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(millis, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1s, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(seconds, TimeZone.TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1s, TimeZone.TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(seconds, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(nanos, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(nanos, (ZoneId) null));
+
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1, TimeZone.TZ_DEFAULT), DateTimeUtils.epochAutoToZonedDateTime(nanos));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1u, TimeZone.TZ_DEFAULT), DateTimeUtils.epochAutoToZonedDateTime(micros));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1m, TimeZone.TZ_DEFAULT), DateTimeUtils.epochAutoToZonedDateTime(millis));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1s, TimeZone.TZ_DEFAULT), DateTimeUtils.epochAutoToZonedDateTime(seconds));
+        TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG));
+    }
+
+
+
+//            epochAutoToEpochNanos
 
 
 
