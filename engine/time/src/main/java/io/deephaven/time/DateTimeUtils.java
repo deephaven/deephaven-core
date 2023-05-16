@@ -1051,7 +1051,7 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+    public static LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1067,7 +1067,7 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+    public static LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1083,7 +1083,7 @@ public class DateTimeUtils {
      * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final DateTime dateTime) {
+    public static LocalDate toLocalDate(@Nullable final DateTime dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1099,7 +1099,7 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+    public static LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1115,7 +1115,7 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+    public static LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1131,7 +1131,7 @@ public class DateTimeUtils {
      * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final Instant dateTime) {
+    public static LocalDate toLocalDate(@Nullable final Instant dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1146,7 +1146,7 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
+    public static LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1162,7 +1162,7 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+    public static LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1177,7 +1177,7 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+    public static LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1192,7 +1192,7 @@ public class DateTimeUtils {
      * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final DateTime dateTime) {
+    public static LocalTime toLocalTime(@Nullable final DateTime dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1207,7 +1207,7 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+    public static LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1222,7 +1222,7 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
+    public static LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
@@ -1237,7 +1237,7 @@ public class DateTimeUtils {
      * @see TimeZone#TZ_DEFAULT
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final Instant dateTime) {
+    public static LocalTime toLocalTime(@Nullable final Instant dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1251,7 +1251,7 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
+    public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1268,7 +1268,7 @@ public class DateTimeUtils {
      */
     @Deprecated
     @Nullable
-    public Date toDate(@Nullable final DateTime dateTime) {
+    public static Date toDate(@Nullable final DateTime dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1284,7 +1284,7 @@ public class DateTimeUtils {
      */
     @Deprecated
     @Nullable
-    public Date toDate(@Nullable final Instant dateTime) {
+    public static Date toDate(@Nullable final Instant dateTime) {
         if(dateTime == null){
             return null;
         }
@@ -1300,7 +1300,7 @@ public class DateTimeUtils {
      */
     @Deprecated
     @Nullable
-    public Date toDate(@Nullable final ZonedDateTime dateTime) {
+    public static Date toDate(@Nullable final ZonedDateTime dateTime) {
         if(dateTime == null){
             return null;
         }
