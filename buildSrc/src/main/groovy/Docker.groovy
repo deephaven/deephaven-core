@@ -169,6 +169,12 @@ class Docker {
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
         boolean showLogsOnSuccess;
+
+        /**
+         * How long in minutes to wait for the docker container's entrypoint to run. Defaults to
+         * 15 minutes.
+         */
+        int waitTimeMinutes = 15;
     }
     /**
      * Describes relationships between this set of tasks and other external tasks.
@@ -343,6 +349,7 @@ class Docker {
             waitContainer.with {
                 dependsOn startContainer
                 containerId.set(dockerContainerName)
+                awaitStatusTimeout.set cfg.waitTimeMinutes
             }
         }
         TaskProvider<DockerLogsContainer> containerLogs = project.tasks.register("${taskName}LogsContainer", DockerLogsContainer) { logsContainer ->
