@@ -1271,6 +1271,163 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.excelToZonedDateTime(123.4, (ZoneId) null));
     }
 
+    public void testIsBefore() {
+        final DateTime dt1 = new DateTime(123);
+        final DateTime dt2 = new DateTime(456);
+        final DateTime dt3 = new DateTime(456);
+
+        TestCase.assertTrue(DateTimeUtils.isBefore(dt1, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBefore(dt2, dt1));
+        TestCase.assertFalse(DateTimeUtils.isBefore(dt2, dt3));
+        TestCase.assertFalse(DateTimeUtils.isBefore(dt3, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBefore(null, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBefore((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isBefore(dt1, null));
+
+        final Instant i1 = DateTimeUtils.toInstant(dt1);
+        final Instant i2 = DateTimeUtils.toInstant(dt2);
+        final Instant i3 = DateTimeUtils.toInstant(dt3);
+
+        TestCase.assertTrue(DateTimeUtils.isBefore(i1, i2));
+        TestCase.assertFalse(DateTimeUtils.isBefore(i2, i1));
+        TestCase.assertFalse(DateTimeUtils.isBefore(i2, i3));
+        TestCase.assertFalse(DateTimeUtils.isBefore(i3, i2));
+        //noinspection ConstantConditions
+        TestCase.assertFalse(DateTimeUtils.isBefore(null, i2));
+        TestCase.assertFalse(DateTimeUtils.isBefore((DateTime) null, null));
+        //noinspection ConstantConditions
+        TestCase.assertFalse(DateTimeUtils.isBefore(i1, null));
+
+        final ZonedDateTime z1 = DateTimeUtils.toZonedDateTime(dt1);
+        final ZonedDateTime z2 = DateTimeUtils.toZonedDateTime(dt2);
+        final ZonedDateTime z3 = DateTimeUtils.toZonedDateTime(dt3);
+
+        TestCase.assertTrue(DateTimeUtils.isBefore(z1, z2));
+        TestCase.assertFalse(DateTimeUtils.isBefore(z2, z1));
+        TestCase.assertFalse(DateTimeUtils.isBefore(z2, z3));
+        TestCase.assertFalse(DateTimeUtils.isBefore(z3, z2));
+        TestCase.assertFalse(DateTimeUtils.isBefore(null, z2));
+        TestCase.assertFalse(DateTimeUtils.isBefore((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isBefore(z1, null));
+    }
+
+    public void testIsBeforeOrEqual() {
+        final DateTime dt1 = new DateTime(123);
+        final DateTime dt2 = new DateTime(456);
+        final DateTime dt3 = new DateTime(456);
+
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(dt1, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(dt2, dt1));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(dt2, dt3));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(dt3, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(null, dt2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(dt1, null));
+
+        final Instant i1 = DateTimeUtils.toInstant(dt1);
+        final Instant i2 = DateTimeUtils.toInstant(dt2);
+        final Instant i3 = DateTimeUtils.toInstant(dt3);
+
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(i1, i2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(i2, i1));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(i2, i3));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(i3, i2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(null, i2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(i1, null));
+
+        final ZonedDateTime z1 = DateTimeUtils.toZonedDateTime(dt1);
+        final ZonedDateTime z2 = DateTimeUtils.toZonedDateTime(dt2);
+        final ZonedDateTime z3 = DateTimeUtils.toZonedDateTime(dt3);
+
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(z1, z2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(z2, z1));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(z2, z3));
+        TestCase.assertTrue(DateTimeUtils.isBeforeOrEqual(z3, z2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(null, z2));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isBeforeOrEqual(z1, null));
+    }
+
+    public void testIsAfter() {
+        final DateTime dt1 = new DateTime(123);
+        final DateTime dt2 = new DateTime(456);
+        final DateTime dt3 = new DateTime(456);
+
+        TestCase.assertFalse(DateTimeUtils.isAfter(dt1, dt2));
+        TestCase.assertTrue(DateTimeUtils.isAfter(dt2, dt1));
+        TestCase.assertFalse(DateTimeUtils.isAfter(dt2, dt3));
+        TestCase.assertFalse(DateTimeUtils.isAfter(dt3, dt2));
+        TestCase.assertFalse(DateTimeUtils.isAfter(null, dt2));
+        TestCase.assertFalse(DateTimeUtils.isAfter((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfter(dt1, null));
+
+        final Instant i1 = DateTimeUtils.toInstant(dt1);
+        final Instant i2 = DateTimeUtils.toInstant(dt2);
+        final Instant i3 = DateTimeUtils.toInstant(dt3);
+
+        TestCase.assertFalse(DateTimeUtils.isAfter(i1, i2));
+        TestCase.assertTrue(DateTimeUtils.isAfter(i2, i1));
+        TestCase.assertFalse(DateTimeUtils.isAfter(i2, i3));
+        TestCase.assertFalse(DateTimeUtils.isAfter(i3, i2));
+        //noinspection ConstantConditions
+        TestCase.assertFalse(DateTimeUtils.isAfter(null, i2));
+        TestCase.assertFalse(DateTimeUtils.isAfter((DateTime) null, null));
+        //noinspection ConstantConditions
+        TestCase.assertFalse(DateTimeUtils.isAfter(i1, null));
+
+        final ZonedDateTime z1 = DateTimeUtils.toZonedDateTime(dt1);
+        final ZonedDateTime z2 = DateTimeUtils.toZonedDateTime(dt2);
+        final ZonedDateTime z3 = DateTimeUtils.toZonedDateTime(dt3);
+
+        TestCase.assertFalse(DateTimeUtils.isAfter(z1, z2));
+        TestCase.assertTrue(DateTimeUtils.isAfter(z2, z1));
+        TestCase.assertFalse(DateTimeUtils.isAfter(z2, z3));
+        TestCase.assertFalse(DateTimeUtils.isAfter(z3, z2));
+        TestCase.assertFalse(DateTimeUtils.isAfter(null, z2));
+        TestCase.assertFalse(DateTimeUtils.isAfter((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfter(z1, null));
+    }
+
+    public void testIsAfterOrEqual() {
+        final DateTime dt1 = new DateTime(123);
+        final DateTime dt2 = new DateTime(456);
+        final DateTime dt3 = new DateTime(456);
+
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(dt1, dt2));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(dt2, dt1));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(dt2, dt3));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(dt3, dt2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(null, dt2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(dt1, null));
+
+        final Instant i1 = DateTimeUtils.toInstant(dt1);
+        final Instant i2 = DateTimeUtils.toInstant(dt2);
+        final Instant i3 = DateTimeUtils.toInstant(dt3);
+
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(i1, i2));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(i2, i1));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(i2, i3));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(i3, i2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(null, i2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(i1, null));
+
+        final ZonedDateTime z1 = DateTimeUtils.toZonedDateTime(dt1);
+        final ZonedDateTime z2 = DateTimeUtils.toZonedDateTime(dt2);
+        final ZonedDateTime z3 = DateTimeUtils.toZonedDateTime(dt3);
+
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(z1, z2));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(z2, z1));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(z2, z3));
+        TestCase.assertTrue(DateTimeUtils.isAfterOrEqual(z3, z2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(null, z2));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual((DateTime) null, null));
+        TestCase.assertFalse(DateTimeUtils.isAfterOrEqual(z1, null));
+    }
+
+
 
 //    public void testMillis() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
@@ -1304,34 +1461,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //        TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.epochMillis(midnight));
 //    }
 //
-//    public void testIsBefore() throws Exception {
-//        org.joda.time.DateTime jodaDateTime1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jodaDateTime2 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//
-//        DateTime dateTime1 = new DateTime(jodaDateTime1.getMillis() * 1000000 + 123456);
-//        DateTime dateTime2 = new DateTime(jodaDateTime2.getMillis() * 1000000 + 123457);
-//
-//        TestCase.assertTrue(DateTimeUtils.isBefore(dateTime1, dateTime2));
-//        TestCase.assertFalse(DateTimeUtils.isBefore(dateTime2, dateTime1));
-//        TestCase.assertFalse(DateTimeUtils.isBefore(null, dateTime2));
-//        TestCase.assertFalse(DateTimeUtils.isBefore((DateTime) null, null));
-//        TestCase.assertFalse(DateTimeUtils.isBefore(dateTime1, null));
-//    }
-//
-//    public void testIsAfter() throws Exception {
-//        org.joda.time.DateTime jodaDateTime1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jodaDateTime2 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//
-//        DateTime dateTime1 = new DateTime(jodaDateTime1.getMillis() * 1000000 + 123456);
-//        DateTime dateTime2 = new DateTime(jodaDateTime2.getMillis() * 1000000 + 123457);
-//
-//        TestCase.assertFalse(DateTimeUtils.isAfter(dateTime1, dateTime2));
-//        TestCase.assertTrue(DateTimeUtils.isAfter(dateTime2, dateTime1));
-//        TestCase.assertFalse(DateTimeUtils.isAfter(null, dateTime2));
-//        TestCase.assertFalse(DateTimeUtils.isAfter((DateTime) null, null));
-//        TestCase.assertFalse(DateTimeUtils.isAfter(dateTime1, null));
-//    }
-//
+
 //    public void testPlus() throws Exception {
 //        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
 //
