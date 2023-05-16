@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.locations.GroupingProviderBase;
 import io.deephaven.engine.rowset.RowSet;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -144,7 +144,7 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends V
         TestCase.assertNull(SUT.getGroupToRange());
 
         // noinspection unchecked
-        final GroupingProvider<DATA_TYPE> groupingProvider = mock(GroupingProvider.class);
+        final GroupingProviderBase<DATA_TYPE> groupingProvider = mock(GroupingProviderBase.class);
 
         SUT.setGroupingProvider(groupingProvider);
         checking(new Expectations() {

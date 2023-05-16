@@ -3,13 +3,19 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.Pair;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.locations.GroupingBuilder;
+import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * Adds deferred grouping support to {@link AbstractColumnSource}.
@@ -17,7 +23,7 @@ import java.util.Map;
 public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractColumnSource<T>
         implements DeferredGroupingColumnSource<T> {
 
-    private transient volatile GroupingProvider<T> groupingProvider;
+    private transient GroupingProvider groupingProvider;
 
     protected AbstractDeferredGroupingColumnSource(Class<T> type) {
         super(type, null);
@@ -28,7 +34,16 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
     }
 
     @Override
-    public GroupingProvider<T> getGroupingProvider() {
+    public GroupingBuilder getGroupingBuilder() {
+        return groupingProvider == null ? null : groupingProvider.getGroupingBuilder();
+    }
+
+    @Override
+    public boolean hasGrouping() {
+        return groupingProvider != null && groupingProvider.hasGrouping();
+    }
+
+    public GroupingProvider getGroupingProvider() {
         return groupingProvider;
     }
 
@@ -37,33 +52,7 @@ public abstract class AbstractDeferredGroupingColumnSource<T> extends AbstractCo
      *
      * @param groupingProvider The {@link GroupingProvider} to use
      */
-    @Override
-    public final void setGroupingProvider(@Nullable GroupingProvider<T> groupingProvider) {
+    public final void setGroupingProvider(@Nullable GroupingProvider groupingProvider) {
         this.groupingProvider = groupingProvider;
-    }
-
-    @Override
-    public final Map<T, RowSet> getGroupToRange() {
-        if (groupToRange == null && groupingProvider != null) {
-            groupToRange = groupingProvider.getGroupToRange();
-            groupingProvider = null;
-        }
-        return groupToRange;
-    }
-
-    @Override
-    public final Map<T, RowSet> getGroupToRange(RowSet rowSet) {
-        if (groupToRange == null && groupingProvider != null) {
-            Pair<Map<T, RowSet>, Boolean> result = groupingProvider.getGroupToRange(rowSet);
-            if (result == null) {
-                return null;
-            }
-            if (result.second) {
-                groupToRange = result.first;
-                groupingProvider = null;
-            }
-            return result.first;
-        }
-        return groupToRange;
     }
 }

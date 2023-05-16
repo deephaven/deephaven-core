@@ -50,6 +50,11 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         AsValues() {
             super(ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
         }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
+        }
     }
 
     static final class Partitioning extends RegionedColumnSourceChar<Values> {
@@ -71,6 +76,11 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Character at location " + locationKey);
             }
             return new ColumnRegionChar.Constant<>(regionMask(), unbox((Character) partitioningColumnValue));
+        }
+
+        @Override
+        public boolean isPartitioning() {
+            return true;
         }
     }
 }

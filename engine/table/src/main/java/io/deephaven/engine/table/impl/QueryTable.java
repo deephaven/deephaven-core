@@ -1501,25 +1501,20 @@ public class QueryTable extends BaseTable<QueryTable> {
                         getColumnSource(sourceColumn.getSourceName()));
                 final ColumnSource<?> selectedColumnSource = ReinterpretUtils.maybeConvertToPrimitive(
                         resultTable.getColumnSource(sourceColumn.getName()));
+
                 if (originalColumnSource != selectedColumnSource) {
                     if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        final GroupingProvider<?> groupingProvider =
-                                ((DeferredGroupingColumnSource<?>) originalColumnSource).getGroupingProvider();
-                        if (groupingProvider != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource.setGroupingProvider((GroupingProvider) groupingProvider);
-                        } else if (originalColumnSource.getGroupToRange() != null) {
-                            // noinspection unchecked,rawtypes
-                            deferredGroupingSelectedSource
-                                    .setGroupToRange((Map) originalColumnSource.getGroupToRange());
+                        // Note that the providers have a method getValueColumnName() that remembers the original source name
+                        // so there is no need to worry about wrapping and renaming.
+                        final GroupingProvider originalProvider = ((DeferredGroupingColumnSource<?>)originalColumnSource).getGroupingProvider();
+                        if (originalProvider != null) {
+                            ((DeferredGroupingColumnSource<?>)selectedColumnSource).setGroupingProvider(originalProvider);
+                        } else {
+                            final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
+                            if (indexer.hasGrouping(originalColumnSource)) {
+                                indexer.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
+                            }
                         }
-                    } else if (originalColumnSource.getGroupToRange() != null) {
-                        final DeferredGroupingColumnSource<?> deferredGroupingSelectedSource =
-                                (DeferredGroupingColumnSource<?>) selectedColumnSource;
-                        // noinspection unchecked,rawtypes
-                        deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
                     } else {
                         final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
                         if (indexer.hasGrouping(originalColumnSource)) {

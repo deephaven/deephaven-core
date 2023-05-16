@@ -3,50 +3,44 @@
  */
 package io.deephaven.engine.table.impl.locations;
 
-import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.impl.locations.impl.ParallelDeferredGroupingProvider;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.dataindex.DiskBackedDeferredGroupingProvider;
+import io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Map;
-
 /**
- * Interface used by {@link DeferredGroupingColumnSource} to compute groupings.
+ * Implementations of this interface are able to compute groupings.
  */
-public interface GroupingProvider<DATA_TYPE> {
+public interface GroupingProvider {
+    static final String INDEX_DIR_PREFIX = "Index-";
+    static final String INDEX_COL_NAME = "Index";
 
     /**
      * Make a new {@link GroupingProvider} for the specified {@link ColumnDefinition} and current global configuration.
      *
      * @param columnDefinition The column definition
+     * @param log a logger
      * @return A new {@link GroupingProvider}
      */
     @NotNull
-    static <DATA_TYPE> GroupingProvider<DATA_TYPE> makeGroupingProvider(
-            @NotNull final ColumnDefinition<DATA_TYPE> columnDefinition) {
-        return new ParallelDeferredGroupingProvider<>(columnDefinition);
+    static GroupingProvider makeGroupingProvider(@NotNull final ColumnDefinition<?> columnDefinition, @NotNull final ColumnSource<?> source, @NotNull final Logger log) {
+        return columnDefinition.isPartitioning()
+                ? PartitionColumnGroupingProvider.make(columnDefinition.getName(), source)
+                : new DiskBackedDeferredGroupingProvider<>(columnDefinition, log);
     }
 
     /**
-     * Returns a grouping structure, possibly constructed on-demand.
-     *
-     * @return a Map from grouping keys to Indices, or null if the group could not be constructed
+     * Get a {@link GroupingBuilder} suitable for creating groups with specific properties.
+     * @return a {@link GroupingBuilder}
      */
-    Map<DATA_TYPE, RowSet> getGroupToRange();
+    @NotNull
+    GroupingBuilder getGroupingBuilder();
 
     /**
-     * Returns a grouping structure, possibly constructed on-demand; the grouping is only required to include groupings
-     * for values that exist within the hint RowSet; but it may include more. The hint allows the underlying
-     * implementation to optionally optimize out groupings that do not overlap hint.
-     * <p>
-     * The return value is a pair, containing a "complete" indicator. If the complete indicator is true, then the caller
-     * may safely cache the resultant Map.
-     *
-     * @param hint required indices within the resultant Map
-     * @return a Pair containing a Map from grouping keys to Indices, which includes at least the hint indices; and a
-     *         Boolean which indicates that the grouping is complete
+     * Check if this provider is able to create a grouping or not.
+     * @return true if this provider can create a grouping.
      */
-    Pair<Map<DATA_TYPE, RowSet>, Boolean> getGroupToRange(RowSet hint);
+    boolean hasGrouping();
 }

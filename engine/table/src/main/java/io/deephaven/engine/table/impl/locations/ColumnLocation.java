@@ -54,6 +54,16 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
     @Nullable
     <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition);
 
+    /**
+     * Get this column location cast to the specified type
+     *
+     * @return {@code this}, with the appropriate cast applied
+     */
+    default <CL extends ColumnLocation> CL cast() {
+        //noinspection unchecked
+        return (CL)this;
+    }
+
     // ------------------------------------------------------------------------------------------------------------------
     // ColumnRegion Factories
     // ------------------------------------------------------------------------------------------------------------------

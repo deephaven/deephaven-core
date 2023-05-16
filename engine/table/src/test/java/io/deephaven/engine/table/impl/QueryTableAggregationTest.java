@@ -18,6 +18,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
@@ -190,10 +192,14 @@ public class QueryTableAggregationTest {
     @Test
     public void testStaticGroupedByWithChunks() {
         final Table input = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
-        // noinspection unused
-        final Map<?, RowSet> g1 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("A"));
-        // noinspection unused
-        final Map<?, RowSet> g2 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("B"));
+        ColumnSource<?> cs;
+
+        cs = input.getColumnSource("A");
+        ((DeferredGroupingColumnSource<?>)cs).setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "A", input.getRowSet()));
+
+
+        cs = input.getColumnSource("B");
+        ((DeferredGroupingColumnSource<?>)cs).setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "B", input.getRowSet()));
 
         individualStaticByTest(input, null, "A");
         individualStaticByTest(input, null, "B");

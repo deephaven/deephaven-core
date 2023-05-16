@@ -150,6 +150,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             wrapperRegions = new ColumnRegionLong[0];
             Arrays.stream(localWrappers).filter(Objects::nonNull).forEach(Releasable::releaseCachedResources);
         }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
+        }
     }
 
     private final class AsDictionary
@@ -194,6 +199,11 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             // ColumnRegionObject implementations are expected to cache the result of getDictionaryValuesRegion(),
             // so it's fine to call more than once and avoid extra backing storage in the column source.
             return RegionedColumnSourceWithDictionary.this.getRegion(regionIndex).getDictionaryValuesRegion();
+        }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
         }
     }
 

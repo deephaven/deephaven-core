@@ -259,14 +259,6 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public Map<DateTime, RowSet> getValuesMapping(RowSet subRange) {
-            final Map<DateTime, RowSet> result = new LinkedHashMap<>();
-            subRange.forAllRowKeys(
-                    ii -> result.put(computeDateTime(ii), RowSetFactory.fromKeys(ii)));
-            return result;
-        }
-
-        @Override
         public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
                 @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
             return alternateDataType == long.class;
@@ -402,14 +394,6 @@ public final class TimeTable extends QueryTable implements Runnable {
                 final WritableRowSet matching = matchingSet.build();
                 matching.retain(selection);
                 return matching;
-            }
-
-            @Override
-            public Map<Long, RowSet> getValuesMapping(RowSet subRange) {
-                final Map<Long, RowSet> result = new LinkedHashMap<>();
-                subRange.forAllRowKeys(
-                        ii -> result.put(box(computeNanos(ii)), RowSetFactory.fromKeys(ii)));
-                return result;
             }
 
             @Override

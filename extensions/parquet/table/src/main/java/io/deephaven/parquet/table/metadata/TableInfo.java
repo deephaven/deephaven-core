@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.api.SortColumn;
 import org.immutables.value.Value;
 import org.jetbrains.annotations.NotNull;
 
@@ -79,6 +80,10 @@ public abstract class TableInfo {
      */
     public abstract List<ColumnTypeInfo> columnTypes();
 
+    public abstract List<SortColumn> sortingColumns();
+
+    public abstract List<DataIndexInfo> dataIndexes();
+
     @Value.Check
     final void checkVersion() {
         if (version().isEmpty()) {
@@ -105,6 +110,18 @@ public abstract class TableInfo {
         Builder addColumnTypes(ColumnTypeInfo... columnTypes);
 
         Builder addAllColumnTypes(Iterable<? extends ColumnTypeInfo> columnTypes);
+
+        Builder addSortingColumns(SortColumn sortPair);
+
+        Builder addSortingColumns(SortColumn... sortPairs);
+
+        Builder addAllSortingColumns(Iterable<? extends SortColumn> sortPairs);
+
+        Builder addDataIndexes(DataIndexInfo info);
+
+        Builder addDataIndexes(DataIndexInfo... infos);
+
+        Builder addAllDataIndexes(Iterable<? extends DataIndexInfo> infos);
 
         TableInfo build();
     }

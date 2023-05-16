@@ -111,4 +111,11 @@ public interface RegionedColumnSource<DATA_TYPE>
      */
     int addRegion(@NotNull final ColumnDefinition<?> columnDefinition,
             @NotNull final ColumnLocation columnLocation);
+
+    /**
+     * Whether this column source is partitioning
+     *
+     * @return true when the column source is partitioning, false otherwise
+     */
+    boolean isPartitioning();
 }

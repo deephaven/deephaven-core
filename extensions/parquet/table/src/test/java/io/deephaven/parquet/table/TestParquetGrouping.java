@@ -8,6 +8,8 @@ import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
@@ -17,6 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestParquetGrouping extends TestCase {
     private SafeCloseable executionContext;
@@ -55,13 +60,14 @@ public class TestParquetGrouping extends TestCase {
 
             final Table tableR = ParquetTools.readTable(dest);
             assertEquals(data.length, tableR.size());
-            assertNotNull(tableR.getColumnSource("V").getGroupToRange());
+            final GroupingProvider provider = ((DeferredGroupingColumnSource)tableR.getColumnSource("V")).getGroupingProvider();
+            final Table allGroupingTable = provider.getGroupingBuilder().buildTable();
+            assertNotNull(allGroupingTable);
             assertEquals(80_000 * 4, tableR.getRowSet().size());
-            assertEquals(80_000, tableR.getColumnSource("V").getGroupToRange().size());
-            assertEquals(80_000, tableR.getColumnSource("V").getValuesMapping(tableR.getRowSet()).size());
-            assertEquals(80_000, tableR.getColumnSource("V")
-                    .getValuesMapping(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).size());
-            final Map mapper = tableR.getColumnSource("V").getGroupToRange();
+            assertEquals(80_000, allGroupingTable.size());
+            assertEquals(80_000, provider.getGroupingBuilder().clampToIndex(tableR.getRowSet(), true).buildTable().size());
+            assertEquals(80_000,provider.getGroupingBuilder().clampToIndex(tableR.getRowSet().subSetByPositionRange(0, tableR.size())).buildTable().size());
+            final Map mapper = provider.getGroupingBuilder().buildGroupingMap();
             for (int i = 0; i < data.length / 4; i++) {
                 assertEquals(mapper.get(i), RowSetFactory.fromRange(i * 4, i * 4 + 3));
             }

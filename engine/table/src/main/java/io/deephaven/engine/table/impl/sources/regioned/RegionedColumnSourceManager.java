@@ -7,7 +7,9 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.dataindex.DataIndexProviderImpl;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -68,6 +70,11 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
      * Table locations that provide the regions backing our column sources, in insertion order.
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
+
+    /**
+     * A provider for data indices across the set of table locations.
+     */
+    private transient volatile DataIndexProviderImpl dataIndexProvider;
 
     /**
      * Whether grouping is enabled.
@@ -195,7 +202,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             if (columnDefinition.isGrouping()) {
                 DeferredGroupingColumnSource<?> columnSource = getColumnSources().get(columnDefinition.getName());
                 columnSource.setGroupingProvider(null);
-                columnSource.setGroupToRange(null);
             }
         }
     }
@@ -421,32 +427,19 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
          * @param locationAddedRowSetInTable The added RowSet, in the table's address space
          */
         private void updateGrouping(@NotNull final RowSet locationAddedRowSetInTable) {
-            if (definition.isGrouping()) {
-                Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
-                GroupingProvider groupingProvider = source.getGroupingProvider();
-                if (groupingProvider == null) {
-                    groupingProvider = GroupingProvider.makeGroupingProvider(definition);
-                    // noinspection unchecked
-                    source.setGroupingProvider(groupingProvider);
-                }
-                if (groupingProvider instanceof KeyRangeGroupingProvider) {
-                    ((KeyRangeGroupingProvider) groupingProvider).addSource(location, locationAddedRowSetInTable);
-                }
-            } else if (definition.isPartitioning()) {
-                final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
-                Map<T, RowSet> columnPartitionToRowSet = partitioningColumnSource.getGroupToRange();
-                if (columnPartitionToRowSet == null) {
-                    columnPartitionToRowSet = new LinkedHashMap<>();
-                    partitioningColumnSource.setGroupToRange(columnPartitionToRowSet);
-                }
-                final T columnPartitionValue =
-                        location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final RowSet current = columnPartitionToRowSet.get(columnPartitionValue);
-                if (current == null) {
-                    columnPartitionToRowSet.put(columnPartitionValue, locationAddedRowSetInTable.copy());
-                } else {
-                    current.writableCast().insert(locationAddedRowSetInTable);
-                }
+            if (!isGroupingEnabled && !definition.isPartitioning()) {
+                return;
+            }
+
+            Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
+            GroupingProvider groupingProvider = source.getGroupingProvider();
+            if (groupingProvider == null) {
+                groupingProvider = GroupingProvider.makeGroupingProvider(definition, source, log);
+                // noinspection unchecked
+                source.setGroupingProvider(groupingProvider);
+            }
+            if (groupingProvider instanceof KeyRangeGroupingProvider) {
+                ((KeyRangeGroupingProvider) groupingProvider).addSource(location, locationAddedRowSetInTable);
             }
         }
     }

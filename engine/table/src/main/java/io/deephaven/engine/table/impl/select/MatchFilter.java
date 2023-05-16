@@ -75,6 +75,17 @@ public class MatchFilter extends WhereFilterImpl {
         this.invertMatch = (matchType == MatchType.Inverted);
     }
 
+    public MatchFilter(@NotNull final CaseSensitivity sensitivity,
+                       @NotNull final MatchType matchType,
+                       @NotNull final String columnName,
+                       @NotNull final Object... values) {
+        this.columnName = columnName;
+        this.values = values;
+        this.strValues = null;
+        this.invertMatch = (matchType == MatchType.Inverted);
+        this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
+    }
+
     public MatchFilter renameFilter(String newName) {
         io.deephaven.engine.table.impl.select.MatchFilter.MatchType matchType =
                 invertMatch ? io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted

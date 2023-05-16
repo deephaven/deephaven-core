@@ -197,7 +197,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
-            ObjectArraySource<WritableRowSet> rowSetSource) {
+                                  ColumnSource<RowSet> rowSetSource) {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
             if (leftRowSet != null) {
@@ -210,7 +210,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
                             "When converting left group position to row keys more than one LHS value was found!");
                 }
                 final long groupPosition = leftRowSet.get(0);
-                this.leftRowSet.set(ii, rowSetSource.get(groupPosition));
+                this.leftRowSet.set(ii, rowSetSource.get(groupPosition).writableCast());
             }
         }
     }
@@ -288,7 +288,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
-            ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch,
+                                                                         ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
     }

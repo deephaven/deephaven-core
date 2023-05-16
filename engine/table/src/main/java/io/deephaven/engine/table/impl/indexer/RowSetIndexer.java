@@ -4,11 +4,20 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
+import io.deephaven.engine.table.impl.locations.GroupingBuilder;
+import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
+import io.deephaven.tablelogger.Row;
 import io.deephaven.tuple.EmptyTuple;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
@@ -26,6 +35,7 @@ import java.util.stream.Collectors;
  *          closed}.
  */
 public class RowSetIndexer implements TrackingRowSet.Indexer {
+    private static final int CHUNK_SIZE = 2048;
 
     public static RowSetIndexer of(TrackingRowSet rowSet) {
         return rowSet.indexer(RowSetIndexer::new);
@@ -85,7 +95,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         }
         final List<ColumnSource> sourcesKey = Arrays.asList(keyColumns);
         final Map<Object, RowSet> groupingCandidate = lookupMapping(sourcesKey);
-        return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].getGroupToRange() != null;
+        return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].hasGrouping();
     }
 
     public Map<Object, RowSet> getGrouping(final TupleSource tupleSource) {
@@ -248,17 +258,18 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final List<ColumnSource> keyColumns) {
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, rowSetRowSet.copy());
-        } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
+        } else if (keyColumns.size() == 1 && keyColumns.get(0).hasGrouping()) {
             @SuppressWarnings("unchecked")
-            final Map<Object, RowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
-            for (final Map.Entry<Object, RowSet> objectRowSetEntry : sourceGrouping.entrySet()) {
-                final RowSet resultRowSet = rowSetOp.apply(objectRowSetEntry.getValue());
-                if (resultRowSet.size() > 0) {
-                    resultCollector.accept(objectRowSetEntry.getKey(), resultRowSet);
+            final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(0)).getGroupingBuilder();
+            final Map<Object, RowSet> groupings = builder.buildGroupingMap();
+            groupings.forEach((key, value) -> {
+                final RowSet resultIndex = rowSetOp.apply(value);
+                if (value.size() > 0) {
+                    resultCollector.accept(key, resultIndex);
                 }
-            }
+            });
         } else {
-            final long columnsWithGrouping = keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
+            final long columnsWithGrouping = keyColumns.stream().filter(ColumnSource::hasGrouping).count();
             final boolean canUseAllConstituents = columnsWithGrouping == keyColumns.size();
             final boolean canUseAnyConstituents = columnsWithGrouping > 0;
 
@@ -293,9 +304,9 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
         final ColumnSource[] notGroupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
 
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, RowSet> groupedColumnsGrouping =
@@ -316,7 +327,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
         int jj = 0, kk = 0;
         for (int ii = 0; ii < keyColumns.size(); ++ii) {
-            if (keyColumns.get(ii).getGroupToRange() != null) {
+            if (keyColumns.get(ii).hasGrouping()) {
                 groupedKeysIndices[jj++] = ii;
             } else {
                 notGroupedKeysIndices[kk++] = ii;
@@ -357,9 +368,9 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final List<ColumnSource> keyColumns, Set<Object> keys) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
         final ColumnSource[] notGroupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
+                keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
 
         Require.gtZero(groupedKeyColumns.length, "groupedKeyColumns.length");
         Require.gtZero(notGroupedKeyColumns.length, "notGroupedKeyColumns.length");
@@ -372,7 +383,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         final int[] notGroupedKeysIndices = new int[notGroupedKeyColumns.length];
         int jj = 0, kk = 0;
         for (int ii = 0; ii < keyColumns.size(); ++ii) {
-            if (keyColumns.get(ii).getGroupToRange() != null) {
+            if (keyColumns.get(ii).hasGrouping()) {
                 groupedKeysIndices[jj++] = ii;
             } else {
                 notGroupedKeysIndices[kk++] = ii;
@@ -442,18 +453,20 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         final List<ColumnSource> keyColumns = tupleSource.getColumnSources();
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, rowSet.copy());
-        } else if (keyColumns.size() == 1 && keyColumns.get(0).getGroupToRange() != null) {
+        } else if (keyColumns.size() == 1 && keyColumns.get(0).hasGrouping()) {
+            final GroupingBuilder builder = ((DeferredGroupingColumnSource<?>)keyColumns.get(0)).getGroupingBuilder();
             @SuppressWarnings("unchecked")
-            final Map<Object, RowSet> sourceGrouping = keyColumns.get(0).getGroupToRange();
-            sourceGrouping.entrySet().stream().filter(objectRowSetEntry -> keys.contains(objectRowSetEntry.getKey()))
-                    .forEach(objectRowSetEntry -> {
-                        final RowSet resultRowSet = objectRowSetEntry.getValue().intersect(rowSet);
-                        if (resultRowSet.size() > 0) {
-                            resultCollector.accept(objectRowSetEntry.getKey(), resultRowSet);
-                        }
-                    });
+            final Map<Object, RowSet> groupings = builder.clampToIndex(rowSet, true)
+                    .matching(true, false, keys.toArray())
+                    .buildGroupingMap();
+
+            groupings.forEach((key, value) -> {
+                if (value.isNonempty()) {
+                    resultCollector.accept(key, value);
+                }
+            });
         } else {
-            final long columnsWithGrouping = keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).count();
+            final long columnsWithGrouping = keyColumns.stream().filter(ColumnSource::hasGrouping).count();
             final boolean canUseAllConstituents = columnsWithGrouping == keyColumns.size();
             final boolean canUseAnyConstituents = columnsWithGrouping > 0;
 
@@ -489,27 +502,31 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             final int position,
             final Object[] partialValues,
             final RowSet partiallyIntersectedRowSet) {
-        for (final Object objectEntry : keyColumns.get(position).getGroupToRange().entrySet()) {
-            // noinspection unchecked
-            final Map.Entry<Object, RowSet> entry =
-                    (Map.Entry<Object, RowSet>) objectEntry;
-            partialValues[position] = entry.getKey();
-            final RowSet subRowSet;
-            if (position == 0) {
-                subRowSet = rowSetOp.apply(entry.getValue());
-            } else {
-                subRowSet = partiallyIntersectedRowSet.intersect(entry.getValue());
-            }
-            if (subRowSet.isNonempty()) {
-                if (position == keyColumns.size() - 1) {
-                    // we're at the very last bit, so we should start shoving our tuples into the result map
-                    resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subRowSet);
-                } else {
-                    generateGrouping(rowSetOp, resultCollector, tupleSource, keyColumns, position + 1, partialValues,
-                            subRowSet);
-                }
-            }
-        }
+        final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(position)).getGroupingBuilder();
+        // This will not be null because callees to this method have already checked hasGrouping()
+        //noinspection ConstantConditions
+        final Table groupToRange = builder.buildTable();
+        processWithGroupingChunk(groupToRange,
+                builder.getIndexColumnName(),
+                builder.getValueColumnName(),
+                (indexChunk, keyChunk, ok) -> {
+                    for(int ii = 0; ii < ok.size(); ii++) {
+                        partialValues[position] = keyChunk.get(ii);
+
+                        final RowSet groupIndex = indexChunk.get(ii);
+                        final RowSet subIndex = (position == 0) ? rowSetOp.apply(groupIndex)
+                                : partiallyIntersectedRowSet.intersect(groupIndex);
+
+                        if (subIndex.isNonempty()) {
+                            if (position == keyColumns.size() - 1) {
+                                // we're at the very last bit, so we should start shoving our tuples into the result map
+                                resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subIndex);
+                            } else {
+                                generateGrouping(rowSetOp, resultCollector, tupleSource, keyColumns, position + 1, partialValues, subIndex);
+                            }
+                        }
+                    }
+                });
     }
 
     private void generateGrouping(final BiConsumer<Object, RowSet> resultCollector, final TupleSource tupleSource,
@@ -541,48 +558,84 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             });
         }
 
-        // noinspection unchecked
-        final Map<Object, RowSet> groupToRange =
-                (Map<Object, RowSet>) keyColumns.get(position).getGroupToRange();
-        final Object[] pruningKey = Arrays.copyOf(partialValues, position + 1);
-        for (final Map.Entry<Object, RowSet> entry : groupToRange.entrySet()) {
-            pruningKey[position] = partialValues[position] = entry.getKey();
+        final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(position)).getGroupingBuilder();
+        final Table groupToRange = builder.buildTable();
 
-            final Object tuple;
-            if (finalPosition) {
-                tuple = tupleSource.createTupleFromReinterpretedValues(partialValues);
-                if (!keyRestriction.contains(tuple)) {
-                    continue;
-                }
-            } else if (position == 0) {
-                if (!pruningSet.contains(entry.getKey())) {
-                    continue;
-                }
+        final Object [] pruningKey = Arrays.copyOf(partialValues, position + 1);
+        processWithGroupingChunk(groupToRange,
+                builder.getIndexColumnName(),
+                builder.getValueColumnName(),
+                (indexChunk, keyChunk, ok) -> {
+                    for(int ii = 0; ii < ok.size(); ii++) {
+                        final Object key = keyChunk.get(ii);
+                        pruningKey[position] = partialValues[position] = key;
 
-                tuple = null;
-            } else {
-                if (!pruningSet.contains(subTupleSource.createTupleFromReinterpretedValues(pruningKey))) {
-                    continue;
-                }
+                        final Object tuple;
+                        if (finalPosition) {
+                            tuple = tupleSource.createTupleFromReinterpretedValues(partialValues);
+                            if (!keyRestriction.contains(tuple)) {
+                                continue;
+                            }
+                        } else if (position == 0) {
+                            if (!pruningSet.contains(key)) {
+                                continue;
+                            }
 
-                tuple = null;
-            }
+                            tuple = null;
+                        } else {
+                            if (!pruningSet.contains(subTupleSource.createTupleFromReinterpretedValues(pruningKey))) {
+                                continue;
+                            }
 
-            final RowSet subRowSet;
-            if (position == 0) {
-                subRowSet = rowSet.intersect(entry.getValue());
-            } else {
-                subRowSet = partiallyIntersectedRowSet.intersect(entry.getValue());
-            }
+                            tuple = null;
+                        }
 
-            if (subRowSet.isNonempty()) {
-                if (finalPosition) {
-                    // we're at the very last bit, so we should start shoving our smart keys into the result map
-                    resultCollector.accept(tuple, subRowSet);
-                } else {
-                    generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subRowSet,
-                            keyRestriction);
-                }
+                        final RowSet groupRowSet = indexChunk.get(ii);
+                        final WritableRowSet subRowSet = (position == 0) ? rowSet.intersect(groupRowSet) : partiallyIntersectedRowSet.intersect(groupRowSet);
+
+                        if (subRowSet.isNonempty()) {
+                            if (finalPosition) {
+                                // we're at the very last bit, so we should start shoving our smart keys into the result map
+                                resultCollector.accept(tuple, subRowSet);
+                            } else {
+                                generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subRowSet, keyRestriction);
+                            }
+                        }
+                    }
+                });
+    }
+
+    @FunctionalInterface
+    private interface GroupChunkConsumer {
+        void accept(ObjectChunk<RowSet, ? extends Values> indexChunk, ObjectChunk<?, ? extends Values> keyChunk, RowSequence ok);
+    }
+
+    /**
+     * Execute the supplied consumer on the entire grouping table.  Be careful about internal state in the consumer,
+     * it will be invoked once per chunk of input.
+     *
+     * @param groupingTable the grouping table
+     * @param indexColumnName the name of the index column
+     * @param groupingConsumer the consumer to process each chunk.
+     */
+    private static void processWithGroupingChunk(final Table groupingTable,
+                                                 String indexColumnName,
+                                                 String keyColumnname,
+                                                 GroupChunkConsumer groupingConsumer) {
+        //noinspection unchecked
+        final ColumnSource<RowSet> indexSource = groupingTable.getColumnSource(indexColumnName);
+        final ColumnSource<?> keySource = groupingTable.getColumnSource(keyColumnname);
+        final int chunkSize = Math.min(CHUNK_SIZE, groupingTable.intSize());
+        try(final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
+            final ChunkSource.GetContext keyContext = keySource.makeGetContext(chunkSize);
+            final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(ChunkType.fromElementType(keySource.getType()), chunkSize);
+            final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
+
+            while (okIt.hasMore()) {
+                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(chunkSize);
+                final ObjectChunk<?, ? extends Values> keyChunk = boxer.box(keySource.getChunk(keyContext, nextKeys));
+                final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
+                groupingConsumer.accept(indexChunk, keyChunk, nextKeys);
             }
         }
     }
@@ -616,7 +669,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     }
 
     private static Map<Object, RowSet> lookupEphemeralMapping(List<ColumnSource> columnSourceKey,
-            WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
+                                                              WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
         if (groupingMap == null) {
             return null;
         }
@@ -634,7 +687,22 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return resultInfo.mapping;
     }
 
-    private boolean areColumnsImmutable(final List<ColumnSource> sourcesKey) {
+    private boolean areColumnsImmutable(List<ColumnSource> sourcesKey) {
         return sourcesKey.stream().allMatch(ColumnSource::isImmutable);
     }
-}
+
+    public void clearMappings() {
+        if (mappings != null) {
+            mappings.clear();
+        }
+        clearEphemeralMappings();
+    }
+
+    private void clearEphemeralMappings() {
+        if (ephemeralMappings != null) {
+            ephemeralMappings.clear();
+        }
+        if (ephemeralPrevMappings != null) {
+            ephemeralPrevMappings.clear();
+        }
+    }}

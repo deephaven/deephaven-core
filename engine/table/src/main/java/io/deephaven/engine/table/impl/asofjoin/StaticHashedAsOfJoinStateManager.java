@@ -29,5 +29,5 @@ public abstract class StaticHashedAsOfJoinStateManager extends StaticAsOfJoinSta
     public abstract RowSet getRightIndex(int slot);
 
     public abstract void convertRightBuildersToIndex(IntegerArraySource slots, int slotCount);
-    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount, ObjectArraySource<RowSet> rowSetSource);
+    public abstract void convertRightGrouping(IntegerArraySource slots, int slotCount, ColumnSource<RowSet> indexSource);
 }

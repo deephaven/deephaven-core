@@ -251,7 +251,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someLong").getGroupToRange());
+        assertTrue(fromDisk.getColumnSource("someLong").hasGrouping());
     }
 
     @Test
@@ -267,7 +267,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someString").getGroupToRange());
+        assertTrue(fromDisk.getColumnSource("someLong").hasGrouping());
     }
 
     @Test
@@ -283,7 +283,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        TestCase.assertNotNull(fromDisk.getColumnSource("someBigInt").getGroupToRange());
+        assertTrue(fromDisk.getColumnSource("someLong").hasGrouping());
     }
 
     private void compressionCodecTestHelper(final String codec) {

@@ -48,6 +48,11 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
             }
             return null;
         }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
+        }
     }
 
     static final class Partitioning<DATA_TYPE> extends RegionedColumnSourceObject<DATA_TYPE, Values> {
@@ -70,6 +75,11 @@ abstract class RegionedColumnSourceObject<DATA_TYPE, ATTR extends Values>
             }
             //noinspection unchecked
             return new ColumnRegionObject.Constant<>(PARAMETERS.regionMask, (DATA_TYPE) partitioningColumnValue);
+        }
+
+        @Override
+        public boolean isPartitioning() {
+            return true;
         }
     }
 }

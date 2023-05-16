@@ -4,34 +4,32 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.locations.GroupingBuilder;
 import io.deephaven.engine.table.impl.locations.GroupingProvider;
-import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Map;
 
 /**
  * A column source that optionally makes available a provider for grouping metadata.
  */
 public interface DeferredGroupingColumnSource<DATA_TYPE> extends ColumnSource<DATA_TYPE> {
+    /**
+     * Get a {@link GroupingBuilder} to construct grouping tables for this column.  Use {@link #hasGrouping()}
+     * to determine if this column has a grouping.
+     *
+     * @return a {@link GroupingBuilder} if this column supports grouping.
+     */
+    @Nullable
+    GroupingBuilder getGroupingBuilder();
 
     /**
-     * Set the map returned by getGroupToRange().
-     * 
-     * @param groupToRange The map
+     * Get the grouping provider associated with this ColumnSource.
+     * @return the grouping provider associated with this ColumnSource.
      */
-    void setGroupToRange(@Nullable Map<DATA_TYPE, RowSet> groupToRange);
-
-    /**
-     * @return A provider previously set by
-     *         {@link DeferredGroupingColumnSource#setGroupingProvider(io.deephaven.engine.table.impl.locations.GroupingProvider)}
-     */
-    GroupingProvider<DATA_TYPE> getGroupingProvider();
+    GroupingProvider getGroupingProvider();
 
     /**
      * Supply a provider that will lazily construct the group-to-range map.
-     * 
      * @param groupingProvider The provider
      */
-    void setGroupingProvider(@Nullable GroupingProvider<DATA_TYPE> groupingProvider);
+    void setGroupingProvider(@Nullable GroupingProvider groupingProvider);
 }

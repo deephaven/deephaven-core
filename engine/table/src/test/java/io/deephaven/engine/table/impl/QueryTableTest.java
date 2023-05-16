@@ -19,7 +19,7 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.locations.GroupingProviderBase;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
@@ -3108,7 +3108,7 @@ public class QueryTableTest extends QueryTableTestBase {
     private static class TestDateTimeGroupingSource extends LongAsDateTimeColumnSource
             implements DeferredGroupingColumnSource<DateTime> {
 
-        final GroupingProvider<Object> groupingProvider = new GroupingProvider<>() {
+        final GroupingProviderBase<Object> groupingProvider = new GroupingProviderBase<>() {
             @Override
             public Map<Object, RowSet> getGroupToRange() {
                 return null;
@@ -3127,12 +3127,12 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         @Override
-        public GroupingProvider<DateTime> getGroupingProvider() {
+        public GroupingProviderBase<DateTime> getGroupingProvider() {
             return null;
         }
 
         @Override
-        public void setGroupingProvider(@Nullable GroupingProvider<DateTime> groupingProvider) {
+        public void setGroupingProvider(@Nullable GroupingProviderBase<DateTime> groupingProvider) {
             throw new UnsupportedOperationException();
         }
     }

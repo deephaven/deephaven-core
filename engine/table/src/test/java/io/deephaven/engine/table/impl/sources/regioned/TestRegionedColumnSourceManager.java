@@ -235,7 +235,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                         return groupingColumnGroupingProvider;
                     }
                 });
-                oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
+                oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProviderBase.class)));
                 will(new CustomAction("Capture grouping column grouping provider") {
                     @Override
                     public Object invoke(Invocation invocation) {

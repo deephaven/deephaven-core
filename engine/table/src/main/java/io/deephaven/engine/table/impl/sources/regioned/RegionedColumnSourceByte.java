@@ -67,6 +67,11 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         AsValues() {
             super(ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
         }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
+        }
     }
 
     static final class Partitioning extends RegionedColumnSourceByte<Values> {
@@ -88,6 +93,11 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Byte at location " + locationKey);
             }
             return new ColumnRegionByte.Constant<>(regionMask(), unbox((Byte) partitioningColumnValue));
+        }
+
+        @Override
+        public boolean isPartitioning() {
+            return true;
         }
     }
 }

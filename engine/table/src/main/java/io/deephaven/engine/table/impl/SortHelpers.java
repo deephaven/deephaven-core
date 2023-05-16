@@ -15,9 +15,11 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.locations.GroupingBuilder;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -42,9 +44,12 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.LongPredicate;
 
 public class SortHelpers {
+    private static final int CHUNK_SIZE = 2048;
+
     public static boolean sortBySymbolTable =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
@@ -560,29 +565,37 @@ public class SortHelpers {
 
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
-        if (rowSet.isTracking() && RowSetIndexer.of(rowSet.trackingCast()).hasGrouping(columnSources[0])) {
-            final Map<Comparable<?>, RowSet> groupToRange = columnSource.getGroupToRange();
-            final Object[] keys = groupToRange.keySet().toArray(
-                    (Object[]) Array.newInstance(TypeUtils.getBoxedType(columnSource.getType()), groupToRange.size()));
+        if (columnSources[0].hasGrouping()) {
+            final GroupingBuilder groupingBuilder = ((DeferredGroupingColumnSource<?>)columnSource).getGroupingBuilder();
+            Table groupingTable = groupingBuilder
+                    .clampToIndex(rowSet, true)
+                    .buildTable();
 
-            Arrays.sort((Comparable<?>[]) keys, order[0].getComparator());
+            groupingTable = order[0] == SortingOrder.Ascending
+                    ? groupingTable.sort(groupingBuilder.getValueColumnName())
+                    : groupingTable.sortDescending(groupingBuilder.getValueColumnName());
+            groupingTable = groupingTable.flatten();
 
             offsetsOut.setSize(0);
             lengthsOut.setSize(0);
 
+            final WritableIntChunk<ChunkPositions> finalOffOut = offsetsOut;
+            WritableIntChunk<ChunkLengths> finalLengthsOut = lengthsOut;
             final MutableInt outputIdx = new MutableInt(0);
-            for (final Object key : keys) {
-                // noinspection SuspiciousMethodCalls
-                final RowSet group = groupToRange.get(key).intersect(rowSet);
-                if (group.size() > 1) {
-                    offsetsOut.add(outputIdx.intValue());
-                    lengthsOut.add(group.intSize());
+            processWithGroupingChunk(groupingTable, groupingBuilder.getIndexColumnName(), (indexChunk, nextKeys) -> {
+                for (int ii = 0; ii < nextKeys.size(); ii++) {
+                    final RowSet group = indexChunk.get(ii);
+                    if (group.size() > 1) {
+                        finalOffOut.add(outputIdx.intValue());
+                        finalLengthsOut.add(group.intSize());
+                    }
+
+                    group.forAllRowKeys(indexKey -> {
+                        rowKeysArray[outputIdx.intValue()] = indexKey;
+                        outputIdx.increment();
+                    });
                 }
-                group.forAllRowKeys(rowKey -> {
-                    rowKeysArray[outputIdx.intValue()] = rowKey;
-                    outputIdx.increment();
-                });
-            }
+            });
         } else {
             rowSet.fillRowKeyChunk(rowKeys);
 
@@ -673,6 +686,30 @@ public class SortHelpers {
         indicesToFetch.close();
 
         return new ArraySortMapping(rowKeysArray);
+    }
+
+    /**
+     * Execute the supplied consumer on the entire grouping table.  Be careful about internal state in the consumer,
+     * it will be invoked once per chunk of input.
+     *
+     * @param groupingTable the grouping table
+     * @param indexColumnName the name of the index column
+     * @param groupingConsumer the consumer to process each chunk.
+     */
+    private static void processWithGroupingChunk(final Table groupingTable,
+                                                 String indexColumnName,
+                                                 BiConsumer<ObjectChunk<RowSet, ? extends Values>, RowSequence> groupingConsumer) {
+        //noinspection unchecked
+        final ColumnSource<RowSet> indexSource = groupingTable.getColumnSource(indexColumnName);
+        final int chunkSize = Math.min(CHUNK_SIZE, groupingTable.intSize());
+        try(final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
+            final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
+            while (okIt.hasMore()) {
+                final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(chunkSize);
+                final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
+                groupingConsumer.accept(indexChunk, nextKeys);
+            }
+        }
     }
 
     private static WritableChunk<Values> fetchSecondaryValues(boolean usePrev, ColumnSource columnSource,

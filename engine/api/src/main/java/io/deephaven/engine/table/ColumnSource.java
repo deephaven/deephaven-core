@@ -42,8 +42,6 @@ public interface ColumnSource<T>
     WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
             final Object... keys);
 
-    Map<T, RowSet> getValuesMapping(RowSet subRange);
-
     /**
      * ColumnSource implementations that track previous values have the option to not actually start tracking previous
      * values until this method is called. This is an option, not an obligation: some simple ColumnSource
@@ -59,19 +57,12 @@ public interface ColumnSource<T>
     }
 
     /**
-     * Compute grouping information for all keys present in this column source.
-     *
-     * @return A map from distinct data values to a RowSet that contains those values
+     * Check if this column has grouping information.
+     * @return true if this column has groupings
      */
-    Map<T, RowSet> getGroupToRange();
-
-    /**
-     * Compute grouping information for (at least) all keys present in rowSet.
-     *
-     * @param rowSet The RowSet to consider
-     * @return A map from distinct data values to a RowSet that contains those values
-     */
-    Map<T, RowSet> getGroupToRange(RowSet rowSet);
+    default boolean hasGrouping() {
+        return false;
+    }
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given row key never change.

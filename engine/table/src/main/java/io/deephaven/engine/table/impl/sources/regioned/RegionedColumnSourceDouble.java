@@ -55,6 +55,11 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
         AsValues() {
             super(ColumnRegionDouble.createNull(PARAMETERS.regionMask), DeferredColumnRegionDouble::new);
         }
+
+        @Override
+        public boolean isPartitioning() {
+            return false;
+        }
     }
 
     static final class Partitioning extends RegionedColumnSourceDouble<Values> {
@@ -76,6 +81,11 @@ abstract class RegionedColumnSourceDouble<ATTR extends Values>
                         + ": " + partitioningColumnValue + " is not a Double at location " + locationKey);
             }
             return new ColumnRegionDouble.Constant<>(regionMask(), unbox((Double) partitioningColumnValue));
+        }
+
+        @Override
+        public boolean isPartitioning() {
+            return true;
         }
     }
 }
