@@ -49,21 +49,33 @@ class PythonValueGetter {
         if (valueIn == null) {
             return QueryConstants.NULL_INT;
         }
-        return valueIn.getIntValue();
+        long ll = valueIn.getLongValue();
+        if (ll > Integer.MAX_VALUE || ll < Integer.MIN_VALUE) {
+            throw new ArithmeticException("The PyObject value is outside Integer range.");
+        }
+        return (int) ll;
     }
 
     static short getShort(PyObject valueIn) {
         if (valueIn == null) {
-            return QueryConstants.NULL_SHORT;
+            return QueryConstants.NULL_SHORT; // NB: should there be a getShortValue() in jpy?
         }
-        return (short) valueIn.getIntValue(); // NB: should there be a getShortValue() in jpy?
+        long ll = valueIn.getLongValue();
+        if (ll > Short.MAX_VALUE || ll < Short.MIN_VALUE) {
+            throw new ArithmeticException("The PyObject value is outside Short range.");
+        }
+        return (short) ll;
     }
 
     static byte getByte(PyObject valueIn) {
         if (valueIn == null) {
             return QueryConstants.NULL_BYTE; // NB: should there be a getByteValue() in jpy?
         }
-        return (byte) valueIn.getIntValue();
+        long ll = valueIn.getLongValue();
+        if (ll > Byte.MAX_VALUE || ll < Byte.MIN_VALUE) {
+            throw new ArithmeticException("The PyObject value is outside Byte range.");
+        }
+        return (byte) ll;
     }
 
     static Boolean getBoolean(PyObject valueIn) {
