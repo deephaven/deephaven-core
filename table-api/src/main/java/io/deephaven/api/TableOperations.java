@@ -847,6 +847,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
      * over the entire table.
      *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operation the operation to apply to the table.
+     * @return a table with the same rowset, with the specified operation applied to the entire table
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
@@ -876,6 +888,20 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *         {@code byColumns}
      */
     TOPS updateBy(UpdateByOperation operation, final String... byColumns);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operation the operation to apply to the table.
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operation applied to each group defined by the
+     *         {@code byColumns}
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation, final String... byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
