@@ -17,6 +17,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+
 public class ByteRollingCountOperator extends BaseLongUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields

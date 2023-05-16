@@ -16,6 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
     // region extra-fields

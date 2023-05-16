@@ -5,7 +5,6 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
@@ -20,6 +19,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;

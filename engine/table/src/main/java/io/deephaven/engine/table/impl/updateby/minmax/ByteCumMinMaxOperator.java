@@ -16,6 +16,8 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.*;
+
 public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
 

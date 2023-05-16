@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class ByteRollingStdOperator extends BaseDoubleUpdateByOperator {

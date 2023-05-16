@@ -9,6 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import java.util.Map;
 import java.util.Collections;
 import io.deephaven.time.DateTime;
+import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
 import io.deephaven.base.verify.Assert;
