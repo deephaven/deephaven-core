@@ -14,8 +14,7 @@ import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Map;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 
 @SuppressWarnings("deprecation")
 public class TestDateTimeUtils extends BaseArrayTestCase {
@@ -318,6 +317,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             //pass
         }
 
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.parseDateTime(iso8601));
     }
 
     public void testParseDateTimeQuiet() {
@@ -351,6 +352,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:11"));
         TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet("2010-01-01T12:11 JUNK"));
         TestCase.assertNull(DateTimeUtils.parseDateTimeQuiet(null));
+
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.parseDateTimeQuiet(iso8601));
     }
 
     public void testParseNanos() {
@@ -1537,7 +1541,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testLowerBinWithOffset() {
         final long second = 1000000000L;
         final long minute = 60 * second;
-        final long hour = 60 * minute;
         DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
 
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:11:00 NY"),
@@ -1622,7 +1625,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testUpperBinWithOffset() {
         final long second = 1000000000L;
         final long minute = 60 * second;
-        final long hour = 60 * minute;
         DateTime time = DateTimeUtils.parseDateTime("2010-06-15T06:14:01.2345 NY");
 
         TestCase.assertEquals(DateTimeUtils.parseDateTime("2010-06-15T06:16:00 NY"),
@@ -1826,7 +1828,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     @SuppressWarnings("ConstantConditions")
-    public void testMinus() throws Exception {
+    public void testMinus() {
         final DateTime dateTime1 = DateTimeUtils.parseDateTime("2010-01-01T12:13:14.999123456 JP");
         final DateTime dateTime2 = DateTimeUtils.parseDateTime("2010-01-01T13:13:14.999123456 JP");
         final Instant instant1 = DateTimeUtils.toInstant(dateTime1);
@@ -2196,310 +2198,432 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null,zdt1));
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(zdt2,null));
     }
-    
-//    public void testYearDiff() throws Exception {
-//        org.joda.time.DateTime jt1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jt2 = new org.joda.time.DateTime("2011-01-01T13:13:14.999");
-//        org.joda.time.DateTime jt3 = new org.joda.time.DateTime("2010-06-30T13:13:14.999");
-//
-//        DateTime t1 = new DateTime(jt1.getMillis() * 1000000 + 123456);
-//        DateTime t2 = new DateTime(jt2.getMillis() * 1000000 + 123456);
-//        DateTime t3 = new DateTime(jt3.getMillis() * 1000000 + 123456);
-//
-//
-//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
-//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
-//
-//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
-//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
-//    }
-    
-    
-    
 
-//    diffDays
-//            diffDays
-//    diffDays
+    public void testYear() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-01-02T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+        
+        TestCase.assertEquals(2023, DateTimeUtils.year(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(2023, DateTimeUtils.year(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year((DateTime) null, TimeZone.TZ_JP.getZoneId()));
 
-//            diffYears
-//    diffYears
-//            diffYears
+        TestCase.assertEquals(2023, DateTimeUtils.year(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(2023, DateTimeUtils.year(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year((Instant) null, TimeZone.TZ_JP.getZoneId()));
 
+        TestCase.assertEquals(2023, DateTimeUtils.year(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.year(null));
+    }
 
-    public void testCronology(){
-        TestCase.fail();
+    public void testYearOfCentury() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-01-02T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(23, DateTimeUtils.yearOfCentury(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(23, DateTimeUtils.yearOfCentury(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(23, DateTimeUtils.yearOfCentury(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(23, DateTimeUtils.yearOfCentury(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(23, DateTimeUtils.yearOfCentury(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.yearOfCentury(null));
+    }
+
+    public void testMonthOfYear() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(2, DateTimeUtils.monthOfYear(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(2, DateTimeUtils.monthOfYear(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(2, DateTimeUtils.monthOfYear(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(2, DateTimeUtils.monthOfYear(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(2, DateTimeUtils.monthOfYear(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.monthOfYear(null));
+    }
+
+    public void testDayOfMonth() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(3, DateTimeUtils.dayOfMonth(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(3, DateTimeUtils.dayOfMonth(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(3, DateTimeUtils.dayOfMonth(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(3, DateTimeUtils.dayOfMonth(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(3, DateTimeUtils.dayOfMonth(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfMonth(null));
+    }
+
+    public void testDayOfWeek() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(DayOfWeek.FRIDAY.getValue(), DateTimeUtils.dayOfWeek(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfWeek(null));
+    }
+
+    public void testDayOfYear() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(34, DateTimeUtils.dayOfYear(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(34, DateTimeUtils.dayOfYear(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(34, DateTimeUtils.dayOfYear(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(34, DateTimeUtils.dayOfYear(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(34, DateTimeUtils.dayOfYear(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.dayOfYear(null));
+    }
+
+    public void testHourOfDay() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11, DateTimeUtils.hourOfDay(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.hourOfDay(null));
+    }
+
+    public void testMinuteOfHour() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(23, DateTimeUtils.minuteOfHour(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(23, DateTimeUtils.minuteOfHour(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(23, DateTimeUtils.minuteOfHour(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(23, DateTimeUtils.minuteOfHour(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(23, DateTimeUtils.minuteOfHour(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfHour(null));
+    }
+
+    public void testMinuteOfDay() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(11*60+23, DateTimeUtils.minuteOfDay(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(11*60+23, DateTimeUtils.minuteOfDay(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11*60+23, DateTimeUtils.minuteOfDay(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(11*60+23, DateTimeUtils.minuteOfDay(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11*60+23, DateTimeUtils.minuteOfDay(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.minuteOfDay(null));
+    }
+
+    public void testSecondOfMinute() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(45, DateTimeUtils.secondOfMinute(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(45, DateTimeUtils.secondOfMinute(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(45, DateTimeUtils.secondOfMinute(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(45, DateTimeUtils.secondOfMinute(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(45, DateTimeUtils.secondOfMinute(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfMinute(null));
+    }
+
+    public void testSecondOfDay() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(11*60*60+23*60+45, DateTimeUtils.secondOfDay(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(11*60*60+23*60+45, DateTimeUtils.secondOfDay(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11*60*60+23*60+45, DateTimeUtils.secondOfDay(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(11*60*60+23*60+45, DateTimeUtils.secondOfDay(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(11*60*60+23*60+45, DateTimeUtils.secondOfDay(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.secondOfDay(null));
+    }
+
+    public void testNanosOfSecond() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123456789, DateTimeUtils.nanosOfSecond(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456789, DateTimeUtils.nanosOfSecond(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456789, DateTimeUtils.nanosOfSecond(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456789, DateTimeUtils.nanosOfSecond(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456789, DateTimeUtils.nanosOfSecond(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfSecond(null));
+    }
+
+    public void testNanosOfMilli() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123456789%DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(dt1));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.nanosOfMilli((DateTime) null));
+
+        TestCase.assertEquals(123456789%DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(dt2));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.nanosOfMilli((Instant) null));
+
+        TestCase.assertEquals(123456789%DateTimeUtils.MILLI, DateTimeUtils.nanosOfMilli(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.nanosOfMilli((ZonedDateTime) null));
+    }
+
+    public void testNanosOfDay() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123456789L+1_000_000_000L*(45+23*60+11*60*60), DateTimeUtils.nanosOfDay(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456789L+1_000_000_000L*(45+23*60+11*60*60), DateTimeUtils.nanosOfDay(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456789L+1_000_000_000L*(45+23*60+11*60*60), DateTimeUtils.nanosOfDay(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456789L+1_000_000_000L*(45+23*60+11*60*60), DateTimeUtils.nanosOfDay(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456789L+1_000_000_000L*(45+23*60+11*60*60), DateTimeUtils.nanosOfDay(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null));
+    }
+
+    public void testMillisOfSecond() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123, DateTimeUtils.millisOfSecond(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(123, DateTimeUtils.millisOfSecond(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123, DateTimeUtils.millisOfSecond(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(123, DateTimeUtils.millisOfSecond(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123, DateTimeUtils.millisOfSecond(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfSecond(null));
+    }
+
+    public void testMillisOfDay() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123L+1_000L*(45+23*60+11*60*60), DateTimeUtils.millisOfDay(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(123L+1_000L*(45+23*60+11*60*60), DateTimeUtils.millisOfDay(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123L+1_000L*(45+23*60+11*60*60), DateTimeUtils.millisOfDay(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(123L+1_000L*(45+23*60+11*60*60), DateTimeUtils.millisOfDay(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123L+1_000L*(45+23*60+11*60*60), DateTimeUtils.millisOfDay(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.millisOfDay(null));
+    }
+
+    public void testMicrosOfSecond() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(123456, DateTimeUtils.microsOfSecond(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456, DateTimeUtils.microsOfSecond(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond(dt1, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond(dt1, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456, DateTimeUtils.microsOfSecond(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(123456, DateTimeUtils.microsOfSecond(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond(dt2, (TimeZone) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond(dt2, (ZoneId) null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(123456, DateTimeUtils.microsOfSecond(dt3));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.microsOfSecond(null));
+    }
+
+    public void testMicrosOfMilli() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(dt1));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((DateTime) null));
+
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(dt2));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((Instant) null));
+
+        TestCase.assertEquals(457, DateTimeUtils.microsOfMilli(dt3));
+        TestCase.assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((ZonedDateTime) null));
+    }
+
+    public void testDateTimeAtMidnight() {
+        final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
+        final Instant dt2 = dt1.toInstant();
+        final ZonedDateTime dt3 = dt1.toZonedDateTime(TimeZone.TZ_JP);
+
+        final DateTime rst1 = DateTimeUtils.parseDateTime("2023-02-03T00:00:00 JP");
+        final Instant rst2 = rst1.toInstant();
+        final ZonedDateTime rst3 = rst1.toZonedDateTime(TimeZone.TZ_JP);
+
+        TestCase.assertEquals(rst1, DateTimeUtils.dateTimeAtMidnight(dt1, TimeZone.TZ_JP));
+        TestCase.assertEquals(rst1, DateTimeUtils.dateTimeAtMidnight(dt1, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt1, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt1, (ZoneId) null));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((DateTime) null, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((DateTime) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(rst2, DateTimeUtils.dateTimeAtMidnight(dt2, TimeZone.TZ_JP));
+        TestCase.assertEquals(rst2, DateTimeUtils.dateTimeAtMidnight(dt2, TimeZone.TZ_JP.getZoneId()));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt2, (TimeZone) null));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt2, (ZoneId) null));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((Instant) null, TimeZone.TZ_JP));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((Instant) null, TimeZone.TZ_JP.getZoneId()));
+
+        TestCase.assertEquals(rst3, DateTimeUtils.dateTimeAtMidnight(dt3));
+        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(null));
     }
 
 
-//    public void testMillis() throws Exception {
-//        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//
-//        DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
-//
-//        TestCase.assertEquals(jodaDateTime.getMillis(), DateTimeUtils.epochMillis(dateTime));
-//
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((DateTime)null));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((Instant)null));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis((ZonedDateTime) null));
-//    }
-//
-//    public void testNanos() throws Exception {
-//        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//
-//        DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
-//
-//        TestCase.assertEquals(jodaDateTime.getMillis() * 1000000 + 123456, DateTimeUtils.epochNanos(dateTime));
-//
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochNanos((DateTime) null));
-//    }
-//
-//    public void testMidnightConversion() throws Exception {
-//        org.joda.time.DateTime jodaDateTime = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jodaMidnight = new org.joda.time.DateTime("2010-01-01T00:00:00.000-05");
-//
-//        DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
-//        DateTime midnight = DateTimeUtils.dateTimeAtMidnight(dateTime, TimeZone.TZ_NY);
-//
-//        TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.epochMillis(midnight));
-//    }
-//
 
-
-
-//
-//    public void testMillisToNanos() throws Exception {
-//        TestCase.assertEquals(1000000, DateTimeUtils.millisToNanos(1));
-//
-//        // The next two tests will fail if DateTimeUtils.ENABLE_MICROTIME_HACK is true
-//        try {
-//            DateTimeUtils.millisToNanos(Long.MAX_VALUE / 1_000_000 + 1);
-//            TestCase.fail("Should have thrown a DateTimeUtils.DateTimeOverflowException");
-//        } catch (DateTimeUtils.DateTimeOverflowException ignored) {
-//            /* Exception is expected. */
-//        }
-//
-//        try {
-//            DateTimeUtils.millisToNanos(-Long.MAX_VALUE / 1_000_000 - 1);
-//            TestCase.fail("Should have thrown a DateTimeUtils.DateTimeOverflowException");
-//        } catch (DateTimeUtils.DateTimeOverflowException ignored) {
-//            /* Exception is expected. */
-//        }
-//    }
-//
-//    /*
-//     * public void testMillisToNanosWithHack() throws Exception { // For this to pass, ENABLE_MICROTIME_HACK in
-//     * DateTimeUtils must be true (i.e. you have // to run the tests with -DDateTimeUtil.enableMicrotimeHack=true)
-//     * assertEquals(1_000_000, DateTimeUtils.millisToNanos(1)); assertEquals(1_000_000_000,
-//     * DateTimeUtils.millisToNanos(1_000)); assertEquals(1531315655_000_000_000L,
-//     * DateTimeUtils.millisToNanos(1531315655_000L)); assertEquals(1531315655_000_000_000L,
-//     * DateTimeUtils.millisToNanos(1531315655_000_000L)); }
-//     */
-//
-//    public void testNanosToMillis() throws Exception {
-//        TestCase.assertEquals(1, DateTimeUtils.nanosToMillis(1000000));
-//    }
-//
-//    public void testMicroToNanos() throws Exception {
-//        TestCase.assertEquals(1000, DateTimeUtils.microsToNanos(1));
-//
-//        try {
-//            DateTimeUtils.microsToNanos(Long.MAX_VALUE / 1_000 + 1);
-//            TestCase.fail("Should have thrown a DateTimeUtils.DateTimeOverflowException");
-//        } catch (DateTimeUtils.DateTimeOverflowException ignored) {
-//            /* Exception is expected. */
-//        }
-//
-//        try {
-//            DateTimeUtils.microsToNanos(-Long.MAX_VALUE / 1_000 - 1);
-//            TestCase.fail("Should have thrown a DateTimeUtils.DateTimeOverflowException");
-//        } catch (DateTimeUtils.DateTimeOverflowException ignored) {
-//            /* Exception is expected. */
-//        }
-//    }
-//
-//    public void testNanosToMicros() throws Exception {
-//        TestCase.assertEquals(1, DateTimeUtils.nanosToMicros(1000));
-//    }
-//
-//    public void testConvertDateQuiet() throws Exception {
-//        // ISO formats
-//        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.parseDateQuiet("2018-01-01"));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.parseDateQuiet("2018-12-31"));
-//        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.parseDateQuiet("20180101"));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.parseDateQuiet("20181231"));
-//
-//        // extremities of the format (LocalDate can store a much larger range than this but we aren't that interested)
-//        TestCase.assertEquals(LocalDate.of(0, 1, 1), DateTimeUtils.parseDateQuiet("0000-01-01"));
-//        TestCase.assertEquals(LocalDate.of(9999, 12, 31), DateTimeUtils.parseDateQuiet("9999-12-31"));
-//
-//        // other variants
-//        TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-//                DateTimeUtils.parseDateQuiet("01/01/2018", DateTimeUtils.DateStyle.MDY));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("12/31/2018", DateTimeUtils.DateStyle.MDY));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("12/31/18", DateTimeUtils.DateStyle.MDY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-//                DateTimeUtils.parseDateQuiet("6/25/24", DateTimeUtils.DateStyle.MDY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("6/2/24", DateTimeUtils.DateStyle.MDY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("6/2/2024", DateTimeUtils.DateStyle.MDY));
-//
-//        TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-//                DateTimeUtils.parseDateQuiet("01/01/2018", DateTimeUtils.DateStyle.DMY));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("31/12/2018", DateTimeUtils.DateStyle.DMY));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("31/12/18", DateTimeUtils.DateStyle.DMY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-//                DateTimeUtils.parseDateQuiet("25/6/24", DateTimeUtils.DateStyle.DMY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("2/6/24", DateTimeUtils.DateStyle.DMY));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("2/6/2024", DateTimeUtils.DateStyle.DMY));
-//
-//
-//        TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-//                DateTimeUtils.parseDateQuiet("2018/01/01", DateTimeUtils.DateStyle.YMD));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("2018/12/31", DateTimeUtils.DateStyle.YMD));
-//        TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-//                DateTimeUtils.parseDateQuiet("18/12/31", DateTimeUtils.DateStyle.YMD));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-//                DateTimeUtils.parseDateQuiet("24/6/25", DateTimeUtils.DateStyle.YMD));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("24/6/2", DateTimeUtils.DateStyle.YMD));
-//        TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-//                DateTimeUtils.parseDateQuiet("2024/6/2", DateTimeUtils.DateStyle.YMD));
-//    }
-//
-
-//    public void testConvertDate() throws Exception {
-//        DateTimeUtils.parseDate("2010-01-01"); // shouldn't have an exception
-//
-//        try {
-//            DateTimeUtils.parseDate("2010-01-01 NY");
-//            TestCase.fail("Should have thrown an exception");
-//        } catch (Exception e) {
-//        }
-//
-//        TestCase.assertEquals("DateTimeUtils.convertDate(\"9999-12-31\")",
-//                LocalDate.of(9999, 12, 31),
-//                DateTimeUtils.parseDate("9999-12-31"));
-//    }
-//
-
-
-
-//
-//    public void testFormatDate() throws Exception {
-//        TestCase.assertEquals("2010-01-01",
-//                DateTimeUtils.formatDate(DateTimeUtils.parseDateTimeQuiet("2010-01-01 NY"), TimeZone.TZ_NY));
-//    }
-//
-
-//
-//
-//    /**
-//     * Test autoEpcohTime with the given epoch time.
-//     *
-//     * @param epoch Epoch time (in seconds)
-//     * @return The year (in the New York timezone) in which the given time falls.
-//     */
-//    public int doTestAutoEpochToTime(long epoch) {
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getMillis(), epoch * 1000);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getMicros(), epoch * 1000 * 1000);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getNanos(), epoch * 1000 * 1000 * 1000);
-//
-//        final long milliValue = epoch * 1000 + (int) (Math.signum(epoch) * 123);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getMillis(), milliValue);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getMicros(), milliValue * 1000);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getNanos(), milliValue * 1000 * 1000);
-//
-//        final long microValue = milliValue * 1000 + (int) (Math.signum(milliValue) * 456);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getMillis(), milliValue);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getMicros(), microValue);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getNanos(), microValue * 1000);
-//
-//        final long nanoValue = microValue * 1000 + (int) (Math.signum(microValue) * 789);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getMillis(), milliValue);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getMicros(), microValue);
-//        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getNanos(), nanoValue);
-//
-//        return DateTimeUtils.year(DateTimeUtils.epochAutoToDateTime(nanoValue), TimeZone.TZ_NY);
-//    }
-//
-//    public void testAutoEpochToTime() {
-//        long inTheYear2035 = 2057338800;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear2035)", 2035, doTestAutoEpochToTime(inTheYear2035));
-//        long inTheYear1993 = 731966400;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear1993)", 1993, doTestAutoEpochToTime(inTheYear1993));
-//        long inTheYear2013 = 1363114800;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear2013)", 2013, doTestAutoEpochToTime(inTheYear2013));
-//
-//        long inTheYear1904 = -2057338800;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear1904)", 1904, doTestAutoEpochToTime(inTheYear1904));
-//        long inTheYear1946 = -731966400;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear1946)", 1946, doTestAutoEpochToTime(inTheYear1946));
-//        long inTheYear1926 = -1363114800;
-//        TestCase.assertEquals("doTestAutoEpochToTime(inTheYear1926)", 1926, doTestAutoEpochToTime(inTheYear1926));
-//    }
-//
-//    public void testMicrosOfMilli() {
-//        TestCase.assertEquals(0,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40 NY")));
-//        TestCase.assertEquals(0,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00 NY")));
-//        TestCase.assertEquals(0,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123 NY")
-//                ));
-//        TestCase.assertEquals(400,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234 NY")
-//                ));
-//        TestCase.assertEquals(456,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456 NY")
-//                ));
-//        // this one should round up
-//        TestCase.assertEquals(457,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234567 NY")
-//                ));
-//        // this one should round up
-//        TestCase.assertEquals(457,
-//                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456789 NY")
-//                ));
-//    }
-//
-//    public void testZonedDateTime() {
-//        final DateTime dateTime1 = DateTimeUtils.parseDateTime("2015-07-31T20:40 NY");
-//        final ZonedDateTime zonedDateTime1 =
-//                ZonedDateTime.of(2015, 7, 31, 20, 40, 0, 0, TimeZone.TZ_NY.getZoneId());
-//        TestCase.assertEquals(zonedDateTime1, DateTimeUtils.toZonedDateTime(dateTime1, TimeZone.TZ_NY));
-//        TestCase.assertEquals(dateTime1, DateTimeUtils.toDateTime(zonedDateTime1));
-//
-//        final DateTime dateTime2 = DateTimeUtils.parseDateTime("2020-07-31T20:40 NY");
-//        TestCase.assertEquals(dateTime2,
-//                DateTimeUtils.toDateTime(DateTimeUtils.toZonedDateTime(dateTime2, TimeZone.TZ_NY)));
-//
-//        final DateTime dateTime3 = DateTimeUtils.parseDateTime("2050-07-31T20:40 NY");
-//        TestCase.assertEquals(dateTime3,
-//                DateTimeUtils.toDateTime(DateTimeUtils.toZonedDateTime(dateTime3, TimeZone.TZ_NY)));
-//    }
-//
-//    public void testISO8601() {
-//        final String iso8601 = "2022-04-26T00:30:31.087360Z";
-//        assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.parseDateTime(iso8601));
-//    }
-//
-//
-//    public void testISO8601_druation() {
-//        final long dayNanos = 1_000_000_000L * 60 * 60 * 24;
-//
-//        assertEquals(7 * dayNanos, DateTimeUtils.parseNanos("1W"));
-//        assertEquals(-7 * dayNanos, DateTimeUtils.parseNanos("-1W"));
-//    }
 }
