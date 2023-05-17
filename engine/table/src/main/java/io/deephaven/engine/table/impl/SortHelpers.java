@@ -19,7 +19,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.locations.GroupingBuilder;
+import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -36,7 +36,6 @@ import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.type.TypeUtils;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -566,7 +565,7 @@ public class SortHelpers {
         ColumnSource<Comparable<?>> columnSource = columnSources[0];
 
         if (columnSources[0].hasGrouping()) {
-            final GroupingBuilder groupingBuilder = ((DeferredGroupingColumnSource<?>)columnSource).getGroupingBuilder();
+            final GroupingBuilder groupingBuilder = columnSource.getGroupingBuilder();
             Table groupingTable = groupingBuilder
                     .clampToIndex(rowSet, true)
                     .buildTable();
@@ -689,24 +688,25 @@ public class SortHelpers {
     }
 
     /**
-     * Execute the supplied consumer on the entire grouping table.  Be careful about internal state in the consumer,
-     * it will be invoked once per chunk of input.
+     * Execute the supplied consumer on the entire grouping table. Be careful about internal state in the consumer, it
+     * will be invoked once per chunk of input.
      *
      * @param groupingTable the grouping table
      * @param indexColumnName the name of the index column
      * @param groupingConsumer the consumer to process each chunk.
      */
     private static void processWithGroupingChunk(final Table groupingTable,
-                                                 String indexColumnName,
-                                                 BiConsumer<ObjectChunk<RowSet, ? extends Values>, RowSequence> groupingConsumer) {
-        //noinspection unchecked
+            String indexColumnName,
+            BiConsumer<ObjectChunk<RowSet, ? extends Values>, RowSequence> groupingConsumer) {
+        // noinspection unchecked
         final ColumnSource<RowSet> indexSource = groupingTable.getColumnSource(indexColumnName);
         final int chunkSize = Math.min(CHUNK_SIZE, groupingTable.intSize());
-        try(final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
-            final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
+        try (final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
+                final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(chunkSize);
-                final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
+                final ObjectChunk<RowSet, ? extends Values> indexChunk =
+                        indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
                 groupingConsumer.accept(indexChunk, nextKeys);
             }
         }

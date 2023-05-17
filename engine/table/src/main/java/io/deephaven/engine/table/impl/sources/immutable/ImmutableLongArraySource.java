@@ -19,6 +19,7 @@ import java.time.ZoneId;
 
 import io.deephaven.engine.table.ColumnSource;
 
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.time.DateTime;
 
 import io.deephaven.chunk.*;
@@ -50,7 +51,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DLongArraySource}.
  */
-public class ImmutableLongArraySource extends AbstractDeferredGroupingColumnSource<Long>
+public class ImmutableLongArraySource extends AbstractColumnSource<Long>
         implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
         , ConvertableTimeSource {

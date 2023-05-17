@@ -18,14 +18,14 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.locations.GroupingProviderBase;
+import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
+import io.deephaven.engine.table.GroupingBuilder;
+import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
@@ -2871,9 +2871,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
-            // noinspection unchecked,rawtypes
-            final Map<String, RowSet> gtr = (Map) RowSetIndexer.of(t.getRowSet()).getGrouping(symbol);
-            ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
+            symbol.setGroupingProvider(StaticGroupingProvider.buildFrom(symbol, "Symbol", t.getRowSet()));
             final Table result =
                     t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithRowSet(result);
@@ -3106,33 +3104,38 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     private static class TestDateTimeGroupingSource extends LongAsDateTimeColumnSource
-            implements DeferredGroupingColumnSource<DateTime> {
+            implements ColumnSource<DateTime> {
 
-        final GroupingProviderBase<Object> groupingProvider = new GroupingProviderBase<>() {
+        final GroupingProvider groupingProvider = new GroupingProvider() {
             @Override
-            public Map<Object, RowSet> getGroupToRange() {
+            public @NotNull GroupingBuilder getGroupingBuilder() {
                 return null;
             }
 
             @Override
-            public Pair<Map<Object, RowSet>, Boolean> getGroupToRange(RowSet hint) {
-                return null;
+            public boolean hasGrouping() {
+                return false;
             }
         };
 
         TestDateTimeGroupingSource(ColumnSource<Long> realSource) {
             super(realSource);
             // noinspection unchecked,rawtypes
-            ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
+            realSource.setGroupingProvider(groupingProvider);
         }
 
         @Override
-        public GroupingProviderBase<DateTime> getGroupingProvider() {
+        public @Nullable GroupingBuilder getGroupingBuilder() {
             return null;
         }
 
         @Override
-        public void setGroupingProvider(@Nullable GroupingProviderBase<DateTime> groupingProvider) {
+        public GroupingProvider getGroupingProvider() {
+            return null;
+        }
+
+        @Override
+        public void setGroupingProvider(@Nullable GroupingProvider groupingProvider) {
             throw new UnsupportedOperationException();
         }
     }
@@ -3152,8 +3155,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t2 = t1.select("T");
 
         // noinspection rawtypes
-        final DeferredGroupingColumnSource result =
-                (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
+        final ColumnSource result = t2.getColumnSource("T").reinterpret(long.class);
         assertSame(cs.groupingProvider, result.getGroupingProvider());
     }
 

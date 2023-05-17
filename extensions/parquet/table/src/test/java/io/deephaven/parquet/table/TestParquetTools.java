@@ -182,7 +182,7 @@ public class TestParquetTools {
         path = testRoot + File.separator + "Table4.parquet";
         ParquetTools.writeTable(test, path);
         test2 = ParquetTools.readTable(new File(path));
-        assertTrue(test2.getColumnSource("someLong").hasGrouping());
+        assertTrue(test2.getColumnSource("aString").hasGrouping());
         test2.close();
     }
 

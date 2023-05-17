@@ -39,7 +39,7 @@ public abstract class DataIndexInfo {
     final void checkColumns() {
         if (columns().isEmpty()) {
             throw new IllegalArgumentException("No columns provided");
-        } else if(columns().stream().anyMatch(StringUtils::isNullOrEmpty)) {
+        } else if (columns().stream().anyMatch(StringUtils::isNullOrEmpty)) {
             throw new IllegalArgumentException("Empty column name");
         }
     }

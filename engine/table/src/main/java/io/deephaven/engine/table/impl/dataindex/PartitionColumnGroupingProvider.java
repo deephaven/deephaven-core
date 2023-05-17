@@ -5,10 +5,10 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.GroupingBuilder;
 import io.deephaven.engine.table.impl.locations.KeyRangeGroupingProvider;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -28,13 +28,17 @@ import java.util.stream.Stream;
  * A {@link KeyRangeGroupingProvider} for partitioning columns.
  */
 public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider implements KeyRangeGroupingProvider {
-    final Map<String, WritableRowSet> partitionMap = new LinkedHashMap<>();
-    final ObjectArraySource<String> baseValueSource = (ObjectArraySource<String>) ArrayBackedColumnSource.getMemoryColumnSource(10, String.class, null);
-    final ObjectArraySource<WritableRowSet> baseWritableRowSetSource = (ObjectArraySource<WritableRowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, WritableRowSet.class, null);
+    final Map<Object, WritableRowSet> partitionMap = new LinkedHashMap<>();
+    final ObjectArraySource<Object> baseValueSource =
+            (ObjectArraySource<Object>) ArrayBackedColumnSource.getMemoryColumnSource(10, Object.class, null);
+    final ObjectArraySource<WritableRowSet> baseWritableRowSetSource =
+            (ObjectArraySource<WritableRowSet>) ArrayBackedColumnSource.getMemoryColumnSource(10, WritableRowSet.class,
+                    null);
     private final String columnName;
 
-    public static PartitionColumnGroupingProvider make(@NotNull final String name, @NotNull final ColumnSource<?> source) {
-        if(!(source instanceof RegionedColumnSource) || !((RegionedColumnSource<?>) source).isPartitioning()) {
+    public static PartitionColumnGroupingProvider make(@NotNull final String name,
+            @NotNull final ColumnSource<?> source) {
+        if (!(source instanceof RegionedColumnSource) || !((RegionedColumnSource<?>) source).isPartitioning()) {
             throw new IllegalArgumentException("Column source is not partitioning");
         }
 
@@ -53,11 +57,12 @@ public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider i
 
     @Override
     public void addSource(@NotNull final ColumnLocation columnLocation, @NotNull RowSet locationRowSetInTable) {
-        final String partitionValue =
-            columnLocation.getTableLocation().getKey().getPartitionValue(columnLocation.getName());
+
+        final Object partitionValue =
+                columnLocation.getTableLocation().getKey().getPartitionValue(columnLocation.getName());
 
         final WritableRowSet current = partitionMap.get(partitionValue);
-        if(current != null) {
+        if (current != null) {
             current.insert(locationRowSetInTable);
         } else {
             final WritableRowSet partitionWritableRowSet = locationRowSetInTable.copy();
@@ -77,23 +82,30 @@ public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider i
     }
 
     private class PartitionedGroupingBuilder extends AbstractGroupingBuilder {
-        private Set<String> matchSet;
+        private Set<Object> matchSet;
 
         private WritableRowSet collectRelevantPartitions() {
-            if(rowSetOfInterest == null && groupKeys == null) {
+            if (rowSetOfInterest == null && groupKeys == null) {
                 return RowSetFactory.flat(partitionMap.size());
             }
 
             // Construct the matching set if we have to
-            if(groupKeys != null) {
-                final Stream<String> stringStream = Arrays.stream(groupKeys).map(s -> (String) s);
-                matchSet = matchCase ? stringStream.collect(Collectors.toSet())
-                                     : stringStream.map(String::toLowerCase).collect(Collectors.toSet());
+            if (groupKeys != null && groupKeys.length > 0) {
+                if (!matchCase && (groupKeys[0].getClass() == String.class)) {
+                    matchSet = Arrays.stream(groupKeys)
+                            .map(s -> (Object) ((String) s).toLowerCase()).collect(Collectors.toSet());
+
+                    final Stream<String> stringStream = Arrays.stream(groupKeys).map(s -> (String) s);
+                    matchSet = matchCase ? stringStream.collect(Collectors.toSet())
+                            : stringStream.map(String::toLowerCase).collect(Collectors.toSet());
+                } else {
+                    matchSet = Arrays.stream(groupKeys).collect(Collectors.toSet());
+                }
             }
 
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            for(long ii = 0; ii < partitionMap.size(); ii++) {
-                if(match(baseValueSource.get(ii)) && overlaps(ii)) {
+            for (long ii = 0; ii < partitionMap.size(); ii++) {
+                if (match(baseValueSource.get(ii)) && overlaps(ii)) {
                     builder.appendKey(ii);
                 }
             }
@@ -104,29 +116,29 @@ public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider i
             return rowSetOfInterest == null || rowSetOfInterest.overlaps(baseWritableRowSetSource.getUnsafe(ii));
         }
 
-        private boolean match(final String s) {
-            return matchSet == null || (matchSet.contains(s) ^ invert);
+        private boolean match(final Object o) {
+            return matchSet == null || (matchSet.contains(o) ^ invert);
         }
 
         @NotNull
         @Override
         public GroupingBuilder sortByFirstKey() {
-            // Partitions will always be sorted by first key.  There's nothing more to do here.
+            // Partitions will always be sorted by first key. There's nothing more to do here.
             return this;
         }
 
         @Override
         public long estimateGroupingSize() {
-            if(rowSetOfInterest == null) {
+            if (rowSetOfInterest == null) {
                 return partitionMap.size();
             }
 
             final WritableRowSet remainingRelevance = rowSetOfInterest.copy();
             long estimatedSize = 0;
-            for(long ii = 0; ii < partitionMap.size() && remainingRelevance.isNonempty(); ii++) {
+            for (long ii = 0; ii < partitionMap.size() && remainingRelevance.isNonempty(); ii++) {
                 final long oldCard = remainingRelevance.size();
                 remainingRelevance.remove(baseWritableRowSetSource.get(ii));
-                if(oldCard > remainingRelevance.size()) {
+                if (oldCard > remainingRelevance.size()) {
                     estimatedSize++;
                 }
             }
@@ -152,14 +164,14 @@ public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider i
             csm.put(columnName, baseValueSource);
             csm.put(INDEX_COL_NAME, baseWritableRowSetSource);
             Table groupingTable = new QueryTable(relevantPartitions.toTracking(), csm);
-            if(regionMutators.isEmpty()) {
+            if (regionMutators.isEmpty()) {
                 return applyIntersectAndInvert(groupingTable);
             }
 
             Table result = groupingTable;
-            for(final Function<Table, Table> mutator : regionMutators) {
+            for (final Function<Table, Table> mutator : regionMutators) {
                 result = mutator.apply(result);
-                if(result == null) {
+                if (result == null) {
                     return null;
                 }
             }
@@ -171,17 +183,19 @@ public class PartitionColumnGroupingProvider extends MemoizingGroupingProvider i
         @NotNull
         @Override
         public <T> Map<T, RowSet> buildGroupingMap() {
-            if(regionMutators.isEmpty()) {
+            if (regionMutators.isEmpty()) {
                 final WritableRowSet relevantPartitions = collectRelevantPartitions();
 
-                final Map<String, RowSet> grouping = new LinkedHashMap<>();
+                final Map<T, RowSet> grouping = new LinkedHashMap<>();
                 relevantPartitions.forAllRowKeys(key -> {
-                    WritableRowSet rowSet = strictIntersect ? baseWritableRowSetSource.getUnsafe(key).intersect(rowSetOfInterest) : baseWritableRowSetSource.get(key);
+                    WritableRowSet rowSet =
+                            strictIntersect ? baseWritableRowSetSource.getUnsafe(key).intersect(rowSetOfInterest)
+                                    : baseWritableRowSetSource.get(key);
                     rowSet = inverter != null ? inverter.invert(rowSet) : rowSet;
-                    grouping.put(baseValueSource.get(key), rowSet);
+                    grouping.put((T) baseValueSource.get(key), rowSet);
                 });
 
-                //noinspection unchecked
+                // noinspection unchecked
                 return (Map<T, RowSet>) grouping;
             }
 

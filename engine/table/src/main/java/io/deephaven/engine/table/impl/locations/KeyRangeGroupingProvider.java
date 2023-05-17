@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations;
 
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.GroupingProvider;
 import org.jetbrains.annotations.NotNull;
 
 /**

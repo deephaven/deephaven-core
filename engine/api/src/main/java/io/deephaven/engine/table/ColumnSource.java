@@ -4,15 +4,15 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
-import java.util.Map;
 
 /**
  * A "source" for column data - allows cell values to be looked up by (long) keys.
@@ -57,12 +57,34 @@ public interface ColumnSource<T>
     }
 
     /**
+     * Get a {@link GroupingBuilder} to construct grouping tables for this column. Use {@link #hasGrouping()} to
+     * determine if this column has a grouping.
+     *
+     * @return a {@link GroupingBuilder} if this column supports grouping.
+     */
+    @Nullable
+    GroupingBuilder getGroupingBuilder();
+
+    /**
      * Check if this column has grouping information.
+     * 
      * @return true if this column has groupings
      */
-    default boolean hasGrouping() {
-        return false;
-    }
+    boolean hasGrouping();
+
+    /**
+     * Get the grouping provider associated with this ColumnSource.
+     * 
+     * @return the grouping provider associated with this ColumnSource.
+     */
+    GroupingProvider getGroupingProvider();
+
+    /**
+     * Supply a provider that will lazily construct the group-to-range map.
+     * 
+     * @param groupingProvider The provider
+     */
+    void setGroupingProvider(@Nullable GroupingProvider groupingProvider);
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given row key never change.

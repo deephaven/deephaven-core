@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -17,11 +17,11 @@ import java.util.Map;
 public interface ColumnSourceManager {
 
     /**
-     * Get a map of name to {@link DeferredGroupingColumnSource} for the column sources maintained by this manager.
+     * Get a map of name to {@link ColumnSource} for the column sources maintained by this manager.
      *
      * @return An unmodifiable view of the column source map maintained by this manager.
      */
-    Map<String, ? extends DeferredGroupingColumnSource<?>> getColumnSources();
+    Map<String, ? extends ColumnSource<?>> getColumnSources();
 
     /**
      * Turn off column grouping, and clear the groupings on all GROUPING column sources. Note that this does *not*

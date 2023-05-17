@@ -11,7 +11,6 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -19,7 +18,6 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
@@ -53,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -195,11 +192,10 @@ public class QueryTableAggregationTest {
         ColumnSource<?> cs;
 
         cs = input.getColumnSource("A");
-        ((DeferredGroupingColumnSource<?>)cs).setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "A", input.getRowSet()));
-
+        cs.setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "A", input.getRowSet()));
 
         cs = input.getColumnSource("B");
-        ((DeferredGroupingColumnSource<?>)cs).setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "B", input.getRowSet()));
+        cs.setGroupingProvider(StaticGroupingProvider.buildFrom(cs, "B", input.getRowSet()));
 
         individualStaticByTest(input, null, "A");
         individualStaticByTest(input, null, "B");

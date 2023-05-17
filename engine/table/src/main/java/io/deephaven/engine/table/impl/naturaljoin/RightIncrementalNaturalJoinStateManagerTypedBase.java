@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.RightIncrementalNaturalJoinStateManager;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
@@ -44,10 +43,10 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     // the keys for our hash entries
     protected final ChunkType[] chunkTypes;
-    protected final WritableColumnSource[] mainKeySources;
+    protected final WritableColumnSource<?>[] mainKeySources;
 
     protected ImmutableObjectArraySource<WritableRowSet> leftRowSet =
-            new ImmutableObjectArraySource(WritableRowSet.class, null);
+            new ImmutableObjectArraySource<>(WritableRowSet.class, null);
     protected ImmutableLongArraySource rightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource modifiedTrackerCookieSource = new ImmutableLongArraySource();
 
@@ -197,7 +196,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public void convertLeftGroups(int groupingSize, InitialBuildContext ibc,
-                                  ColumnSource<RowSet> rowSetSource) {
+            ColumnSource<RowSet> rowSetSource) {
         for (int ii = 0; ii < tableSize; ++ii) {
             final WritableRowSet leftRowSet = this.leftRowSet.getUnsafe(ii);
             if (leftRowSet != null) {
@@ -288,7 +287,7 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
 
     @Override
     public WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
-                                                                         ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
+            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext ibc, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirectionFromHashSlot(leftTable, exactMatch, ibc, redirectionType);
     }

@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
@@ -23,7 +22,7 @@ import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.asofjoin.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.asofjoin.ZeroKeyChunkedAjMergedListener;
-import io.deephaven.engine.table.impl.locations.GroupingBuilder;
+import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
@@ -37,7 +36,6 @@ import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -149,19 +147,20 @@ public class AsOfJoinHelper {
         final Table rightGroupingTable;
 
         if (control.useGrouping(leftTable, leftSources)) {
-            leftGroupingBuilder = ((DeferredGroupingColumnSource)leftSources[0]).getGroupingBuilder();
+            leftGroupingBuilder = leftSources[0].getGroupingBuilder();
             leftGroupingTable = leftGroupingBuilder
                     .clampToIndex(leftTable.getRowSet(), true)
                     .buildTable();
 
             if (control.useGrouping(rightTable, rightSources)) {
-                rightGroupingBuilder = ((DeferredGroupingColumnSource)rightSources[0]).getGroupingBuilder();
+                rightGroupingBuilder = rightSources[0].getGroupingBuilder();
                 rightGroupingTable = rightGroupingBuilder
                         .clampToIndex(rightTable.getRowSet(), true)
                         .buildTable();
 
                 buildLeft = leftGroupingTable.size() < rightGroupingTable.size();
-                size = buildLeft ? control.tableSize(leftGroupingTable.size()) : control.tableSize(rightGroupingTable.size());
+                size = buildLeft ? control.tableSize(leftGroupingTable.size())
+                        : control.tableSize(rightGroupingTable.size());
             } else {
                 buildLeft = true;
                 size = control.tableSize(leftGroupingTable.size());
@@ -169,7 +168,7 @@ public class AsOfJoinHelper {
                 rightGroupingBuilder = null;
             }
         } else if (control.useGrouping(rightTable, rightSources)) {
-            rightGroupingBuilder = ((DeferredGroupingColumnSource)rightSources[0]).getGroupingBuilder();
+            rightGroupingBuilder = rightSources[0].getGroupingBuilder();
             rightGroupingTable = rightGroupingBuilder
                     .clampToIndex(rightTable.getRowSet(), true)
                     .buildTable();
@@ -204,33 +203,39 @@ public class AsOfJoinHelper {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(leftTable.getRowSet(), leftSources, slots);
             } else {
                 slotCount = asOfJoinStateManager.buildFromLeftSide(leftGroupingTable.getRowSet(),
-                        new ColumnSource[]{leftGroupingTable.getColumnSource(leftGroupingBuilder.getValueColumnName())}, slots);
+                        new ColumnSource[] {
+                                leftGroupingTable.getColumnSource(leftGroupingBuilder.getValueColumnName())},
+                        slots);
             }
             if (rightGroupingTable == null) {
                 asOfJoinStateManager.probeRight(rightTable.getRowSet(), rightSources);
             } else {
                 asOfJoinStateManager.probeRight(rightGroupingTable.getRowSet(),
-                        new ColumnSource[]{rightGroupingTable.getColumnSource(rightGroupingBuilder.getValueColumnName())});
+                        new ColumnSource[] {
+                                rightGroupingTable.getColumnSource(rightGroupingBuilder.getValueColumnName())});
             }
         } else {
             if (rightGroupingTable == null) {
                 slotCount = asOfJoinStateManager.buildFromRightSide(rightTable.getRowSet(), rightSources, slots);
             } else {
                 slotCount = asOfJoinStateManager.buildFromRightSide(rightGroupingTable.getRowSet(),
-                        new ColumnSource[]{rightGroupingTable.getColumnSource(rightGroupingBuilder.getValueColumnName())}, slots);
+                        new ColumnSource[] {
+                                rightGroupingTable.getColumnSource(rightGroupingBuilder.getValueColumnName())},
+                        slots);
             }
             if (leftGroupingTable == null) {
                 asOfJoinStateManager.probeLeft(leftTable.getRowSet(), leftSources);
             } else {
                 asOfJoinStateManager.probeLeft(leftGroupingTable.getRowSet(),
-                        new ColumnSource[]{leftGroupingTable.getColumnSource(leftGroupingBuilder.getValueColumnName())});
+                        new ColumnSource[] {
+                                leftGroupingTable.getColumnSource(leftGroupingBuilder.getValueColumnName())});
             }
         }
 
         final ArrayValuesCache arrayValuesCache;
         if (leftTable.isRefreshing()) {
             if (rightGroupingTable != null) {
-                //noinspection unchecked
+                // noinspection unchecked
                 asOfJoinStateManager.convertRightGrouping(slots, slotCount,
                         rightGroupingTable.getColumnSource(rightGroupingBuilder.getIndexColumnName()));
             } else {
@@ -240,7 +245,7 @@ public class AsOfJoinHelper {
         } else {
             arrayValuesCache = null;
             if (rightGroupingTable != null) {
-                //noinspection unchecked
+                // noinspection unchecked
                 asOfJoinStateManager.convertRightGrouping(slots, slotCount,
                         rightGroupingTable.getColumnSource(rightGroupingBuilder.getIndexColumnName()));
             }
@@ -268,7 +273,9 @@ public class AsOfJoinHelper {
                     if (leftRowSet.size() != 1) {
                         throw new IllegalStateException("Groupings should have exactly one row key!");
                     }
-                    leftRowSet = leftGroupingTable.getColumnSource(leftGroupingBuilder.getIndexColumnName(), RowSet.class).get(leftRowSet.get(0));
+                    leftRowSet =
+                            leftGroupingTable.getColumnSource(leftGroupingBuilder.getIndexColumnName(), RowSet.class)
+                                    .get(leftRowSet.get(0));
                 }
 
                 if (arrayValuesCache != null) {

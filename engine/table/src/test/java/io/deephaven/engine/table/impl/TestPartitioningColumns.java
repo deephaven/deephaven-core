@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -108,6 +109,16 @@ public class TestPartitioningColumns {
 
         }
 
+        @Override
+        public @NotNull List<SortPair> getSortedColumns() {
+            return null;
+        }
+
+        @Override
+        public boolean hasDataIndexFor(@NotNull String... columns) {
+            return false;
+        }
+
         @NotNull
         @Override
         protected ColumnLocation makeColumnLocation(@NotNull String name) {
@@ -184,6 +195,11 @@ public class TestPartitioningColumns {
                 }
 
             };
+        }
+
+        @Override
+        protected @Nullable Table getDataIndexImpl(@NotNull String... columns) {
+            return null;
         }
     }
 }

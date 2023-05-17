@@ -8,23 +8,19 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
-import io.deephaven.stringset.ArrayStringSet;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.stringset.ArrayStringSet;
+import io.deephaven.stringset.StringSet;
 import io.deephaven.test.types.OutOfBandTest;
-import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.Serializable;
@@ -32,7 +28,6 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
-import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.*;
 
@@ -267,7 +262,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        assertTrue(fromDisk.getColumnSource("someLong").hasGrouping());
+        assertTrue(fromDisk.getColumnSource("someString").hasGrouping());
     }
 
     @Test
@@ -283,7 +278,7 @@ public class ParquetTableReadWriteTest {
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
         TstUtils.assertTableEquals(fromDisk, testTable);
-        assertTrue(fromDisk.getColumnSource("someLong").hasGrouping());
+        assertTrue(fromDisk.getColumnSource("someBigInt").hasGrouping());
     }
 
     private void compressionCodecTestHelper(final String codec) {

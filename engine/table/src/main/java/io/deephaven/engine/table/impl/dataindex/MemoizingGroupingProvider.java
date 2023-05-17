@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.GroupingProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,13 +21,13 @@ public abstract class MemoizingGroupingProvider implements GroupingProvider {
 
         Table getOrCompute(Supplier<Table> computator) {
             Table cachedResult = getIfValid();
-            if(cachedResult != null) {
+            if (cachedResult != null) {
                 return cachedResult;
             }
 
             synchronized (this) {
                 cachedResult = getIfValid();
-                if(cachedResult != null) {
+                if (cachedResult != null) {
                     return cachedResult;
                 }
 
@@ -38,7 +38,7 @@ public abstract class MemoizingGroupingProvider implements GroupingProvider {
         }
 
         Table getIfValid() {
-            if(reference == null) {
+            if (reference == null) {
                 return null;
             }
 
@@ -55,7 +55,7 @@ public abstract class MemoizingGroupingProvider implements GroupingProvider {
      */
     @Nullable
     protected Table memoizeGrouping(@Nullable GroupingMemoKey memoKey, @NotNull Supplier<Table> groupingFactory) {
-        if(memoKey == null) {
+        if (memoKey == null) {
             return groupingFactory.get();
         }
 

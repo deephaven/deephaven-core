@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
@@ -243,14 +244,22 @@ public class TimeTableTest extends RefreshingTableTestCase {
         tick(2000);
         Assert.assertEquals(timeTable.size(), 201);
 
-        final Map<DateTime, RowSet> dtMap = dtColumn.getValuesMapping(RowSetFactory.fromRange(100, 109));
+        StaticGroupingProvider provider =
+                StaticGroupingProvider.buildFrom(dtColumn, "Timestamp", RowSetFactory.fromRange(100, 109));
+
+        final Map<DateTime, RowSet> dtMap = provider.getGroupingBuilder().buildGroupingMap();
+
         Assert.assertEquals(dtMap.size(), 10);
         dtMap.forEach((tm, rows) -> {
             Assert.assertEquals(rows.size(), 1);
             Assert.assertEquals(dtColumn.get(rows.firstRowKey()), tm);
         });
 
-        Map<Long, RowSet> longMap = column.getValuesMapping(RowSetFactory.fromRange(100, 109));
+        provider =
+                StaticGroupingProvider.buildFrom(column, "Timestamp", RowSetFactory.fromRange(100, 109));
+
+        final Map<Long, RowSet> longMap = provider.getGroupingBuilder().buildGroupingMap();
+
         Assert.assertEquals(longMap.size(), 10);
         longMap.forEach((tm, rows) -> {
             Assert.assertEquals(rows.size(), 1);

@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -18,12 +18,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * This class provides data indexes for merged tables.  It is responsible for ensuring that
- * the provided table accounts for the relative positions of individual table locations
- * in the provided table of indices.
+ * This class provides data indexes for merged tables. It is responsible for ensuring that the provided table accounts
+ * for the relative positions of individual table locations in the provided table of indices.
  *
- * <p>Much like the {@link GroupingProvider} implementations,
- * this also attempts to defer any actual disk accesses until they are absolutely necessary.
+ * <p>
+ * Much like the {@link GroupingProvider} implementations, this also attempts to defer any actual disk accesses until
+ * they are absolutely necessary.
  *
  * @implNote This is an experimental feature, it is likely to change.
  */
@@ -79,29 +79,31 @@ public class DataIndexProviderImpl implements DataIndexProvider {
     }
 
     /**
-     * Add a single location to be tracked by the dataIndexProvider. The firstKey will be used to ensure that
-     * any retrieved dataIndexes are properly shifted into the key space for each location.
+     * Add a single location to be tracked by the dataIndexProvider. The firstKey will be used to ensure that any
+     * retrieved dataIndexes are properly shifted into the key space for each location.
      *
      * @param location the location to add
      * @param firstKey the first key in the location.
      */
     public void addLocation(TableLocation location, long firstKey) {
-        if(locations.put(location, new LocationState(location, firstKey)) != null) {
-            throw new IllegalStateException("The location " + location + " has already been added to this dataIndexProvider");
+        if (locations.put(location, new LocationState(location, firstKey)) != null) {
+            throw new IllegalStateException(
+                    "The location " + location + " has already been added to this dataIndexProvider");
         }
     }
 
-    //region DataIndexProvider impl
+    // region DataIndexProvider impl
     @Nullable
     @Override
     public Table getDataIndex(@NotNull final String... columns) {
         return QueryPerformanceRecorder.withNugget("Build Data Index [" + String.join(", ", columns) + "]", () -> {
             final Table[] locationIndexes = new Table[locations.size()];
             int tCount = 0;
-            for(final LocationState ls : locations.values()) {
+            for (final LocationState ls : locations.values()) {
                 final Table locationIndex = ls.getDataIndex(columns);
-                // If any location is missing a data index, we must bail out because we can't guarantee a consistent index.
-                if(locationIndex == null) {
+                // If any location is missing a data index, we must bail out because we can't guarantee a consistent
+                // index.
+                if (locationIndex == null) {
                     return null;
                 }
 
@@ -112,7 +114,7 @@ public class DataIndexProviderImpl implements DataIndexProvider {
             return TableTools.merge(locationIndexes)
                     .groupBy(columns)
                     .update("Index=io.deephaven.engine.table.impl.dataindex.DataIndexProviderImpl.combineIndices(Index)")
-//                    .update("Index=com.illumon.iris.db.v2.dataindex.DataIndexProviderImpl.combineIndices(Index)")
+                    // .update("Index=com.illumon.iris.db.v2.dataindex.DataIndexProviderImpl.combineIndices(Index)")
                     .updateView("FirstKey=Index.firstRowJey()")
                     .sort("FirstKey")
                     .dropColumns("FirstKey");
@@ -122,10 +124,10 @@ public class DataIndexProviderImpl implements DataIndexProvider {
     @SuppressWarnings("unused")
     public static RowSet combineIndices(ObjectVector<RowSet> arr) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        for(int ii = 0; ii< arr.size(); ii++) {
+        for (int ii = 0; ii < arr.size(); ii++) {
             builder.appendRowSequence(arr.get(ii));
         }
         return builder.build();
     }
-    //endregion
+    // endregion
 }

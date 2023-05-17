@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.time.DateTime;
 
 import io.deephaven.chunk.*;
@@ -25,7 +26,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 public abstract class ImmutableNanosBasedTimeArraySource<TIME_TYPE>
-        extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+        extends AbstractColumnSource<TIME_TYPE>
         implements WritableColumnSource<TIME_TYPE>, FillUnordered<Values>, InMemoryColumnSource, ConvertableTimeSource,
         WritableSourceWithPrepareForParallelPopulation {
 

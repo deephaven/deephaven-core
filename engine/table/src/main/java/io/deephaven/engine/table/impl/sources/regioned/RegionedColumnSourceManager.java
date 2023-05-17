@@ -7,7 +7,8 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.engine.table.impl.dataindex.DataIndexProviderImpl;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
@@ -18,7 +19,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.locations.*;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,7 +51,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     /**
      * An unmodifiable view of columnSources.
      */
-    private final Map<String, ? extends DeferredGroupingColumnSource<?>> sharedColumnSources =
+    private final Map<String, ? extends ColumnSource<?>> sharedColumnSources =
             Collections.unmodifiableMap(columnSources);
 
     /**
@@ -188,7 +188,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public final Map<String, ? extends DeferredGroupingColumnSource<?>> getColumnSources() {
+    public final Map<String, ? extends ColumnSource<?>> getColumnSources() {
         return sharedColumnSources;
     }
 
@@ -200,7 +200,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         isGroupingEnabled = false;
         for (ColumnDefinition<?> columnDefinition : columnDefinitions) {
             if (columnDefinition.isGrouping()) {
-                DeferredGroupingColumnSource<?> columnSource = getColumnSources().get(columnDefinition.getName());
+                ColumnSource<?> columnSource = getColumnSources().get(columnDefinition.getName());
                 columnSource.setGroupingProvider(null);
             }
         }
@@ -434,7 +434,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
             GroupingProvider groupingProvider = source.getGroupingProvider();
             if (groupingProvider == null) {
-                groupingProvider = GroupingProvider.makeGroupingProvider(definition, source, log);
+                groupingProvider = GroupingProviderFactory.makeGroupingProvider(definition, source, log);
                 // noinspection unchecked
                 source.setGroupingProvider(groupingProvider);
             }

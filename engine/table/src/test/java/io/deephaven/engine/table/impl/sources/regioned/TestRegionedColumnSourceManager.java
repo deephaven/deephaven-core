@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -69,9 +71,9 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
     private TableLocation duplicateTableLocation0A;
 
-    private Map<String, RowSet> partitioningColumnGrouping;
+    private PartitionColumnGroupingProvider partitioningColumnGroupingProvider;
     private KeyRangeGroupingProvider groupingColumnGroupingProvider;
-
+    private KeyRangeGroupingProvider normalColumnGroupingProvider;
     private TableLocationUpdateSubscriptionBuffer[] subscriptionBuffers;
     private long[] lastSizes;
     private int regionCount;
@@ -202,21 +204,22 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void expectPartitioningColumnInitialGrouping() {
-        partitioningColumnGrouping = null;
+        partitioningColumnGroupingProvider = null;
         checking(new Expectations() {
             {
-                allowing(partitioningColumnSource).getGroupToRange();
+                allowing(partitioningColumnSource).getGroupingProvider();
                 will(new CustomAction("Return previously set partitioning column grouping") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        return partitioningColumnGrouping;
+                        return partitioningColumnGroupingProvider;
                     }
                 });
-                oneOf(partitioningColumnSource).setGroupToRange(with(any(Map.class)));
-                will(new CustomAction("Capture partitioning column grouping") {
+                oneOf(partitioningColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
+                will(new CustomAction("Capture partitioning column grouping provider") {
                     @Override
                     public Object invoke(Invocation invocation) {
-                        partitioningColumnGrouping = (Map) invocation.getParameter(0);
+                        partitioningColumnGroupingProvider =
+                                (PartitionColumnGroupingProvider) invocation.getParameter(0);
                         return null;
                     }
                 });
@@ -235,7 +238,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                         return groupingColumnGroupingProvider;
                     }
                 });
-                oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProviderBase.class)));
+                oneOf(groupingColumnSource).setGroupingProvider(with(any(GroupingProvider.class)));
                 will(new CustomAction("Capture grouping column grouping provider") {
                     @Override
                     public Object invoke(Invocation invocation) {
@@ -337,9 +340,11 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private void checkIndexes(@NotNull final RowSet addedRowSet) {
         assertIsSatisfied();
         assertRowSetEquals(expectedAddedRowSet, addedRowSet);
-        if (partitioningColumnGrouping == null) {
+        if (partitioningColumnGroupingProvider == null) {
             assertTrue(expectedPartitioningColumnGrouping.isEmpty());
         } else {
+            final Map<String, RowSet> partitioningColumnGrouping =
+                    partitioningColumnGroupingProvider.getGroupingBuilder().buildGroupingMap();
             assertEquals(expectedPartitioningColumnGrouping.keySet(), partitioningColumnGrouping.keySet());
             expectedPartitioningColumnGrouping
                     .forEach((final String columnPartition, final RowSet expectedGrouping) -> {
@@ -434,7 +439,6 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(groupingColumnSource).setGroupingProvider(null);
-                oneOf(groupingColumnSource).setGroupToRange(null);
             }
         });
         SUT.disableGrouping();

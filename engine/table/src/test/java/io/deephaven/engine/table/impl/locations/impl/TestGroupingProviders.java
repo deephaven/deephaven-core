@@ -165,7 +165,7 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
-        TestCase.assertEquals(missingGroups, actual.getColumnSource("Sym").getGroupToRange() == null);
+        TestCase.assertTrue(actual.getColumnSource("Sym").hasGrouping());
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }

@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -11,7 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
-import io.deephaven.engine.table.impl.locations.GroupingBuilder;
+import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.impl.naturaljoin.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.attributes.Values;
@@ -154,19 +153,21 @@ class NaturalJoinHelper {
 
                     if (bucketingContext.useLeftGrouping) {
                         if (leftTable.isRefreshing()) {
-                            throw new UnsupportedOperationException("Grouping information is not supported when tables are refreshing!");
+                            throw new UnsupportedOperationException(
+                                    "Grouping information is not supported when tables are refreshing!");
                         }
 
-                        final GroupingBuilder groupingBuilder = ((DeferredGroupingColumnSource)bucketingContext.leftSources[0]).getGroupingBuilder();
+                        final GroupingBuilder groupingBuilder = bucketingContext.leftSources[0].getGroupingBuilder();
                         final Table leftTableGrouped = groupingBuilder
                                 .clampToIndex(leftTable.getRowSet(), true)
                                 .buildTable()
                                 .flatten();
 
                         groupingSize = leftTableGrouped.intSize();
-                        //noinspection unchecked
+                        // noinspection unchecked
                         rowSetSource = leftTableGrouped.getColumnSource(groupingBuilder.getIndexColumnName());
-                        final ColumnSource<?>[] groupedSourceArray = {leftTableGrouped.getColumnSource(groupingBuilder.getValueColumnName())};
+                        final ColumnSource<?>[] groupedSourceArray =
+                                {leftTableGrouped.getColumnSource(groupingBuilder.getValueColumnName())};
                         jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, initialBuildContext);
                         jsm.convertLeftGroups(leftTableGrouped.intSize(), initialBuildContext, rowSetSource);
                     } else {
@@ -180,9 +181,11 @@ class NaturalJoinHelper {
                     jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
 
                     if (bucketingContext.useLeftGrouping) {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource, groupingSize, exactMatch, initialBuildContext, control.getRedirectionType(leftTable));
+                        rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
+                                groupingSize, exactMatch, initialBuildContext, control.getRedirectionType(leftTable));
                     } else {
-                        rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, initialBuildContext, control.getRedirectionType(leftTable));
+                        rowRedirection = jsm.buildRowRedirectionFromHashSlot(leftTable, exactMatch, initialBuildContext,
+                                control.getRedirectionType(leftTable));
                     }
 
                     final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, rowRedirection, true);
@@ -207,7 +210,7 @@ class NaturalJoinHelper {
                                 "Grouping information is not supported when tables are refreshing!");
                     }
 
-                    final GroupingBuilder groupingBuilder = ((DeferredGroupingColumnSource)bucketingContext.leftSources[0]).getGroupingBuilder();
+                    final GroupingBuilder groupingBuilder = bucketingContext.leftSources[0].getGroupingBuilder();
                     final Table leftTableGrouped = groupingBuilder
                             .clampToIndex(leftTable.getRowSet(), true)
                             .buildTable()
@@ -215,9 +218,11 @@ class NaturalJoinHelper {
 
                     final int groupingSize = leftTableGrouped.intSize();
 
-                    //noinspection unchecked
-                    final ColumnSource<RowSet> rowSetSource = leftTableGrouped.getColumnSource(groupingBuilder.getIndexColumnName());
-                    final ColumnSource<?>[] groupedSourceArray = {leftTableGrouped.getColumnSource(groupingBuilder.getValueColumnName())};
+                    // noinspection unchecked
+                    final ColumnSource<RowSet> rowSetSource =
+                            leftTableGrouped.getColumnSource(groupingBuilder.getIndexColumnName());
+                    final ColumnSource<?>[] groupedSourceArray =
+                            {leftTableGrouped.getColumnSource(groupingBuilder.getValueColumnName())};
                     final StaticHashedNaturalJoinStateManager jsm =
                             TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class, groupedSourceArray,
                                     groupedSourceArray,
@@ -227,7 +232,8 @@ class NaturalJoinHelper {
                     final IntegerArraySource leftHashSlots = new IntegerArraySource();
                     jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
                     jsm.decorateWithRightSide(rightTable, bucketingContext.rightSources);
-                    rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(), leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
+                    rowRedirection = jsm.buildGroupedRowRedirection(leftTable, exactMatch, leftTableGrouped.size(),
+                            leftHashSlots, rowSetSource, control.getRedirectionType(leftTable));
                 } else if (control.buildLeft(leftTable, rightTable)) {
                     final StaticHashedNaturalJoinStateManager jsm =
                             TypedHasherFactory.make(StaticNaturalJoinStateManagerTypedBase.class,

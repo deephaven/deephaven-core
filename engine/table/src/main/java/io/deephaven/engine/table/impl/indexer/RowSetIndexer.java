@@ -15,9 +15,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
-import io.deephaven.engine.table.impl.locations.GroupingBuilder;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
-import io.deephaven.tablelogger.Row;
+import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.tuple.EmptyTuple;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
@@ -47,17 +45,17 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
      * These mappings last forever, and only include column sources that are immutable. Whenever the indexed RowSet is
      * changed, we must clear the mappings.
      */
-    private WeakHashMap<List<ColumnSource>, MappingInfo> mappings = null;
+    private WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings = null;
 
     /**
      * These mappings do not survive past a single LogicalClock tick or any indexed RowSet changes.
      */
-    private WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings = null;
+    private WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralMappings = null;
 
     /**
      * These prev mappings do not survive past a single LogicalClock tick or any indexed RowSet changes.
      */
-    private WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings = null;
+    private WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralPrevMappings = null;
 
     private static class MappingInfo {
 
@@ -89,18 +87,18 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         }
     }
 
-    public boolean hasGrouping(final ColumnSource... keyColumns) {
+    public boolean hasGrouping(final ColumnSource<?>... keyColumns) {
         if (keyColumns.length == 0) {
             return true;
         }
-        final List<ColumnSource> sourcesKey = Arrays.asList(keyColumns);
+        final List<ColumnSource<?>> sourcesKey = Arrays.asList(keyColumns);
         final Map<Object, RowSet> groupingCandidate = lookupMapping(sourcesKey);
         return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].hasGrouping();
     }
 
     public Map<Object, RowSet> getGrouping(final TupleSource tupleSource) {
         // noinspection unchecked
-        final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
+        final List<ColumnSource<?>> sourcesKey = tupleSource.getColumnSources();
         final Map<Object, RowSet> lookupResult = lookupMapping(sourcesKey);
         if (lookupResult != null) {
             return lookupResult;
@@ -126,9 +124,9 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return result;
     }
 
-    public Map<Object, RowSet> getPrevGrouping(final TupleSource tupleSource) {
+    public Map<Object, RowSet> getPrevGrouping(final TupleSource<?> tupleSource) {
         // noinspection unchecked
-        final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
+        final List<ColumnSource<?>> sourcesKey = tupleSource.getColumnSources();
 
         Map<Object, RowSet> result = lookupPrevMapping(sourcesKey);
         if (result != null) {
@@ -165,11 +163,11 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return result;
     }
 
-    public void copyImmutableGroupings(final TupleSource source, final TupleSource dest) {
+    public void copyImmutableGroupings(final TupleSource<?> source, final TupleSource<?> dest) {
         // noinspection unchecked
-        final List<ColumnSource> sourcesKey = source.getColumnSources();
+        final List<ColumnSource<?>> sourcesKey = source.getColumnSources();
         // noinspection unchecked
-        final List<ColumnSource> destKey = dest.getColumnSources();
+        final List<ColumnSource<?>> destKey = dest.getColumnSources();
 
         // copy immutable groupings
         if (mappings != null) {
@@ -217,11 +215,11 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     private static Map<Object, RowSet> getGrouping(
             final RowSet rowSetRowSet,
             final UnaryOperator<RowSet> rowSetOp,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-            final TupleSource tupleSource) {
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralMappings,
+            final TupleSource<?> tupleSource) {
         // noinspection unchecked
-        final List<ColumnSource> sourcesKey = tupleSource.getColumnSources();
+        final List<ColumnSource<?>> sourcesKey = tupleSource.getColumnSources();
         final Map<Object, RowSet> lookupResult = lookupMapping(mappings, ephemeralMappings, sourcesKey);
         if (lookupResult != null) {
             return lookupResult;
@@ -233,14 +231,14 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return result;
     }
 
-    private Map<Object, RowSet> lookupMapping(List<ColumnSource> columnSourceKey) {
+    private Map<Object, RowSet> lookupMapping(List<ColumnSource<?>> columnSourceKey) {
         return lookupMapping(mappings, ephemeralMappings, columnSourceKey);
     }
 
     private static Map<Object, RowSet> lookupMapping(
-            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-            List<ColumnSource> columnSourceKey) {
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralMappings,
+            List<ColumnSource<?>> columnSourceKey) {
         final Map<Object, RowSet> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null) {
             return immutableMapping;
@@ -251,16 +249,16 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     private static void collectGrouping(
             final RowSet rowSetRowSet,
             final UnaryOperator<RowSet> rowSetOp,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralMappings,
             final BiConsumer<Object, RowSet> resultCollector,
             final TupleSource tupleSource,
-            final List<ColumnSource> keyColumns) {
+            final List<ColumnSource<?>> keyColumns) {
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, rowSetRowSet.copy());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).hasGrouping()) {
             @SuppressWarnings("unchecked")
-            final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(0)).getGroupingBuilder();
+            final GroupingBuilder builder = keyColumns.get(0).getGroupingBuilder();
             final Map<Object, RowSet> groupings = builder.buildGroupingMap();
             groupings.forEach((key, value) -> {
                 final RowSet resultIndex = rowSetOp.apply(value);
@@ -297,18 +295,18 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     private static void generatePartialGrouping(
             final RowSet rowSetRowSet,
             final UnaryOperator<RowSet> rowSetOp,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            final WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralMappings,
             final BiConsumer<Object, RowSet> resultCollector,
-            final TupleSource tupleSource,
-            final List<ColumnSource> keyColumns) {
+            final TupleSource<?> tupleSource,
+            final List<ColumnSource<?>> keyColumns) {
         // we can generate the grouping partially from our constituents
-        final ColumnSource[] groupedKeyColumns =
+        final ColumnSource<?>[] groupedKeyColumns =
                 keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
-        final ColumnSource[] notGroupedKeyColumns =
+        final ColumnSource<?>[] notGroupedKeyColumns =
                 keyColumns.stream().filter(ColumnSource::hasGrouping).toArray(ColumnSource[]::new);
 
-        final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
+        final TupleSource<?> groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, RowSet> groupedColumnsGrouping =
                 getGrouping(rowSetRowSet, rowSetOp, mappings, ephemeralMappings, groupedTupleSource);
         generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
@@ -317,10 +315,10 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     }
 
     private static void generatePartialGroupingSecondHalf(
-            final ColumnSource[] groupedKeyColumns, final ColumnSource[] notGroupedKeyColumns,
+            final ColumnSource<?>[] groupedKeyColumns, final ColumnSource<?>[] notGroupedKeyColumns,
             final TupleSource groupedTupleSource, final Map<Object, RowSet> groupedColumnsGrouping,
             final BiConsumer<Object, RowSet> resultCollector, final TupleSource tupleSource,
-            final List<ColumnSource> keyColumns) {
+            final List<ColumnSource<?>> keyColumns) {
         final Map<Object, RowSetBuilderSequential> resultBuilder = new LinkedHashMap<>();
 
         final int[] groupedKeysIndices = new int[groupedKeyColumns.length];
@@ -454,7 +452,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         if (keyColumns.isEmpty()) {
             resultCollector.accept(EmptyTuple.INSTANCE, rowSet.copy());
         } else if (keyColumns.size() == 1 && keyColumns.get(0).hasGrouping()) {
-            final GroupingBuilder builder = ((DeferredGroupingColumnSource<?>)keyColumns.get(0)).getGroupingBuilder();
+            final GroupingBuilder builder = keyColumns.get(0).getGroupingBuilder();
             @SuppressWarnings("unchecked")
             final Map<Object, RowSet> groupings = builder.clampToIndex(rowSet, true)
                     .matching(true, false, keys.toArray())
@@ -497,20 +495,20 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     private static void generateGrouping(
             final UnaryOperator<RowSet> rowSetOp,
             final BiConsumer<Object, RowSet> resultCollector,
-            final TupleSource tupleSource,
-            final List<ColumnSource> keyColumns,
+            final TupleSource<?> tupleSource,
+            final List<ColumnSource<?>> keyColumns,
             final int position,
             final Object[] partialValues,
             final RowSet partiallyIntersectedRowSet) {
-        final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(position)).getGroupingBuilder();
+        final GroupingBuilder builder = keyColumns.get(position).getGroupingBuilder();
         // This will not be null because callees to this method have already checked hasGrouping()
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         final Table groupToRange = builder.buildTable();
         processWithGroupingChunk(groupToRange,
                 builder.getIndexColumnName(),
                 builder.getValueColumnName(),
                 (indexChunk, keyChunk, ok) -> {
-                    for(int ii = 0; ii < ok.size(); ii++) {
+                    for (int ii = 0; ii < ok.size(); ii++) {
                         partialValues[position] = keyChunk.get(ii);
 
                         final RowSet groupIndex = indexChunk.get(ii);
@@ -520,9 +518,11 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
                         if (subIndex.isNonempty()) {
                             if (position == keyColumns.size() - 1) {
                                 // we're at the very last bit, so we should start shoving our tuples into the result map
-                                resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues), subIndex);
+                                resultCollector.accept(tupleSource.createTupleFromReinterpretedValues(partialValues),
+                                        subIndex);
                             } else {
-                                generateGrouping(rowSetOp, resultCollector, tupleSource, keyColumns, position + 1, partialValues, subIndex);
+                                generateGrouping(rowSetOp, resultCollector, tupleSource, keyColumns, position + 1,
+                                        partialValues, subIndex);
                             }
                         }
                     }
@@ -558,15 +558,15 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             });
         }
 
-        final GroupingBuilder builder = ((DeferredGroupingColumnSource)keyColumns.get(position)).getGroupingBuilder();
+        final GroupingBuilder builder = keyColumns.get(position).getGroupingBuilder();
         final Table groupToRange = builder.buildTable();
 
-        final Object [] pruningKey = Arrays.copyOf(partialValues, position + 1);
+        final Object[] pruningKey = Arrays.copyOf(partialValues, position + 1);
         processWithGroupingChunk(groupToRange,
                 builder.getIndexColumnName(),
                 builder.getValueColumnName(),
                 (indexChunk, keyChunk, ok) -> {
-                    for(int ii = 0; ii < ok.size(); ii++) {
+                    for (int ii = 0; ii < ok.size(); ii++) {
                         final Object key = keyChunk.get(ii);
                         pruningKey[position] = partialValues[position] = key;
 
@@ -591,14 +591,17 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
                         }
 
                         final RowSet groupRowSet = indexChunk.get(ii);
-                        final WritableRowSet subRowSet = (position == 0) ? rowSet.intersect(groupRowSet) : partiallyIntersectedRowSet.intersect(groupRowSet);
+                        final WritableRowSet subRowSet = (position == 0) ? rowSet.intersect(groupRowSet)
+                                : partiallyIntersectedRowSet.intersect(groupRowSet);
 
                         if (subRowSet.isNonempty()) {
                             if (finalPosition) {
-                                // we're at the very last bit, so we should start shoving our smart keys into the result map
+                                // we're at the very last bit, so we should start shoving our smart keys into the result
+                                // map
                                 resultCollector.accept(tuple, subRowSet);
                             } else {
-                                generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues, subRowSet, keyRestriction);
+                                generateGrouping(resultCollector, tupleSource, keyColumns, position + 1, partialValues,
+                                        subRowSet, keyRestriction);
                             }
                         }
                     }
@@ -607,47 +610,50 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
 
     @FunctionalInterface
     private interface GroupChunkConsumer {
-        void accept(ObjectChunk<RowSet, ? extends Values> indexChunk, ObjectChunk<?, ? extends Values> keyChunk, RowSequence ok);
+        void accept(ObjectChunk<RowSet, ? extends Values> indexChunk, ObjectChunk<?, ? extends Values> keyChunk,
+                RowSequence ok);
     }
 
     /**
-     * Execute the supplied consumer on the entire grouping table.  Be careful about internal state in the consumer,
-     * it will be invoked once per chunk of input.
+     * Execute the supplied consumer on the entire grouping table. Be careful about internal state in the consumer, it
+     * will be invoked once per chunk of input.
      *
      * @param groupingTable the grouping table
      * @param indexColumnName the name of the index column
      * @param groupingConsumer the consumer to process each chunk.
      */
     private static void processWithGroupingChunk(final Table groupingTable,
-                                                 String indexColumnName,
-                                                 String keyColumnname,
-                                                 GroupChunkConsumer groupingConsumer) {
-        //noinspection unchecked
+            String indexColumnName,
+            String keyColumnname,
+            GroupChunkConsumer groupingConsumer) {
+        // noinspection unchecked
         final ColumnSource<RowSet> indexSource = groupingTable.getColumnSource(indexColumnName);
         final ColumnSource<?> keySource = groupingTable.getColumnSource(keyColumnname);
         final int chunkSize = Math.min(CHUNK_SIZE, groupingTable.intSize());
-        try(final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
-            final ChunkSource.GetContext keyContext = keySource.makeGetContext(chunkSize);
-            final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(ChunkType.fromElementType(keySource.getType()), chunkSize);
-            final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
+        try (final ChunkSource.GetContext indexContext = indexSource.makeGetContext(chunkSize);
+                final ChunkSource.GetContext keyContext = keySource.makeGetContext(chunkSize);
+                final ChunkBoxer.BoxerKernel boxer =
+                        ChunkBoxer.getBoxer(ChunkType.fromElementType(keySource.getType()), chunkSize);
+                final RowSequence.Iterator okIt = groupingTable.getRowSet().getRowSequenceIterator()) {
 
             while (okIt.hasMore()) {
                 final RowSequence nextKeys = okIt.getNextRowSequenceWithLength(chunkSize);
                 final ObjectChunk<?, ? extends Values> keyChunk = boxer.box(keySource.getChunk(keyContext, nextKeys));
-                final ObjectChunk<RowSet, ? extends Values> indexChunk = indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
+                final ObjectChunk<RowSet, ? extends Values> indexChunk =
+                        indexSource.getChunk(indexContext, nextKeys).asObjectChunk();
                 groupingConsumer.accept(indexChunk, keyChunk, nextKeys);
             }
         }
     }
 
-    private Map<Object, RowSet> lookupPrevMapping(List<ColumnSource> columnSourceKey) {
+    private Map<Object, RowSet> lookupPrevMapping(List<ColumnSource<?>> columnSourceKey) {
         return lookupPrevMapping(mappings, ephemeralPrevMappings, columnSourceKey);
     }
 
     private static Map<Object, RowSet> lookupPrevMapping(
-            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings,
-            List<ColumnSource> columnSourceKey) {
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> ephemeralPrevMappings,
+            List<ColumnSource<?>> columnSourceKey) {
         final Map<Object, RowSet> immutableMapping = lookupImmutableMapping(mappings, columnSourceKey);
         if (immutableMapping != null) {
             return immutableMapping;
@@ -656,8 +662,8 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
     }
 
     private static Map<Object, RowSet> lookupImmutableMapping(
-            WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
-            List<ColumnSource> columnSourceKey) {
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> mappings,
+            List<ColumnSource<?>> columnSourceKey) {
         if (mappings == null) {
             return null;
         }
@@ -668,8 +674,8 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return mappingInfo.mapping;
     }
 
-    private static Map<Object, RowSet> lookupEphemeralMapping(List<ColumnSource> columnSourceKey,
-                                                              WeakHashMap<List<ColumnSource>, MappingInfo> groupingMap) {
+    private static Map<Object, RowSet> lookupEphemeralMapping(List<ColumnSource<?>> columnSourceKey,
+            WeakHashMap<List<ColumnSource<?>>, MappingInfo> groupingMap) {
         if (groupingMap == null) {
             return null;
         }
@@ -687,7 +693,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         return resultInfo.mapping;
     }
 
-    private boolean areColumnsImmutable(List<ColumnSource> sourcesKey) {
+    private boolean areColumnsImmutable(List<ColumnSource<?>> sourcesKey) {
         return sourcesKey.stream().allMatch(ColumnSource::isImmutable);
     }
 
@@ -705,4 +711,5 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
         if (ephemeralPrevMappings != null) {
             ephemeralPrevMappings.clear();
         }
-    }}
+    }
+}

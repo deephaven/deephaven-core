@@ -60,8 +60,8 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
      * @return {@code this}, with the appropriate cast applied
      */
     default <CL extends ColumnLocation> CL cast() {
-        //noinspection unchecked
-        return (CL)this;
+        // noinspection unchecked
+        return (CL) this;
     }
 
     // ------------------------------------------------------------------------------------------------------------------

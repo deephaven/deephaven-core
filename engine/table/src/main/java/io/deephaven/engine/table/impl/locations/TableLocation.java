@@ -84,6 +84,7 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
 
     /**
      * Get an ordered list of columns this location is sorted by.
+     * 
      * @return a non-null ordered list of {@link SortPair}s
      */
     @NotNull
@@ -91,13 +92,14 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
 
     /**
      * Check if this location has a data index for the specified columns.
+     * 
      * @param columns the set of columns to check for.
      * @return true if the table has a Data Index for the specified columns
      */
     boolean hasDataIndexFor(@NotNull String... columns);
 
     /**
-     * Get the data index table for the specified set of columns.  Note that the order of columns does not matter here.
+     * Get the data index table for the specified set of columns. Note that the order of columns does not matter here.
      *
      * @param columns the key columns for the index
      * @return the index table or null if one does not exist.
@@ -121,7 +123,8 @@ public interface TableLocation extends NamedImplementation, LogOutputAppendable,
      */
     @NotNull
     @FinalDefault
-    default <CL extends ColumnLocation> CL getColumnLocation(@NotNull final CharSequence name, @SuppressWarnings("unused") Class<CL> locationType) {
+    default <CL extends ColumnLocation> CL getColumnLocation(@NotNull final CharSequence name,
+            @SuppressWarnings("unused") Class<CL> locationType) {
         return getColumnLocation(name).cast();
     }
 

@@ -61,7 +61,7 @@ import java.util.*;
 
 import static io.deephaven.api.agg.Aggregation.AggFirst;
 import static io.deephaven.api.agg.Aggregation.AggLast;
-import static io.deephaven.engine.table.impl.locations.GroupingProvider.INDEX_COL_NAME;
+import static io.deephaven.engine.table.GroupingProvider.INDEX_COL_NAME;
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 
@@ -73,7 +73,7 @@ public class ParquetTools {
     public static final String BEGIN_POS = "dh_begin_pos";
     public static final String END_POS = "dh_end_pos";
     public static final String GROUPING_KEY = "dh_key";
-    
+
     private ParquetTools() {}
 
     private static final Logger log = LoggerFactory.getLogger(ParquetTools.class);
@@ -716,8 +716,8 @@ public class ParquetTools {
     // region Grouping
 
     /**
-     * Read a Data Index (or grouping) table from disk.  If {@link TableInfo} are provided, it will be used to aid
-     * in locating the table.
+     * Read a Data Index (or grouping) table from disk. If {@link TableInfo} are provided, it will be used to aid in
+     * locating the table.
      *
      * @param tableFile The path to the base table
      * @param info An optional {@link TableInfo} object to assist in locating files
@@ -727,38 +727,39 @@ public class ParquetTools {
      */
     @Nullable
     public static Table readDataIndexTable(@NotNull final File tableFile,
-                                           @Nullable TableInfo info,
-                                           @NotNull final String... keyColumnNames) {
+            @Nullable TableInfo info,
+            @NotNull final String... keyColumnNames) {
         // There are a couple of unfortunate variations here
         // 1: There is 1 column and it is grouping
-        //    - These are written in parquet format
+        // - These are written in parquet format
         // 2; There is 1 column and it is a data index
-        //    - These are written in Deephaven format
+        // - These are written in Deephaven format
         // 3: There are > 1 columns
-        //    - These are written in Deephaven format.
+        // - These are written in Deephaven format.
 
-//        final SourceTableInstructions sourceTableInstructions = SourceTableInstructions.builder()
-//                .groupingDisabled(true)
-//                .build();
+        // final SourceTableInstructions sourceTableInstructions = SourceTableInstructions.builder()
+        // .groupingDisabled(true)
+        // .build();
 
         final Path parentPath = tableFile.toPath().getParent();
         if (info != null) {
             // If we've got metadata, we can try to use that to locate an index or grouping
-            if(keyColumnNames.length == 1) {
+            if (keyColumnNames.length == 1) {
                 final GroupingColumnInfo groupingColumnInfo = info.groupingColumnMap().get(keyColumnNames[0]);
                 final String groupingFileName;
                 if (groupingColumnInfo != null) {
                     try {
                         groupingFileName = parentPath.resolve(groupingColumnInfo.groupingTablePath()).toString();
-//                        final Table indexTable = ParquetTools.readTable(groupingFileName, ParquetInstructions.EMPTY, sourceTableInstructions);
+                        // final Table indexTable = ParquetTools.readTable(groupingFileName, ParquetInstructions.EMPTY,
+                        // sourceTableInstructions);
                         final Table indexTable = ParquetTools.readTable(groupingFileName, ParquetInstructions.EMPTY);
                         if (!indexTable.isEmpty() && indexTable.hasColumns(GROUPING_KEY, BEGIN_POS, END_POS)) {
-                            // This table will be written like the older style grouping format of Key, start, end so we have to convert
+                            // This table will be written like the older style grouping format of Key, start, end so we
+                            // have to convert
                             return indexTable.select(keyColumnNames[0] + "=" + GROUPING_KEY,
-                                    INDEX_COL_NAME + "=  com.illumon.iris.db.v2.utils.Index.CURRENT_FACTORY.getIndexByRange("
+                                    INDEX_COL_NAME + "=io.deephaven.engine.rowset.RowSetFactory.fromRange("
                                             + BEGIN_POS + ", " + END_POS + "-1)");
                         }
-
                         // There's a table here, but it doesn't look like a grouping table.
                         return null;
                     } catch (final TableDataException ignored) {
@@ -768,7 +769,8 @@ public class ParquetTools {
                 }
             }
 
-            // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a DataIndex.
+            // Either there are more than 1 key columns, or there was no grouping info, so lets see if there was a
+            // DataIndex.
             try {
                 final DataIndexInfo di = info.dataIndexes().stream()
                         .filter(item -> item.matchesColumns(keyColumnNames))
@@ -787,7 +789,8 @@ public class ParquetTools {
 
         // There's no information in the metadata, or we have no metadata, so try the default file.
         try {
-            return readTable(computeDataIndexTableName(tableFile.toString(), keyColumnNames), ParquetInstructions.EMPTY);
+            return readTable(computeDataIndexTableName(tableFile.toString(), keyColumnNames),
+                    ParquetInstructions.EMPTY);
         } catch (final TableDataException ignored) {
             // Oh well, we tried as reasonably hardly.
             return null;
@@ -795,8 +798,8 @@ public class ParquetTools {
     }
 
     /**
-     * Write out the Data Index table for the specified columns.  This will place the Data  Index in a table
-     * adjacent to the data table in a directory titled "Index-&lt;Column names&gt;".
+     * Write out the Data Index table for the specified columns. This will place the Data Index in a table adjacent to
+     * the data table in a directory titled "Index-&lt;Column names&gt;".
      *
      * @param parentFile the full path of the parent file
      * @param indexTable the table containing the index
@@ -804,10 +807,10 @@ public class ParquetTools {
      * @param keyColumnNames the ordered names of key columns
      */
     public static String writeDataIndexTable(@NotNull final String parentFile,
-                                             @NotNull final Table indexTable,
-                                             @NotNull final String indexColumnName,
-                                             @Nullable final CompressionCodecName compressionCodec,
-                                             @NotNull final String... keyColumnNames) throws SchemaMappingException, IOException {
+            @NotNull final Table indexTable,
+            @NotNull final String indexColumnName,
+            @Nullable final CompressionCodecName compressionCodec,
+            @NotNull final String... keyColumnNames) throws SchemaMappingException, IOException {
         Assert.neqNull(parentFile, "destinationDir");
         Assert.neqNull(indexTable, "indexTable");
         Assert.neqNull(indexColumnName, "indexColumnName");
@@ -815,12 +818,12 @@ public class ParquetTools {
         Table tableToWrite = indexTable;
 
         // Ensure that the index column is consistently named
-        if(!INDEX_COL_NAME.equals(indexColumnName)) {
+        if (!INDEX_COL_NAME.equals(indexColumnName)) {
             tableToWrite = tableToWrite.renameColumns(new MatchPair(INDEX_COL_NAME, indexColumnName));
         }
 
         // If we know we're sorted, Great!
-        if(!SortedColumnsAttribute.isSortedBy(tableToWrite, keyColumnNames[0], SortingOrder.Ascending)) {
+        if (!SortedColumnsAttribute.isSortedBy(tableToWrite, keyColumnNames[0], SortingOrder.Ascending)) {
             // Otherwise, ensure that the table is sorted ascending
             tableToWrite = tableToWrite.sort(keyColumnNames);
         }
@@ -829,7 +832,7 @@ public class ParquetTools {
         final ParquetInstructions.Builder instructionsBuilder = ParquetInstructions.builder()
                 .addColumnCodec(INDEX_COL_NAME, RowSetCodec.class.getName());
 
-        if(compressionCodec != null) {
+        if (compressionCodec != null) {
             instructionsBuilder.setCompressionCodecName(compressionCodec.name());
         }
 
@@ -848,35 +851,40 @@ public class ParquetTools {
 
     @NotNull
     public static <T> String writeGroupingTable(@NotNull ParquetInstructions instructions,
-                                                final ColumnDefinition<T> groupingColumnDef,
-                                                String fullOutputFilePath,
-                                                Map<T, RowSet> columnGrouping) throws SchemaMappingException, IOException {
+            final ColumnDefinition<T> groupingColumnDef,
+            String fullOutputFilePath,
+            Map<T, RowSet> columnGrouping) throws SchemaMappingException, IOException {
         final Table groupingTable = computeGroupingTable(groupingColumnDef, columnGrouping);
         final String groupingTablePath = computeDataIndexTableName(fullOutputFilePath, groupingColumnDef.getName());
-        ParquetTableWriter.write(groupingTable, groupingTable.getDefinition(), instructions, groupingTablePath, Collections.emptyMap());
+        ParquetTableWriter.write(groupingTable, groupingTable.getDefinition(), instructions, groupingTablePath,
+                Collections.emptyMap());
         return groupingTablePath;
     }
 
     private static <T> Table computeGroupingTable(@NotNull final ColumnDefinition<T> groupingColDef,
-                                                  @NotNull final Map<T, RowSet> grouping) {
+            @NotNull final Map<T, RowSet> grouping) {
         final Class<T> keyType = groupingColDef.getDataType();
-        //noinspection rawtypes
+        // noinspection rawtypes
         final Map<String, ColumnSource<?>> sourceMap = new LinkedHashMap<>();
 
-        if(grouping.values().stream().anyMatch(index -> !index.isContiguous())) {
+        if (grouping.values().stream().anyMatch(index -> !index.isContiguous())) {
             throw new IllegalArgumentException("Parquet tables do not support non-contiguous groupings");
         }
 
-        final WritableColumnSource<T> keySource = ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), keyType);
-        final WritableColumnSource<Long> beginSource = ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
-        final WritableColumnSource<Long> endSource = ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
+        final WritableColumnSource<T> keySource =
+                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), keyType);
+        final WritableColumnSource<Long> beginSource =
+                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
+        final WritableColumnSource<Long> endSource =
+                ArrayBackedColumnSource.getMemoryColumnSource(grouping.size(), long.class);
 
         long pos = 0;
-        for(final Map.Entry<T, RowSet> group : grouping.entrySet()) {
+        for (final Map.Entry<T, RowSet> group : grouping.entrySet()) {
             keySource.set(pos, group.getKey());
             beginSource.set(pos, group.getValue().firstRowKey());
 
-            // Note:  There is a +1 here because the old grouping code stored ranges in [first, last) (last exclusive) format, but the new one gives you indices
+            // Note: There is a +1 here because the old grouping code stored ranges in [first, last) (last exclusive)
+            // format, but the new one gives you indices
             // so the last key in the index is INCLUSIVE, so we must add 1 here to be backwards compatible
             endSource.set(pos++, group.getValue().lastRowKey() + 1);
         }
@@ -891,14 +899,14 @@ public class ParquetTools {
 
     private static Table computeGroupingTable(@NotNull final Table rawTableToGroup, @NotNull final String columnName) {
         Table tableToGroup = rawTableToGroup.coalesce();
-        if(tableToGroup instanceof QueryTable && tableToGroup.isRefreshing()) {
-            tableToGroup = ((QueryTable)tableToGroup).silent();
+        if (tableToGroup instanceof QueryTable && tableToGroup.isRefreshing()) {
+            tableToGroup = ((QueryTable) tableToGroup).silent();
         }
 
         final Table grouped = tableToGroup
                 .view(GROUPING_KEY + "=" + columnName,
                         BEGIN_POS + "= ii", // Range start, inclusive
-                        END_POS   + "= ii+1") // Range end, exclusive
+                        END_POS + "= ii+1") // Range end, exclusive
                 .aggBy(List.of(AggFirst(BEGIN_POS), AggLast(END_POS)), GROUPING_KEY);
         final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
         if (!invalid.isEmpty()) {
@@ -911,13 +919,13 @@ public class ParquetTools {
     private static Table ensureNoDictionary(final Table t, final String... columns) {
         final TableDefinition tDef = t.getDefinition();
         // TODO: is there something to do here?
-//        for(String colName : columns) {
-//            final ColumnDefinition<?> resultKeyDef = tDef.getColumn(colName);
-//            if (resultKeyDef.getSymbolTableType() == ColumnDefinition.SymbolTableType.COLUMN_LOCATION) {
-//                // Explicitly disable symbol tables
-//                resultKeyDef.setIsVarSizeString(true);
-//            }
-//        }
+        // for(String colName : columns) {
+        // final ColumnDefinition<?> resultKeyDef = tDef.getColumn(colName);
+        // if (resultKeyDef.getSymbolTableType() == ColumnDefinition.SymbolTableType.COLUMN_LOCATION) {
+        // // Explicitly disable symbol tables
+        // resultKeyDef.setIsVarSizeString(true);
+        // }
+        // }
 
         return t;
     }
@@ -935,7 +943,7 @@ public class ParquetTools {
         return prefix + "_" + String.join("_", columnName) + "_grouping.parquet";
     }
     // endregion
-    
+
     public static final ParquetInstructions LZ4 = ParquetInstructions.builder().setCompressionCodecName("LZ4").build();
     public static final ParquetInstructions LZO = ParquetInstructions.builder().setCompressionCodecName("LZO").build();
     public static final ParquetInstructions GZIP =

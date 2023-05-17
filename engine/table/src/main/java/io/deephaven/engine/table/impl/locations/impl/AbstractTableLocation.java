@@ -33,7 +33,7 @@ public abstract class AbstractTableLocation
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
-    /** A map of grouping (or data index) columns to the materialized  */
+    /** A map of grouping (or data index) columns to the materialized */
     protected volatile Map<List<String>, SoftReference<Table>> cachedGroupings;
 
     /**
@@ -156,23 +156,23 @@ public abstract class AbstractTableLocation
     public final Table getDataIndex(@NotNull final String... columns) {
         final List<String> colNames = Arrays.asList(columns);
         Table grouping = null;
-        if(cachedGroupings != null) {
+        if (cachedGroupings != null) {
             final SoftReference<Table> cachedGrouping = cachedGroupings.get(colNames);
             if (cachedGrouping == NO_GROUPING_SENTINEL) {
                 return null;
             }
 
-            if(cachedGrouping != null) {
+            if (cachedGrouping != null) {
                 grouping = cachedGrouping.get();
-                if(grouping != null) {
-                    //System.out.println("HAD CACHE");
+                if (grouping != null) {
+                    // System.out.println("HAD CACHE");
                     return grouping;
                 }
             }
         }
 
         synchronized (this) {
-            if(cachedGroupings == null) {
+            if (cachedGroupings == null) {
                 cachedGroupings = new HashMap<>();
             }
 
@@ -181,17 +181,17 @@ public abstract class AbstractTableLocation
                 return null;
             }
 
-            if(cachedGrouping != null) {
+            if (cachedGrouping != null) {
                 grouping = cachedGrouping.get();
             }
 
-            if(grouping == null) {
+            if (grouping == null) {
                 grouping = getDataIndexImpl(columns);
 
                 if (grouping == null || grouping.isEmpty()) {
                     cachedGroupings.put(colNames, NO_GROUPING_SENTINEL);
                 } else {
-                    //System.out.println("NO CACHE");
+                    // System.out.println("NO CACHE");
                     cachedGroupings.put(colNames, new SoftReference<>(grouping));
                 }
             }
@@ -201,7 +201,7 @@ public abstract class AbstractTableLocation
     }
 
     /**
-     * Load the data index from the location implementaiton.  Implementations of this method should not perform any
+     * Load the data index from the location implementaiton. Implementations of this method should not perform any
      * result caching.
      *
      * @param columns the columns to load an index for.

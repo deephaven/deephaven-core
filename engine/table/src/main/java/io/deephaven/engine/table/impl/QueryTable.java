@@ -66,7 +66,7 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.table.impl.by.*;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
@@ -1503,18 +1503,12 @@ public class QueryTable extends BaseTable<QueryTable> {
                         resultTable.getColumnSource(sourceColumn.getName()));
 
                 if (originalColumnSource != selectedColumnSource) {
-                    if (originalColumnSource instanceof DeferredGroupingColumnSource) {
-                        // Note that the providers have a method getValueColumnName() that remembers the original source name
-                        // so there is no need to worry about wrapping and renaming.
-                        final GroupingProvider originalProvider = ((DeferredGroupingColumnSource<?>)originalColumnSource).getGroupingProvider();
-                        if (originalProvider != null) {
-                            ((DeferredGroupingColumnSource<?>)selectedColumnSource).setGroupingProvider(originalProvider);
-                        } else {
-                            final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
-                            if (indexer.hasGrouping(originalColumnSource)) {
-                                indexer.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
-                            }
-                        }
+                    // Note that the providers have a method getValueColumnName() that remembers the original source
+                    // name
+                    // so there is no need to worry about wrapping and renaming.
+                    final GroupingProvider originalProvider = originalColumnSource.getGroupingProvider();
+                    if (originalProvider != null) {
+                        selectedColumnSource.setGroupingProvider(originalProvider);
                     } else {
                         final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
                         if (indexer.hasGrouping(originalColumnSource)) {

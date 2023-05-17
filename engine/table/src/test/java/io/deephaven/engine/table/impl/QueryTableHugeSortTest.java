@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.dataindex.StaticGroupingProvider;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Rule;
@@ -15,8 +15,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.show;
@@ -86,12 +84,10 @@ public class QueryTableHugeSortTest {
         QueryScope.addParam("segSize", segSize);
         final Table grouped =
                 TableTools.emptyTable(tableSize).updateView("Captain=captains[(int)(ii / segSize)]", "Sentinel=ii");
-        final Map<String, RowSet> gtr = new LinkedHashMap<>();
-        for (int ii = 0; ii < captains.length; ++ii) {
-            gtr.put(captains[ii], RowSetFactory.fromRange(ii * segSize, (ii + 1) * segSize - 1));
-        }
-        System.out.println(gtr);
-        ((AbstractColumnSource) (grouped.getColumnSource("Captain"))).setGroupToRange(gtr);
+
+        final ColumnSource<Object> captainSource = (ColumnSource<Object>) grouped.getColumnSource("Captain");
+        captainSource
+                .setGroupingProvider(StaticGroupingProvider.buildFrom(captainSource, "Captain", grouped.getRowSet()));
 
         final long sortStart = System.currentTimeMillis();
         final Table sortedGrouped = grouped.sortDescending("Captain");
