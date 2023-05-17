@@ -291,10 +291,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {
-            final Boolean sniHostCheck = config.sniHostCheck();
-            if (sniHostCheck != null) {
-                httpConfig.addCustomizer(new SecureRequestCustomizer(sniHostCheck));
-            }
+            httpConfig.addCustomizer(new SecureRequestCustomizer(config.sniHostCheck()));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
 
