@@ -2764,6 +2764,23 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
+    public static long diffMillis(@Nullable final Instant start, @Nullable final Instant end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMillis(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in milliseconds between two date time values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     */
+    @ScriptApi
     public static long diffMillis(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_LONG;

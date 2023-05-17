@@ -14,6 +14,7 @@ import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 @SuppressWarnings("deprecation")
@@ -1925,28 +1926,223 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
     }
 
+    public void testDiffNanos() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final long delta = dt2.getNanos()-dt1.getNanos();
+        
+        TestCase.assertEquals(delta, DateTimeUtils.diffNanos(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffNanos(dt2,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(null,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(dt2,null));
 
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+        
+        TestCase.assertEquals(delta, DateTimeUtils.diffNanos(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffNanos(i2,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(null,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(i2,null));
 
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
 
+        TestCase.assertEquals(delta, DateTimeUtils.diffNanos(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffNanos(zdt2,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(null,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffNanos(zdt2,null));
+    }
 
+    public void testDiffMicros() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final long delta = (dt2.getNanos()-dt1.getNanos())/DateTimeUtils.MICRO;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMicros(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMicros(dt2,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(null,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMicros(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMicros(i2,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(null,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMicros(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMicros(zdt2,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(null,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMicros(zdt2,null));
+    }
+
+    public void testDiffMillis() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final long delta = (dt2.getNanos()-dt1.getNanos())/DateTimeUtils.MILLI;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMillis(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMillis(dt2,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(null,dt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMillis(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMillis(i2,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(null,i1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMillis(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMillis(zdt2,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(null,zdt1));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.diffMillis(zdt2,null));
+    }
+
+    public void testDiffSeconds() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final double delta = (dt2.getNanos()-dt1.getNanos())/(double)DateTimeUtils.SECOND;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffSeconds(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffSeconds(dt2,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(null,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffSeconds(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffSeconds(i2,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(null,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffSeconds(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffSeconds(zdt2,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(null,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffSeconds(zdt2,null));
+    }
+
+    public void testDiffMinutes() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final double delta = (dt2.getNanos()-dt1.getNanos())/(double)DateTimeUtils.MINUTE;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMinutes(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMinutes(dt2,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(null,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMinutes(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMinutes(i2,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(null,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffMinutes(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffMinutes(zdt2,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(null,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffMinutes(zdt2,null));
+    }
+
+    public void testDiffDays() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final double delta = (dt2.getNanos()-dt1.getNanos())/(double)DateTimeUtils.DAY;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffDays(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffDays(dt2,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(null,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffDays(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffDays(i2,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(null,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffDays(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffDays(zdt2,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(null,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffDays(zdt2,null));
+    }
+
+    public void testDiffYears() {
+        final DateTime dt1 = new DateTime(12345678987654321L);
+        final DateTime dt2 = new DateTime(98765432123456789L);
+        final double delta = (dt2.getNanos()-dt1.getNanos())/(double)DateTimeUtils.YEAR;
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffYears(dt1,dt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffYears(dt2,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null,dt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(dt2,null));
+
+        final Instant i1 = dt1.toInstant();
+        final Instant i2 = dt2.toInstant();
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffYears(i1,i2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffYears(i2,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null,i1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(i2,null));
+
+        final ZonedDateTime zdt1 = dt1.toZonedDateTime(TimeZone.TZ_AL);
+        final ZonedDateTime zdt2 = dt2.toZonedDateTime(TimeZone.TZ_AL);
+
+        TestCase.assertEquals(delta, DateTimeUtils.diffYears(zdt1,zdt2));
+        TestCase.assertEquals(-delta, DateTimeUtils.diffYears(zdt2,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null,zdt1));
+        TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(zdt2,null));
+    }
+    
+//    public void testYearDiff() throws Exception {
+//        org.joda.time.DateTime jt1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
+//        org.joda.time.DateTime jt2 = new org.joda.time.DateTime("2011-01-01T13:13:14.999");
+//        org.joda.time.DateTime jt3 = new org.joda.time.DateTime("2010-06-30T13:13:14.999");
+//
+//        DateTime t1 = new DateTime(jt1.getMillis() * 1000000 + 123456);
+//        DateTime t2 = new DateTime(jt2.getMillis() * 1000000 + 123456);
+//        DateTime t3 = new DateTime(jt3.getMillis() * 1000000 + 123456);
+//
+//
+//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
+//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
+//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
+//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
+//
+//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
+//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
+//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
+//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
+//    }
+    
+    
+    
 
 //    diffDays
 //            diffDays
 //    diffDays
-//            diffMicros
-//    diffMicros
-//            diffMicros
-//    diffMillis
-//            diffMillis
-//    diffMinutes
-//            diffMinutes
-//    diffMinutes
-//            diffNanos
-//    diffNanos
-//            diffNanos
-//    diffSeconds
-//            diffSeconds
-//    diffSeconds
+
 //            diffYears
 //    diffYears
 //            diffYears
@@ -1995,41 +2191,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //
 
 
-//
-//    public void testDiff() throws Exception {
-//        org.joda.time.DateTime jodaDateTime1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jodaDateTime2 = new org.joda.time.DateTime("2010-01-01T13:13:14.999");
-//
-//        DateTime dateTime1 = new DateTime(jodaDateTime1.getMillis() * 1000000 + 123456);
-//        DateTime dateTime2 = new DateTime(jodaDateTime2.getMillis() * 1000000 + 123456);
-//
-//        TestCase.assertEquals(3600000000000L, DateTimeUtils.diffNanos(dateTime1, dateTime2));
-//        TestCase.assertEquals(-3600000000000L, DateTimeUtils.diffNanos(dateTime2, dateTime1));
-//
-//        TestCase.assertEquals(3600000000000L, DateTimeUtils.diffNanos(dateTime1, dateTime2));
-//        TestCase.assertEquals(-3600000000000L, DateTimeUtils.diffNanos(dateTime2, dateTime1));
-//    }
-//
-//    public void testYearDiff() throws Exception {
-//        org.joda.time.DateTime jt1 = new org.joda.time.DateTime("2010-01-01T12:13:14.999");
-//        org.joda.time.DateTime jt2 = new org.joda.time.DateTime("2011-01-01T13:13:14.999");
-//        org.joda.time.DateTime jt3 = new org.joda.time.DateTime("2010-06-30T13:13:14.999");
-//
-//        DateTime t1 = new DateTime(jt1.getMillis() * 1000000 + 123456);
-//        DateTime t2 = new DateTime(jt2.getMillis() * 1000000 + 123456);
-//        DateTime t3 = new DateTime(jt3.getMillis() * 1000000 + 123456);
-//
-//
-//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
-//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
-//
-//        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
-//        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
-//        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
-//    }
+
 //
 //    public void testMillisToNanos() throws Exception {
 //        TestCase.assertEquals(1000000, DateTimeUtils.millisToNanos(1));
