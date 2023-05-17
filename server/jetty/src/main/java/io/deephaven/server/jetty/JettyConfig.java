@@ -28,7 +28,7 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String HTTP_HTTP1 = "http.http1";
     public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
     public static final String HTTP_COMPRESSION = "http.compression";
-    public static final String SNI_HOST_CHECK = "http.sniHostCheck";
+    public static final String SNI_HOST_CHECK = "https.sniHostCheck";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
