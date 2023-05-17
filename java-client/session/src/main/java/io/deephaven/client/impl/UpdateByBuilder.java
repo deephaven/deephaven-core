@@ -2,7 +2,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;

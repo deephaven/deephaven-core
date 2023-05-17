@@ -20,6 +20,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -235,7 +236,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     + " found in filters: " + filters);
         }
         return new PartitionedTableImpl(
-                table.where(whereFilters),
+                table.where(Filter.and(whereFilters)),
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,
@@ -279,9 +280,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
 
             // Perform the transformation
-            resultTable = asRefreshingIfNeeded.update(new TableTransformationColumn(
+            resultTable = asRefreshingIfNeeded.update(List.of(new TableTransformationColumn(
                     constituentColumnName, executionContext,
-                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)));
+                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -324,15 +325,16 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
             final Table joined = uniqueKeys
-                    ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
+                    ? table.naturalJoin(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions))
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
-                    : table.join(other.table(), joinPairs, joinAdditions);
+                    : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
 
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
 
             resultTable = asRefreshingIfNeeded
-                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, executionContext,
-                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)))
+                    .update(List.of(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT,
+                            executionContext,
+                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 

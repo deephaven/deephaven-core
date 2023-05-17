@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -23,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 class BucketingContext implements SafeCloseable {
     final int keyColumnCount;

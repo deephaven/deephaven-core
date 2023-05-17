@@ -6,7 +6,7 @@ package io.deephaven.api.agg.spec;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 
 import java.util.Collection;
 

@@ -597,7 +597,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testIterativeDisjunctiveCondition() {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(
-                t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(ConditionFilter.createConditionFilter("false"),
+                t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
+                        ConditionFilter.createConditionFilter("false"),
                         ConditionFilter.createConditionFilter("true"))));
         testIterative(transformations);
     }
