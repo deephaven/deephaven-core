@@ -514,7 +514,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import io.deephaven.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-                "import org.joda.time.LocalTime;\n" +
+                "import java.time.LocalTime;\n" +
                 "import io.deephaven.time.Period;\n" +
                 "import io.deephaven.engine.context.QueryScopeParam;\n" +
                 "import io.deephaven.engine.context.QueryScope;\n" +

@@ -7,10 +7,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeFormatter;
+import io.deephaven.time.DateTimeFormatters;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.function.ThrowingRunnable;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -54,7 +54,7 @@ public class JdbcToTableAdapterTest {
                 "   \"DateTime Type\" DATETIME NULL" +
                 ");");
 
-        final DateTimeFormatter dateTimeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        final DateTimeFormatter dtf = DateTimeFormatters.NONISO0.getFormatter();
 
         for (long ii = 0; ii < numRows; ++ii) {
             stmt.executeUpdate("INSERT INTO TestTable VALUES (" +
@@ -65,7 +65,7 @@ public class JdbcToTableAdapterTest {
                     ", " + (ii % 256 == 3 ? "NULL" : ii - numRows / 2) + // long
                     ", " + (ii % 256 == 4 ? "NULL" : (ii - numRows / 2) / 256.0) + // float
                     ", " + (ii % 256 == 5 ? "NULL" : "'" + ii + "'") + // string
-                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dateTimeFormat.print(ii * 100_000L) + "'") + // date
+                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dtf.format(new DateTime(ii * 100_000L), io.deephaven.time.TimeZone.TZ_UTC) + "Z'") + // date
                     ");");
         }
     }

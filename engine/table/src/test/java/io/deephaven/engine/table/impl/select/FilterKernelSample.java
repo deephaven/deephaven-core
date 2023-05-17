@@ -46,7 +46,7 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.VectorConversions;
 import java.lang.reflect.Array;
 import java.util.concurrent.ConcurrentHashMap;
-import org.joda.time.LocalTime;
+import java.time.LocalTime;
 import static io.deephaven.base.string.cache.CompressedString.*;
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 import static io.deephaven.engine.table.impl.verify.TableAssertions.*;

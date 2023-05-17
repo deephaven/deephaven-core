@@ -63,7 +63,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.VectorConversions;
-import org.joda.time.LocalTime;
+import java.time.LocalTime;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;

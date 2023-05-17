@@ -9,15 +9,14 @@ from deephaven import DHError
 from deephaven.time import TimeZone
 
 _JDHConfig = jpy.get_type("io.deephaven.configuration.Configuration")
-_JDateTimeZone = jpy.get_type("org.joda.time.DateTimeZone")
 
 
 def get_server_timezone() -> TimeZone:
     """ Returns the server's time zone. """
     try:
-        j_timezone = _JDateTimeZone.forTimeZone(_JDHConfig.getInstance().getServerTimezone())
+        j_timezone = _JDHConfig.getInstance().getServerTimezone()
         for tz in TimeZone:
-            if j_timezone == tz.value.getTimeZone():
+            if j_timezone.getZoneId() == tz.value.getZoneId():
                 return tz
         raise NotImplementedError("can't find the time zone in the TimeZone Enum.")
     except Exception as e:

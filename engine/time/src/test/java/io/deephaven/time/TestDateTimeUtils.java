@@ -19,10 +19,6 @@ import static io.deephaven.util.QueryConstants.*;
 @SuppressWarnings("deprecation")
 public class TestDateTimeUtils extends BaseArrayTestCase {
 
-    public void testFailJoda() {
-        TestCase.fail("kill joda");
-    }
-
     public void testParseDate() {
         assertEquals(LocalDate.of(2010,1,2), DateTimeUtils.parseDate("20100102", DateTimeUtils.DateStyle.YMD));
 
