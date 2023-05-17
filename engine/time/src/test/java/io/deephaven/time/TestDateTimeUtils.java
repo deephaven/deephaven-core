@@ -698,6 +698,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123456789")));
         TestCase.assertEquals("-3T2:00:00.123456789",
                 DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-3T2:00:00.123456789")));
+
+        try{
+            DateTimeUtils.parseNanos("123456789876554321T12:59:59");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex){
+            //pass
+        }
+
+        //TODO: Reneable if Durations are going to be supported fully instead of Periods.
+        try{
+            final Duration duration = Duration.ofSeconds(Long.MAX_VALUE, 999_999_999L);
+            final String durationString = duration.toString().substring(1);
+            DateTimeUtils.parseNanos(durationString);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex){
+            //pass
+        }
     }
 
     public void testMicrosToMillis() {

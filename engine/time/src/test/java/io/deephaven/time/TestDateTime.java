@@ -245,29 +245,29 @@ public class TestDateTime extends BaseArrayTestCase {
 
         { // UTC
             String zoneId = "UTC";
-            TestCase.assertEquals("2016-11-06T04:00 UTC", utc.toString(TimeZone.TZ_UTC));
-            TestCase.assertEquals("2016-11-06T04:00 UTC", utc.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 UTC", utc.toString(TimeZone.TZ_UTC));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 UTC", utc.toString(ZoneId.of(zoneId)));
         }
 
         { // America/New_York
             String zoneId = "America/New_York";
-            TestCase.assertEquals("2016-11-06T04:00 NY", ny.toString(TimeZone.TZ_NY));
-            TestCase.assertEquals("2016-11-06T04:00 NY", ny.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 NY", ny.toString(TimeZone.TZ_NY));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 America/New_York", ny.toString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+2 - 2 hours *EAST*
             String zoneId = "Etc/GMT+2";
-            TestCase.assertEquals("2016-11-06T06:00 xx", utc.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-06T02:00:00.000000000 Etc/GMT+2", utc.toString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+4 -- 4 hours *WEST*
             String zoneId = "Etc/GMT+4";
-            TestCase.assertEquals("2016-11-06T08:00 xx", utc.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-06T00:00:00.000000000 Etc/GMT+4", utc.toString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+2 -- 5 hours *WEST*
             String zoneId = "Etc/GMT+5";
-            TestCase.assertEquals("2016-11-05T12:00 xx", utc.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-05T23:00:00.000000000 Etc/GMT+5", utc.toString(ZoneId.of(zoneId)));
         }
 
         {
