@@ -28,6 +28,7 @@ public abstract class JettyConfig implements ServerConfig {
     public static final String HTTP_HTTP1 = "http.http1";
     public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
     public static final String HTTP_COMPRESSION = "http.compression";
+    public static final String SNI_HOST_CHECK = "https.sniHostCheck";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -90,6 +91,7 @@ public abstract class JettyConfig implements ServerConfig {
         String httpWebsockets = config.getStringWithDefault(HTTP_WEBSOCKETS, null);
         String httpHttp1 = config.getStringWithDefault(HTTP_HTTP1, null);
         String httpCompression = config.getStringWithDefault(HTTP_COMPRESSION, null);
+        String sniHostCheck = config.getStringWithDefault(SNI_HOST_CHECK, null);
         String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
@@ -117,6 +119,9 @@ public abstract class JettyConfig implements ServerConfig {
         if (httpCompression != null) {
             builder.httpCompression(Boolean.parseBoolean(httpCompression));
         }
+        if (sniHostCheck != null) {
+            builder.sniHostCheck(Boolean.parseBoolean(sniHostCheck));
+        }
         return builder;
     }
 
@@ -140,6 +145,14 @@ public abstract class JettyConfig implements ServerConfig {
      */
     @Nullable
     public abstract Boolean http1();
+
+    /**
+     * Include sniHostCheck.
+     */
+    @Default
+    public boolean sniHostCheck() {
+        return true;
+    }
 
     public abstract OptionalLong http2StreamIdleTimeout();
 
@@ -208,5 +221,7 @@ public abstract class JettyConfig implements ServerConfig {
         Builder httpCompression(Boolean httpCompression);
 
         Builder http2StreamIdleTimeout(long timeoutInMillis);
+
+        Builder sniHostCheck(boolean sniHostCheck);
     }
 }
