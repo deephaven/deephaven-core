@@ -4,10 +4,10 @@ export SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null &&
 export CLIENT=$SCRIPT_DIR/cpp-client
 
 # First, we build all C++ dependencies
-cd cpp-dependencies
-chmod +x ./build-dependencies.sh
-./build-dependencies.sh
-cd $SCRIPT_DIR
+# cd cpp-dependencies
+# chmod +x ./build-dependencies.sh
+# ./build-dependencies.sh
+# cd $SCRIPT_DIR
 
 # Next, we download, build, and install the Deephaven C++ client
 svn checkout https://github.com/deephaven/deephaven-core/trunk/cpp-client

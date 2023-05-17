@@ -264,7 +264,7 @@ if [ "$BUILD_CARES" = "yes" ]; then
   echo "*** Building c-ares"
   cd $SRC/c-ares
   mkdir -p build-dir && cd build-dir
-  cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/cares ..
+  cmake -DCARES_STATIC=ON -DCARES_SHARED=OFF -DCARES_STATIC_PIC=ON -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=${PFX}/cares ..
   make -j$NCPUS
   make install
   if [ "$clean" = "yes" ]; then
