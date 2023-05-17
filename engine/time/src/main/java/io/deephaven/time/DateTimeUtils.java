@@ -37,6 +37,7 @@ public class DateTimeUtils {
     //TODO: test coverage
     //TODO: remove TZ_DEFAULT / add @see for TZ_DEFAULT
     //TODO: what are the @ScriptApi annotations???
+    //TODO: currentDate() func? -> today()
 
     // region Format Patterns
 
