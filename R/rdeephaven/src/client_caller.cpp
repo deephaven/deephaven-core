@@ -12,8 +12,8 @@ public:
     }
 private:
     std::shared_ptr<deephaven::client::Client> ptr_;
-    friend <Rcpp::XPtr> ClientWrapper__new();
-    friend <> ClientWrapper__connect(SEXP xp, SEXP target_);
+    friend <Rcpp::XPtr> ClientWrapper__new(); // probably not
+    friend <> ClientWrapper__connect(SEXP xp, SEXP target_); // probably not
 };
 
 
