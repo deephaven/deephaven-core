@@ -98,10 +98,7 @@ public class ChunkHolderPageDouble<ATTR extends Any>
             rowSequence.forAllRowKeyRanges((final long firstRowKey, final long lastRowKey) -> to.appendTypedChunk(
                     localView, getChunkOffset(firstRowKey), (int) (lastRowKey - firstRowKey + 1)));
         } else {
-            rowSequence.forEachRowKey((final long rowKey) -> {
-                to.add(localView.get(getChunkOffset(rowKey)));
-                return true;
-            });
+            rowSequence.forAllRowKeys((final long rowKey) -> to.add(localView.get(getChunkOffset(rowKey))));
         }
     }
 

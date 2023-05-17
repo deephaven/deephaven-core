@@ -57,10 +57,7 @@ public class ObjectChunkPage<T, ATTR extends Any> extends ObjectChunk<T, ATTR> i
             rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeEndKey) -> to.appendTypedChunk(
                     this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
         } else {
-            rowSequence.forEachRowKey((final long key) -> {
-                to.add(get(getChunkOffset(key)));
-                return true;
-            });
+            rowSequence.forAllRowKeys((final long key) -> to.add(get(getChunkOffset(key))));
         }
     }
 

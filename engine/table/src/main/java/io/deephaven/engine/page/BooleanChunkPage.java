@@ -57,10 +57,7 @@ public class BooleanChunkPage<ATTR extends Any> extends BooleanChunk<ATTR> imple
             rowSequence.forAllRowKeyRanges((final long rangeStartKey, final long rangeEndKey) -> to.appendTypedChunk(
                     this, getChunkOffset(rangeStartKey), (int) (rangeEndKey - rangeStartKey + 1)));
         } else {
-            rowSequence.forEachRowKey((final long key) -> {
-                to.add(get(getChunkOffset(key)));
-                return true;
-            });
+            rowSequence.forAllRowKeys((final long key) -> to.add(get(getChunkOffset(key))));
         }
     }
 
