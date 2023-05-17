@@ -79,6 +79,29 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         return new WritableCharChunk<>(data, this.offset + offset, capacity);
     }
 
+    // region array
+
+    /**
+     * Get the underlying data array.
+     *
+     * <p>Get the underlying data array.  This Chunk must never be {@link #close() closed} while the array <em>may</em> be in use externally, because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.  This Chunk logically begins at the position indicated by {@link #offset()}.</p>
+     *
+     * @return the underlying data array.
+     */
+    public final char [] array() {
+        return data;
+    }
+
+    /**
+     * Get the offset into the underlying data array.
+     *
+     * @return the offset into the underlying data array.
+     */
+    public final int offset() {
+        return offset;
+    }
+    // endregion array
+
     // region FillWithNullValueImpl
     @Override
     public final void fillWithNullValue(final int offset, final int length) {

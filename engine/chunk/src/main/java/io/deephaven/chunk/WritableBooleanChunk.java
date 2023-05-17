@@ -81,6 +81,29 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return new WritableBooleanChunk<>(data, this.offset + offset, capacity);
     }
 
+    // region array
+
+    /**
+     * Get the underlying data array.
+     *
+     * <p>Get the underlying data array.  This Chunk must never be {@link #close() closed} while the array <em>may</em> be in use externally, because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.  This Chunk logically begins at the position indicated by {@link #offset()}.</p>
+     *
+     * @return the underlying data array.
+     */
+    public final boolean [] array() {
+        return data;
+    }
+
+    /**
+     * Get the offset into the underlying data array.
+     *
+     * @return the offset into the underlying data array.
+     */
+    public final int offset() {
+        return offset;
+    }
+    // endregion array
+
     // region FillWithNullValueImpl
     // endregion FillWithNullValueImpl
 
