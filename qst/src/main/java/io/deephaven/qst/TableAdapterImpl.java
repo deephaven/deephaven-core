@@ -137,7 +137,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(WhereTable whereTable) {
-        addOp(whereTable, parentOps(whereTable).where(whereTable.filters()));
+        addOp(whereTable, parentOps(whereTable).where(whereTable.filter()));
     }
 
     @Override

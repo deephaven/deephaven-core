@@ -135,7 +135,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             }
 
             final Table result = partitionFilters.isEmpty() ? table.coalesce()
-                    : table.where(partitionFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    : table.where(Filter.and(partitionFilters));
 
             // put the other filters onto the end of the grouping filters, this means that the group filters should
             // go first, which should be preferable to having them second. This is basically the first query
@@ -150,7 +150,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
         @Override
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
-            final SelectColumn[] selectColumns = SelectColumn.from(columns);
+            final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
             for (final SelectColumn selectColumn : selectColumns) {
                 try {
                     selectColumn.initDef(getDefinition().getColumnNameMap());
@@ -212,7 +212,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         BaseTable redefined = redefine(newDefinitionInternal);
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
                 ? new PartitionAwareQueryTableReference((PartitionAwareSourceTable) redefined)
@@ -258,7 +258,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 ImmutableTableLocationKey.class, null));
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
-                .where(partitioningColumnFilters);
+                .where(Filter.and(partitioningColumnFilters));
         if (filteredColumnPartitionTable.size() == foundLocationKeys.size()) {
             return foundLocationKeys;
         }
@@ -268,12 +268,14 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    public final Table where(final Collection<? extends Filter> filters) {
-        if (filters.isEmpty()) {
+    public Table where(Filter filter) {
+        return whereImpl(WhereFilter.fromInternal(filter));
+    }
+
+    private Table whereImpl(final WhereFilter[] whereFilters) {
+        if (whereFilters.length == 0) {
             return QueryPerformanceRecorder.withNugget(description + ".coalesce()", this::coalesce);
         }
-        final WhereFilter[] whereFilters = WhereFilter.from(filters);
-
         ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
         ArrayList<WhereFilter> groupFilters = new ArrayList<>();
         ArrayList<WhereFilter> otherFilters = new ArrayList<>();
@@ -322,19 +324,18 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         }
 
         return QueryPerformanceRecorder.withNugget(description + ".coalesce().where(" + groupFilters + ")",
-                () -> filteredTable.coalesce()
-                        .where(groupFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
+                () -> filteredTable.coalesce().where(Filter.and(groupFilters)));
     }
 
     @Override
     public final Table selectDistinct(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(columns);
+        final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
-                return super.selectDistinct(Arrays.asList(selectColumns));
+                return super.selectDistinct(selectColumns);
             }
         }
         initializeAvailableLocations();

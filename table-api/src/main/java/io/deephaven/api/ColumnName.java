@@ -4,10 +4,7 @@
 package io.deephaven.api;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.api.util.NameValidator;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

@@ -147,7 +147,7 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(WhereTable whereTable) {
         sb.append("where(");
-        append(Strings::of, whereTable.filters(), sb);
+        sb.append(Strings.of(whereTable.filter()));
         sb.append(')');
     }
 

@@ -18,11 +18,14 @@ import io.deephaven.io.logger.Logger;
 import java.util.*;
 
 /**
- * The WhereListener is a MergedListener for computing updated filters ({@link io.deephaven.api.TableOperations#where}.
+ * The WhereListener is a MergedListener for computing updated filters
+ * ({@link io.deephaven.api.TableOperations#where(io.deephaven.api.filter.Filter)}.
  *
+ * <p>
  * We must be a merged listener, because several where operations require more than one input. For example, a
  * {@link DynamicWhereFilter} must wait for both the set table and filtered table to tick.
  *
+ * <p>
  * Other filters may be dependent on e.g. a LiveTable to be complete before operating. It is possible we have a static
  * source table, but a refreshing filter in which case our listener recorder is null.
  */

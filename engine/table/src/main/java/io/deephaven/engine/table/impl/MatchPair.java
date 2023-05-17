@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.table;
+package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.api.util.NameValidator;

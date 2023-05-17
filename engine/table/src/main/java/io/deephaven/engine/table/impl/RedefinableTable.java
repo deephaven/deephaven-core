@@ -4,10 +4,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -48,12 +48,10 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
         final Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
         final Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
         final Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
-        final Map<String, Set<String>> columnDependency = new HashMap<>();
         boolean simpleRetain = true;
         for (final SelectColumn selectColumn : columns) {
             List<String> usedColumnNames = selectColumn.initDef(allColumns);
             usedColumnNames.addAll(selectColumn.getColumnArrays());
-            columnDependency.put(selectColumn.getName(), new HashSet<>(usedColumnNames));
             resultColumnsInternal.addAll(usedColumnNames.stream()
                     .filter(usedColumnName -> !resultColumnsExternal.containsKey(usedColumnName))
                     .map(definition::getColumn).collect(Collectors.toList()));
@@ -78,7 +76,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 TableDefinition.of(
                         resultColumnsInternal.toArray(ColumnDefinition.ZERO_LENGTH_COLUMN_DEFINITION_ARRAY));
 
-        return redefine(newDefExternal, newDefInternal, columns, columnDependency);
+        return redefine(newDefExternal, newDefInternal, columns);
     }
 
     @Override
@@ -105,22 +103,18 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
-        if (pairs == null || pairs.length == 0) {
-            return this;
+    public Table renameColumns(Collection<Pair> pairs) {
+        if (pairs == null || pairs.isEmpty()) {
+            return prepareReturnThis();
         }
         Map<String, Set<String>> columnDependency = new HashMap<>();
         Map<String, String> pairLookup = new HashMap<>();
-        for (MatchPair pair : pairs) {
-            if (pair.leftColumn == null || pair.leftColumn.equals("")) {
-                throw new IllegalArgumentException("Bad left column in rename pair \"" + pair.toString() + "\"");
-            }
-            ColumnDefinition<?> cDef = definition.getColumn(pair.rightColumn);
+        for (Pair pair : pairs) {
+            ColumnDefinition<?> cDef = definition.getColumn(pair.input().name());
             if (cDef == null) {
-                throw new IllegalArgumentException("Column \"" + pair.rightColumn + "\" not found");
+                throw new IllegalArgumentException("Column \"" + pair.input().name() + "\" not found");
             }
-            pairLookup.put(pair.rightColumn, pair.leftColumn);
-            columnDependency.put(pair.leftColumn, new HashSet<>(Collections.singletonList(pair.rightColumn)));
+            pairLookup.put(pair.input().name(), pair.output().name());
         }
 
         ColumnDefinition<?>[] columnDefinitions = definition.getColumnsArray();
@@ -137,7 +131,7 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
                 viewColumns[ci] = new SourceColumn(cDef.getName(), newName);
             }
         }
-        return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns, columnDependency);
+        return redefine(TableDefinition.of(resultColumnsExternal), definition, viewColumns);
     }
 
     /**
@@ -157,9 +151,8 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
      * @param newDefinitionInternal A TableDefinition with a subset of this RedefinableTable's ColumnDefinitions.
      * @param viewColumns A set of SelectColumns to apply in order to transform a table with newDefinitionInternal to a
      *        table with newDefinitionExternal.
-     * @param columnDependency
      * @return
      */
     protected abstract Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency);
+            SelectColumn[] viewColumns);
 }

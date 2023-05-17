@@ -3,12 +3,16 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -207,8 +211,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table where(Collection<? extends Filter> filters) {
-        return coalesce().where(filters);
+    public Table where(Filter filter) {
+        return coalesce().where(filter);
     }
 
     @Override
@@ -267,7 +271,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<Pair> pairs) {
         return coalesce().renameColumns(pairs);
     }
 
@@ -314,31 +318,40 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfJoinRule);
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, reverseAsOfJoinRule);
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
-        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+    public Table join(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            int reserveBits) {
+        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, reserveBits);
     }
 
     @Override

@@ -5,11 +5,13 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.hierarchical.TreeTable.NodeOperationsRecorder;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,7 +45,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
 
     static Table applyFilters(@Nullable final TreeNodeOperationsRecorder nodeOperations, @NotNull final Table input) {
         if (nodeOperations != null && !nodeOperations.getRecordedFilters().isEmpty()) {
-            return input.where(nodeOperations.getRecordedFilters());
+            return input.where(Filter.and(nodeOperations.getRecordedFilters()));
         }
         return input;
     }
@@ -104,43 +106,35 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
     public TreeTable.NodeOperationsRecorder where(String... filters) {
         final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
         adapter.where(filters);
-        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
+        final List<? extends WhereFilter> f = adapter.whereFilters().collect(Collectors.toList());
+        return f.isEmpty() ? self() : withFilters(f.stream());
     }
 
     @Override
-    public TreeTable.NodeOperationsRecorder where(Collection<? extends Filter> filters) {
+    public NodeOperationsRecorder where(Filter filter) {
         final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
-        adapter.where(filters);
-        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
-    }
-
-    @Override
-    public TreeTable.NodeOperationsRecorder where(Filter... filters) {
-        final FilterRecordingTableAdapter adapter = new FilterRecordingTableAdapter(definition);
-        adapter.where(filters);
-        return adapter.hasWhereFilters() ? withFilters(adapter.whereFilters()) : self();
+        adapter.where(filter);
+        final List<? extends WhereFilter> whereFilters = adapter.whereFilters().collect(Collectors.toList());
+        // Note: it's possible that whereFilters _is_ empty; this happens if filter == Filter.ofTrue()
+        return whereFilters.isEmpty() ? self() : withFilters(whereFilters.stream());
     }
 
     private static final class FilterRecordingTableAdapter extends RecordingTableAdapter {
 
-        private Collection<? extends Filter> filters;
+        private Filter filter;
 
         private FilterRecordingTableAdapter(@NotNull final TableDefinition definition) {
             super(definition);
         }
 
         @Override
-        public Table where(@NotNull final Collection<? extends Filter> filters) {
-            this.filters = filters;
+        public Table where(Filter filter) {
+            this.filter = filter;
             return this;
         }
 
-        private boolean hasWhereFilters() {
-            return !filters.isEmpty();
-        }
-
         private Stream<? extends WhereFilter> whereFilters() {
-            return Stream.of(WhereFilter.from(filters)).peek(wf -> wf.init(getDefinition()));
+            return Stream.of(WhereFilter.fromInternal(filter)).peek(wf -> wf.init(getDefinition()));
         }
     }
 }

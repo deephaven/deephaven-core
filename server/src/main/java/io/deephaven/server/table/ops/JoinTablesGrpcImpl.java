@@ -4,10 +4,12 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.api.AsOfJoinRule;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.api.expression.ExpressionException;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -24,6 +26,7 @@ import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -121,16 +124,19 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final AsOfJoinTablesRequest request) {
-            Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
-            switch (matchRule) {
+            final List<MatchPair> match = Arrays.asList(columnsToMatch);
+            final List<MatchPair> add = Arrays.asList(columnsToAdd);
+            switch (request.getAsOfMatchRule()) {
                 case LESS_THAN:
+                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN);
                 case LESS_THAN_EQUAL:
-                    return lhs.aj(rhs, columnsToMatch, columnsToAdd, matchRule);
+                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN_EQUAL);
                 case GREATER_THAN:
+                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN);
                 case GREATER_THAN_EQUAL:
-                    return lhs.raj(rhs, columnsToMatch, columnsToAdd, matchRule);
+                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
                 default:
-                    throw new RuntimeException("Unsupported join type: " + matchRule);
+                    throw new RuntimeException("Unsupported join type: " + request.getAsOfMatchRule());
             }
         }
     }
@@ -155,11 +161,13 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final CrossJoinTablesRequest request) {
+            final List<MatchPair> match = Arrays.asList(columnsToMatch);
+            final List<MatchPair> add = Arrays.asList(columnsToAdd);
             int reserveBits = request.getReserveBits();
             if (reserveBits <= 0) {
-                return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of reserve_bits
+                return lhs.join(rhs, match, add); // use the default number of reserve_bits
             } else {
-                return lhs.join(rhs, columnsToMatch, columnsToAdd, reserveBits);
+                return lhs.join(rhs, match, add, reserveBits);
             }
         }
     }
@@ -184,7 +192,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final ExactJoinTablesRequest request) {
-            return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
+            return lhs.exactJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd));
         }
     }
 
@@ -232,7 +240,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final NaturalJoinTablesRequest request) {
-            return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
+            return lhs.naturalJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd));
         }
     }
 }

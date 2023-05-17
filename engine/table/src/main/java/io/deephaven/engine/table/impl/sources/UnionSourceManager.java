@@ -65,11 +65,11 @@ public class UnionSourceManager {
         constituentChangesPermitted = partitionedTable.constituentChangesPermitted();
         columnNames = partitionedTable.constituentDefinition().getColumnNamesArray();
 
-        final Table coalescedPartitions = partitionedTable.table().coalesce().select(
+        final Table coalescedPartitions = partitionedTable.table().coalesce().select(List.of(
                 new TableTransformationColumn(
                         partitionedTable.constituentColumnName(),
                         null,
-                        Table::coalesce));
+                        Table::coalesce)));
         constituentRows = coalescedPartitions.getRowSet();
         constituentTables = coalescedPartitions.getColumnSource(partitionedTable.constituentColumnName());
 
