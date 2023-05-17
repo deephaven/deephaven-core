@@ -1755,6 +1755,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
+        DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999-10), ZoneId.of("UTC")), 10); // edge at max
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), new Period("T1s"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), Duration.ofNanos(1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
         DateTimeUtils.plus(new DateTime(Long.MIN_VALUE + 10), -10); // edge at min
         try {
             DateTimeUtils.plus(new DateTime(Long.MIN_VALUE), -1);
@@ -1782,6 +1802,27 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
+
+        DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,10), ZoneId.of("UTC")), -10); // edge at max
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), new Period("-T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), Duration.ofNanos(-1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -1897,6 +1938,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
+        DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999-10), ZoneId.of("UTC")), 10); // edge at max
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), -1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), new Period("-T1s"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), Duration.ofNanos(-1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
         DateTimeUtils.minus(new DateTime(Long.MIN_VALUE + 10), 10); // edge at min
         try {
             DateTimeUtils.minus(new DateTime(Long.MIN_VALUE), 1);
@@ -1924,6 +1985,27 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
+
+        DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,10), ZoneId.of("UTC")), -10); // edge at max
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), 1);
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), new Period("T1S"));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+        try {
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), Duration.ofNanos(1));
+            TestCase.fail("This should have overflowed");
+        } catch (DateTimeUtils.DateTimeOverflowException e) {
+            // ok
+        }
+
     }
 
     public void testDiffNanos() {
@@ -2147,10 +2229,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 //    diffYears
 //            diffYears
 
-
-    public void testArithmetic(){
-        TestCase.fail();
-    }
 
     public void testCronology(){
         TestCase.fail();
