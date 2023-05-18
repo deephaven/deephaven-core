@@ -83,16 +83,13 @@ public class DateTimeUtils {
      */
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
             "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z_/]+");
+
+    //TODO: fix this? -- rename??
     /**
      * Matches times and durations.
      */
     private static final Pattern TIME_AND_DURATION_PATTERN = Pattern.compile(
             "\\-?([0-9]+T)?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
-    /**
-     * Matches periods.
-     */
-    private static final Pattern PERIOD_PATTERN = Pattern.compile(
-            "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
 
     /**
      * Matches date times.
@@ -2264,11 +2261,6 @@ public class DateTimeUtils {
         }
     }
 
-
-
-
-    //TODO: import java.time.Duration!
-
     /**
      * Adds a time period to a date time.
      *
@@ -2279,7 +2271,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2315,7 +2307,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static Instant plus(@Nullable final Instant dateTime, @Nullable final java.time.Duration period) {
+    public static Instant plus(@Nullable final Instant dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2343,11 +2335,7 @@ public class DateTimeUtils {
         }
 
         try {
-            if (period.isPositive()) {
-                return dateTime.plus(period.getDuration());
-            } else {
-                return dateTime.minus(period.getDuration());
-            }
+            return dateTime.plus(period);
         } catch (Exception ex){
             throw new DateTimeOverflowException(ex);
         }
@@ -2363,7 +2351,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final java.time.Duration period) {
+    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2391,11 +2379,7 @@ public class DateTimeUtils {
         }
 
         try {
-            if (period.isPositive()) {
-                return dateTime.plus(period.getDuration());
-            } else {
-                return dateTime.minus(period.getDuration());
-            }
+            return dateTime.plus(period);
         } catch (Exception ex){
             throw new DateTimeOverflowException(ex);
         }
@@ -2476,7 +2460,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final java.time.Duration period) {
+    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2512,7 +2496,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static Instant minus(@Nullable final Instant dateTime, @Nullable final java.time.Duration period) {
+    public static Instant minus(@Nullable final Instant dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2540,11 +2524,7 @@ public class DateTimeUtils {
         }
 
         try {
-            if (period.isPositive()) {
-                return dateTime.minus(period.getDuration());
-            } else {
-                return dateTime.plus(period.getDuration());
-            }
+            return dateTime.minus(period);
         } catch (Exception ex){
             throw new DateTimeOverflowException(ex);
         }
@@ -2560,7 +2540,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final java.time.Duration period) {
+    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -2588,11 +2568,7 @@ public class DateTimeUtils {
         }
 
         try {
-            if (period.isPositive()) {
-                return dateTime.minus(period.getDuration());
-            } else {
-                return dateTime.plus(period.getDuration());
-            }
+            return dateTime.minus(period);
         } catch (Exception ex){
             throw new DateTimeOverflowException(ex);
         }
@@ -5386,17 +5362,15 @@ public class DateTimeUtils {
         return result;
     }
 
-    //TODO: better docs
-    //TODO does this support negative durations?
-    //TODO: can we exceed -MAX VALUE?
     /**
-     * Converts a time duration string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
-     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for
-     * one week plus one hour.  For seconds, n can be a decimal representing partial seconds down to the nanosecond.
+     * Converts a time duration string to nanoseconds. The format for the string is a time string formatted as
+     * {@code hh:mm:ss[.nnnnnnnnn]}, or a duration string formatted as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
      * @throws RuntimeException if the string cannot be parsed.
+     * @see #parseDuration(String)
+     * @see #parseDurationQuiet(String)
      */
     @ScriptApi
     public static long parseNanos(@NotNull String s) {
@@ -5446,29 +5420,20 @@ public class DateTimeUtils {
                 }
             }
 
-            if (PERIOD_PATTERN.matcher(s).matches()) {
-                final Period period = new Period(s);
-
-                try {
-                    return StrictMath.multiplyExact(period.getDuration().toNanos(), period.isPositive() ? 1L : -1L);
-                } catch (ArithmeticException ex) {
-                    throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
-                }
-            }
+            return parseDuration(s).toNanos();
         } catch (Exception e) {
             throw new RuntimeException("Cannot parse time : " + s, e);
         }
-
-        throw new RuntimeException("Should not get here.  Please report this as a bug.");
     }
 
-    //TODO: better docs
     /**
-     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
-     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
+     * Converts a time duration string to nanoseconds. The format for the string is a time string formatted as
+     * {@code hh:mm:ss[.nnnnnnnnn]}, or a duration string formatted as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
-     * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
+     * @return the number of nanoseconds represented by the string, or {@link QueryConstants#NULL_LONG} if the string cannot be parsed.
+     * @see #parseDuration(String)
+     * @see #parseDurationQuiet(String)
      */
     @ScriptApi
     public static long parseNanosQuiet(@Nullable String s) {
@@ -5483,14 +5448,29 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: document negative values
     /**
-     * Converts a string into a time {@link Period}.
+     * Converts a period string to a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
      *
-     * @param s string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
-     *          one minute, 1WT1H for one week plus one hour.
-     * @return time period {@link Period}.
+     * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
+     * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+     * begin with a negative sign.
+     *
+     * Examples:
+     * <pre>
+     *   "P2Y"             -- Period.ofYears(2)
+     *   "P3M"             -- Period.ofMonths(3)
+     *   "P4W"             -- Period.ofWeeks(4)
+     *   "P5D"             -- Period.ofDays(5)
+     *   "P1Y2M3D"         -- Period.of(1, 2, 3)
+     *   "P1Y2M3W4D"       -- Period.of(1, 2, 25)
+     *   "P-1Y2M"          -- Period.of(-1, 2, 0)
+     *   "-P1Y2M"          -- Period.of(-1, -2, 0)
+     * </pre>
+     *
+     * @param s period string.
+     * @return the period.
      * @throws RuntimeException if the string cannot be parsed.
+     * @see Period#parse(CharSequence)
      */
     @ScriptApi
     @NotNull
@@ -5501,24 +5481,34 @@ public class DateTimeUtils {
         }
 
         try {
-            if (PERIOD_PATTERN.matcher(s).matches()) {
-                return new Period(s);
-            }
-
-            throw new RuntimeException("Period does not match expected pattern");
+            return Period.parse(s);
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse period: " + s, ex);
         }
     }
 
-    //TODO: better docs
-    //TODO: document negative values
     /**
-     * Converts a string into a time {@link Period}.
+     * Converts a period string to a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
      *
-     * @param s a string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
-     *          one minute, 1WT1H for one week plus one hour.
-     * @return a {@link Period} object, or null if the string can not be parsed.
+     * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
+     * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+     * begin with a negative sign.
+     *
+     * Examples:
+     * <pre>
+     *   "P2Y"             -- Period.ofYears(2)
+     *   "P3M"             -- Period.ofMonths(3)
+     *   "P4W"             -- Period.ofWeeks(4)
+     *   "P5D"             -- Period.ofDays(5)
+     *   "P1Y2M3D"         -- Period.of(1, 2, 3)
+     *   "P1Y2M3W4D"       -- Period.of(1, 2, 25)
+     *   "P-1Y2M"          -- Period.of(-1, 2, 0)
+     *   "-P1Y2M"          -- Period.of(-1, -2, 0)
+     * </pre>
+     *
+     * @param s period string.
+     * @return the period, or null if the string can not be parsed.
+     * @see Period#parse(CharSequence)
      */
     @ScriptApi
     @Nullable
@@ -5529,6 +5519,84 @@ public class DateTimeUtils {
 
         try {
             return parsePeriod(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Converts a duration string to a duration, which is a unit of time in terms of clock time (24-hour days, hours,
+     * minutes, seconds, and nanoseconds).
+     *
+     * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
+     * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+     * begin with a negative sign.
+     *
+     * Examples:
+     * <pre>
+     *    "PT20.345S" -- parses as "20.345 seconds"
+     *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+     *    "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+     *    "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+     *    "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+     *    "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+     *    "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+     *    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+     * </pre>
+     *
+     * @param s duration string.
+     * @return the duration.
+     * @throws RuntimeException if the string cannot be parsed.
+     * @see Duration#parse(CharSequence)
+     */
+    @ScriptApi
+    @NotNull
+    public static Duration parseDuration(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse duration (null): " + s);
+        }
+
+        try {
+            return Duration.parse(s);
+        } catch (Exception ex) {
+            throw new RuntimeException("Cannot parse duration: " + s, ex);
+        }
+    }
+
+    /**
+     * Converts a duration string to a duration, which is a unit of time in terms of clock time (24-hour days, hours,
+     * minutes, seconds, and nanoseconds).
+     *
+     * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
+     * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+     * begin with a negative sign.
+     *
+     * Examples:
+     * <pre>
+     *    "PT20.345S" -- parses as "20.345 seconds"
+     *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+     *    "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+     *    "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+     *    "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+     *    "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+     *    "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+     *    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+     * </pre>
+     *
+     * @param s duration string.
+     * @return the duration, or null if the string can not be parsed.
+     * @see Duration#parse(CharSequence)
+     */
+    @ScriptApi
+    @Nullable
+    public static Duration parseDurationQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseDuration(s);
         } catch (Exception e) {
             return null;
         }

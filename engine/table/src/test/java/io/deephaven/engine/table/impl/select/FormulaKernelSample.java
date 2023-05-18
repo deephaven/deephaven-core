@@ -39,7 +39,6 @@ import io.deephaven.engine.table.Table;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.Period;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;

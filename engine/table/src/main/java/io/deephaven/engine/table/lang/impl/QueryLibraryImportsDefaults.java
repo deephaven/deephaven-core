@@ -55,7 +55,6 @@ import io.deephaven.function.Sort;
 import io.deephaven.gui.color.Color;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.Period;
 import io.deephaven.time.TimeZone;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
@@ -63,7 +62,12 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.VectorConversions;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.Period;
+import java.time.Duration;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -96,7 +100,11 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 DateTimeUtils.class,
                 CompressedString.class,
                 java.util.Arrays.class,
+                LocalDate.class,
                 LocalTime.class,
+                Instant.class,
+                ZonedDateTime.class,
+                Duration.class,
                 Period.class,
                 QueryScopeParam.class,
                 ColumnSource.class,

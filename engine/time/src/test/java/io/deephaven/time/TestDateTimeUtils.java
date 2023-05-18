@@ -396,14 +396,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             }
         }
 
-        final String[] periods = {
-                "T1h43s",
-                "-T1h43s",
+        final String[] durations = {
+                "PT1h43s",
+                "-PT1h43s",
         };
 
-            for (String p : periods) {
-                final Period pp = DateTimeUtils.parsePeriod(p);
-                TestCase.assertEquals(pp.isPositive() ? pp.getDuration().toNanos() : -pp.getDuration().toNanos(), DateTimeUtils.parseNanos(p));
+            for (String d : durations) {
+                final Duration dd = DateTimeUtils.parseDuration(d);
+                TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseNanos(d));
             }
 
         try {
@@ -466,14 +466,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             }
         }
 
-        final String[] periods = {
-                "T1h43s",
-                "-T1h43s",
+        final String[] durations = {
+                "PT1h43s",
+                "-PT1h43s",
         };
 
-        for (String p : periods) {
-            final Period pp = DateTimeUtils.parsePeriod(p);
-            TestCase.assertEquals(pp.isPositive() ? pp.getDuration().toNanos() : -pp.getDuration().toNanos(), DateTimeUtils.parseNanosQuiet(p));
+        for (String d : durations) {
+            final Duration dd = DateTimeUtils.parseDuration(d);
+            TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseNanos(d));
         }
 
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet("JUNK"));
@@ -484,39 +484,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testParsePeriod() {
         final String[] periods = {
-                "T1S",
-                "T4H1S",
-                "4DT1S",
-//                "2W3DT4H2S",
-                "2Y5DT3H6M7S",
-                //TODO: Year, Month, Week, and partial seconds don't work
-//                "2Y3M4W5DT3H6M7.655S",
-//                "1WT1M",
-//                "1W",
+                "P2Y",
+                "P3M",
+                "P4W",
+                "P5D",
+                "P1Y2M3D",
+                "P1Y2M3W4D",
+                "P-1Y2M",
+                "-P1Y2M",
+                "P2Y5D",
         };
 
-        //TODO: our negative periods do not match the negative durations...  we don't prefix a P...
-        TestCase.fail("Period format does not match duration");
-        TestCase.fail("Duration format does not support Year, Month, and Week");
-        TestCase.fail("Do not support Partial Seconds");
-        TestCase.fail("Do not support negative in the same way that Duration does.");
-
-        for(boolean isNeg : new boolean[]{false, true}) {
-            for (String p : periods) {
-                if(isNeg) {
-                    p = "-" + p;
-                }
-
-                final Period pp = DateTimeUtils.parsePeriod(p);
-                final Duration d = Duration.parse("P"+p);
-
-
-                TestCase.assertEquals("Period: " + p, d, pp.getDuration());
-                TestCase.assertEquals("Period: " + p, isNeg, !pp.isPositive());
-            }
+        for (String p : periods) {
+            TestCase.assertEquals(Period.parse(p), DateTimeUtils.parsePeriod(p));
         }
 
         try {
+            //noinspection ConstantConditions
             DateTimeUtils.parsePeriod(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
@@ -525,7 +509,74 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testParsePeriodQuiet() {
-        TestCase.fail("not implemented");
+        final String[] periods = {
+                "P2Y",
+                "P3M",
+                "P4W",
+                "P5D",
+                "P1Y2M3D",
+                "P1Y2M3W4D",
+                "P-1Y2M",
+                "-P1Y2M",
+                "P2Y5D",
+        };
+
+        for (String p : periods) {
+            TestCase.assertEquals(Period.parse(p), DateTimeUtils.parsePeriodQuiet(p));
+        }
+
+        TestCase.assertNull(DateTimeUtils.parsePeriodQuiet(null));
+    }
+
+    public void testParseDuration() {
+        final String[] periods = {
+                "PT20.345S",
+                "PT15M",
+                "PT10H",
+                "P2D",
+                "P2DT3H4M",
+                "PT-6H3M",
+                "-PT6H3M",
+                "-PT-6H+3M",
+                "PT1S",
+                "PT4H1S",
+                "P4DT1S",
+        };
+
+        for (String p : periods) {
+            TestCase.assertEquals(Duration.parse(p), DateTimeUtils.parseDuration(p));
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseDuration(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+    }
+
+    public void testParseDurationQuiet() {
+        final String[] periods = {
+                "PT20.345S",
+                "PT15M",
+                "PT10H",
+                "P2D",
+                "P2DT3H4M",
+                "PT-6H3M",
+                "-PT6H3M",
+                "-PT-6H+3M",
+                "PT1S",
+                "PT4H1S",
+                "P4DT1S",
+        };
+
+        for (String p : periods) {
+            TestCase.assertEquals(Duration.parse(p), DateTimeUtils.parseDurationQuiet(p));
+        }
+
+        TestCase.assertNull(DateTimeUtils.parseDurationQuiet(null));
+        TestCase.assertNull(DateTimeUtils.parseDurationQuiet("JUNK"));
     }
 
     public void testParseTimePrecision() {
@@ -683,26 +734,25 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123456789")));
 
         TestCase.assertEquals("3T2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00")));
         TestCase.assertEquals("3T2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00")));
         TestCase.assertEquals("3T2:00:00.123000000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.123")));
         TestCase.assertEquals("3T2:00:00.123400000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.1234")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.1234")));
         TestCase.assertEquals("3T2:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("3T2:00:00.123456789")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.123456789")));
         TestCase.assertEquals("-3T2:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-3T2:00:00.123456789")));
+                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-P3T2:00:00.123456789")));
 
         try{
-            DateTimeUtils.parseNanos("123456789876554321T12:59:59");
+            DateTimeUtils.parseNanos("P123456789876554321T12:59:59");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex){
             //pass
         }
 
-        //TODO: Reneable if Durations are going to be supported fully instead of Periods.
         try{
             final Duration duration = Duration.ofSeconds(Long.MAX_VALUE, 999_999_999L);
             final String durationString = duration.toString().substring(1);
@@ -1687,28 +1737,28 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dateTime.getNanos() + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, 54321L)));
         TestCase.assertEquals(dateTime.getNanos() - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, -54321L)));
 
-        Period period = new Period("T1h");
+        Period period = Period.parse("P1D");
         Duration duration = Duration.parse("PT1h");
 
-        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
+        TestCase.assertEquals(dateTime.getNanos() + DateTimeUtils.DAY, DateTimeUtils.plus(dateTime, period).getNanos());
         TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.plus(dateTime, duration).getNanos());
 
-        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(dateTime.getNanos() + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
         TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
 
-        TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(dateTime.getNanos() + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
         TestCase.assertEquals(dateTime.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(dateTime, duration)));
 
-        period = new Period("-T1h");
+        period = Period.parse("-P1D");
         duration = Duration.parse("PT-1h");
 
-        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.plus(dateTime, period).getNanos());
+        TestCase.assertEquals(dateTime.getNanos() - DateTimeUtils.DAY, DateTimeUtils.plus(dateTime, period).getNanos());
         TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.plus(dateTime, duration).getNanos());
 
-        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(dateTime.getNanos() - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
         TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
 
-        TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(dateTime.getNanos() - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
         TestCase.assertEquals(dateTime.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
 
         TestCase.assertNull(DateTimeUtils.plus(dateTime, NULL_LONG));
@@ -1738,7 +1788,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), new Period("T1s"));
+            DateTimeUtils.plus(new DateTime(Long.MAX_VALUE), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1758,7 +1808,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), new Period("T1s"));
+            DateTimeUtils.plus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1778,7 +1828,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), new Period("T1s"));
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1806,7 +1856,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 0), new Period("-T1S"));
+            DateTimeUtils.plus(Instant.ofEpochSecond(-31557014167219200L, 0), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1826,7 +1876,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), new Period("-T1S"));
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1867,28 +1917,28 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(zdt1, zdt2));
         TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(zdt2, zdt1));
 
-        Period period = new Period("T1h");
+        Period period = Period.parse("P1D");
         Duration duration = Duration.parse("PT1h");
 
-        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
+        TestCase.assertEquals(dateTime1.getNanos() - DateTimeUtils.DAY, DateTimeUtils.minus(dateTime1, period).getNanos());
         TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.minus(dateTime1, duration).getNanos());
 
-        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
         TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
 
-        TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
         TestCase.assertEquals(dateTime1.getNanos() - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
 
-        period = new Period("-T1h");
+        period = Period.parse("-P1D");
         duration = Duration.parse("PT-1h");
 
-        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.minus(dateTime1, period).getNanos());
+        TestCase.assertEquals(dateTime1.getNanos() + DateTimeUtils.DAY, DateTimeUtils.minus(dateTime1, period).getNanos());
         TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.minus(dateTime1, duration).getNanos());
 
-        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
         TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
 
-        TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(dateTime1.getNanos() + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
         TestCase.assertEquals(dateTime1.getNanos() + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
 
         TestCase.assertNull(DateTimeUtils.minus(dateTime1, NULL_LONG));
@@ -1921,7 +1971,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), new Period("-T1S"));
+            DateTimeUtils.minus(new DateTime(Long.MAX_VALUE), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1941,7 +1991,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), new Period("-T1S"));
+            DateTimeUtils.minus(Instant.ofEpochSecond(31556889864403199L, 999_999_999L), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1961,7 +2011,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), new Period("-T1s"));
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23,59,59,999_999_999), ZoneId.of("UTC")), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1989,7 +2039,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 0), new Period("T1S"));
+            DateTimeUtils.minus(Instant.ofEpochSecond(-31557014167219200L, 0), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -2009,7 +2059,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), new Period("T1S"));
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0,0,0,0), ZoneId.of("UTC")), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok

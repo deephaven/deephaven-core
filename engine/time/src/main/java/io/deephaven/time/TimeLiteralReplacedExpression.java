@@ -3,8 +3,10 @@
  */
 package io.deephaven.time;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -72,8 +74,9 @@ public class TimeLiteralReplacedExpression {
 
         int localDateIndex = 0;
         int dateTimeIndex = 0;
-        int timeIndex = 0;
+        int nanosIndex = 0;
         int periodIndex = 0;
+        int durationIndex = 0;
 
         final Matcher matcher = Pattern.compile("'[^']*'").matcher(expression);
 
@@ -95,21 +98,30 @@ public class TimeLiteralReplacedExpression {
                 dateTimeIndex++;
             } else if (DateTimeUtils.parsePeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
-                instanceVariablesString.append("        private Period _period").append(periodIndex)
+                instanceVariablesString.append("        private java.time.Period _period").append(periodIndex)
                         .append("=DateTimeUtils.parsePeriod(\"")
                         .append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_period" + periodIndex, Period.class);
 
                 periodIndex++;
+            } else if (DateTimeUtils.parseDurationQuiet(s) != null) {
+                matcher.appendReplacement(convertedFormula, "_duration" + durationIndex);
+                instanceVariablesString.append("        private java.time.Duration _duration").append(durationIndex)
+                        .append("=DateTimeUtils.parseDuration(\"")
+                        .append(expression, matcher.start() + 1, matcher.end() - 1)
+                        .append("\");\n");
+                newVariables.put("_duration" + durationIndex, Duration.class);
+
+                durationIndex++;
             } else if (DateTimeUtils.parseNanosQuiet(s) != NULL_LONG) {
-                matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
-                instanceVariablesString.append("        private long _time").append(timeIndex)
+                matcher.appendReplacement(convertedFormula, "_nanos" + nanosIndex);
+                instanceVariablesString.append("        private long _nanos").append(nanosIndex)
                         .append("=DateTimeUtils.parseNanos(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
-                newVariables.put("_time" + timeIndex, long.class);
+                newVariables.put("_nanos" + nanosIndex, long.class);
 
-                timeIndex++;
+                nanosIndex++;
             } else if (DateTimeUtils.parseDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
@@ -118,12 +130,12 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;
             } else if (DateTimeUtils.parseLocalTimeQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_localTime" + timeIndex);
-                instanceVariablesString.append("        private java.time.LocalTime _localTime").append(timeIndex)
+                matcher.appendReplacement(convertedFormula, "_localTime" + nanosIndex);
+                instanceVariablesString.append("        private java.time.LocalTime _localTime").append(nanosIndex)
                         .append("=DateTimeUtils.parseLocalTime(\"")
                         .append(expression, matcher.start() + 1, matcher.end() - 1).append("\");\n");
-                newVariables.put("_localTime" + timeIndex, LocalTime.class);
-                timeIndex++;
+                newVariables.put("_localTime" + nanosIndex, LocalTime.class);
+                nanosIndex++;
             } else {
                 throw new Exception("Cannot parse datetime/time/period : " + s);
             }

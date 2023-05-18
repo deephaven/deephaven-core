@@ -3,19 +3,13 @@ package io.deephaven.time;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.Period;
 import java.util.HashMap;
 
 public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
-
-    public void testFailDateTimeUtils() {
-        fail("Check date time utils function names");
-    }
-
-    public void testFail() {
-        TestCase.fail("Needs many more tests after DateTimeUtils has been tested.");
-    }
 
     public void testConvertExpressionDateTime() throws Exception {
         final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'2010-01-01T12:34:56.891 NY'");
@@ -42,24 +36,35 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
 
     public void testConvertExpressionTime() throws Exception {
         final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'12:00'");
-        TestCase.assertEquals("_time0", tlre.getConvertedFormula());
+        TestCase.assertEquals("_nanos0", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
-        newVars.put("_time0", long.class);
+        newVars.put("_nanos0", long.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _time0=DateTimeUtils.parseNanos(\"12:00\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n", tlre.getInstanceVariablesString());
     }
 
     public void testConvertExpressionPeriod() throws Exception {
-        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'T1S'");
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'P1Y'");
         TestCase.assertEquals("_period0", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
         newVars.put("_period0", Period.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private Period _period0=DateTimeUtils.parsePeriod(\"T1S\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private java.time.Period _period0=DateTimeUtils.parsePeriod(\"P1Y\");\n", tlre.getInstanceVariablesString());
+    }
+
+    public void testConvertExpressionDuration() throws Exception {
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'PT1H'");
+        TestCase.assertEquals("_duration0", tlre.getConvertedFormula());
+
+        final HashMap<String, Class<?>> newVars = new HashMap<>();
+        newVars.put("_duration0", Duration.class);
+        TestCase.assertEquals(newVars, tlre.getNewVariables());
+
+        TestCase.assertEquals("        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT1H\");\n", tlre.getInstanceVariablesString());
     }
 
     public void testConvertExpressionLocalTime() throws Exception {
@@ -70,7 +75,7 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_localTime0", LocalTime.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _time0=DateTimeUtils.parseLocalTime(\"12:00\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private java.time.LocalTime _localTime0=DateTimeUtils.parseLocalTime(\"L12:00\");\n", tlre.getInstanceVariablesString());
     }
 
     public void testConvertExpressionUnknown() throws Exception {
@@ -85,28 +90,28 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
 
     public void testConvertExpressionTimeAddition() throws Exception {
         final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'12:00' + '04:21'");
-        TestCase.assertEquals("_time0 + _time1", tlre.getConvertedFormula());
+        TestCase.assertEquals("_nanos0 + _nanos1", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
-        newVars.put("_time0", long.class);
-        newVars.put("_time1", long.class);
+        newVars.put("_nanos0", long.class);
+        newVars.put("_nanos1", long.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _time0=DateTimeUtils.parseNanos(\"12:00\");\n" +
-                "        private long _time1=DateTimeUtils.parseNanos(\"04:21\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n" +
+                "        private long _nanos1=DateTimeUtils.parseNanos(\"04:21\");\n", tlre.getInstanceVariablesString());
     }
 
     public void testConvertExpressionTimeAddition2() throws Exception {
-        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'12:00' + 'T4H'");
-        TestCase.assertEquals("_time0 + _period0", tlre.getConvertedFormula());
+        final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'12:00' + 'PT4H'");
+        TestCase.assertEquals("_nanos0 + _duration0", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
-        newVars.put("_time0", long.class);
-        newVars.put("_period0", Period.class);
+        newVars.put("_nanos0", long.class);
+        newVars.put("_duration0", Duration.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _time0=DateTimeUtils.parseNanos(\"12:00\");\n" +
-                "        private Period _period0=DateTimeUtils.parsePeriod(\"T4H\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n" +
+                "        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT4H\");\n", tlre.getInstanceVariablesString());
     }
 
 }

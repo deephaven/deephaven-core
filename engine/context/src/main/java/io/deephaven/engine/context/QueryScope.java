@@ -5,7 +5,6 @@ package io.deephaven.engine.context;
 
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.Period;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.log.LogOutput;
@@ -15,6 +14,8 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Period;
 import java.util.*;
 
 /**
@@ -104,6 +105,11 @@ public abstract class QueryScope implements LogOutputAppendable {
                 final Period period = DateTimeUtils.parsePeriodQuiet(datetimeString);
                 if (period != null) {
                     return period;
+                }
+
+                final Duration duration = DateTimeUtils.parseDurationQuiet(datetimeString);
+                if (duration != null) {
+                    return duration;
                 }
 
                 throw new RuntimeException("Cannot parse datetime/time/period : " + stringValue);
