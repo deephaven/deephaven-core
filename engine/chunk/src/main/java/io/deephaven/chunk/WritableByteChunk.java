@@ -85,24 +85,26 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
     }
 
     // region array
-
     /**
-     * Get the underlying data array.
+     * Get the data array backing this WritableByteChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableByteChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
      *
-     * <p>Get the underlying data array.  This Chunk must never be {@link #close() closed} while the array <em>may</em> be in use externally, because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.  This Chunk logically begins at the position indicated by {@link #offset()}.</p>
-     *
-     * @return the underlying data array.
+     * @return The backing data array
      */
-    public final byte [] array() {
+    public final byte[] array() {
         return data;
     }
 
     /**
-     * Get the offset into the underlying data array.
+     * Get this WritableByteChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
      *
-     * @return the offset into the underlying data array.
+     * @return The offset into the backing data array
      */
-    public final int offset() {
+    public final int arrayOffset() {
         return offset;
     }
     // endregion array

@@ -603,16 +603,16 @@ public class TestByteChunk {
     // region testArray
     @Test
     public void testArray() {
-         final byte [] underlyingData = new byte[100];
-         for (int ii = 0; ii < underlyingData.length; ++ii) {
-             underlyingData[ii] = (byte)ii;
-         }
+        final byte[] underlyingData = new byte[100];
+        for (int ii = 0; ii < underlyingData.length; ++ii) {
+            underlyingData[ii] = (byte) ii;
+        }
         final byte[] array;
         final int offset;
-        //noinspection rawtypes
+        // noinspection rawtypes
         try (WritableByteChunk chunk = WritableByteChunk.writableChunkWrap(underlyingData, 10, 20)) {
             array = chunk.array();
-            offset = chunk.offset;
+            offset = chunk.arrayOffset();
             TestCase.assertSame(underlyingData, array);
             TestCase.assertEquals(10, offset);
 
@@ -622,9 +622,9 @@ public class TestByteChunk {
             }
 
             array[offset] = 42;
-            TestCase.assertEquals((byte)42, chunk.get(0));
+            TestCase.assertEquals((byte) 42, chunk.get(0));
             chunk.set(1, (byte) 97);
-            TestCase.assertEquals((byte)97, array[offset + 1]);
+            TestCase.assertEquals((byte) 97, array[offset + 1]);
         }
     }
     // endregion testArray

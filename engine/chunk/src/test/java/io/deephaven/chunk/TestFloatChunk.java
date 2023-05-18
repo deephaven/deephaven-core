@@ -603,16 +603,16 @@ public class TestFloatChunk {
     // region testArray
     @Test
     public void testArray() {
-         final float [] underlyingData = new float[100];
-         for (int ii = 0; ii < underlyingData.length; ++ii) {
-             underlyingData[ii] = (float)ii;
-         }
+        final float[] underlyingData = new float[100];
+        for (int ii = 0; ii < underlyingData.length; ++ii) {
+            underlyingData[ii] = (float) ii;
+        }
         final float[] array;
         final int offset;
-        //noinspection rawtypes
+        // noinspection rawtypes
         try (WritableFloatChunk chunk = WritableFloatChunk.writableChunkWrap(underlyingData, 10, 20)) {
             array = chunk.array();
-            offset = chunk.offset;
+            offset = chunk.arrayOffset();
             TestCase.assertSame(underlyingData, array);
             TestCase.assertEquals(10, offset);
 
@@ -622,9 +622,9 @@ public class TestFloatChunk {
             }
 
             array[offset] = 42;
-            TestCase.assertEquals((float)42, chunk.get(0));
+            TestCase.assertEquals((float) 42, chunk.get(0));
             chunk.set(1, (float) 97);
-            TestCase.assertEquals((float)97, array[offset + 1]);
+            TestCase.assertEquals((float) 97, array[offset + 1]);
         }
     }
     // endregion testArray
