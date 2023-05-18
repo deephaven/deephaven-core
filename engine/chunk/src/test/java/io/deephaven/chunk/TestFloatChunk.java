@@ -600,6 +600,35 @@ public class TestFloatChunk {
         TestCase.assertEquals(value1, reverseActual2D1);
     }
 
+    // region testArray
+    @Test
+    public void testArray() {
+        final float[] underlyingData = new float[100];
+        for (int ii = 0; ii < underlyingData.length; ++ii) {
+            underlyingData[ii] = (float) ii;
+        }
+        final float[] array;
+        final int offset;
+        // noinspection rawtypes
+        try (WritableFloatChunk chunk = WritableFloatChunk.writableChunkWrap(underlyingData, 10, 20)) {
+            array = chunk.array();
+            offset = chunk.arrayOffset();
+            TestCase.assertSame(underlyingData, array);
+            TestCase.assertEquals(10, offset);
+
+            final int lastOffset = offset + chunk.size();
+            for (int ii = offset; ii < lastOffset; ++ii) {
+                TestCase.assertEquals((float) ii, array[ii]);
+            }
+
+            array[offset] = 42;
+            TestCase.assertEquals((float) 42, chunk.get(0));
+            chunk.set(1, (float) 97);
+            TestCase.assertEquals((float) 97, array[offset + 1]);
+        }
+    }
+    // endregion testArray
+
     private static <ATTR extends Values> void verifyChunkEqualsArray(FloatChunk<ATTR> chunk, float[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));
