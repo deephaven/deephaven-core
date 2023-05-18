@@ -9,26 +9,17 @@ description 'Source Support: Base implementations for adding data sources'
 dependencies {
     api project(':engine-api')
 
-    implementation project(':engine-base')
     implementation project(':engine-table')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
-
-    Classpaths.inheritCommonsText(project, 'implementation')
-
-    Classpaths.inheritJacksonPlatform(project)
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
-
-    Classpaths.inheritImmutables(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
+    testImplementation depCommonsLang3
+
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
