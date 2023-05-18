@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.ZoneId;
@@ -21,10 +20,6 @@ public class ZonedDateTimeArraySource extends NanosBasedTimeArraySource<ZonedDat
 
     public ZonedDateTimeArraySource(final @NotNull String zone) {
         this(ZoneId.of(zone));
-    }
-
-    public ZonedDateTimeArraySource(final @NotNull TimeZone zone) {
-        this(zone.getZoneId());
     }
 
     public ZonedDateTimeArraySource(final @NotNull ZoneId zone) {

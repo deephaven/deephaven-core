@@ -4,7 +4,7 @@
 
 <calendar>
     <name>GBLO</name>
-    <timeZone>TZ_LON</timeZone>
+    <timeZone>Europe/London</timeZone>
     <default>
         <businessPeriod>09:30,14:30</businessPeriod>
         <weekend>Saturday</weekend>

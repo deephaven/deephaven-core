@@ -10,9 +10,9 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.TimeZoneAliases;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -212,7 +212,7 @@ public class TestCsvTools {
                         new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
                         new DateTime[] {new DateTime(100), new DateTime(10000), null,
                                 new DateTime(100000), new DateTime(1000000)}
-                });;
+                });
         long numRows = tableToTest.size();
 
         String allSeparators = ",|\tzZ- €9@";
@@ -222,7 +222,7 @@ public class TestCsvTools {
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, TimeZone.TZ_DEFAULT, false, separator, colNames);
+            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, TimeZoneAliases.TZ_DEFAULT, false, separator, colNames);
             Scanner csvReader = new Scanner(csvFile);
 
             // Check header

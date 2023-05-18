@@ -6,7 +6,7 @@ package io.deephaven.time.calendar;
 import io.deephaven.base.Pair;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
+import io.deephaven.time.TimeZoneAliases;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jdom2.Document;
@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.Calendar;
@@ -43,7 +44,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
 
     // each calendar has a name, timezone, and date string format
     private final String calendarName;
-    private final TimeZone timeZone;
+    private final ZoneId timeZone;
 
     // length, in nanos, that a default day is open
     private final long lengthOfDefaultDayNanos;
@@ -63,7 +64,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                 calendarElements.holidays);
     }
 
-    private DefaultBusinessCalendar(final String calendarName, final TimeZone timeZone,
+    private DefaultBusinessCalendar(final String calendarName, final ZoneId timeZone,
             final long lengthOfDefaultDayNanos, final List<String> defaultBusinessPeriodStrings,
             final Set<DayOfWeek> weekendDays, final Map<LocalDate, BusinessSchedule> dates,
             final Map<LocalDate, BusinessSchedule> holidays) {
@@ -225,9 +226,9 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
         return getText(element);
     }
 
-    private static TimeZone getTimeZone(@NotNull final Element root, final String filePath) {
+    private static ZoneId getTimeZone(@NotNull final Element root, final String filePath) {
         final Element element = getRequiredChild(root, "timeZone", filePath);
-        return TimeZone.valueOf(getText(element));
+        return TimeZoneAliases.zone(getText(element));
     }
 
     // throws an error if the child is missing
@@ -281,7 +282,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
         return lengthOfDefaultDayNanos;
     }
 
-    private static BusinessPeriod[] parseBusinessPeriods(final TimeZone timeZone, final LocalDate date,
+    private static BusinessPeriod[] parseBusinessPeriods(final ZoneId timeZone, final LocalDate date,
             final List<String> businessPeriodStrings) {
         final BusinessPeriod[] businessPeriods = new BusinessPeriod[businessPeriodStrings.size()];
         final Pattern hhmm = Pattern.compile("\\d{2}[:]\\d{2}");
@@ -292,7 +293,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                 final String open = openClose[0];
                 String close = openClose[1];
                 if (hhmm.matcher(open).matches() && hhmm.matcher(close).matches()) {
-                    final String tz = timeZone.name().substring(timeZone.name().indexOf("_")).replace("_", " ");
+                    final String tz = TimeZoneAliases.name(timeZone);
                     final LocalDate closeDate;
 
                     if (close.equals("24:00")) { // midnight closing time
@@ -306,8 +307,8 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                         closeDate = date;
                     }
 
-                    final String openDateStr = date.toString() + "T" + open + tz;
-                    final String closeDateStr = closeDate.toString() + "T" + close + tz;
+                    final String openDateStr = date.toString() + "T" + open + " " + tz;
+                    final String closeDateStr = closeDate.toString() + "T" + close + " " + tz;
 
                     businessPeriods[i++] = new BusinessPeriod(DateTimeUtils.parseDateTime(openDateStr),
                             DateTimeUtils.parseDateTime(closeDateStr));
@@ -339,7 +340,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
     }
 
     @Override
-    public TimeZone timeZone() {
+    public ZoneId timeZone() {
         return timeZone;
     }
 
@@ -412,7 +413,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
     }
 
     private static BusinessSchedule newBusinessDay(final LocalDate date, final Set<DayOfWeek> weekendDays,
-            final TimeZone timeZone, final List<String> businessPeriodStrings) {
+            final ZoneId timeZone, final List<String> businessPeriodStrings) {
         if (date == null) {
             return null;
         }
@@ -554,7 +555,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
 
     static class CalendarElements {
         private String calendarName;
-        private TimeZone timeZone;
+        private ZoneId timeZone;
         private long lengthOfDefaultDayNanos;
         private List<String> defaultBusinessPeriodStrings;
         private Set<DayOfWeek> weekendDays;

@@ -12,6 +12,10 @@ import java.util.Date;
 
 public class TestDateTime extends BaseArrayTestCase {
 
+    private static final ZoneId TZ_NY = ZoneId.of("America/New_York");
+    private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
+    private static final ZoneId TZ_UTC = ZoneId.of("UTC");
+
     public void testConstructor() {
         final ZonedDateTime zdt = LocalDateTime.parse("2010-01-01T12:13:14.999123456").atZone(ZoneId.of("Asia/Tokyo"));
         final long nanos = DateTimeUtils.epochNanos(zdt);
@@ -60,24 +64,16 @@ public class TestDateTime extends BaseArrayTestCase {
         final long nanos = DateTimeUtils.epochNanos(zdt);
         final DateTime dateTime = new DateTime(nanos);
         TestCase.assertEquals(zdt, dateTime.toZonedDateTime(ZoneId.of("Asia/Tokyo")));
-        TestCase.assertEquals(zdt, dateTime.toZonedDateTime(TimeZone.TZ_JP));
-        TestCase.assertEquals(zdt.withZoneSameInstant(TimeZone.TZ_DEFAULT.getZoneId()), dateTime.toZonedDateTime());
+        TestCase.assertEquals(zdt, dateTime.toZonedDateTime(TZ_JP));
 
         try{
             //noinspection ConstantConditions
-            dateTime.toZonedDateTime((ZoneId) null);
+            dateTime.toZonedDateTime(null);
             TestCase.fail("Should have thrown an exception");
         } catch (Exception ex) {
             //pass
         }
 
-        try{
-            //noinspection ConstantConditions
-            dateTime.toZonedDateTime((TimeZone) null);
-            TestCase.fail("Should have thrown an exception");
-        } catch (Exception ex) {
-            //pass
-        }
     }
 
     public void testToLocalDate() {
@@ -86,24 +82,16 @@ public class TestDateTime extends BaseArrayTestCase {
         final long nanos = DateTimeUtils.epochNanos(zdt);
         final DateTime dateTime = new DateTime(nanos);
         TestCase.assertEquals(ld, dateTime.toLocalDate(ZoneId.of("Asia/Tokyo")));
-        TestCase.assertEquals(ld, dateTime.toLocalDate(TimeZone.TZ_JP));
-        TestCase.assertEquals(zdt.withZoneSameInstant(TimeZone.TZ_DEFAULT.getZoneId()).toLocalDate(), dateTime.toLocalDate());
+        TestCase.assertEquals(ld, dateTime.toLocalDate(TZ_JP));
 
         try{
             //noinspection ConstantConditions
-            dateTime.toLocalDate((ZoneId) null);
+            dateTime.toLocalDate(null);
             TestCase.fail("Should have thrown an exception");
         } catch (Exception ex) {
             //pass
         }
 
-        try{
-            //noinspection ConstantConditions
-            dateTime.toLocalDate((TimeZone) null);
-            TestCase.fail("Should have thrown an exception");
-        } catch (Exception ex) {
-            //pass
-        }
     }
 
     public void testToLocalTime() {
@@ -112,20 +100,11 @@ public class TestDateTime extends BaseArrayTestCase {
         final long nanos = DateTimeUtils.epochNanos(zdt);
         final DateTime dateTime = new DateTime(nanos);
         TestCase.assertEquals(lt, dateTime.toLocalTime(ZoneId.of("Asia/Tokyo")));
-        TestCase.assertEquals(lt, dateTime.toLocalTime(TimeZone.TZ_JP));
-        TestCase.assertEquals(zdt.withZoneSameInstant(TimeZone.TZ_DEFAULT.getZoneId()).toLocalTime(), dateTime.toLocalTime());
+        TestCase.assertEquals(lt, dateTime.toLocalTime(TZ_JP));
 
         try{
             //noinspection ConstantConditions
-            dateTime.toLocalTime((ZoneId) null);
-            TestCase.fail("Should have thrown an exception");
-        } catch (Exception ex) {
-            //pass
-        }
-
-        try{
-            //noinspection ConstantConditions
-            dateTime.toLocalTime((TimeZone) null);
+            dateTime.toLocalTime(null);
             TestCase.fail("Should have thrown an exception");
         } catch (Exception ex) {
             //pass
@@ -192,18 +171,18 @@ public class TestDateTime extends BaseArrayTestCase {
         DateTime dateTime = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
 
         {
-            TestCase.assertEquals(dateTime.toDateString(), dateTime.toDateString(TimeZone.TZ_DEFAULT));
+            TestCase.assertEquals(dateTime.toDateString(), dateTime.toDateString(TimeZoneAliases.TZ_DEFAULT));
         }
 
         { // America/New_York
             String zoneId = "America/New_York";
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(TimeZone.TZ_NY));
+            TestCase.assertEquals("2016-11-06", dateTime.toDateString(TZ_NY));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
         { // UTC
             String zoneId = "UTC";
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(TimeZone.TZ_UTC));
+            TestCase.assertEquals("2016-11-06", dateTime.toDateString(TZ_UTC));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
@@ -224,15 +203,7 @@ public class TestDateTime extends BaseArrayTestCase {
 
         try{
             //noinspection ConstantConditions
-            dateTime.toDateString((ZoneId) null);
-            TestCase.fail("Should throw an exception");
-        }catch (Exception e){
-            //pass
-        }
-
-        try{
-            //noinspection ConstantConditions
-            dateTime.toDateString((TimeZone) null);
+            dateTime.toDateString(null);
             TestCase.fail("Should throw an exception");
         }catch (Exception e){
             //pass
@@ -245,14 +216,14 @@ public class TestDateTime extends BaseArrayTestCase {
 
         { // UTC
             String zoneId = "UTC";
-            TestCase.assertEquals("2016-11-06T04:00:00.000000000 UTC", utc.toString(TimeZone.TZ_UTC));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 UTC", utc.toString(TZ_UTC));
             TestCase.assertEquals("2016-11-06T04:00:00.000000000 UTC", utc.toString(ZoneId.of(zoneId)));
         }
 
         { // America/New_York
             String zoneId = "America/New_York";
-            TestCase.assertEquals("2016-11-06T04:00:00.000000000 NY", ny.toString(TimeZone.TZ_NY));
-            TestCase.assertEquals("2016-11-06T04:00:00.000000000 America/New_York", ny.toString(ZoneId.of(zoneId)));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 NY", ny.toString(TZ_NY));
+            TestCase.assertEquals("2016-11-06T04:00:00.000000000 NY", ny.toString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+2 - 2 hours *EAST*
@@ -271,21 +242,13 @@ public class TestDateTime extends BaseArrayTestCase {
         }
 
         {
-            TestCase.assertEquals(utc.toString(), utc.toString(TimeZone.TZ_DEFAULT));
-            TestCase.assertEquals(ny.toString(), ny.toString(TimeZone.TZ_DEFAULT));
+            TestCase.assertEquals(utc.toString(), utc.toString(TimeZoneAliases.TZ_DEFAULT));
+            TestCase.assertEquals(ny.toString(), ny.toString(TimeZoneAliases.TZ_DEFAULT));
         }
 
         try{
             //noinspection ConstantConditions
-            utc.toString((ZoneId) null);
-            TestCase.fail("Should throw an exception");
-        }catch (Exception e){
-            //pass
-        }
-
-        try{
-            //noinspection ConstantConditions
-            utc.toString((TimeZone) null);
+            utc.toString(null);
             TestCase.fail("Should throw an exception");
         }catch (Exception e){
             //pass

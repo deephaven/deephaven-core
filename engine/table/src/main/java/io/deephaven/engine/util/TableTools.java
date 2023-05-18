@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TimeTable;
@@ -38,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -84,7 +84,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, String... columns) {
-        show(source, 10, io.deephaven.time.TimeZone.TZ_DEFAULT, System.out, columns);
+        show(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -95,7 +95,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, String... columns) {
-        showWithRowSet(source, 10, io.deephaven.time.TimeZone.TZ_DEFAULT, System.out, columns);
+        showWithRowSet(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -105,17 +105,17 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, String... columns) {
-        show(source, 10, io.deephaven.time.TimeZone.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, ",", System.out, false, columns);
     }
 
     /**
      * Prints the first few rows of a table to standard output.
      *
      * @param source a Deephaven table object
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, io.deephaven.time.TimeZone timeZone, String... columns) {
+    public static void show(Table source, ZoneId timeZone, String... columns) {
         show(source, 10, timeZone, System.out, columns);
     }
 
@@ -127,7 +127,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, io.deephaven.time.TimeZone.TZ_DEFAULT, System.out, columns);
+        show(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -139,7 +139,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, long maxRowCount, String... columns) {
-        showWithRowSet(source, maxRowCount, io.deephaven.time.TimeZone.TZ_DEFAULT, System.out, columns);
+        showWithRowSet(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -150,7 +150,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, io.deephaven.time.TimeZone.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, ",", System.out, false, columns);
     }
 
     /**
@@ -158,10 +158,10 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, io.deephaven.time.TimeZone timeZone,
+    public static void show(Table source, long maxRowCount, ZoneId timeZone,
             String... columns) {
         show(source, maxRowCount, timeZone, System.out, columns);
     }
@@ -171,11 +171,11 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, io.deephaven.time.TimeZone timeZone, PrintStream out,
+    public static void show(Table source, long maxRowCount, ZoneId timeZone, PrintStream out,
             String... columns) {
         show(source, maxRowCount, timeZone, "|", out, false, columns);
     }
@@ -186,11 +186,11 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void showWithRowSet(Table source, long maxRowCount, io.deephaven.time.TimeZone timeZone,
+    public static void showWithRowSet(Table source, long maxRowCount, ZoneId timeZone,
             PrintStream out,
             String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
@@ -207,7 +207,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZone.TZ_DEFAULT, "|", out,
+        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, "|", out,
                 true, columns);
     }
 
@@ -216,13 +216,13 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param delimiter a String value to use between printed values
      * @param out a PrintStream destination to which to print the data
      * @param showRowSet a boolean indicating whether to also print rowSet details
      * @param columns varargs of column names to display
      */
-    public static void show(final Table source, final long maxRowCount, final TimeZone timeZone,
+    public static void show(final Table source, final long maxRowCount, final ZoneId timeZone,
             final String delimiter, final PrintStream out, final boolean showRowSet, String... columns) {
         TableShowTools.showInternal(source, 0, maxRowCount, timeZone, delimiter, out, showRowSet, columns);
     }
@@ -238,7 +238,7 @@ public class TableTools {
      */
     public static void showWithRowSet(final Table source, final long firstRow, final long lastRow,
             final String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZone.TZ_DEFAULT, "|",
+        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, "|",
                 System.out, true, columns);
     }
 
@@ -250,7 +250,7 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, String... columns) {
-        return string(t, 10, io.deephaven.time.TimeZone.TZ_DEFAULT, columns);
+        return string(t, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, columns);
     }
 
     /**
@@ -262,18 +262,18 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, int size, String... columns) {
-        return string(t, size, io.deephaven.time.TimeZone.TZ_DEFAULT, columns);
+        return string(t, size, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, columns);
     }
 
     /**
      * Returns the first few rows of a table as a pipe-delimited string.
      *
      * @param t a Deephaven table object
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
-    public static String string(Table t, io.deephaven.time.TimeZone timeZone, String... columns) {
+    public static String string(Table t, ZoneId timeZone, String... columns) {
         return string(t, 10, timeZone, columns);
     }
 
@@ -282,14 +282,14 @@ public class TableTools {
      *
      * @param table a Deephaven table object
      * @param size the number of rows to return
-     * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
     public static String string(
             @NotNull final Table table,
             final int size,
-            final io.deephaven.time.TimeZone timeZone,
+            final ZoneId timeZone,
             @NotNull final String... columns) {
         try (final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
                 final PrintStream printStream = new PrintStream(bytes, false, StandardCharsets.UTF_8)) {

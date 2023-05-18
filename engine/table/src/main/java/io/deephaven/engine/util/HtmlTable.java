@@ -5,12 +5,12 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 

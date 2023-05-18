@@ -4,12 +4,13 @@
 package io.deephaven.plot.axisformatters;
 
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
+import io.deephaven.time.TimeZoneAliases;
 
 import java.io.Serializable;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -21,7 +22,7 @@ import java.time.format.DateTimeFormatter;
 public class NanosAxisFormat implements AxisFormat, Serializable {
 
     private static final long serialVersionUID = -2096650974534906333L;
-    private TimeZone tz;
+    private ZoneId tz;
     private String pattern;
     private NanosFormat instance = null;
 
@@ -30,7 +31,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      *
      * @param tz timezone
      */
-    public NanosAxisFormat(TimeZone tz) {
+    public NanosAxisFormat(ZoneId tz) {
         this.tz = tz;
     }
 
@@ -38,7 +39,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      * Creates a new NanosAxisFormat with the default timezone.
      */
     public NanosAxisFormat() {
-        this(TimeZone.TZ_DEFAULT);
+        this(TimeZoneAliases.TZ_DEFAULT);
     }
 
     @Override
@@ -73,17 +74,17 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
             updateFormatter(pattern);
         }
 
-        public void updateTimeZone(final TimeZone tz) {
+        public void updateTimeZone(final ZoneId tz) {
             NanosAxisFormat.this.tz = tz;
 
             if (formatter != null) {
-                formatter = formatter.withZone(tz.getZoneId());
+                formatter = formatter.withZone(tz);
             }
         }
 
         private void updateFormatter(String format) {
             format = format == null ? "yyyy-MM-dd" : format;
-            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz.getZoneId());
+            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz);
         }
 
         @Override

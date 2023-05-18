@@ -5,9 +5,9 @@ package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 
 import java.time.DayOfWeek;
+import java.time.ZoneId;
 
 /**
  * A calendar.
@@ -267,5 +267,5 @@ public interface Calendar {
      *
      * @return the time zone of the calendar
      */
-    TimeZone timeZone();
+    ZoneId timeZone();
 }

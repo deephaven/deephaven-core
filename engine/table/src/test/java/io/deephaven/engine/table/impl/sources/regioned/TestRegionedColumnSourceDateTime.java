@@ -6,14 +6,17 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import org.junit.Test;
 
+import java.time.ZoneId;
+
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
 public class TestRegionedColumnSourceDateTime
         extends TstRegionedColumnSourceReferencing<DateTime, Values, ColumnRegionLong<Values>> {
+
+    private static final ZoneId TZ_NY = ZoneId.of("America/New_York");
 
     public TestRegionedColumnSourceDateTime() {
         super(ColumnRegionLong.class);
@@ -22,7 +25,7 @@ public class TestRegionedColumnSourceDateTime
     private static final DateTime[] TEST_DATES = new DateTime[] {
             null,
             DateTimeUtils.now(),
-            DateTimeUtils.dateTimeAtMidnight(DateTimeUtils.now(), TimeZone.TZ_NY),
+            DateTimeUtils.dateTimeAtMidnight(DateTimeUtils.now(), TZ_NY),
             DateTimeUtils.parseDateTime("2013-01-15T12:19:32.000 NY"),
             DateTimeUtils.parseDateTime("2013-01-15T09:30:00.000 NY"),
             DateTimeUtils.parseDateTime("2013-01-15T16:00:00.000 NY"),

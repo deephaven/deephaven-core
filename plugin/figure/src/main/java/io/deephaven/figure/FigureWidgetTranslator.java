@@ -544,7 +544,7 @@ public class FigureWidgetTranslator {
         final BusinessCalendar businessCalendar = axisTransform.getBusinessCalendar();
         final BusinessCalendarDescriptor.Builder businessCalendarDescriptor = BusinessCalendarDescriptor.newBuilder();
         businessCalendarDescriptor.setName(businessCalendar.name());
-        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getZoneId().getId());
+        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getId());
         Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
             if (dayOfWeek == BusinessCalendarDescriptor.DayOfWeek.UNRECOGNIZED) {
                 return false;
@@ -569,10 +569,10 @@ public class FigureWidgetTranslator {
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
                         //noinspection ConstantConditions
-                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getZoneId())
+                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
                                 .format(DateTimeUtils.toInstant(bp.getStartTime()));
                         //noinspection ConstantConditions
-                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getZoneId())
+                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
                                 .format(DateTimeUtils.toInstant(bp.getEndTime()));
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);

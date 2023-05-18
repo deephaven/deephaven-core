@@ -4,7 +4,7 @@
 
 <calendar>
     <name>JPOSE</name>
-    <timeZone>TZ_JP</timeZone>
+    <timeZone>Asia/Tokyo</timeZone>
     <default>
         <businessPeriod>09:00,11:30</businessPeriod>
         <businessPeriod>12:30,15:00</businessPeriod>

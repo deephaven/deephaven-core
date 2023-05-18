@@ -194,33 +194,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return Instant.ofEpochSecond(0, nanos);
     }
 
-    //TODO remove TZ_DEFAULT methods?
-    /**
-     * Convert this DateTime to a {@link ZonedDateTime} with the system default time zone.
-     *
-     * @return a {@link ZonedDateTime}
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime() {
-        return toZonedDateTime(TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
-     *
-     * @param timeZone time zone.
-     * @return a {@link ZonedDateTime}
-     */
-    @NotNull
-    public ZonedDateTime toZonedDateTime(@NotNull final TimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return toZonedDateTime(timeZone.getZoneId());
-    }
-
     /**
      * Convert this DateTime to a {@link ZonedDateTime} with the specified time zone.
      *
@@ -236,33 +209,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return ZonedDateTime.ofInstant(toInstant(), timeZone);
     }
 
-    //TODO remove TZ_DEFAULT methods?
-    /**
-     * Convert this DateTime to a {@link LocalDate} with the system default time zone.
-     *
-     * @return the {@link LocalDate}
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @NotNull
-    public LocalDate toLocalDate() {
-        return toLocalDate(TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Convert this DateTime to a {@link LocalDate} with the specified time zone.
-     *
-     * @param timeZone time zone.
-     * @return the {@link LocalDate}
-     */
-    @NotNull
-    public LocalDate toLocalDate(@NotNull final TimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return toLocalDate(timeZone.getZoneId());
-    }
-
     /**
      * Convert this DateTime to a {@link LocalDate} with the specified time zone.
      *
@@ -272,33 +218,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     @NotNull
     public LocalDate toLocalDate(@NotNull final ZoneId timeZone) {
         return toZonedDateTime(timeZone).toLocalDate();
-    }
-
-    //TODO remove TZ_DEFAULT methods?
-    /**
-     * Convert this DateTime to a {@link LocalTime} with the system default time zone.
-     *
-     * @return the {@link LocalTime}
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @NotNull
-    public LocalTime toLocalTime() {
-        return toLocalTime(TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Convert this DateTime to a {@link LocalTime} with the specified time zone.
-     *
-     * @param timeZone time zone.
-     * @return the {@link LocalTime}
-     */
-    @NotNull
-    public LocalTime toLocalTime(@NotNull final TimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return toLocalTime(timeZone.getZoneId());
     }
 
     /**
@@ -312,11 +231,12 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return toZonedDateTime(timeZone).toLocalTime();
     }
 
+    //TODO: use instant instead
     /**
      * Convert this DateTime to a {@link Date}.  The date time will be truncated to millisecond resolution.
      *
      * @return a {@link Date}
-     * @deprecated use {@link #toZonedDateTime()} instead.
+     * @deprecated use {@link #toZonedDateTime(ZoneId)} ()} instead.
      */
     @Deprecated
     @NotNull
@@ -330,27 +250,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     @Override
     public String toString() {
-        return toString(TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts this DateTime into a String using the provided time zone.
-     *
-     * The date time will be formatted as {@code yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ}, for example
-     * {@code 2020-05-27T13:37:57.780853000 NY} or {@code 2020-05-27T17:37:42.763641000 UTC}.
-     *
-     * @param timeZone the time zone for formatting the string
-     * @return a string representation of this DateTime
-     * @see DateTimeUtils#formatDateTime(DateTime, TimeZone)
-     */
-    @NotNull
-    public String toString(@NotNull final TimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        //noinspection ConstantConditions
-        return DateTimeUtils.formatDateTime(this, timeZone);
+        return toString(TimeZoneAliases.TZ_DEFAULT);
     }
 
     /**
@@ -373,36 +273,18 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
+    //TODO: remove default?
    /**
      * Converts this DateTime into a date String using the default time zone.
      *
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
      * @return a date string representation of this DateTime in the default time zone.
-     * @see TimeZone#TZ_DEFAULT
+     * @see TimeZoneAliases#TZ_DEFAULT
      */
     @NotNull
     public String toDateString() {
-        return toDateString(TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts this DateTime into a date String using the provided time zone.
-     *
-     * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
-     *
-     * @param timeZone the time zone for formatting the string
-     * @return a date string representation of this DateTime in the provided time zone.
-     * @see DateTimeUtils#formatDate(DateTime, TimeZone)
-     */
-    @NotNull
-    public String toDateString(@NotNull final TimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        //noinspection ConstantConditions
-        return DateTimeUtils.formatDate(this, timeZone);
+        return toDateString(TimeZoneAliases.TZ_DEFAULT);
     }
 
     /**

@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.InputMismatchException;
 import java.util.Set;
@@ -32,6 +33,8 @@ import java.util.TimeZone;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
 public class JdbcToTableAdapterTest {
+
+    private static final ZoneId TZ_UTC = ZoneId.of("UTC");
 
     private Connection conn;
     private Statement stmt;
@@ -65,7 +68,7 @@ public class JdbcToTableAdapterTest {
                     ", " + (ii % 256 == 3 ? "NULL" : ii - numRows / 2) + // long
                     ", " + (ii % 256 == 4 ? "NULL" : (ii - numRows / 2) / 256.0) + // float
                     ", " + (ii % 256 == 5 ? "NULL" : "'" + ii + "'") + // string
-                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dtf.format(new DateTime(ii * 100_000L), io.deephaven.time.TimeZone.TZ_UTC) + "Z'") + // date
+                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dtf.format(new DateTime(ii * 100_000L), TZ_UTC) + "Z'") + // date
                     ");");
         }
     }

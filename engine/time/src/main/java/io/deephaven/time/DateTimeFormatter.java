@@ -16,7 +16,6 @@ import java.util.Map;
 public class DateTimeFormatter {
 
     private final String pattern;
-    private final Map<TimeZone, java.time.format.DateTimeFormatter> formatCacheTZ = new HashMap<>(3);
     private final Map<ZoneId, java.time.format.DateTimeFormatter> formatCacheID = new HashMap<>(3);
 
     /**
@@ -25,14 +24,14 @@ public class DateTimeFormatter {
      * See {@link java.time.format.DateTimeFormatter} for valid format strings.
      *
      * @param pattern format pattern.
-     * @see TimeZone#TZ_DEFAULT
+     * @see TimeZoneAliases#TZ_DEFAULT
      * @see java.time.format.DateTimeFormatter
      */
     public DateTimeFormatter(String pattern) {
         this.pattern = pattern;
 
         // Do this here so we fail fast if there's a problem with the format string
-        getFormatter(TimeZone.TZ_DEFAULT.getZoneId());
+        getFormatter(TimeZoneAliases.TZ_DEFAULT);
     }
 
     /**
@@ -52,13 +51,9 @@ public class DateTimeFormatter {
     }
 
     private java.time.format.DateTimeFormatter getFormatter(ZoneId tz) {
+        final String timeZone = TimeZoneAliases.name(tz);
         return formatCacheID.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
-                .ofPattern(pattern.replaceAll("%t", '\'' + tz.getId() + '\'')));
-    }
-
-    private java.time.format.DateTimeFormatter getFormatter(TimeZone tz) {
-        return formatCacheTZ.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
-                .ofPattern(pattern.replaceAll("%t", '\'' + tz.toString().substring(3) + '\'')));
+                .ofPattern(pattern.replaceAll("%t", '\'' + timeZone + '\'')));
     }
 
     /**
@@ -74,27 +69,15 @@ public class DateTimeFormatter {
     }
 
     /**
-     * Returns a DateTime formatted as a string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return date time formatted as a string.
-     */
-    @NotNull
-    public String format(@NotNull final DateTime dateTime, @NotNull final TimeZone timeZone) {
-        return dateTime.toInstant().atZone(timeZone.getZoneId()).format(getFormatter(timeZone));
-    }
-
-    /**
      * Returns a DateTime formatted as a string using the default time zone.
      *
      * @param dateTime time to format as a string.
      * @return date time formatted as a string.
-     * @see TimeZone#TZ_DEFAULT
+     * @see TimeZoneAliases#TZ_DEFAULT
      */
     @NotNull
     public String format(@NotNull final DateTime dateTime) {
-        return format(dateTime, TimeZone.TZ_DEFAULT);
+        return format(dateTime, TimeZoneAliases.TZ_DEFAULT);
     }
 
     @Override

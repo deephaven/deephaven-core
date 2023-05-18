@@ -4,10 +4,10 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +49,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public TimeZone timeZone() {
+    public ZoneId timeZone() {
         return calendar.timeZone();
     }
 

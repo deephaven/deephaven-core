@@ -19,6 +19,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeZoneAliases;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.text.SplitIgnoreQuotes;
 import org.jetbrains.annotations.NotNull;
@@ -517,13 +518,13 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime(valString));
+                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime(valString), TimeZoneAliases.TZ_DEFAULT);
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
                     long time = DateTimeUtils.parseNanos(valString);
                     dateLower =
-                            DateTimeUtils.toZonedDateTime(DateTime.nowMillis()).truncatedTo(ChronoUnit.DAYS).plus(time,
+                            DateTimeUtils.toZonedDateTime(DateTime.nowMillis(), TimeZoneAliases.TZ_DEFAULT).truncatedTo(ChronoUnit.DAYS).plus(time,
                                     ChronoUnit.NANOS);
                 } catch (RuntimeException ignored1) {
                 }

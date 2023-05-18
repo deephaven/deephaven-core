@@ -8,13 +8,13 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.ChunkType;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+import java.time.ZoneId;
 
 /**
  * Parquet {@link ToPage} implementation for {@link DateTime}s stored as Int96s representing an Impala
@@ -57,7 +57,7 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
      * @param timeZone
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseDateTime("1970-01-01T00:00:00 " + timeZone), TimeZone.TZ_UTC);
+        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseDateTime("1970-01-01T00:00:00 " + timeZone), ZoneId.of("UTC"));
     }
 
     @Override

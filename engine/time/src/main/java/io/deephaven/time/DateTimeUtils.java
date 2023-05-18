@@ -464,23 +464,6 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static String today(@NotNull final TimeZone timeZone) {
-        return cachedCurrentDates.putIfAbsent(timeZone.getZoneId(), CachedCurrentDate::new).get();
-    }
-
-    //TODO: have these return local time?
-    /**
-     * Provides the current date according to the current clock.
-     * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
-     * this method can return the date according to replay time.
-     *
-     * @param timeZone time zone.
-     * @see #currentClock()
-     * @see #setClock(Clock)
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd".
-     */
-    @ScriptApi
-    @NotNull
     public static String today(@NotNull final ZoneId timeZone) {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
@@ -498,7 +481,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
-        return today(TimeZone.TZ_DEFAULT);
+        return today(TimeZoneAliases.TZ_DEFAULT);
     }
 
     // endregion
@@ -763,24 +746,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date, time, and time zone to an {@link Instant}.
-     *
-     * @param date date.
-     * @param time local time.
-     * @param timeZone time zone.
-     * @return {@link Instant}, or null if any input is null.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime toDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable TimeZone timeZone) {
-        if (date == null || time == null || timeZone == null) {
-            return null;
-        }
-
-        return toDateTime(toInstant(date, time, timeZone.getZoneId()));
-    }
-
-    /**
      * Converts a date time to a {@link DateTime}.
      *
      * @param dateTime date time to convert.
@@ -850,28 +815,7 @@ public class DateTimeUtils {
                 .atZone(timeZone) // ZonedDateTime
                 .toInstant(); // Instant
     }
-
-    /**
-     * Converts a date, time, and time zone to an {@link Instant}.
-     *
-     * @param date date.
-     * @param time local time.
-     * @param timeZone time zone.
-     * @return {@link Instant}, or null if any input is null.
-     */
-    @ScriptApi
-    @Nullable
-    public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable TimeZone timeZone) {
-        if (date == null || time == null || timeZone == null) {
-            return null;
-        }
-
-        return time // LocalTime
-                .atDate(date) // LocalDateTime
-                .atZone(timeZone.getZoneId()) // ZonedDateTime
-                .toInstant(); // Instant
-    }
-
+    
     /**
      * Converts a date time to an {@link Instant}.
      *
@@ -911,38 +855,6 @@ public class DateTimeUtils {
      *
      * @param dateTime date time to convert.
      * @param timeZone time zone.
-     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return toZonedDateTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link ZonedDateTime}.
-     *
-     * Uses the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(final @Nullable DateTime dateTime) {
-        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a date time to a {@link ZonedDateTime}.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
      * @return {@link ZonedDateTime}, or null if any input is null.
      */
     @ScriptApi
@@ -953,36 +865,6 @@ public class DateTimeUtils {
         }
 
         return ZonedDateTime.ofInstant(dateTime, timeZone);
-    }
-
-    /**
-     * Converts a date time to a {@link ZonedDateTime}.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link ZonedDateTime}, or null if any input is null.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime, @Nullable TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return toZonedDateTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link ZonedDateTime} using the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link ZonedDateTime}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime) {
-        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -1003,42 +885,6 @@ public class DateTimeUtils {
         return time // LocalTime
                 .atDate(date) // LocalDateTime
                 .atZone(timeZone); // ZonedDateTime
-    }
-
-    /**
-     * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
-     *
-     * @param date date.
-     * @param time local time.
-     * @param timeZone time zone.
-     * @return {@link ZonedDateTime}, or null if any input is null.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable TimeZone timeZone) {
-        if (date == null || time == null || timeZone == null) {
-            return null;
-        }
-
-        return toZonedDateTime(date, time, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a local date, local time, and the default time zone to a {@link ZonedDateTime}.
-     *
-     * @param date date.
-     * @param time local time.
-     * @return {@link ZonedDateTime}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time) {
-        if (date == null || time == null) {
-            return null;
-        }
-
-        return toZonedDateTime(date, time, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -1065,76 +911,12 @@ public class DateTimeUtils {
      * @return {@link LocalDate}, or null if any input is null.
      */
     @Nullable
-    public static LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if(dateTime == null || timeZone == null){
-            return null;
-        }
-
-        return toLocalDate(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link LocalDate} with the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link LocalDate}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @Nullable
-    public static LocalDate toLocalDate(@Nullable final DateTime dateTime) {
-        if(dateTime == null){
-            return null;
-        }
-
-        return toLocalDate(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a date time to a {@link LocalDate} with the specified time zone.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link LocalDate}, or null if any input is null.
-     */
-    @Nullable
     public static LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
 
         return toZonedDateTime(dateTime, timeZone).toLocalDate();
-    }
-
-    /**
-     * Converts a date time to a {@link LocalDate} with the specified time zone.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link LocalDate}, or null if any input is null.
-     */
-    @Nullable
-    public static LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if(dateTime == null || timeZone == null){
-            return null;
-        }
-
-        return toLocalDate(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link LocalDate} with the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link LocalDate}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @Nullable
-    public static LocalDate toLocalDate(@Nullable final Instant dateTime) {
-        if(dateTime == null){
-            return null;
-        }
-
-        return toLocalDate(dateTime, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -1175,71 +957,11 @@ public class DateTimeUtils {
      * @return {@link LocalTime}, or null if any input is null.
      */
     @Nullable
-    public static LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if(dateTime == null || timeZone == null){
-            return null;
-        }
-        return toLocalTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link LocalTime} with the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link LocalTime}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @Nullable
-    public static LocalTime toLocalTime(@Nullable final DateTime dateTime) {
-        if(dateTime == null){
-            return null;
-        }
-        return toLocalTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a date time to a {@link LocalTime} with the specified time zone.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link LocalTime}, or null if any input is null.
-     */
-    @Nullable
     public static LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if(dateTime == null || timeZone == null){
             return null;
         }
         return toZonedDateTime(dateTime, timeZone).toLocalTime();
-    }
-
-    /**
-     * Converts a date time to a {@link LocalTime} with the specified time zone.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link LocalTime}, or null if any input is null.
-     */
-    @Nullable
-    public static LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if(dateTime == null || timeZone == null){
-            return null;
-        }
-        return toLocalTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to a {@link LocalTime} with the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return {@link LocalTime}, or null if any input is null.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @Nullable
-    public static LocalTime toLocalTime(@Nullable final Instant dateTime) {
-        if(dateTime == null){
-            return null;
-        }
-        return toLocalTime(dateTime, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -1619,40 +1341,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        return epochNanosToZonedDateTime(nanos, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
-        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
      * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
      *
      * @param micros microseconds since Epoch.
@@ -1669,39 +1357,6 @@ public class DateTimeUtils {
 
         // noinspection ConstantConditions
         return micros == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMicrosToInstant(micros), timeZone);
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param micros microseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param micros microseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
-        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
     }
 
     /**
@@ -1724,40 +1379,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param millis milliseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        return epochMillisToZonedDateTime(millis, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param millis milliseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
-        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
      * Converts seconds from the Epoch to a {@link ZonedDateTime}.
      *
      * @param seconds seconds since Epoch.
@@ -1773,39 +1394,6 @@ public class DateTimeUtils {
         }
         // noinspection ConstantConditions
         return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
-    }
-
-    /**
-     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param seconds seconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-        return epochSecondsToZonedDateTime(seconds, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param seconds seconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
-        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
     }
 
     /**
@@ -1887,42 +1475,6 @@ public class DateTimeUtils {
         return epochNanosToZonedDateTime(epochAutoToEpochNanos(epochOffset), timeZone);
     }
 
-    /**
-     * Converts an offset from the Epoch to a {@link ZonedDateTime}.  The offset can be in milliseconds, microseconds,
-     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-     *
-     * @param epochOffset time offset from the Epoch.
-     * @param timeZone time zone.
-     * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      offset from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, @Nullable TimeZone timeZone) {
-        if( epochOffset == NULL_LONG || timeZone == null){
-            return null;
-        }
-        return epochAutoToZonedDateTime(epochOffset, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts an offset from the Epoch to a {@link ZonedDateTime} using the default time zone.  The offset can be in milliseconds, microseconds,
-     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-     *
-     * @param epochOffset time offset from the Epoch.
-     * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      offset from the Epoch converted to a {@link ZonedDateTime} using the default time zone.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset) {
-        if( epochOffset == NULL_LONG ){
-            return null;
-        }
-        return epochAutoToZonedDateTime(epochOffset, TimeZone.TZ_DEFAULT);
-    }
-
     // endregion
 
     // region Conversions: Excel
@@ -1966,76 +1518,12 @@ public class DateTimeUtils {
      * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
      */
     @ScriptApi
-    public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if( dateTime == null || timeZone == null){
-            return 0.0;
-        }
-
-        return toExcelTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double in the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final DateTime dateTime) {
-        if( dateTime == null){
-            return 0.0;
-        }
-
-        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone to use when interpreting the date time.
-     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-     */
-    @ScriptApi
     public static double toExcelTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if( dateTime == null || timeZone == null){
             return 0.0;
         }
 
         return epochMillisToExcelTime(epochMillis(dateTime), timeZone);
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double.
-     *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone to use when interpreting the date time.
-     * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if( dateTime == null || timeZone == null){
-            return 0.0;
-        }
-
-        return toExcelTime(dateTime, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts a date time to an Excel time represented as a double in the default time zone.
-     *
-     * @param dateTime date time to convert.
-     * @return 0.0 if any input is null; otherwise, the input date time converted to an Excel time in the default time zone represented as a double.
-     * @see TimeZone#TZ_DEFAULT
-     */
-    @ScriptApi
-    public static double toExcelTime(@Nullable final Instant dateTime) {
-        if( dateTime == null){
-            return 0.0;
-        }
-
-        return toExcelTime(dateTime, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -2071,35 +1559,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts an Excel time represented as a double to a {@link DateTime}.
-     *
-     * @param excel excel time represented as a double.
-     * @param timeZone time zone to use when interpreting the Excel time.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime excelToDateTime(final double excel, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        return excelToDateTime(excel, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts an Excel time represented as a double to a {@link DateTime} using the default time zone.
-     *
-     * @param excel excel time represented as a double.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime} using the default time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime excelToDateTime(final double excel) {
-        return excelToDateTime(excel, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
      * Converts an Excel time represented as a double to an {@link Instant}.
      *
      * @param excel excel time represented as a double.
@@ -2114,35 +1573,6 @@ public class DateTimeUtils {
         }
 
         return epochMillisToInstant(excelTimeToEpochMillis(excel, timeZone));
-    }
-
-    /**
-     * Converts an Excel time represented as a double to an {@link Instant}.
-     *
-     * @param excel excel time represented as a double.
-     * @param timeZone time zone to use when interpreting the Excel time.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to an {@link Instant}.
-     */
-    @ScriptApi
-    @Nullable
-    public static Instant excelToInstant(final double excel, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        return excelToInstant(excel, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts an Excel time represented as a double to an {@link Instant} using the default time zone.
-     *
-     * @param excel excel time represented as a double.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link Instant} using the default time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static Instant excelToInstant(final double excel) {
-        return excelToInstant(excel, TimeZone.TZ_DEFAULT);
     }
 
     /**
@@ -2161,36 +1591,6 @@ public class DateTimeUtils {
 
         return epochMillisToZonedDateTime(excelTimeToEpochMillis(excel, timeZone), timeZone);
     }
-
-    /**
-     * Converts an Excel time represented as a double to a {@link ZonedDateTime}.
-     *
-     * @param excel excel time represented as a double.
-     * @param timeZone time zone to use when interpreting the Excel time.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime}.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime excelToZonedDateTime(final double excel, @Nullable final TimeZone timeZone) {
-        if(timeZone == null){
-            return null;
-        }
-
-        return excelToZonedDateTime(excel, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts an Excel time represented as a double to a {@link ZonedDateTime} using the default time zone.
-     *
-     * @param excel excel time represented as a double.
-     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime} using the default time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static ZonedDateTime excelToZonedDateTime(final double excel) {
-        return excelToZonedDateTime(excel, TimeZone.TZ_DEFAULT);
-    }
-
 
     // endregion
 
@@ -3307,41 +2707,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the second.
      */
     @ScriptApi
-    public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
     public static long nanosOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosOfSecond(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static long nanosOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -3391,41 +2757,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the second.
      */
     @ScriptApi
-    public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of microseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
     public static long microsOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of microseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static long microsOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -3475,41 +2807,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the second.
      */
     @ScriptApi
-    public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
     public static int millisOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToMillis(nanosOfSecond(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the second.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the second.
-     */
-    @ScriptApi
-    public static int millisOfSecond(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -3559,47 +2857,11 @@ public class DateTimeUtils {
      *      elapsed since the top of the minute.
      */
     @ScriptApi
-    public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getSecond();
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the minute.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the minute.
-     */
-    @ScriptApi
     public static int secondOfMinute(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return toZonedDateTime(dateTime, timeZone).getSecond();
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the minute.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the minute.
-     */
-    @ScriptApi
-    public static int secondOfMinute(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
         return toZonedDateTime(dateTime, timeZone).getSecond();
     }
 
@@ -3645,47 +2907,11 @@ public class DateTimeUtils {
      *      elapsed since the top of the hour.
      */
     @ScriptApi
-    public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
-        return toZonedDateTime(dateTime, timeZone).getMinute();
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the hour.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the hour.
-     */
-    @ScriptApi
     public static int minuteOfHour(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return toZonedDateTime(dateTime, timeZone).getMinute();
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the hour.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the hour.
-     */
-    @ScriptApi
-    public static int minuteOfHour(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        //noinspection ConstantConditions
         return toZonedDateTime(dateTime, timeZone).getMinute();
     }
 
@@ -3731,41 +2957,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the day.
      */
     @ScriptApi
-    public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
     public static long nanosOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return nanosOfDay(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static long nanosOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -3815,41 +3007,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the day.
      */
     @ScriptApi
-    public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
     public static int millisOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToMillis(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int millisOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -3899,41 +3057,7 @@ public class DateTimeUtils {
      *      elapsed since the top of the day.
      */
     @ScriptApi
-    public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
     public static int secondOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) nanosToSeconds(nanosOfDay(dateTime,timeZone));
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int secondOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -3973,24 +3097,7 @@ public class DateTimeUtils {
 
         return secondOfDay(dateTime,timeZone) / 60;
     }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return secondOfDay(dateTime,timeZone) / 60;
-    }
-
+    
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
      *
@@ -4007,24 +3114,7 @@ public class DateTimeUtils {
 
         return secondOfDay(dateTime,timeZone) / 60;
     }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int minuteOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return secondOfDay(dateTime,timeZone) / 60;
-    }
-
+    
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
      *
@@ -4057,24 +3147,7 @@ public class DateTimeUtils {
 
         return hourOfDay(toZonedDateTime(dateTime, timeZone));
     }
-
-    /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return hourOfDay(toZonedDateTime(dateTime, timeZone));
-    }
-
+    
     /**
      * Returns the number of hours that have elapsed since the top of the day.
      *
@@ -4091,24 +3164,7 @@ public class DateTimeUtils {
 
         return hourOfDay(toZonedDateTime(dateTime, timeZone));
     }
-
-    /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     *
-     * @param dateTime time.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-     *      elapsed since the top of the day.
-     */
-    @ScriptApi
-    public static int hourOfDay(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return hourOfDay(toZonedDateTime(dateTime, timeZone));
-    }
-
+    
     /**
      * Returns the number of hours that have elapsed since the top of the day.
      *
@@ -4151,23 +3207,6 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
      */
     @ScriptApi
-    public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-     * Monday and 7 being Sunday.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-     */
-    @ScriptApi
     public static int dayOfWeek(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
@@ -4175,24 +3214,7 @@ public class DateTimeUtils {
 
         return dayOfWeek(toZonedDateTime(dateTime, timeZone));
     }
-
-    /**
-     * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-     * Monday and 7 being Sunday.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-     */
-    @ScriptApi
-    public static int dayOfWeek(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfWeek(toZonedDateTime(dateTime, timeZone));
-    }
-
+    
     /**
      * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
      * Monday and 7 being Sunday.
@@ -4225,24 +3247,7 @@ public class DateTimeUtils {
 
         return dayOfMonth(toZonedDateTime(dateTime, timeZone));
     }
-
-    /**
-     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
-     * The first day of the month returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-     */
-    @ScriptApi
-    public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
-    }
-
+    
     /**
      * Returns a 1-based int value of the day of the month for a date time and specified time zone.
      * The first day of the month returns 1, the second day returns 2, etc.
@@ -4253,23 +3258,6 @@ public class DateTimeUtils {
      */
     @ScriptApi
     public static int dayOfMonth(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfMonth(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the month for a date time and specified time zone.
-     * The first day of the month returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-     */
-    @ScriptApi
-    public static int dayOfMonth(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -4319,41 +3307,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
      */
     @ScriptApi
-    public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfYear(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-     * The first day of the year returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-     */
-    @ScriptApi
     public static int dayOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dayOfYear(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-     * The first day of the year returns 1, the second day returns 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-     */
-    @ScriptApi
-    public static int dayOfYear(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -4403,41 +3357,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
      */
     @ScriptApi
-    public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return monthOfYear(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-     * January is 1, February is 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-     */
-    @ScriptApi
     public static int monthOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return monthOfYear(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-     * January is 1, February is 2, etc.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-     */
-    @ScriptApi
-    public static int monthOfYear(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -4485,39 +3405,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
      */
     @ScriptApi
-    public static int year(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return year(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the year for a date time in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-     */
-    @ScriptApi
     public static int year(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return year(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns the year for a date time in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-     */
-    @ScriptApi
-    public static int year(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -4564,39 +3452,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
      */
     @ScriptApi
-    public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return year(dateTime, timeZone) % 100;
-    }
-
-    /**
-     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-     */
-    @ScriptApi
     public static int yearOfCentury(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return year(dateTime, timeZone) % 100;
-    }
-
-    /**
-     * Returns the year of the century (two-digit year) for a date time in the specified time zone.
-     *
-     * @param dateTime time to find the day of the month of.
-     * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-     */
-    @ScriptApi
-    public static int yearOfCentury(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -4636,25 +3492,7 @@ public class DateTimeUtils {
 
         return toDateTime(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
     }
-
-    /**
-     * Returns a date time for the prior midnight in the specified time zone.
-     *
-     * @param dateTime time to compute the prior midnight for.
-     * @param timeZone time zone.
-     * @return null if either input is null; otherwise a date time representing the prior midnight in the
-     *      specified time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return toDateTime(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
-    }
-
+    
     /**
      * Returns a date time for the prior midnight in the specified time zone.
      *
@@ -4666,24 +3504,6 @@ public class DateTimeUtils {
     @ScriptApi
     @Nullable
     public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return toInstant(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
-    }
-
-    /**
-     * Returns a date time for the prior midnight in the specified time zone.
-     *
-     * @param dateTime time to compute the prior midnight for.
-     * @param timeZone time zone.
-     * @return null if either input is null; otherwise a date time representing the prior midnight in the
-     *      specified time zone.
-     */
-    @ScriptApi
-    @Nullable
-    public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
@@ -5026,23 +3846,6 @@ public class DateTimeUtils {
     //TODO: format micros
     //TODO: format seconds
 
-    private static String formatDateTimeInternal(final ZonedDateTime dateTime, final String timeZone){
-        final String ldt = ISO_LOCAL_DATE_TIME.format(dateTime);
-
-        final StringBuilder sb = new StringBuilder();
-
-        sb.append(ldt);
-
-        int pad = 29-ldt.length();
-
-        if(ldt.length() == 19) {
-            sb.append(".");
-            pad--;
-        }
-
-        return sb.append("0".repeat(Math.max(0, pad))).append(" ").append(timeZone).toString();
-    }
-
     /**
      * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
@@ -5069,46 +3872,12 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static String formatDateTime(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDateTime(toZonedDateTime(dateTime, timeZone), timeZone);
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     */
-    @ScriptApi
-    @Nullable
     public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
 
         return formatDateTime(toInstant(dateTime), timeZone);
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDateTime(toZonedDateTime(dateTime, timeZone), timeZone);
     }
 
     /**
@@ -5124,26 +3893,20 @@ public class DateTimeUtils {
             return null;
         }
 
-        //TODO: auto lookup of TimeZone or short ID based on Zone?
+        final String timeZone = TimeZoneAliases.name(dateTime.getZone());
+        final String ldt = ISO_LOCAL_DATE_TIME.format(dateTime);
+        final StringBuilder sb = new StringBuilder();
 
-        return formatDateTimeInternal(dateTime, dateTime.getZone().getId());
-    }
+        sb.append(ldt);
 
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-     */
-    @ScriptApi
-    @Nullable
-    private static String formatDateTime(@Nullable final ZonedDateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
+        int pad = 29-ldt.length();
+
+        if(ldt.length() == 19) {
+            sb.append(".");
+            pad--;
         }
 
-        return formatDateTimeInternal(dateTime, timeZone.toString().substring(3));
+        return sb.append("0".repeat(Math.max(0, pad))).append(" ").append(timeZone).toString();
     }
 
     /**
@@ -5172,46 +3935,12 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDate(toZonedDateTime(dateTime, timeZone.getZoneId()));
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-     */
-    @ScriptApi
-    @Nullable
     public static String formatDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
 
         return formatDate(toZonedDateTime(dateTime, timeZone));
-    }
-
-    /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-     *
-     * @param dateTime time to format as a string.
-     * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-     */
-    @ScriptApi
-    @Nullable
-    public static String formatDate(@Nullable final Instant dateTime, @Nullable final TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return formatDate(toZonedDateTime(dateTime, timeZone.getZoneId()));
     }
 
     /**
@@ -5239,52 +3968,6 @@ public class DateTimeUtils {
 
     //TODO: Better docs
     /**
-     * Converts a time zone string to a {@link TimeZone}.
-     *
-     * @param s string to be converted
-     * @return a {@link TimeZone} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted.
-     * @see TimeZone
-     */
-    @ScriptApi
-    @NotNull
-    public static TimeZone parseTimeZone(@NotNull final String s) {
-        //noinspection ConstantConditions
-        if (s == null) {
-            throw new RuntimeException("Cannot parse time zone (null): " + s);
-        }
-
-        try {
-            return TimeZone.valueOf("TZ_"+s);
-        } catch (Exception ex){
-            throw new RuntimeException("Cannot parse time zone: " + s, ex);
-        }
-    }
-
-    //TODO: Better docs
-    /**
-     * Converts a time zone string to a {@link TimeZone}.
-     *
-     * @param s string to be converted
-     * @return a {@link TimeZone} represented by the input string, or null if the format is not recognized or an exception occurs.
-     * @see TimeZone
-     */
-    @ScriptApi
-    @Nullable
-    public static TimeZone parseTimeZoneQuiet(@Nullable final String s) {
-        if (s == null || s.length() <= 1) {
-            return null;
-        }
-
-        try {
-            return parseTimeZone(s);
-        } catch (Exception ex){
-            return null;
-        }
-    }
-
-    //TODO: Better docs
-    /**
      * Converts a time zone string to a {@link ZoneId}.
      *
      * @param s string to be converted
@@ -5294,23 +3977,15 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
+    //TODO: rename
+    //TODO: add a tz format
     public static ZoneId parseTimeZoneId(@NotNull final String s) {
         //noinspection ConstantConditions
         if (s == null) {
             throw new RuntimeException("Cannot parse time zone ID (null): " + s);
         }
 
-        try {
-            return parseTimeZone(s).getZoneId();
-        } catch (Exception ex){
-            // ignore
-        }
-
-        try {
-            return ZoneId.of(s, ZoneId.SHORT_IDS);
-        } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse time zone ID: " + s, ex);
-        }
+        return TimeZoneAliases.zone(s);
     }
 
     /**
@@ -5320,6 +3995,7 @@ public class DateTimeUtils {
      * @return a {@link ZoneId} represented by the input string, or null if the format is not recognized or an exception occurs.
      * @see ZoneId
      */
+    //TODO: rename
     @ScriptApi
     @Nullable
     public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
@@ -5332,6 +4008,18 @@ public class DateTimeUtils {
         } catch (Exception ex){
             return null;
         }
+    }
+    
+    //todo: fix me
+    //TODO: test me
+    public static ZoneId tz(@NotNull String s) {
+        return TimeZoneAliases.zone(s);
+    }
+
+    //todo: fix me
+    //TODO: test me
+    public static ZoneId tz() {
+        return TimeZoneAliases.TZ_DEFAULT;
     }
 
     /**

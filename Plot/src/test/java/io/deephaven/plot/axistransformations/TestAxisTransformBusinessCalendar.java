@@ -6,10 +6,13 @@ package io.deephaven.plot.axistransformations;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 import io.deephaven.time.calendar.Calendars;
 
+import java.time.ZoneId;
+
 public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
+
+    private static final ZoneId TZ_JP = ZoneId.of("Asia/Tokyo");
 
     private final AxisTransformBusinessCalendar bt = new AxisTransformBusinessCalendar(Calendars.calendar("JPOSE"));
 
@@ -112,7 +115,7 @@ public class TestAxisTransformBusinessCalendar extends BaseArrayTestCase {
         double v = bt.transform(tIn.getNanos());
         double t2 = bt.inverseTransform(v);
 
-        assertEquals(tIn.toString(TimeZone.TZ_JP), (double) tTarget.getNanos(), t2);
+        assertEquals(tIn.toString(TZ_JP), (double) tTarget.getNanos(), t2);
     }
 
 }
