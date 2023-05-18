@@ -328,6 +328,8 @@ class Docker {
                         entrypoint.set(cfg.entrypoint)
                     }
 
+                    awaitStatusTimeout.set cfg.waitTimeMinutes * 60
+
                     remotePath.set(cfg.containerOutPath)
                     outputDir.set(project.file(dockerCopyLocation))
                 }
@@ -403,7 +405,7 @@ class Docker {
             waitContainer.with {
                 dependsOn startContainer
                 containerId.set(dockerContainerName)
-                awaitStatusTimeout.set cfg.waitTimeMinutes
+                awaitStatusTimeout.set cfg.waitTimeMinutes * 60
             }
         }
         TaskProvider<DockerLogsContainer> containerLogs = project.tasks.register("${taskName}LogsContainer", DockerLogsContainer) { logsContainer ->

@@ -25,6 +25,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 
 import javax.inject.Inject
+import java.util.concurrent.TimeUnit
 
 /**
  * Combined work of DockerCreateContainer, DockerStartContainer, and DockerLogsContainer, such that both
@@ -41,6 +42,10 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
     @Input
     @Optional
     final ListProperty<String> entrypoint = project.objects.listProperty(String)
+
+    @Input
+    @Optional
+    final Property<Integer> awaitStatusTimeout = project.objects.property(Integer)
 
     @Input
     final Property<String> remotePath = project.objects.property(String)
@@ -79,8 +84,9 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                 startContainerCmd.exec()
 
                 WaitContainerCmd containerCommand = dockerClient.waitContainerCmd(containerId)
+
                 ResultCallback<WaitResponse> callback = containerCommand.start()
-                def exitCode = callback.awaitStatusCode()
+                def exitCode = callback.awaitStatusCode(awaitStatusTimeout.get(), TimeUnit.SECONDS)
                 logger.quiet "Container exited with code ${exitCode}"
 
                 // If the task failed, write all logs
