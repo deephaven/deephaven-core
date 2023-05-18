@@ -68,7 +68,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         return new WritableObjectChunk<>(data, offset, size);
     }
 
-    WritableObjectChunk(T[] data, int offset, int capacity) {
+    protected WritableObjectChunk(T[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

@@ -68,7 +68,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return new WritableByteChunk<>(data, offset, size);
     }
 
-    WritableByteChunk(byte[] data, int offset, int capacity) {
+    protected WritableByteChunk(byte[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 

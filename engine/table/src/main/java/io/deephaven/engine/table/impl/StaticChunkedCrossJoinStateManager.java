@@ -1041,7 +1041,8 @@ class StaticChunkedCrossJoinStateManager
                     bc.overflowLocationForPromotionLoop.resetFromTypedChunk(bc.overflowLocationsToFetch, moves, totalPromotionsToProcess - moves);
                 }
 
-                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations, RowSequenceFactory.wrapRowKeysChunkAsRowSequence(bc.overflowLocationForPromotionLoop));
+                overflowLocationSource.fillChunk(bc.overflowFillContext, bc.overflowLocations,
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(bc.overflowLocationForPromotionLoop)));
                 IntChunkEquals.notEqual(bc.overflowLocations, QueryConstants.NULL_INT, bc.shouldMoveBucket);
 
                 // crunch the chunk down to relevant locations

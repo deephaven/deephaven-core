@@ -17,7 +17,7 @@ public class ChunkHelpers {
     }
 
     static void checkArrayArgs(int arrayLength, int offset, int capacity) {
-        if (offset < 0 || capacity < 0 || offset + capacity > arrayLength) {
+        if (offset < 0 || capacity < 0 || capacity > arrayLength - offset) {
             throw new IllegalArgumentException(
                     String.format("offset %d, capacity %d is incompatible with array of length %d",
                             offset, capacity, arrayLength));

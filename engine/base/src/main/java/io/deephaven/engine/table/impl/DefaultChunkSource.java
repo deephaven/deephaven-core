@@ -115,7 +115,8 @@ public interface DefaultChunkSource<ATTR extends Any> extends ChunkSource<ATTR> 
         @Override
         default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
                 @NotNull final RowSequence rowSequence) {
-            return rowSequence.isContiguous() ? getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey())
+            return rowSequence.isContiguous()
+                    ? getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey())
                     : getChunkByFilling(context, rowSequence);
         }
 
