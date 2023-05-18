@@ -5,6 +5,7 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -43,6 +44,7 @@ public abstract class DeephavenApiServerTestBase {
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
+            ClientDefaultsModule.class,
     })
     public interface TestComponent {
 
