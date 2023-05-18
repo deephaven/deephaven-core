@@ -1,0 +1,13 @@
+digraph {
+"op_0" ["label"="NewTable"]
+"op_1" ["label"="NewTable"]
+"op_2" ["label"="view(__p_0_0=OLYMPIAD,__p_0_1=HOST_CITY)"]
+"op_3" ["label"="view(__p_0_2=HOST_CITY,__p_0_3=COUNTRY_NAME)"]
+"op_4" ["label"="join([__p_0_1==__p_0_2],[])"]
+"op_5" ["label"="view(OLYMPIAD=__p_0_0,HOST_CITY=__p_0_1,COUNTRY_NAME=__p_0_3)"]
+"op_2" -> "op_0"
+"op_3" -> "op_1"
+"op_4" -> "op_2" ["label"="left"]
+"op_4" -> "op_3" ["label"="right"]
+"op_5" -> "op_4"
+}

@@ -23,6 +23,11 @@ public abstract class ByteType extends PrimitiveTypeBase<Byte> {
     }
 
     @Override
+    public final Class<Byte> boxedClass() {
+        return Byte.class;
+    }
+
+    @Override
     public final NativeArrayType<byte[], Byte> arrayType() {
         return NativeArrayType.of(byte[].class, this);
     }

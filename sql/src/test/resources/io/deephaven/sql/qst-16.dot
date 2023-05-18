@@ -1,0 +1,7 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/MY_TIME)"]
+"op_1" ["label"="view(__p_0_0=Timestamp,__p_0_1=I,__p_0_2=B)"]
+"op_2" ["label"="view(Timestamp=__p_0_0,I=__p_0_1,B=__p_0_2,MATH_I=minus(plus(__p_0_1, multiply((int)2, __p_0_1)), divide(__p_0_1, (int)2)),PI=java.lang.Math.PI,RAND=java.lang.Math.random(),THE_TIMESTAMP=DateTime.now(),NOT_B=__p_0_2 != true,LITERAL_TRUE=true,LITERAL_FALSE=false,LITERAL_LONG=1L,LITERAL_INT=(int)1,NEG_I=-(__p_0_1),I_IS_NULL=isNull(__p_0_1),I_IS_NOT_NULL=!isNull(__p_0_1),B_IS_NULL=isNull(__p_0_2),B_IS_NOT_NULL=!isNull(__p_0_2),LN_I=log(__p_0_1),ABS_I=abs(__p_0_1),SIN_I=sin(__p_0_1),COS_I=cos(__p_0_1),TAN_I=tan(__p_0_1),ASIN_I=asin(__p_0_1),ACOS_I=acos(__p_0_1),ATAN_I=atan(__p_0_1),SIGN_I=signum(__p_0_1),ROUND_I=round(__p_0_1),CEIL_I=ceil(__p_0_1),FLOOR_I=floor(__p_0_1),EXP_I=exp(__p_0_1))"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+}

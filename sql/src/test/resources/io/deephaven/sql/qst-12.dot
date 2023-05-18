@@ -1,0 +1,11 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/BOOKS)"]
+"op_1" ["label"="view(__p_2_0=Id,__p_2_1=Title,__p_2_2=AuthorId)"]
+"op_2" ["label"="view(__a_1_0=__p_2_2,__a_1_1=__p_2_0)"]
+"op_3" ["label"="aggBy([],[ Count{column=ColumnName(__p_0_0)},ColumnAggregation{spec=AggSpecMax{}, pair=PairImpl{input=ColumnName(__a_1_0), output=ColumnName(__p_0_1)}},ColumnAggregation{spec=AggSpecMin{}, pair=PairImpl{input=ColumnName(__a_1_1), output=ColumnName(__p_0_2)}},ColumnAggregation{spec=AggSpecFirst{}, pair=PairImpl{input=ColumnName(__a_1_1), output=ColumnName(__p_0_3)}},ColumnAggregation{spec=AggSpecLast{}, pair=PairImpl{input=ColumnName(__a_1_1), output=ColumnName(__p_0_4)}},ColumnAggregation{spec=AggSpecAvg{}, pair=PairImpl{input=ColumnName(__a_1_1), output=ColumnName(__p_0_5)}}])"]
+"op_4" ["label"="view(MY_COUNT=__p_0_0,MAX_AUTHOR_ID=__p_0_1,MIN_ID=__p_0_2,FIRST_ID=__p_0_3,LAST_ID=__p_0_4,AVG_ID=__p_0_5,AVG_ID0=__p_0_5)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+"op_4" -> "op_3"
+}

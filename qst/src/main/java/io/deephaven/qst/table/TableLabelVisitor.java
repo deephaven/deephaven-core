@@ -1,58 +1,37 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.graphviz;
+package io.deephaven.qst.table;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
-import io.deephaven.qst.table.AggregateAllTable;
-import io.deephaven.qst.table.AggregateTable;
-import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.DropColumnsTable;
-import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.HeadTable;
-import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
-import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
-import io.deephaven.qst.table.InputTable;
-import io.deephaven.qst.table.Join;
-import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LazyUpdateTable;
-import io.deephaven.qst.table.NaturalJoinTable;
-import io.deephaven.qst.table.RangeJoinTable;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
-import io.deephaven.qst.table.SelectDistinctTable;
-import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SelectableTable;
-import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.TableVisitorGeneric;
-import io.deephaven.qst.table.TailTable;
-import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.UngroupTable;
-import io.deephaven.qst.table.UpdateByTable;
-import io.deephaven.qst.table.UpdateTable;
-import io.deephaven.qst.table.UpdateViewTable;
-import io.deephaven.qst.table.ViewTable;
-import io.deephaven.qst.table.WhereTable;
+import io.deephaven.api.agg.Aggregation;
 
-import java.util.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Function;
 
-public class LabelBuilder extends TableVisitorGeneric {
+public class TableLabelVisitor extends TableVisitorGeneric {
 
     /**
-     * Constructs a string label for the given {@code table}.
+     * Constructs a non-recursive label for {@code table}.
      *
-     * @param table the table
+     * <p>
+     * Callers can use this for visualization and debugging purposes, but should not depend on the strings being equal
+     * from release to release.
+     *
+     * @param table the table spec
      * @return the label
      */
     public static String of(TableSpec table) {
-        return table.walk(new LabelBuilder(new StringBuilder())).sb.toString();
+        return table.walk(new TableLabelVisitor(new StringBuilder())).sb.toString();
     }
 
-    private final StringBuilder sb;
+    final StringBuilder sb;
 
-    public LabelBuilder(StringBuilder sb) {
+    public TableLabelVisitor(StringBuilder sb) {
         this.sb = Objects.requireNonNull(sb);
     }
 
@@ -71,6 +50,11 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(TimeTable timeTable) {
         sb.append("time(").append(timeTable.interval()).append(')');
+    }
+
+    @Override
+    public void visit(MergeTable mergeTable) {
+        sb.append("merge()");
     }
 
     @Override
@@ -154,23 +138,24 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(AggregateAllTable aggregateAllTable) {
         sb.append("aggAllBy(");
-        sb.append(aggregateAllTable.spec().description()).append(',');
+        sb.append(aggregateAllTable.spec()).append(',');
         append(Strings::of, aggregateAllTable.groupByColumns(), sb);
         sb.append(')');
     }
 
     @Override
     public void visit(AggregateTable aggregateTable) {
+        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("aggBy([");
         append(Strings::of, aggregateTable.groupByColumns(), sb);
-        sb.append("],");
-        sb.append(Strings.ofAggregations(aggregateTable.aggregations()));
-        sb.append(")");
+        sb.append("],[ ");
+        append(TableLabelVisitor::toString, aggregateTable.aggregations(), sb);
+        sb.append("])");
     }
 
     @Override
     public void visit(TicketTable ticketTable) {
-        sb.append("ticketTable(...)");
+        sb.append(String.format("ticketTable(%s)", new String(ticketTable.ticket(), StandardCharsets.UTF_8)));
     }
 
     @Override
@@ -217,6 +202,23 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("])");
     }
 
+    @Override
+    public void visit(ReverseTable reverseTable) {
+        sb.append("reverse()");
+    }
+
+    @Override
+    public void visit(SortTable sortTable) {
+        sb.append("sort([");
+        append(TableLabelVisitor::toString, sortTable.columns(), sb);
+        sb.append("])");
+    }
+
+    @Override
+    public void visit(SnapshotTable snapshotTable) {
+        sb.append("snapshot()");
+    }
+
     private void join(String name, Join j) {
         sb.append(name).append("([");
         append(Strings::of, j.matches(), sb);
@@ -239,5 +241,13 @@ public class LabelBuilder extends TableVisitorGeneric {
         while (it.hasNext()) {
             sb.append(',').append(f.apply(it.next()));
         }
+    }
+
+    private static String toString(SortColumn sort) {
+        return String.format("%s(%s)", sort.order(), sort.column().name());
+    }
+
+    private static String toString(Aggregation aggregation) {
+        return aggregation.toString();
     }
 }

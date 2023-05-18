@@ -311,7 +311,11 @@ public class ParentsVisitor implements Visitor {
         private final Predicate<TableSpec> excludePaths;
         private final Predicate<TableSpec> searchPredicate;
         private final Queue<TableSpec> toSearch = new ArrayDeque<>();
-        private final Set<TableSpec> visited = new HashSet<>();
+
+        // Note: this implementation has specifically been changed to give io.deephaven.sql.SqlAdapterTest temporary
+        // stability. When we have a proper serialization format for TableSpec, we should opt to change this back to
+        // a HashSet.
+        private final Set<TableSpec> visited = new LinkedHashSet<>();
 
         private Search(Predicate<TableSpec> excludePaths, Predicate<TableSpec> searchPredicate) {
             this.excludePaths = excludePaths;

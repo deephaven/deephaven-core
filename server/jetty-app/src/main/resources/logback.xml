@@ -23,6 +23,9 @@
   <!--<logger name="io.netty" level="INFO"/>-->
   <!--<logger name="io.deephaven" level="INFO"/>-->
 
+  <logger name="io.deephaven.sql.SqlAdapter" level="DEBUG"/>
+  <logger name="io.deephaven.engine.sql.Sql" level="DEBUG"/>
+
   <root level="info">
     <appender-ref ref="STDOUT" />
     <appender-ref ref="LOGBUFFER" />

@@ -1,0 +1,9 @@
+digraph {
+"op_0" ["label"="NewTable"]
+"op_1" ["label"="view(__p_0_0=CODERID,__p_0_1=FIRSTNAME,__p_0_2=LASTNAME)"]
+"op_2" ["label"="where(__p_0_0 == (int)2)"]
+"op_3" ["label"="view(FIRSTNAME=__p_0_1,LASTNAME=__p_0_2)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+}
