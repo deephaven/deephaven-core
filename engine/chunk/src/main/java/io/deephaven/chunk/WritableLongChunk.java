@@ -68,7 +68,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return new WritableLongChunk<>(data, offset, size);
     }
 
-    WritableLongChunk(long[] data, int offset, int capacity) {
+    protected WritableLongChunk(long[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -83,6 +83,31 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableLongChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableLongChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableLongChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final long[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableLongChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

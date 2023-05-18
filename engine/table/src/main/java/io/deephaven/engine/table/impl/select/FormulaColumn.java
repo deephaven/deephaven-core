@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 
 import java.util.List;
 import java.util.Map;

@@ -600,6 +600,35 @@ public class TestIntChunk {
         TestCase.assertEquals(value1, reverseActual2D1);
     }
 
+    // region testArray
+    @Test
+    public void testArray() {
+        final int[] underlyingData = new int[100];
+        for (int ii = 0; ii < underlyingData.length; ++ii) {
+            underlyingData[ii] = (int) ii;
+        }
+        final int[] array;
+        final int offset;
+        // noinspection rawtypes
+        try (WritableIntChunk chunk = WritableIntChunk.writableChunkWrap(underlyingData, 10, 20)) {
+            array = chunk.array();
+            offset = chunk.arrayOffset();
+            TestCase.assertSame(underlyingData, array);
+            TestCase.assertEquals(10, offset);
+
+            final int lastOffset = offset + chunk.size();
+            for (int ii = offset; ii < lastOffset; ++ii) {
+                TestCase.assertEquals((int) ii, array[ii]);
+            }
+
+            array[offset] = 42;
+            TestCase.assertEquals((int) 42, chunk.get(0));
+            chunk.set(1, (int) 97);
+            TestCase.assertEquals((int) 97, array[offset + 1]);
+        }
+    }
+    // endregion testArray
+
     private static <ATTR extends Values> void verifyChunkEqualsArray(IntChunk<ATTR> chunk, int[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));

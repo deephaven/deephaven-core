@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+import io.deephaven.tools.docker.Architecture
+
+description 'Source Support: Base implementations for adding data sources'
+
+dependencies {
+    api project(':engine-api')
+
+    implementation project(':engine-table')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation project(':engine-test-utils')
+    testImplementation depCommonsLang3
+
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritAssertJ(project)
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
+        )
+    }
+}
+
+TestTools.addEngineOutOfBandTest(project)

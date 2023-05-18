@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * Represents an evaluate-able filter.
  *
- * @see io.deephaven.api.TableOperations#where(Collection)
+ * @see io.deephaven.api.TableOperations#where(Filter)
  * @see FilterIsNull
  * @see FilterComparison
  * @see FilterIn
@@ -41,11 +41,6 @@ public interface Filter extends Expression, Serializable {
 
     static Collection<? extends Filter> from(Collection<String> expressions) {
         return expressions.stream().map(RawString::of).collect(Collectors.toList());
-    }
-
-    static Collection<? extends Filter> from_(String... expressions) {
-        // This is for Python to invoke "from" without syntax errors.
-        return from(expressions);
     }
 
     /**

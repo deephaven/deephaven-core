@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -114,9 +115,10 @@ public class SimulationClock implements Clock {
     }
 
     /**
-     * Advance the simulation. Package access for unit tests.
+     * Advance the simulation. Public access for unit tests.
      */
-    void advance() {
+    @VisibleForTesting
+    public void advance() {
         Assert.eq(state.get(), "state.get()", State.STARTED);
         if (now.getNanos() == endTime.getNanos()) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),

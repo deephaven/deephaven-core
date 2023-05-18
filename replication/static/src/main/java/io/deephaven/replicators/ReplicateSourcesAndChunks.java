@@ -76,6 +76,13 @@ public class ReplicateSourcesAndChunks {
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
         replicateObjectSizedChunk();
 
+        charToAll("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+        replicateObjectChunkPage("engine/table/src/main/java/io/deephaven/engine/page/CharChunkPage.java");
+
+        charToAll("extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
+        replicateObjectChunkPage(
+                "extensions/source-support/src/main/java/io/deephaven/generic/page/ChunkHolderPageChar.java");
+
         replicateChunks();
         replicateWritableChunks();
 
@@ -107,6 +114,23 @@ public class ReplicateSourcesAndChunks {
                 "<T> the chunk's attribute", "<ATTR> the chunk's attribute",
                 "SizedObjectChunk<T extends Any>", "SizedObjectChunk<T, ATTR extends Any>",
                 "WritableObjectChunk<T>", "WritableObjectChunk<T, ATTR>");
+        FileUtils.writeLines(classFile, lines);
+    }
+
+    private static void replicateObjectChunkPage(final String charPath) throws IOException {
+        String path = ReplicatePrimitiveCode.charToObject(charPath);
+        final File classFile = new File(path);
+        List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "<ATTR extends Any>", "<T, ATTR extends Any>",
+                " <ATTR", " <T, ATTR",
+                "Object\\[]", "T[]",
+                "Object value", "T value",
+                "Object get\\(", "T get(");
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^,>]+)>", "ObjectChunk<T, $1>"))
+                .collect(Collectors.toList());
+        lines = lines.stream().map(x -> x.replaceAll("ObjectChunkPage<([^,>]+)>", "ObjectChunkPage<T, $1>"))
+                .collect(Collectors.toList());
         FileUtils.writeLines(classFile, lines);
     }
 

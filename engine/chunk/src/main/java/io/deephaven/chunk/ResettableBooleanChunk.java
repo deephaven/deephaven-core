@@ -17,8 +17,9 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableReadOnlyChunk} implementation for boolean data.
  */
-@SuppressWarnings("rawtypes")
-public final class ResettableBooleanChunk<ATTR_UPPER extends Any> extends BooleanChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
+public final class ResettableBooleanChunk<ATTR_UPPER extends Any>
+        extends BooleanChunk<ATTR_UPPER>
+        implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableBooleanChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
@@ -40,7 +41,7 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any> extends Boolea
     }
 
     @Override
-    public ResettableBooleanChunk slice(int offset, int capacity) {
+    public ResettableBooleanChunk<ATTR_UPPER> slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableBooleanChunk<>(data, this.offset + offset, capacity);
     }
@@ -78,8 +79,7 @@ public final class ResettableBooleanChunk<ATTR_UPPER extends Any> extends Boolea
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        // noinspection unchecked
-        return this;
+        return BooleanChunk.downcast(this);
     }
 
     @Override

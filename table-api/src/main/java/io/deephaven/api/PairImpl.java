@@ -1,9 +1,8 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.api.agg;
+package io.deephaven.api;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;

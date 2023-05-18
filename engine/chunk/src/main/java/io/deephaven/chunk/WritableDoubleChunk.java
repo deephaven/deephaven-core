@@ -68,7 +68,7 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
         return new WritableDoubleChunk<>(data, offset, size);
     }
 
-    WritableDoubleChunk(double[] data, int offset, int capacity) {
+    protected WritableDoubleChunk(double[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -83,6 +83,31 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableDoubleChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableDoubleChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableDoubleChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final double[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableDoubleChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 /**
  * Implementation for chunk-oriented joins that produce multiple RHS rows per-LHS row, including {@link Table#join}

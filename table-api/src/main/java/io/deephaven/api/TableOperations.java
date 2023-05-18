@@ -104,7 +104,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS where(String... filters);
 
     @ConcurrentMethod
-    TOPS where(Collection<? extends Filter> filters);
+    TOPS where(Filter filter);
 
     // -------------------------------------------------------------------------------------------
 
@@ -217,6 +217,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS select();
+
     TOPS select(String... columns);
 
     TOPS select(Collection<? extends Selectable> columns);
@@ -313,6 +315,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
             Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
+     * Equivalent to {@code join(rightTable, emptyList(), emptyList())}.
+     *
+     * @param rightTable The right side table on the join.
+     * @return a new table joined according to the specification with zero key-columns and includes all right columns
+     * @see #join(Object, Collection, Collection)
+     */
+    TOPS join(TABLE rightTable);
 
     /**
      * Perform a cross join with the {@code rightTable}.
@@ -951,9 +965,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     @ConcurrentMethod
     TOPS selectDistinct(String... columns);
-
-    @ConcurrentMethod
-    TOPS selectDistinct(Selectable... columns);
 
     @ConcurrentMethod
     TOPS selectDistinct(Collection<? extends Selectable> columns);

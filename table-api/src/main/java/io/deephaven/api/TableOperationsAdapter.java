@@ -72,8 +72,8 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 where(Collection<? extends Filter> filters) {
-        return adapt(delegate.where(filters));
+    public final TOPS_1 where(Filter filter) {
+        return adapt(delegate.where(filter));
     }
 
     @Override

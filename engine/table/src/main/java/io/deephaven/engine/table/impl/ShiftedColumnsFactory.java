@@ -110,7 +110,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.JavaExpressionParser;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -182,8 +181,8 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     }
 
     /**
-     * Performs {@link Table#where(Filter...)} operation on interim table built using shifted columns. Returns result
-     * table with only the original display columns.
+     * Performs {@link Table#where(Filter)} operation on interim table built using shifted columns. Returns result table
+     * with only the original display columns.
      *
      * @param source input table
      * @param shiftColPairs list of formula to shift column pairs
@@ -203,8 +202,9 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
             String[] displayColumns = source.getDefinition().getColumnNamesArray();
             Pair<Table, Filter[]> resultPair = getShiftedTableFilterPair(source, shiftColPairs);
-            Table result = resultPair.getFirst().where(Streams.concat(
-                    currFilters.stream(), Arrays.stream(resultPair.second)).collect(Collectors.toList()));
+            final List<Filter> filters = Streams.concat(currFilters.stream(), Arrays.stream(resultPair.second))
+                    .collect(Collectors.toList());
+            Table result = resultPair.getFirst().where(Filter.and(filters));
             return result.view(Selectable.from(displayColumns));
         });
     }
@@ -269,12 +269,12 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
             for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
                 if (entry.getKey() == 0) {
                     // if there is no shift, then just add an alias to the table
-                    Selectable[] colPairs = entry.getValue().stream()
+                    List<Selectable> colPairs = entry.getValue().stream()
                             .map(matchPair -> Selectable.of(
                                     ColumnName.of(formulaColumn.getName() + matchPair.leftColumn),
                                     ColumnName.of(matchPair.rightColumn)))
-                            .toArray(Selectable[]::new);
-                    Arrays.stream(colPairs).forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
+                            .collect(Collectors.toList());
+                    colPairs.forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
                     tableSoFar = tableSoFar.updateView(colPairs);
                 } else {
                     // Add formulaColName as prefix to ShiftedCols

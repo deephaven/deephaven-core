@@ -45,9 +45,9 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
      * Get a new TreeTable with {@code columns} designated for node-level filtering, in addition to any columns already
      * so-designated on {@code this} TreeTable.
      * <p>
-     * Filters specified via {@link #withFilters(Collection)}, typically from the UI, that only use the designated
-     * node-level filtering columns will be applied to the nodes during snapshots. If no node-filter columns are
-     * designated, no filters will be handled at node level.
+     * Filters specified via {@link #withFilter(Filter)}, typically from the UI, that only use the designated node-level
+     * filtering columns will be applied to the nodes during snapshots. If no node-filter columns are designated, no
+     * filters will be handled at node level.
      * <p>
      * Filters that include other columns are handled by filtering the source table in a ancestor-preserving manner and
      * re-applying the tree operation to the result to produce a new TreeTable. Users of orphan promotion or other
@@ -64,12 +64,12 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
 
     /**
-     * Apply a set of filters to the columns of this TreeTable in order to produce a new TreeTable.
+     * Apply a filter to the columns of this TreeTable in order to produce a new TreeTable.
      *
-     * @param filters The filters to apply
+     * @param filter The filter to apply
      * @return The new TreeTable
      */
-    TreeTable withFilters(@NotNull Collection<? extends Filter> filters);
+    TreeTable withFilter(@NotNull Filter filter);
 
     /**
      * Recorder for node-level operations to be applied when gathering snapshots.
@@ -139,7 +139,7 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
                         .naturalJoin(source,
                                 List.of(JoinMatch.of(parent, identifier)),
                                 List.of(JoinAddition.of(sentinel, identifier)))
-                        .view(viewColumns),
+                        .view(List.of(viewColumns)),
                 source::isRefreshing,
                 DynamicNode::isRefreshing);
     }

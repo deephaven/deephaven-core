@@ -7,7 +7,7 @@ import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
