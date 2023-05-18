@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.engine.context.ExecutionContext;
@@ -364,7 +365,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // fill as much as possible as quickly as possible
                         long destinationOffset = startOffset;
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                                final ResettableWritableChunk<?> backingChunk =
+                                final ResettableWritableChunk<Any> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final long destCapacity = exposedWritableSource
@@ -383,7 +384,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                                 .forRange(startOffset, startOffset + upstream.added().size() - 1)
                                                 .getRowSequenceIterator()
                                         : null;
-                                final ResettableWritableChunk<?> backingChunk =
+                                final ResettableWritableChunk<Any> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);

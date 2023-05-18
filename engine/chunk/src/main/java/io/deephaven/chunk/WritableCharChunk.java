@@ -63,7 +63,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         return new WritableCharChunk<>(data, offset, size);
     }
 
-    WritableCharChunk(char[] data, int offset, int capacity) {
+    protected WritableCharChunk(char[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
