@@ -4,6 +4,7 @@
 package io.deephaven.server.runner;
 
 import dagger.Module;
+import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.server.console.SessionToExecutionStateModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -32,6 +33,7 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
  * @see PythonConsoleSessionModule
  * @see GroovyConsoleSessionModule
  * @see SessionToExecutionStateModule
+ * @see ClientDefaultsModule
  */
 @Module(includes = {
         DeephavenApiServerModule.class,
@@ -43,6 +45,7 @@ import io.deephaven.server.plugin.python.PythonPluginsRegistration;
         PythonConsoleSessionModule.class,
         GroovyConsoleSessionModule.class,
         SessionToExecutionStateModule.class,
+        ClientDefaultsModule.class,
 })
 public interface CommunityDefaultsModule {
 }
