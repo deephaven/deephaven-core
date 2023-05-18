@@ -84,6 +84,31 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return new WritableShortChunk<>(data, this.offset + offset, capacity);
     }
 
+    // region array
+    /**
+     * Get the data array backing this WritableShortChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableShortChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final short[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableShortChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
+
     // region FillWithNullValueImpl
     @Override
     public final void fillWithNullValue(final int offset, final int length) {
