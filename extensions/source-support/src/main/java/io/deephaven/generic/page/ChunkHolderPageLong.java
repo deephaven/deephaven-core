@@ -47,6 +47,11 @@ public class ChunkHolderPageLong<ATTR extends Any>
         return firstRow;
     }
 
+    @Override
+    public final long maxRow(final long row) {
+        return (row & ~mask()) | (firstRowOffset() + storage.length - 1);
+    }
+
     /**
      * @return The offset into the chunk for this row
      * @apiNote This function is for convenience over {@link #getRowOffset(long)}, so the caller doesn't have to cast to
