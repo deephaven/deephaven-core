@@ -368,6 +368,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final String[] durations = {
                 "PT1h43s",
                 "-PT1h43s",
+                "PT2H",
+                "PT2H3M",
+                "PT3M4S",
+                "P2DT3M4S",
+                "P2DT3M4.23456789S",
+                "-P-2DT-3M-4.23456789S",
         };
 
             for (String d : durations) {
@@ -664,56 +670,24 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testFormatNanos() {
-        TestCase.assertEquals("12:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00")));
-        TestCase.assertEquals("12:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00")));
-        TestCase.assertEquals("12:00:00.123000000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123")));
-        TestCase.assertEquals("12:00:00.123400000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.1234")));
-        TestCase.assertEquals("12:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("12:00:00.123456789")));
 
-        TestCase.assertEquals("2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00")));
-        TestCase.assertEquals("2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00")));
-        TestCase.assertEquals("2:00:00.123000000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123")));
-        TestCase.assertEquals("2:00:00.123400000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.1234")));
-        TestCase.assertEquals("2:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("2:00:00.123456789")));
+        TestCase.assertEquals("2:00:00", DateTimeUtils.formatNanos(2*DateTimeUtils.HOUR));
+        TestCase.assertEquals("0:02:00", DateTimeUtils.formatNanos(2*DateTimeUtils.MINUTE));
+        TestCase.assertEquals("0:00:02", DateTimeUtils.formatNanos(2*DateTimeUtils.SECOND));
+        TestCase.assertEquals("0:00:00.002000000", DateTimeUtils.formatNanos(2*DateTimeUtils.MILLI));
+        TestCase.assertEquals("0:00:00.000000002", DateTimeUtils.formatNanos(2));
+        TestCase.assertEquals("23:45:39.123456789", DateTimeUtils.formatNanos(23*DateTimeUtils.HOUR + 45*DateTimeUtils.MINUTE + 39*DateTimeUtils.SECOND + 123456789));
+        TestCase.assertEquals("123:45:39.123456789", DateTimeUtils.formatNanos(123*DateTimeUtils.HOUR + 45*DateTimeUtils.MINUTE + 39*DateTimeUtils.SECOND + 123456789));
 
-        TestCase.assertEquals("3T2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00")));
-        TestCase.assertEquals("3T2:00:00",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00")));
-        TestCase.assertEquals("3T2:00:00.123000000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.123")));
-        TestCase.assertEquals("3T2:00:00.123400000",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.1234")));
-        TestCase.assertEquals("3T2:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("P3T2:00:00.123456789")));
-        TestCase.assertEquals("-3T2:00:00.123456789",
-                DateTimeUtils.formatNanos(DateTimeUtils.parseNanosQuiet("-P3T2:00:00.123456789")));
+        TestCase.assertEquals("-2:00:00", DateTimeUtils.formatNanos(-2*DateTimeUtils.HOUR));
+        TestCase.assertEquals("-0:02:00", DateTimeUtils.formatNanos(-2*DateTimeUtils.MINUTE));
+        TestCase.assertEquals("-0:00:02", DateTimeUtils.formatNanos(-2*DateTimeUtils.SECOND));
+        TestCase.assertEquals("-0:00:00.002000000", DateTimeUtils.formatNanos(-2*DateTimeUtils.MILLI));
+        TestCase.assertEquals("-0:00:00.000000002", DateTimeUtils.formatNanos(-2));
+        TestCase.assertEquals("-23:45:39.123456789", DateTimeUtils.formatNanos(-23*DateTimeUtils.HOUR - 45*DateTimeUtils.MINUTE - 39*DateTimeUtils.SECOND - 123456789));
+        TestCase.assertEquals("-123:45:39.123456789", DateTimeUtils.formatNanos(-123*DateTimeUtils.HOUR - 45*DateTimeUtils.MINUTE - 39*DateTimeUtils.SECOND - 123456789));
 
-        try{
-            DateTimeUtils.parseNanos("P123456789876554321T12:59:59");
-            TestCase.fail("Should throw an exception");
-        } catch (Exception ex){
-            //pass
-        }
-
-        try{
-            final Duration duration = Duration.ofSeconds(Long.MAX_VALUE, 999_999_999L);
-            final String durationString = duration.toString().substring(1);
-            DateTimeUtils.parseNanos(durationString);
-            TestCase.fail("Should throw an exception");
-        } catch (Exception ex){
-            //pass
-        }
+        TestCase.assertNull(DateTimeUtils.formatNanos(NULL_LONG));
     }
 
     public void testMicrosToMillis() {

@@ -3787,7 +3787,6 @@ public class DateTimeUtils {
      * @return input string padded with zeros to the desired length.  If the input string is longer than the
      *      desired length, the input string is returned.
      */
-    @ScriptApi
     @NotNull
     static String padZeros(@NotNull final String str, final int length) {
         if (length <= str.length()) {
@@ -3797,24 +3796,24 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a nanosecond duration formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     * Returns a nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
      *
-     * @param nanos nanoseconds.
-     * @return the nanosecond duration formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     * @param nanos nanoseconds, or null if the input is {@link QueryConstants#NULL_LONG}.
+     * @return the nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
      */
     @ScriptApi
-    @NotNull
+    @Nullable
     public static String formatNanos(long nanos) {
+        if(nanos == NULL_LONG){
+            return null;
+        }
+
         StringBuilder buf = new StringBuilder(25);
 
         if (nanos < 0) {
             buf.append('-');
             nanos = -nanos;
         }
-
-        int days = (int) (nanos / 86400000000000L);
-
-        nanos %= 86400000000000L;
 
         int hours = (int) (nanos / 3600000000000L);
 
@@ -3828,10 +3827,6 @@ public class DateTimeUtils {
 
         nanos %= 1000000000L;
 
-        if (days != 0) {
-            buf.append(days).append('T');
-        }
-
         buf.append(hours).append(':').append(padZeros(String.valueOf(minutes), 2)).append(':')
                 .append(padZeros(String.valueOf(seconds), 2));
 
@@ -3842,8 +3837,8 @@ public class DateTimeUtils {
         return buf.toString();
     }
 
-    //TODO: format millis
     //TODO: format micros
+    //TODO: format millis
     //TODO: format seconds
 
     /**
