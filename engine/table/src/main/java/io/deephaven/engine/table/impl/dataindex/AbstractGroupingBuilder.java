@@ -305,7 +305,8 @@ public abstract class AbstractGroupingBuilder implements GroupingBuilder {
             return baseTable;
         }
 
-        return byGroup.update("Index=com.illumon.iris.db.v2.dataindex.DataIndexProviderImpl.combineIndices(Index)");
+        return byGroup
+                .update("Index=io.deephaven.engine.table.impl.dataindex.DataIndexProviderImpl.combineIndices(Index)");
     }
 
     /**

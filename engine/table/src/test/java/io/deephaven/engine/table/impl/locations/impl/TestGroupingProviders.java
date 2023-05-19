@@ -32,7 +32,8 @@ import java.util.stream.IntStream;
 import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
- * Unit tests for {@link ParallelDeferredGroupingProvider}.
+ * Unit tests for {@link io.deephaven.engine.table.impl.dataindex.DiskBackedDeferredGroupingProvider} and
+ * {@link io.deephaven.engine.table.impl.dataindex.PartitionColumnGroupingProvider}.
  */
 public class TestGroupingProviders {
 
@@ -153,10 +154,8 @@ public class TestGroupingProviders {
             partitions[2] = partitions[2].updateView("Sym = NULL_CHAR");
             partitions[3] = partitions[3].updateView("Sym = NULL_CHAR");
         }
-        final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other"); // Column ordering was changed
-                                                                                          // by groupBy()/ungroup()
-                                                                                          // above,
-                                                                                          // restore it here.
+        // Column ordering was changed by groupBy()/ungroup() above, restore it here.
+        final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other");
 
         final Table actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP")),
@@ -165,7 +164,7 @@ public class TestGroupingProviders {
 
         TstUtils.assertTableEquals(expected, actual);
 
-        TestCase.assertTrue(actual.getColumnSource("Sym").hasGrouping());
+        TestCase.assertEquals(!missingGroups, actual.getColumnSource("Sym").hasGrouping());
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
     }

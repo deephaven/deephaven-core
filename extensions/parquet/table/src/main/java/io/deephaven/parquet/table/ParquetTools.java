@@ -757,7 +757,8 @@ public class ParquetTools {
                             // This table will be written like the older style grouping format of Key, start, end so we
                             // have to convert
                             return indexTable.select(keyColumnNames[0] + "=" + GROUPING_KEY,
-                                    INDEX_COL_NAME + "=io.deephaven.engine.rowset.RowSetFactory.fromRange("
+                                    INDEX_COL_NAME
+                                            + "=(io.deephaven.engine.rowset.RowSet)io.deephaven.engine.rowset.RowSetFactory.fromRange("
                                             + BEGIN_POS + ", " + END_POS + "-1)");
                         }
                         // There's a table here, but it doesn't look like a grouping table.

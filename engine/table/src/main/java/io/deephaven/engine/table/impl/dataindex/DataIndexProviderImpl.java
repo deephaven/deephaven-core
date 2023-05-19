@@ -114,7 +114,6 @@ public class DataIndexProviderImpl implements DataIndexProvider {
             return TableTools.merge(locationIndexes)
                     .groupBy(columns)
                     .update("Index=io.deephaven.engine.table.impl.dataindex.DataIndexProviderImpl.combineIndices(Index)")
-                    // .update("Index=com.illumon.iris.db.v2.dataindex.DataIndexProviderImpl.combineIndices(Index)")
                     .updateView("FirstKey=Index.firstRowJey()")
                     .sort("FirstKey")
                     .dropColumns("FirstKey");

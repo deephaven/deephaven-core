@@ -105,6 +105,17 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         checking(new Expectations() {
             {
+                allowing(partitioningColumnSource).isPartitioning();
+                will(returnValue(true));
+                allowing(groupingColumnSource).isPartitioning();
+                will(returnValue(false));
+                allowing(normalColumnSource).isPartitioning();
+                will(returnValue(false));
+            }
+        });
+
+        checking(new Expectations() {
+            {
                 oneOf(componentFactory).createRegionedColumnSource(with(same(partitioningColumnDefinition)),
                         with(ColumnToCodecMappings.EMPTY));
                 will(returnValue(partitioningColumnSource));

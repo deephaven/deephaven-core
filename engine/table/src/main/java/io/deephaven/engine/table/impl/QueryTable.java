@@ -34,6 +34,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.dataindex.DataIndexProvider;
 import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
@@ -286,6 +287,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     private volatile Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations = EMPTY_CACHED_OPERATIONS;
 
     /**
+     * A provider for Data Indexes.
+     */
+    private DataIndexProvider dataIndexProvider;
+
+    /**
      * Creates a new table, inferring a definition but creating a new column source map.
      *
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
@@ -390,6 +396,31 @@ public class QueryTable extends BaseTable<QueryTable> {
         // noinspection unchecked
         return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
                 ConcurrentHashMap::new);
+    }
+
+    /**
+     * Get the Data Index for the specified set of key columns, if one exists.
+     *
+     * @implNote This is an experimental feature and the interface is subject to change.
+     *
+     * @param keyColumns the set of key columns.
+     * @return the Data Index table, or null if there was none.
+     */
+    @InternalUseOnly
+    @Nullable
+    public Table getDataIndex(final String... keyColumns) {
+        return dataIndexProvider == null ? null : dataIndexProvider.getDataIndex(keyColumns);
+    }
+
+    /**
+     * Set the provider to use to read Data Indices.
+     *
+     * @implNote This is an experimental feature and the interface is subject to change.
+     * @param provider the provider to set. May be null.
+     */
+    @InternalUseOnly
+    public void setDataIndexProvider(@Nullable DataIndexProvider provider) {
+        this.dataIndexProvider = provider;
     }
 
     // region Column Iterators

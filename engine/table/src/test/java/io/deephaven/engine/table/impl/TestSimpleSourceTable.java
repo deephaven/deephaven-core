@@ -68,6 +68,15 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
         componentFactory = mock(SourceTableComponentFactory.class);
         columnSourceManager = mock(ColumnSourceManager.class);
+        checking(new Expectations() {
+            {
+                allowing(columnSourceManager).getDataIndexProvider();
+                will(returnValue(null));
+                allowing(columnSourceManager).allLocations();
+                will(returnValue(Collections.EMPTY_SET));
+            }
+        });
+
         columnSources = TABLE_DEFINITION.getColumnStream().map(cd -> {
             final ColumnSource<?> mocked = mock(ColumnSource.class, cd.getName());
             checking(new Expectations() {

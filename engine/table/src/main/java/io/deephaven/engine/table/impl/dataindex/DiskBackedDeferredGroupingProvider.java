@@ -7,17 +7,17 @@ package io.deephaven.engine.table.impl.dataindex;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.GroupingBuilder;
 import io.deephaven.engine.table.impl.locations.GroupingBuilderFactory;
 import io.deephaven.engine.table.impl.locations.KeyRangeGroupingProvider;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -26,11 +26,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -39,27 +39,6 @@ import java.util.stream.Collectors;
  */
 public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGroupingProvider
         implements KeyRangeGroupingProvider {
-    private static final class NoParallelWhereThread extends ForkJoinWorkerThread {
-        /**
-         * Creates a ForkJoinWorkerThread operating in the given pool.
-         *
-         * @param pool the pool this thread works in
-         * @throws NullPointerException if pool is null
-         */
-        private NoParallelWhereThread(ForkJoinPool pool) {
-            super(pool);
-        }
-
-        @Override
-        protected void onStart() {
-            QueryTable.disableParallelWhereForThread();
-        }
-    }
-
-    public static final int THREADPOOL_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("ParallelDeferredGroupingProvider.threadPoolSize", 32);
-    public static final ForkJoinPool GROUPING_POOL =
-            new ForkJoinPool(THREADPOOL_SIZE, NoParallelWhereThread::new, null, false);
     private static final int CHUNK_SIZE = 2048;
 
     private final ColumnDefinition<DATA_TYPE> columnDefinition;
@@ -129,7 +108,7 @@ public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGrou
                     groupingTable = columnLocation.getTableLocation().getDataIndex(columnDefinition.getName());
                     if (groupingTable != null) {
                         groupingTable =
-                                groupingTable.update("Index=(io.deephaven.engine.rowset.WritableRowSet)Index.shift("
+                                groupingTable.update("Index=(io.deephaven.engine.rowset.RowSet)Index.shift("
                                         + rowSet.firstRowKey() + ")");
                     }
                 }
@@ -215,10 +194,42 @@ public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGrou
         }
 
         try {
-            return GROUPING_POOL.submit(() -> sources.parallelStream().noneMatch(ls -> ls.getGroupingTable() == null))
-                    .get();
+            List<Table> tables = parallelMap(sources, LocationState::getGroupingTable);
+            return tables.stream().noneMatch(Objects::isNull);
         } catch (InterruptedException | ExecutionException e) {
             return false;
+        }
+    }
+
+    private <T, R> List<R> parallelMap(List<T> input, Function<T, R> mapFunction)
+            throws InterruptedException, ExecutionException {
+        R[] ret = (R[]) new Object[input.size()];
+
+        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+
+        final JobScheduler jobScheduler = JobScheduler.make();
+
+        // on error
+        jobScheduler.iterateParallel(
+                ExecutionContext.getContext(),
+                null,
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0,
+                input.size(),
+                (context, idx, nec) -> {
+                    ret[idx] = mapFunction.apply(input.get(idx));
+                },
+                () -> {
+                    // on complete
+                    waitForResult.complete(null);
+                },
+                waitForResult::completeExceptionally);
+        try {
+            // need to wait until this future is complete
+            waitForResult.get();
+            return Arrays.asList(ret);
+        } catch (InterruptedException | ExecutionException e) {
+            throw e;
         }
     }
 
@@ -272,8 +283,8 @@ public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGrou
                             }
 
                             try {
-                                return GROUPING_POOL.submit(() -> locationIndexes.parallelStream()
-                                        .map(locationIndex -> {
+                                final List<Table> tables = parallelMap(locationIndexes,
+                                        locationIndex -> {
                                             locationIndex = maybeApplyMatch(locationIndex);
                                             for (final Function<Table, Table> regionMutator : regionMutators) {
                                                 locationIndex = regionMutator.apply(locationIndex);
@@ -283,9 +294,10 @@ public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGrou
                                             }
 
                                             return locationIndex;
-                                        })
+                                        });
+                                return tables.stream()
                                         .filter(Objects::nonNull)
-                                        .collect(Collectors.toList())).get();
+                                        .collect(Collectors.toList());
                             } catch (InterruptedException | ExecutionException e) {
                                 log.warn().append("Failed to mutate grouping for ").append(columnDefinition)
                                         .append(": ").append(e).endl();
@@ -322,14 +334,13 @@ public class DiskBackedDeferredGroupingProvider<DATA_TYPE> extends MemoizingGrou
             tempLocationIndexes.add(firstSourceGrouping);
 
             try {
-                GROUPING_POOL.submit(() -> relevantStates.subList(1, relevantStates.size())
-                        .parallelStream()
-                        .map(LocationState::getGroupingTable)
-                        .forEachOrdered(grouping -> {
-                            synchronized (tempLocationIndexes) {
-                                tempLocationIndexes.add(grouping);
-                            }
-                        })).get();
+                final List<Table> tables = parallelMap(relevantStates.subList(1, relevantStates.size()),
+                        LocationState::getGroupingTable);
+                tables.forEach(grouping -> {
+                    synchronized (tempLocationIndexes) {
+                        tempLocationIndexes.add(grouping);
+                    }
+                });
             } catch (InterruptedException | ExecutionException e) {
                 log.warn().append("Failed to load grouping for ").append(columnDefinition).append(": ").append(e)
                         .endl();

@@ -5,8 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.dataindex.DataIndexProvider;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
@@ -66,4 +68,12 @@ public interface ColumnSourceManager {
      * @return True if there are no included locations
      */
     boolean isEmpty();
+
+    /**
+     * Get the {@link DataIndexProvider} to retrieve Data Indexes for this table.
+     *
+     * @return the data index provider, or null if none has been created.
+     */
+    @Nullable
+    DataIndexProvider getDataIndexProvider();
 }

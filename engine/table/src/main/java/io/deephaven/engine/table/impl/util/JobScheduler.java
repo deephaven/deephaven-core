@@ -5,6 +5,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
@@ -25,6 +26,17 @@ import java.util.function.Supplier;
  * thread for inclusion in overall task metrics.
  */
 public interface JobScheduler {
+
+    /**
+     * A factory method for generating the correct instance of JobScheduler .
+     */
+    static JobScheduler make() {
+        if (OperationInitializationThreadPool.canParallelize()) {
+            return new OperationInitializationPoolJobScheduler();
+        } else {
+            return ImmediateJobScheduler.INSTANCE;
+        }
+    }
 
     /**
      * A default context for the scheduled job actions. Override this to provide reusable resources for the serial and

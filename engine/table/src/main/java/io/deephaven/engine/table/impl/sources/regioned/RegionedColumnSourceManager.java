@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -134,8 +135,8 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     @Override
     public synchronized WritableRowSet refresh() {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
-        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
-                                                                                       // using a sequential builder.
+        // Ordering matters, since we're using a sequential builder.
+        for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) {
             entry.pollUpdates(addedRowSetBuilder);
         }
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
@@ -192,6 +193,12 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         return sharedColumnSources;
     }
 
+    @Nullable
+    @Override
+    public DataIndexProviderImpl getDataIndexProvider() {
+        return dataIndexProvider;
+    }
+
     @Override
     public final synchronized void disableGrouping() {
         if (!isGroupingEnabled) {
@@ -204,6 +211,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 columnSource.setGroupingProvider(null);
             }
         }
+        this.dataIndexProvider = null;
     }
 
     /**
@@ -288,6 +296,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             }
 
             final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+            updateDataIndexProvider(regionFirstKey);
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
             RowSet addRowSetInTable = null;
@@ -383,6 +392,18 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
             }
             return Integer.compare(regionIndex, other.regionIndex);
         }
+
+        private void updateDataIndexProvider(final long firstKey) {
+            if (!isGroupingEnabled) {
+                return;
+            }
+
+            if (dataIndexProvider == null) {
+                dataIndexProvider = new DataIndexProviderImpl();
+            }
+
+            dataIndexProvider.addLocation(location, firstKey);
+        }
     }
 
     private static final KeyedObjectKey<ImmutableTableLocationKey, IncludedTableLocationEntry> INCLUDED_TABLE_LOCATION_ENTRY_KEY =
@@ -431,7 +452,6 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 return;
             }
 
-            Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
             GroupingProvider groupingProvider = source.getGroupingProvider();
             if (groupingProvider == null) {
                 groupingProvider = GroupingProviderFactory.makeGroupingProvider(definition, source, log);

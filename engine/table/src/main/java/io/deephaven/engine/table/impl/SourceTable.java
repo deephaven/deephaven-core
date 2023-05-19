@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Basic uncoalesced table that only adds keys.
@@ -276,6 +278,22 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             }
                         };
                 swapListener.setListenerAndResult(listener, resultTable);
+            } else {
+                // Set the DataIndexProvider for downstream if there was one,
+                resultTable.setDataIndexProvider(columnSourceManager.getDataIndexProvider());
+
+                // If we are not live and have a single location, we can take advantage of any
+                // on disk sorting that was done.
+                final Collection<TableLocation> tableLocations = columnSourceManager.allLocations();
+                if (tableLocations.size() == 1) {
+                    final TableLocation location = tableLocations.iterator().next();
+                    final List<SortPair> sortedColumns = location.getSortedColumns();
+                    if (!sortedColumns.isEmpty()) {
+                        final SortPair sortPair = sortedColumns.get(0);
+                        SortedColumnsAttribute.setOrderForColumn(resultTable, sortPair.getColumn(),
+                                sortPair.getOrder());
+                    }
+                }
             }
 
             result.setValue(resultTable);
