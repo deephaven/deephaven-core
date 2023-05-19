@@ -31,7 +31,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         TestCase.assertEquals("2015-06-13T14:12:11.123456789 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test2() {
@@ -45,7 +45,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         TestCase.assertEquals("2015-06-13 14:12:11.123456789 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test3() {
@@ -59,7 +59,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("HH:mm:ss.SSSSSSSSS %t", dtf.getPattern());
         TestCase.assertEquals("14:12:11.123456789 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test4() {
@@ -73,7 +73,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd %t", dtf.getPattern());
         TestCase.assertEquals("2015-06-13 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test5() {
@@ -87,7 +87,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSS %t", dtf.getPattern());
         TestCase.assertEquals("2015-06-13T14:12:11.1234 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test6() {
@@ -101,7 +101,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd'T'HH:mm:ss.SS %t", dtf.getPattern());
         TestCase.assertEquals("2015-06-13T14:12:11.12 MN", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 
     public void test7() {
@@ -115,6 +115,6 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
         TestCase.assertEquals(dtf.toString(), "DateTimeFormatter{pattern='" + dtf.getPattern() + "'}");
         TestCase.assertEquals("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS", dtf.getPattern());
         TestCase.assertEquals("2015-06-13T14:12:11.123456789", dtf.format(t, TZ_MN));
-        TestCase.assertEquals(dtf.format(t, TimeZoneAliases.TZ_DEFAULT), dtf.format(t));
+        TestCase.assertEquals(dtf.format(t, ZoneId.systemDefault()), dtf.format(t));
     }
 }

@@ -387,7 +387,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, boolean compressed, String destPath, boolean nullsAsEmpty,
             String... columns) throws IOException {
-        writeCsv(source, destPath, compressed, TimeZoneAliases.TZ_DEFAULT, nullsAsEmpty, columns);
+        writeCsv(source, destPath, compressed, ZoneId.systemDefault(), nullsAsEmpty, columns);
     }
 
     /**
@@ -415,7 +415,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean nullsAsEmpty, String... columns)
             throws IOException {
-        writeCsv(source, destPath, false, TimeZoneAliases.TZ_DEFAULT, nullsAsEmpty, columns);
+        writeCsv(source, destPath, false, ZoneId.systemDefault(), nullsAsEmpty, columns);
     }
 
     /**
@@ -445,7 +445,7 @@ public class CsvTools {
             throws IOException {
         final PrintWriter printWriter = new PrintWriter(out);
         final BufferedWriter bufferedWriter = new BufferedWriter(printWriter);
-        CsvTools.writeCsv(source, bufferedWriter, TimeZoneAliases.TZ_DEFAULT, null, nullsAsEmpty,
+        CsvTools.writeCsv(source, bufferedWriter, ZoneId.systemDefault(), null, nullsAsEmpty,
                 ',', columns);
     }
 

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Iterator;
 
@@ -266,7 +267,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == ZonedDateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), TimeZoneAliases.TZ_DEFAULT),
+                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), ZoneId.systemDefault()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }

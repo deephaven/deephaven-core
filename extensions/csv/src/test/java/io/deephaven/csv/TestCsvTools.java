@@ -27,6 +27,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.ZoneId;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -222,7 +223,7 @@ public class TestCsvTools {
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, TimeZoneAliases.TZ_DEFAULT, false, separator, colNames);
+            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
             Scanner csvReader = new Scanner(csvFile);
 
             // Check header

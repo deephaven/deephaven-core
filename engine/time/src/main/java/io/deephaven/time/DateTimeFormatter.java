@@ -24,14 +24,14 @@ public class DateTimeFormatter {
      * See {@link java.time.format.DateTimeFormatter} for valid format strings.
      *
      * @param pattern format pattern.
-     * @see TimeZoneAliases#TZ_DEFAULT
+     * @see ZoneId#systemDefault()
      * @see java.time.format.DateTimeFormatter
      */
     public DateTimeFormatter(String pattern) {
         this.pattern = pattern;
 
         // Do this here so we fail fast if there's a problem with the format string
-        getFormatter(TimeZoneAliases.TZ_DEFAULT);
+        getFormatter(ZoneId.systemDefault());
     }
 
     /**
@@ -73,11 +73,11 @@ public class DateTimeFormatter {
      *
      * @param dateTime time to format as a string.
      * @return date time formatted as a string.
-     * @see TimeZoneAliases#TZ_DEFAULT
+     * @see ZoneId#systemDefault()
      */
     @NotNull
     public String format(@NotNull final DateTime dateTime) {
-        return format(dateTime, TimeZoneAliases.TZ_DEFAULT);
+        return format(dateTime, ZoneId.systemDefault());
     }
 
     @Override

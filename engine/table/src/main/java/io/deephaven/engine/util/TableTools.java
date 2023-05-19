@@ -84,7 +84,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, String... columns) {
-        show(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
+        show(source, 10, ZoneId.systemDefault(), System.out, columns);
     }
 
     /**
@@ -95,7 +95,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, String... columns) {
-        showWithRowSet(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
+        showWithRowSet(source, 10, ZoneId.systemDefault(), System.out, columns);
     }
 
     /**
@@ -105,7 +105,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, String... columns) {
-        show(source, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, 10, ZoneId.systemDefault(), ",", System.out, false, columns);
     }
 
     /**
@@ -127,7 +127,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
+        show(source, maxRowCount, ZoneId.systemDefault(), System.out, columns);
     }
 
     /**
@@ -139,7 +139,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, long maxRowCount, String... columns) {
-        showWithRowSet(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, System.out, columns);
+        showWithRowSet(source, maxRowCount, ZoneId.systemDefault(), System.out, columns);
     }
 
     /**
@@ -150,7 +150,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showCommaDelimited(Table source, long maxRowCount, String... columns) {
-        show(source, maxRowCount, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, ",", System.out, false, columns);
+        show(source, maxRowCount, ZoneId.systemDefault(), ",", System.out, false, columns);
     }
 
     /**
@@ -207,7 +207,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, "|", out,
+        TableShowTools.showInternal(source, firstRow, lastRow, ZoneId.systemDefault(), "|", out,
                 true, columns);
     }
 
@@ -238,7 +238,7 @@ public class TableTools {
      */
     public static void showWithRowSet(final Table source, final long firstRow, final long lastRow,
             final String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, "|",
+        TableShowTools.showInternal(source, firstRow, lastRow, ZoneId.systemDefault(), "|",
                 System.out, true, columns);
     }
 
@@ -250,7 +250,7 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, String... columns) {
-        return string(t, 10, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, columns);
+        return string(t, 10, ZoneId.systemDefault(), columns);
     }
 
     /**
@@ -262,7 +262,7 @@ public class TableTools {
      * @return a String
      */
     public static String string(Table t, int size, String... columns) {
-        return string(t, size, io.deephaven.time.TimeZoneAliases.TZ_DEFAULT, columns);
+        return string(t, size, ZoneId.systemDefault(), columns);
     }
 
     /**

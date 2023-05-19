@@ -26,10 +26,10 @@ import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZoneAliases;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -185,7 +185,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + new DateTime(literal.getNanoTimeValue()).toString(TimeZoneAliases.TZ_DEFAULT) + "'";
+                values[i] = "'" + new DateTime(literal.getNanoTimeValue()).toString(ZoneId.systemDefault()) + "'";
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }

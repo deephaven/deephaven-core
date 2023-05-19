@@ -27,8 +27,8 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
         final DateTime time = new DateTime(DateTimeUtils.YEAR);
         final long lNanos = time.getNanos();
         final double dNanos = lNanos;
-        assertEquals(nyNumberFormat.format(lNanos), time.toDateString(TimeZoneAliases.TZ_DEFAULT));
-        assertEquals(nyNumberFormat.format(dNanos), time.toDateString(TimeZoneAliases.TZ_DEFAULT));
+        assertEquals(nyNumberFormat.format(lNanos), time.toDateString(ZoneId.systemDefault()));
+        assertEquals(nyNumberFormat.format(dNanos), time.toDateString(ZoneId.systemDefault()));
         assertEquals(tokyoNumberFormat.format(lNanos), time.toDateString(TZ_JP));
         assertEquals(tokyoNumberFormat.format(dNanos), time.toDateString(TZ_JP));
 

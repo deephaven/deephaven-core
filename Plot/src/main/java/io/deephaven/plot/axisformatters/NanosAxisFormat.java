@@ -39,7 +39,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      * Creates a new NanosAxisFormat with the default timezone.
      */
     public NanosAxisFormat() {
-        this(TimeZoneAliases.TZ_DEFAULT);
+        this(ZoneId.systemDefault());
     }
 
     @Override

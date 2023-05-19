@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
@@ -518,13 +519,13 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime(valString), TimeZoneAliases.TZ_DEFAULT);
+                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime(valString), ZoneId.systemDefault());
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
                     long time = DateTimeUtils.parseNanos(valString);
                     dateLower =
-                            DateTimeUtils.toZonedDateTime(DateTime.nowMillis(), TimeZoneAliases.TZ_DEFAULT).truncatedTo(ChronoUnit.DAYS).plus(time,
+                            DateTimeUtils.toZonedDateTime(DateTime.nowMillis(), ZoneId.systemDefault()).truncatedTo(ChronoUnit.DAYS).plus(time,
                                     ChronoUnit.NANOS);
                 } catch (RuntimeException ignored1) {
                 }

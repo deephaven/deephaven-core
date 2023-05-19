@@ -250,7 +250,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     @Override
     public String toString() {
-        return toString(TimeZoneAliases.TZ_DEFAULT);
+        return toString(ZoneId.systemDefault());
     }
 
     /**
@@ -280,11 +280,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * The date will be formatted as {@code yyyy-MM-DD}, for example {@code 2020-05-27} or {@code 2020-05-27}.
      *
      * @return a date string representation of this DateTime in the default time zone.
-     * @see TimeZoneAliases#TZ_DEFAULT
+     * @see ZoneId#systemDefault()
      */
     @NotNull
     public String toDateString() {
-        return toDateString(TimeZoneAliases.TZ_DEFAULT);
+        return toDateString(ZoneId.systemDefault());
     }
 
     /**

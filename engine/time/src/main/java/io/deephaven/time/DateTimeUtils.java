@@ -481,7 +481,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
-        return today(TimeZoneAliases.TZ_DEFAULT);
+        return today(ZoneId.systemDefault());
     }
 
     // endregion
@@ -4014,7 +4014,7 @@ public class DateTimeUtils {
     //todo: fix me
     //TODO: test me
     public static ZoneId tz() {
-        return TimeZoneAliases.TZ_DEFAULT;
+        return ZoneId.systemDefault();
     }
 
     /**
@@ -4352,7 +4352,6 @@ public class DateTimeUtils {
         try {
             return parseDateTime(s);
         } catch (Exception e) {
-            System.out.println("EX: " + e.getCause()); //TODO: remove
             return null;
         }
     }

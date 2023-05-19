@@ -171,7 +171,7 @@ public class TestDateTime extends BaseArrayTestCase {
         DateTime dateTime = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
 
         {
-            TestCase.assertEquals(dateTime.toDateString(), dateTime.toDateString(TimeZoneAliases.TZ_DEFAULT));
+            TestCase.assertEquals(dateTime.toDateString(), dateTime.toDateString(ZoneId.systemDefault()));
         }
 
         { // America/New_York
@@ -242,8 +242,8 @@ public class TestDateTime extends BaseArrayTestCase {
         }
 
         {
-            TestCase.assertEquals(utc.toString(), utc.toString(TimeZoneAliases.TZ_DEFAULT));
-            TestCase.assertEquals(ny.toString(), ny.toString(TimeZoneAliases.TZ_DEFAULT));
+            TestCase.assertEquals(utc.toString(), utc.toString(ZoneId.systemDefault()));
+            TestCase.assertEquals(ny.toString(), ny.toString(ZoneId.systemDefault()));
         }
 
         try{

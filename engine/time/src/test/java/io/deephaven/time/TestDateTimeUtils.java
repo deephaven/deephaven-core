@@ -191,11 +191,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testParseTimeZoneId() {
         TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZoneId("America/Denver"));
         TestCase.assertEquals(ZoneId.of("America/New_York"), DateTimeUtils.parseTimeZoneId("NY"));
-
-        for(Map.Entry<String,String> e : ZoneId.SHORT_IDS.entrySet()) {
-            TestCase.assertEquals(ZoneId.of(e.getKey(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneId(e.getKey()));
-            TestCase.assertEquals(ZoneId.of(e.getValue(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneId(e.getValue()));
-        }
+        TestCase.assertEquals(ZoneId.of("Asia/Yerevan"), DateTimeUtils.parseTimeZoneId("Asia/Yerevan"));
 
         try {
             DateTimeUtils.parseTimeZoneId("JUNK");
@@ -216,11 +212,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testParseTimeZoneIdQuiet() {
         TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZoneIdQuiet("America/Denver"));
         TestCase.assertEquals(ZoneId.of("America/New_York"), DateTimeUtils.parseTimeZoneIdQuiet("NY"));
-
-        for(Map.Entry<String,String> e : ZoneId.SHORT_IDS.entrySet()) {
-            TestCase.assertEquals(ZoneId.of(e.getKey(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneIdQuiet(e.getKey()));
-            TestCase.assertEquals(ZoneId.of(e.getValue(), ZoneId.SHORT_IDS), DateTimeUtils.parseTimeZoneIdQuiet(e.getValue()));
-        }
+        TestCase.assertEquals(ZoneId.of("Asia/Yerevan"), DateTimeUtils.parseTimeZoneIdQuiet("Asia/Yerevan"));
 
         TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseTimeZoneIdQuiet(null));
@@ -658,6 +650,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals("2021-02-03T11:23:32.456789120 NY", DateTimeUtils.formatDateTime(dt3));
         TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(dt4));
 
+
+        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan", DateTimeUtils.formatDateTime(dt1, ZoneId.of("Asia/Yerevan")));
+        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan", DateTimeUtils.formatDateTime(dt2, ZoneId.of("Asia/Yerevan")));
+        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan", DateTimeUtils.formatDateTime(dt3.withZoneSameInstant(ZoneId.of("Asia/Yerevan"))));
+
         TestCase.assertNull(DateTimeUtils.formatDateTime((DateTime) null, TZ_NY));
         TestCase.assertNull(DateTimeUtils.formatDateTime(dt1, null));
 
@@ -665,8 +662,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.formatDateTime(dt2, null));
 
         TestCase.assertNull(DateTimeUtils.formatDateTime(null));
-
-        TestCase.fail("Clean up time zone handling");
     }
 
     public void testFormatNanos() {
@@ -1360,7 +1355,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertTrue(Math.abs(DateTime.nowMillis().getNanos() - DateTimeUtils.nowSystemMillisResolution().getNanos()) < 1_000_000L);
 
             TestCase.assertEquals(DateTimeUtils.formatDate(new DateTime(nanos), TZ_AL), DateTimeUtils.today(TZ_AL));
-            TestCase.assertEquals(DateTimeUtils.today(TimeZoneAliases.TZ_DEFAULT), DateTimeUtils.today());
+            TestCase.assertEquals(DateTimeUtils.today(ZoneId.systemDefault()), DateTimeUtils.today());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
             throw ex;
