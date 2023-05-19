@@ -1,190 +1,205 @@
 package io.deephaven.time;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.StringReader;
+import java.io.*;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-//TODO: rename
-//TODO: document
-//TODO: unit test
-//TODO: config file
+//TODO fix default --- -Duser.timezone           ZoneId.systemDefault()
+//TODO handle capitalization
+
+/**
+ * TimeZoneAliases provides a service to look up time zones based on alias names and to format time zones to their aliased names.
+ */
 public class TimeZoneAliases {
 
-//NY,America/New_York
-//ET,America/New_York
-//MN,America/Chicago
-//CT,America/Chicago
-//MT,America/Denver
-//PT,America/Los_Angeles
-//HI,Pacific/Honolulu
-//BT,America/Sao_Paulo
-//KR,Asia/Seoul
-//HK,Asia/Hong_Kong
-//JP,Asia/Tokyo
-//AT,Canada/Atlantic
-//NF,Canada/Newfoundland
-//AL,America/Anchorage
-//IN,Asia/Kolkata
-//CE,Europe/Berlin
-//SG,Asia/Singapore
-//LON,Europe/London
-//MOS,Europe/Moscow
-//SHG,Asia/Shanghai
-//CH,Europe/Zurich
-//NL,Europe/Amsterdam
-//TW,Asia/Taipei
-//SYD,Australia/Sydney
-//UTC,UTC
+    private static final Logger logger = LoggerFactory.getLogger(TimeZoneAliases.class);
+    private static final TimeZoneAliases.Cache INSTANCE = load("timezone.aliases");
 
-    //TODO fix default
-    public static final ZoneId TZ_DEFAULT = ZoneId.of("America/New_York"); //TODO ZoneId.systemDefault()?
+    /**
+     * Creates a new time zone alias cache.
+     */
+    private static class Cache {
+        final Map<String, String> aliasMap = new HashMap<>();
+        final Map<String, String> reverseAliasMap = new HashMap<>();
+        final Map<String, ZoneId> allZones = new HashMap<>();
 
-    private static final Map<String, String> aliasMap = new HashMap<>();
-    private static final Map<String, String> reverseAliasMap = new HashMap<>();
-    private static final Map<String,ZoneId> allZones = new HashMap<>();
+        /**
+         * Creates a new time zone alias cache initialized with all of the available time zones and no aliases.
+         */
+        private Cache() {
+            for (String tz : ZoneId.getAvailableZoneIds()) {
+                allZones.put(tz, ZoneId.of(tz));
+            }
+        }
 
-    static {
-        final String file =
-                "NY,America/New_York\n\n" +
-//                        "ET,America/New_York\n\n" +
-                        "MN,America/Chicago\n" +
-//                        "CT,America/Chicago\n" +
-                        "MT,America/Denver\n" +
-                        "PT,America/Los_Angeles\n" +
-                        "HI,Pacific/Honolulu\n" +
-                        "BT,America/Sao_Paulo\n" +
-                        "KR,Asia/Seoul\n" +
-                        "HK,Asia/Hong_Kong\n" +
-                        "JP,Asia/Tokyo\n" +
-                        "AT,Canada/Atlantic\n" +
-                        "NF,Canada/Newfoundland\n" +
-                        "AL,America/Anchorage\n" +
-                        "IN,Asia/Kolkata\n" +
-                        "CE,Europe/Berlin\n" +
-                        "SG,Asia/Singapore\n" +
-                        "LON,Europe/London\n" +
-                        "MOS,Europe/Moscow\n" +
-                        "SHG,Asia/Shanghai\n" +
-                        "CH,Europe/Zurich\n" +
-                        "NL,Europe/Amsterdam\n" +
-                        "TW,Asia/Taipei\n" +
-                        "SYD,Australia/Sydney\n" +
-                        "UTC,UTC\n";
+        /**
+         * Adds a new time zone alias.
+         *
+         * @param alias alias name
+         * @param zoneId time zone id name
+         */
+        public void addAlias(@NotNull final String alias, @NotNull final String zoneId) {
+            Require.neqNull(alias, "alias");
+            Require.neqNull(zoneId, "zoneId");
 
-        //TODO: Don't use SHORT_IDS! anywhere
-        //TODO: make optional
-//        aliasMap.putAll(ZoneId.SHORT_IDS);
-//
-//        for (Map.Entry<String, String> entry : aliasMap.entrySet()) {
-//            reverseAliasMap.put(entry.getValue(), entry.getKey());
-//        }
+            if (allZones.containsKey(alias)) {
+                throw new IllegalArgumentException("Time zone already exists with the alias name: alias=" + alias);
+            }
 
+            if (reverseAliasMap.containsKey(zoneId)) {
+                throw new IllegalArgumentException("Alias for time zone is already present: time_zone=" + zoneId);
+            }
 
-        //TODO: file reader
-//        try (final BufferedReader br = new BufferedReader(new FileReader("book.csv"))) {
-        try (final BufferedReader br = new BufferedReader(new StringReader(file))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(",");
-                if (values.length == 2) {
-                    if (reverseAliasMap.containsKey(values[1])) {
-                        throw new IllegalArgumentException("Alias for time zone is already present: time_zone=" + values[1]);
+            final ZoneId tz;
+
+            try {
+                tz = ZoneId.of(zoneId);
+            } catch (Exception ex) {
+                throw new IllegalArgumentException("Invalid time zone id: " + zoneId, ex);
+            }
+
+            aliasMap.put(alias, zoneId);
+            reverseAliasMap.put(zoneId, alias);
+            allZones.put(alias, tz);
+        }
+
+        /**
+         * Gets the time zone id for a time zone name.
+         *
+         * @param timeZone time zone name.
+         * @return time zone.
+         */
+        @NotNull
+        public ZoneId zoneId(@NotNull final String timeZone) {
+            Require.neqNull(timeZone, "timeZone");
+            return ZoneId.of(timeZone, aliasMap);
+        }
+
+        /**
+         * Gets the name for a time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+         *
+         * @param timeZone time zone.
+         * @return name for the time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+         */
+        @NotNull
+        public String zoneName(@NotNull final ZoneId timeZone) {
+            Require.neqNull(timeZone, "timeZone");
+            return reverseAliasMap.getOrDefault(timeZone.getId(), timeZone.getId());
+        }
+
+        /**
+         * Gets a map of all time zone names to their respective time zones.
+         *
+         * @return map of all time zone names to their respective time zones.
+         */
+        @NotNull
+        public Map<String, ZoneId> getAllZones() {
+            return allZones;
+        }
+    }
+
+    /**
+     * Gets a reader from a property.
+     * If the property points to a file, a reader to that file is returned; otherwise, a reader to a resource in the JAR is returned.
+     *
+     * @param property property.
+     * @return If the property points to a file, a reader to that file is returned; otherwise, a reader to a resource in the JAR is returned.
+     * @throws RuntimeException if no reader can be returned.
+     */
+    private static Reader propertyToReader(final String property) {
+        Require.neqNull(property, "property");
+        final String location = Configuration.getInstance().getProperty(property);
+
+        try {
+            return new FileReader(location);
+        } catch (FileNotFoundException ignored) {
+        }
+
+        final InputStream stream = TimeZoneAliases.class.getResourceAsStream(location);
+
+        if(stream != null){
+            return new InputStreamReader(stream);
+        }
+
+        logger.error("Unable to open time zone alias property file: property=" + property + " location=" + location);
+        throw new RuntimeException("Unable to open time zone alias property file: property=" + property + " location=" + location);
+    }
+
+    /**
+     * Loads a TimeZoneAlias#Cache from a property.
+     *
+     * @param property property specifying where the cache configuration is located.
+     * @return cache
+     * @throws RuntimeException if the cache can not be created.
+     */
+    @SuppressWarnings("SameParameterValue")
+    private static Cache load(final String property) {
+        final Cache cache = new Cache();
+        final String location = Configuration.getInstance().getStringWithDefault(property, null);
+
+        try {
+            try (final BufferedReader br = new BufferedReader(propertyToReader(property))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("#") || line.startsWith("//") || line.isBlank()) {
+                        continue;
                     }
 
-                    aliasMap.put(values[0], values[1]);
-                    reverseAliasMap.put(values[1], values[0]);
-                } else if (values.length > 2) {
-                    throw new IllegalArgumentException("Line contains too many values: file=" + file + " values=" + Arrays.toString(values));
+                    String[] values = line.split(",");
+                    if (values.length == 2) {
+                        cache.addAlias(values[0], values[1]);
+                    } else if (values.length ==1) {
+                        throw new IllegalArgumentException("Line contains too few values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
+                    } else if (values.length > 2) {
+                        throw new IllegalArgumentException("Line contains too many values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
+                    }
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unable to load time zone alias file: " + file, e);
+            throw new RuntimeException("Unable to load time zone aliases: property=" + property + "  location=" + location, e);
         }
 
-        for (String tz : ZoneId.getAvailableZoneIds()) {
-            allZones.put(tz, ZoneId.of(tz));
-        }
-
-        for (Map.Entry<String, String> e : aliasMap.entrySet()) {
-            allZones.put(e.getKey(), ZoneId.of(e.getValue()));
-        }
+        return cache;
     }
 
-
-//    private static final Map<String, ZoneId> cache = loadMapping();
-//
-//    private static Map<String,ZoneId> loadMapping() {
-//        final String file =
-//        "NY,America/New_York" +
-//        "ET,America/New_York" +
-//        "MN,America/Chicago" +
-//        "CT,America/Chicago" +
-//        "MT,America/Denver" +
-//        "PT,America/Los_Angeles" +
-//        "HI,Pacific/Honolulu" +
-//        "BT,America/Sao_Paulo" +
-//        "KR,Asia/Seoul" +
-//        "HK,Asia/Hong_Kong" +
-//        "JP,Asia/Tokyo" +
-//        "AT,Canada/Atlantic" +
-//        "NF,Canada/Newfoundland" +
-//        "AL,America/Anchorage" +
-//        "IN,Asia/Kolkata" +
-//        "CE,Europe/Berlin" +
-//        "SG,Asia/Singapore" +
-//        "LON,Europe/London" +
-//        "MOS,Europe/Moscow" +
-//        "SHG,Asia/Shanghai" +
-//        "CH,Europe/Zurich" +
-//        "NL,Europe/Amsterdam" +
-//        "TW,Asia/Taipei" +
-//        "SYD,Australia/Sydney" +
-//        "UTC,UTC";
-//
-//        final Map<String, ZoneId> rst = new HashMap<>();
-//
-//        //TODO: file reader
-////        try (final BufferedReader br = new BufferedReader(new FileReader("book.csv"))) {
-//        try (final BufferedReader br = new BufferedReader(new StringReader(file))) {
-//            String line;
-//            while ((line = br.readLine()) != null) {
-//                String[] values = line.split(",");
-//                if(values.length == 2) {
-//                    rst.put(values[0], ZoneId.of(values[1]));
-//                } else if (values.length >2){
-//                    throw new IllegalArgumentException("Line contains too many values: file=" + file + " values=" + Arrays.toString(values));
-//                }
-//            }
-//        } catch (Exception e) {
-//            throw new RuntimeException("Unable to load time zone file: " + file, e);
-//        }
-//
-//        return rst;
-//    }
-
+    /**
+     * Gets the time zone id for a time zone name.
+     *
+     * @param timeZone time zone name.
+     * @return time zone.
+     */
     @NotNull
-    public static ZoneId zone(@NotNull final String timeZone) {
-        return ZoneId.of(timeZone, aliasMap);
+    public static ZoneId zoneId(@NotNull final String timeZone) {
+        return INSTANCE.zoneId(timeZone);
     }
 
+    /**
+     * Gets the name for a time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+     *
+     * @param timeZone time zone.
+     * @return name for the time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+     */
     @NotNull
-    public static String name(@NotNull final ZoneId timeZone) {
-        return reverseAliasMap.getOrDefault(timeZone.getId(), timeZone.getId());
+    public static String zoneName(@NotNull final ZoneId timeZone) {
+        return INSTANCE.zoneName(timeZone);
     }
 
+    /**
+     * Gets a map of all time zone names to their respective time zones.
+     *
+     * @return map of all time zone names to their respective time zones.
+     */
     @NotNull
     public static Map<String, ZoneId> getAllZones() {
-        return allZones;
+        return INSTANCE.getAllZones();
     }
-
-    //TODO handle capitalization
-
-    //    //TODO fix default
-//    public static ZoneId getDefault() {
-//        return ZoneId.of("America/New_York");
-//    }
 
 }

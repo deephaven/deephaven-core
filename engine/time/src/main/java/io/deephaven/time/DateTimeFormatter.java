@@ -51,7 +51,7 @@ public class DateTimeFormatter {
     }
 
     private java.time.format.DateTimeFormatter getFormatter(ZoneId tz) {
-        final String timeZone = TimeZoneAliases.name(tz);
+        final String timeZone = TimeZoneAliases.zoneName(tz);
         return formatCacheID.computeIfAbsent(tz, newTz -> java.time.format.DateTimeFormatter
                 .ofPattern(pattern.replaceAll("%t", '\'' + timeZone + '\'')));
     }

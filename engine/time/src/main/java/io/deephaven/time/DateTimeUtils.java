@@ -3888,7 +3888,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        final String timeZone = TimeZoneAliases.name(dateTime.getZone());
+        final String timeZone = TimeZoneAliases.zoneName(dateTime.getZone());
         final String ldt = ISO_LOCAL_DATE_TIME.format(dateTime);
         final StringBuilder sb = new StringBuilder();
 
@@ -3980,7 +3980,7 @@ public class DateTimeUtils {
             throw new RuntimeException("Cannot parse time zone ID (null): " + s);
         }
 
-        return TimeZoneAliases.zone(s);
+        return TimeZoneAliases.zoneId(s);
     }
 
     /**
@@ -4008,7 +4008,7 @@ public class DateTimeUtils {
     //todo: fix me
     //TODO: test me
     public static ZoneId tz(@NotNull String s) {
-        return TimeZoneAliases.zone(s);
+        return TimeZoneAliases.zoneId(s);
     }
 
     //todo: fix me

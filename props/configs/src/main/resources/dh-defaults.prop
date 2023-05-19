@@ -29,6 +29,7 @@ TrackedFileHandleFactory.maxOpenFiles=1024
 
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
+timezone.aliases=/default_time_zone_aliases.csv
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 

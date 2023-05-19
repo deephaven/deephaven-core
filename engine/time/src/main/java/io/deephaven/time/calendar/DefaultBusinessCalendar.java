@@ -228,7 +228,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
 
     private static ZoneId getTimeZone(@NotNull final Element root, final String filePath) {
         final Element element = getRequiredChild(root, "timeZone", filePath);
-        return TimeZoneAliases.zone(getText(element));
+        return TimeZoneAliases.zoneId(getText(element));
     }
 
     // throws an error if the child is missing
@@ -293,7 +293,7 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                 final String open = openClose[0];
                 String close = openClose[1];
                 if (hhmm.matcher(open).matches() && hhmm.matcher(close).matches()) {
-                    final String tz = TimeZoneAliases.name(timeZone);
+                    final String tz = TimeZoneAliases.zoneName(timeZone);
                     final LocalDate closeDate;
 
                     if (close.equals("24:00")) { // midnight closing time
