@@ -227,14 +227,14 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
     }
 
     @Override
-    public RollupTable withFilters(@NotNull final Collection<? extends Filter> filters) {
-        if (filters.isEmpty()) {
+    public RollupTable withFilter(@NotNull final Filter filter) {
+        final WhereFilter[] filters = WhereFilter.fromInternal(filter);
+        if (filters.length == 0) {
             return noopResult();
         }
-
-        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, groupByColumns, filters,
+        final WhereFilter[] whereFilters = initializeAndValidateFilters(source, groupByColumns, Arrays.asList(filters),
                 IllegalArgumentException::new);
-        final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(whereFilters);
+        final QueryTable filteredBaseLevel = (QueryTable) levelTables[numLevels - 1].where(Filter.and(whereFilters));
         final AggregationRowLookup baseLevelRowLookup = levelRowLookups[numLevels - 1];
         final RowSet filteredBaseLevelRowSet = filteredBaseLevel.getRowSet();
         final AggregationRowLookup filteredBaseLevelRowLookup = nodeKey -> {

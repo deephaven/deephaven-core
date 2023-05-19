@@ -13,7 +13,7 @@ from deephaven.jcompat import to_sequence
 
 _JAggregation = jpy.get_type("io.deephaven.api.agg.Aggregation")
 _JAggSpec = jpy.get_type("io.deephaven.api.agg.spec.AggSpec")
-_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
+_JPair = jpy.get_type("io.deephaven.api.Pair")
 
 
 class Aggregation:

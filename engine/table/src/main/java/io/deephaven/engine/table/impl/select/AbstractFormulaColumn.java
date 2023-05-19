@@ -10,6 +10,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.vector.*;
 import io.deephaven.engine.table.impl.select.formula.*;

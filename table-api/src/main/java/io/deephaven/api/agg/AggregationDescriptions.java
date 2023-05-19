@@ -3,6 +3,8 @@
  */
 package io.deephaven.api.agg;
 
+import io.deephaven.api.Pair;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;

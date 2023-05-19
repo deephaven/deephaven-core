@@ -27,9 +27,9 @@ class Example1 extends FlightCannedTableBase {
     }
 
     public static <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
-        return c.of(TableSpec.empty(100)).view("I=i").where(Collections.singletonList(Filter.or(
+        return c.of(TableSpec.empty(100)).view("I=i").where(Filter.or(
                 FilterComparison.lt(ColumnName.of("I"), Literal.of(42L)),
-                FilterComparison.eq(ColumnName.of("I"), Literal.of(93L)))));
+                FilterComparison.eq(ColumnName.of("I"), Literal.of(93L))));
     }
 
     public static void main(String[] args) {

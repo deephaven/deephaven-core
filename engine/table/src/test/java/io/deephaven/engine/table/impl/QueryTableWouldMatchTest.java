@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import junit.framework.TestCase;

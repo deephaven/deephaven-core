@@ -51,7 +51,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final boolean[] tensor = new boolean[nRows * nCols];
 
-        try (final ResettableWritableBooleanChunk<? extends Values> valueChunk =
+        try (final ResettableWritableBooleanChunk<? super Values> valueChunk =
                 ResettableWritableBooleanChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -60,7 +60,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -145,7 +144,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final byte[] tensor = new byte[nRows * nCols];
 
-        try (final ResettableWritableByteChunk<? extends Values> valueChunk =
+        try (final ResettableWritableByteChunk<? super Values> valueChunk =
                 ResettableWritableByteChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -154,7 +153,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -238,7 +236,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final short[] tensor = new short[nRows * nCols];
 
-        try (final ResettableWritableShortChunk<? extends Values> valueChunk =
+        try (final ResettableWritableShortChunk<? super Values> valueChunk =
                 ResettableWritableShortChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -247,7 +245,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -330,7 +327,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final int[] tensor = new int[nRows * nCols];
 
-        try (final ResettableWritableIntChunk<? extends Values> valueChunk =
+        try (final ResettableWritableIntChunk<? super Values> valueChunk =
                 ResettableWritableIntChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -339,7 +336,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -423,7 +419,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final long[] tensor = new long[nRows * nCols];
 
-        try (final ResettableWritableLongChunk<? extends Values> valueChunk =
+        try (final ResettableWritableLongChunk<? super Values> valueChunk =
                 ResettableWritableLongChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -432,7 +428,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -516,7 +511,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final float[] tensor = new float[nRows * nCols];
 
-        try (final ResettableWritableFloatChunk<? extends Values> valueChunk =
+        try (final ResettableWritableFloatChunk<? super Values> valueChunk =
                 ResettableWritableFloatChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -525,7 +520,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }
@@ -609,7 +603,7 @@ public class NumPy {
         final int nCols = columnSources.length;
         final double[] tensor = new double[nRows * nCols];
 
-        try (final ResettableWritableDoubleChunk<? extends Values> valueChunk =
+        try (final ResettableWritableDoubleChunk<? super Values> valueChunk =
                 ResettableWritableDoubleChunk.makeResettableChunk();
                 final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
@@ -618,7 +612,6 @@ public class NumPy {
                 final ColumnSource<?> colSrc = columnSources[ci];
 
                 try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
-                    // noinspection unchecked
                     colSrc.fillChunk(fillContext, valueChunk, rowSeq);
                 }
             }

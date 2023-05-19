@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
@@ -24,6 +25,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Singleton
 public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> {
@@ -47,13 +49,12 @@ public class FilterTableGrpcImpl extends GrpcTableOperation<FilterTableRequest> 
 
         final List<Condition> finishedConditions = finishConditions(filters);
 
-        // build WhereFilter[] to pass to the table
-        WhereFilter[] whereFilters = finishedConditions.stream()
+        List<WhereFilter> whereFilters = finishedConditions.stream()
                 .map(f -> FilterFactory.makeFilter(sourceTable.getDefinition(), f))
-                .toArray(WhereFilter[]::new);
+                .collect(Collectors.toList());
 
         // execute the filters
-        return sourceTable.where(whereFilters);
+        return sourceTable.where(Filter.and(whereFilters));
     }
 
     @NotNull

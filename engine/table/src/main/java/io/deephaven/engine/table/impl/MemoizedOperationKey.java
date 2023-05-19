@@ -8,7 +8,6 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;

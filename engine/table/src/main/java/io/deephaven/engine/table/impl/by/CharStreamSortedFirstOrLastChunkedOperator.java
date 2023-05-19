@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
