@@ -1,4 +1,5 @@
 #' @import Rcpp
-#' @export Client
+#' @useDynLib rdeephaven, .registration = TRUE
+#' @importFrom Rcpp evalCpp
 
-Rcpp::loadModule("ClientCaller", TRUE)
+loadModule("ClientModule", TRUE)

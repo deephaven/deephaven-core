@@ -1,36 +1,48 @@
+#include <memory>
+#include <exception>
+#include <iostream>
+
 #include "deephaven/client/client.h"
+
 #include <Rcpp.h>
 
-// first, we define a wrapper for the Client class
+// ######################### DH WRAPPER #########################
+
 class ClientWrapper {
 public:
-    ClientWrapper() {
-        ptr_ = std::make_shared<deephaven::client::Client>();
+    // this will become private
+    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {
     };
-    deephaven::client::Client connect(const std::string &target) {
-        return ptr_->connect(target);
-    }
+    deephaven::client::Client internal_client;
 private:
-    std::shared_ptr<deephaven::client::Client> ptr_;
-    friend <Rcpp::XPtr> ClientWrapper__new(); // probably not
-    friend <> ClientWrapper__connect(SEXP xp, SEXP target_); // probably not
+    friend std::shared_ptr<ClientWrapper> connect_to_server(const std::string &target);
 };
 
-
-// next, we wrap that in an Rcpp module to expose the wrapper we created to R
-namespace Rcpp {
-
-RcppExport SEXP ClientWrapper__new() {
-    Rcpp::XPtr<ClientWrapper>
-    ptr(new ClientWrapper, true);
-    return ptr;
+// external method to create and connect to server via ClientWrapper
+std::shared_ptr<ClientWrapper> connect_to_server(const std::string &target) {
+    return std::shared_ptr<ClientWrapper>(new ClientWrapper(deephaven::client::Client::connect(target)));
 }
 
-RcppExport SEXP ClientWrapper__connect(SEXP xp, SEXP target_) {
-    Rcpp::XPtr<ClientWrapper> ptr(xp);
-    const std::string &target = as<const std::string>(target_);
-    ClientWrapper connect_obj = ptr->connect(target) // doesnt make sense
-    return connect_obj;
+
+// ######################### RCPP WRAPPER #########################
+
+// Wrapper function to create an external pointer
+Rcpp::XPtr<std::shared_ptr<ClientWrapper>> createClientWrapper(const std::string &target) {
+  // Create the MyObject using createObject function
+  std::shared_ptr<ClientWrapper> client_wrapper = connect_to_server(target);
+
+  // Create an external pointer from the shared pointer
+  Rcpp::XPtr<std::shared_ptr<ClientWrapper>> ptr(new std::shared_ptr<ClientWrapper>(client_wrapper));
+
+  // Return the external pointer
+  return ptr;
 }
 
+// ######################### RCPP GLUE #########################
+
+
+RCPP_MODULE(ClientModule) {
+    using namespace Rcpp;
+
+    function("createClientWrapper", &createClientWrapper);
 }

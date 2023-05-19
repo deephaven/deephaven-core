@@ -1,6 +1,5 @@
 $(info The name of the shared library to be created is: $(SHLIB))
-
-# LD_LIBRARY_PATH=/home/user/rdeephaven/lib/cpp-dependencies/local/arrow/lib:/home/user/rdeephaven/lib/cpp-dependencies/local/cares/lib
+rwildcard=$(foreach d,$(wildcard $(1:=/*)),$(call rwildcard,$d,$2) $(filter $(subst *,%,$2),$d))
 
 DEPENDENCY_DIRS = -L../lib/cpp-dependencies/local/abseil/lib \
 	-L../lib/cpp-dependencies/local/cares/lib \
@@ -61,12 +60,6 @@ OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(SHLIB)
 
-# builds our library
-# ../lib/lib.a:
-#	(cd ../lib && make)
-	
-# return to a clean checkout state, intermediate and terminal steps.
-# removing $(SHLIB) results in failed compilation, we need dhc.so
-#clean:
-#	(cd ../lib && make clean)
-#	rm -f *.o *.so
+clean:
+	find . -type f -name '*.o' -delete
+	find . -type f -name '*.so' -delete
