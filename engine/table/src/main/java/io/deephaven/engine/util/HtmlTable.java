@@ -38,7 +38,7 @@ public class HtmlTable {
                 if (value instanceof String) {
                     out.append(StringEscapeUtils.escapeCsv((String) value));
                 } else if (value instanceof DateTime) {
-                    out.append(((DateTime) value).toString(TimeZone.TZ_NY));
+                    out.append(((DateTime) value).toString(ZoneId.systemDefault()));
                 } else {
                     out.append(TableTools.nullToNullString(value));
                 }

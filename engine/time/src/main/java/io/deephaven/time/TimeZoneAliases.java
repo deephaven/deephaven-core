@@ -12,9 +12,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-//TODO fix default --- -Duser.timezone           ZoneId.systemDefault()
-//TODO handle capitalization
-
 /**
  * TimeZoneAliases provides a service to look up time zones based on alias names and to format time zones to their aliased names.
  */
