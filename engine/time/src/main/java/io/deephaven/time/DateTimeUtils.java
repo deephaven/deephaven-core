@@ -35,9 +35,6 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 public class DateTimeUtils {
     //TODO: replace null checks with: Objects.requireNonNull(...)
     //TODO: test coverage
-    //TODO: remove TZ_DEFAULT / add @see for TZ_DEFAULT
-    //TODO: what are the @ScriptApi annotations???
-    //TODO: currentDate() func? -> today()
 
     // region Format Patterns
 
@@ -84,12 +81,11 @@ public class DateTimeUtils {
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
             "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z_/]+");
 
-    //TODO: fix this? -- rename??
     /**
-     * Matches times and durations.
+     * Matches time durations.
      */
-    private static final Pattern TIME_AND_DURATION_PATTERN = Pattern.compile(
-            "\\-?([0-9]+T)?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
+    private static final Pattern TIME_DURATION_PATTERN = Pattern.compile(
+            "\\-?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
 
     /**
      * Matches date times.
@@ -97,18 +93,6 @@ public class DateTimeUtils {
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
 
-    /**
-     * Java date time format.
-     */
-    private static final java.time.format.DateTimeFormatter JAVA_DATE_TIME_FORMAT =
-            java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
-
-    /**
-     * Java date format.
-     */
-    private static final java.time.format.DateTimeFormatter JAVA_DATE_FORMAT = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    //TODO: make public?
     /**
      * Default date style.
      */
@@ -187,27 +171,27 @@ public class DateTimeUtils {
     /**
      * Number of seconds per nanosecond.
      */
-    private static final double SECONDS_PER_NANO = 1. / (double) SECOND;
+    public static final double SECONDS_PER_NANO = 1. / (double) SECOND;
 
     /**
      * Number of minutes per nanosecond.
      */
-    private static final double MINUTES_PER_NANO = 1. / (double) MINUTE;
+    public static final double MINUTES_PER_NANO = 1. / (double) MINUTE;
 
     /**
      * Number of hours per nanosecond.
      */
-    private static final double HOURS_PER_NANO = 1. / (double) HOUR;
+    public static final double HOURS_PER_NANO = 1. / (double) HOUR;
 
     /**
      * Number of days per nanosecond.
      */
-    private static final double DAYS_PER_NANO = 1. / (double) DAY;
+    public static final double DAYS_PER_NANO = 1. / (double) DAY;
 
     /**
      * Number of years per nanosecond.
      */
-    private static final double YEARS_PER_NANO = 1. / (double) YEAR;
+    public static final double YEARS_PER_NANO = 1. / (double) YEAR;
 
     // endregion
 
@@ -468,6 +452,7 @@ public class DateTimeUtils {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
 
+    //TODO: default zone??
     //TODO: have these return local time?
     /**
      * Provides the current date according to the current clock and the default time zone.
@@ -476,6 +461,7 @@ public class DateTimeUtils {
      *
      * @see #currentClock()
      * @see #setClock(Clock)
+     * @see ZoneId#systemDefault()
      * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd".
      */
     @ScriptApi
@@ -1252,8 +1238,6 @@ public class DateTimeUtils {
     public static DateTime epochMillisToDateTime(final long millis) {
         return epochNanosToDateTime(millisToNanos(millis));
     }
-
-    //TODO: rename seconds to sec in methods?
 
     /**
      * Converts seconds from the Epoch to a {@link DateTime}.
@@ -4013,6 +3997,7 @@ public class DateTimeUtils {
 
     //todo: fix me
     //TODO: test me
+    //TODO: see ZoneId#systemDefault()
     public static ZoneId tz() {
         return ZoneId.systemDefault();
     }
@@ -4063,7 +4048,7 @@ public class DateTimeUtils {
         }
 
         try {
-            if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
+            if (TIME_DURATION_PATTERN.matcher(s).matches()) {
                 long multiplier = 1;
                 long dayNanos = 0;
                 long subsecondNanos = 0;
@@ -4072,14 +4057,6 @@ public class DateTimeUtils {
                     multiplier = -1;
 
                     s = s.substring(1);
-                }
-
-                int tIndex = s.indexOf('T');
-
-                if (tIndex != -1) {
-                    dayNanos = 86400000000000L * Integer.parseInt(s.substring(0, tIndex));
-
-                    s = s.substring(tIndex + 1);
                 }
 
                 int decimalIndex = s.indexOf('.');
@@ -4547,7 +4524,6 @@ public class DateTimeUtils {
                     return LocalDate.of(year, month, dayOfMonth);
                 }
 
-            //noinspection ConstantConditions
             if (dateStyle == null) {
                 throw new RuntimeException("Cannot parse date (null style): " + s);
             }

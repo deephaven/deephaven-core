@@ -40,7 +40,7 @@ public class TimeZoneAliases {
         /**
          * Adds a new time zone alias.
          *
-         * @param alias alias name
+         * @param alias  alias name
          * @param zoneId time zone id name
          */
         public void addAlias(@NotNull final String alias, @NotNull final String zoneId) {
@@ -122,7 +122,7 @@ public class TimeZoneAliases {
 
         final InputStream stream = TimeZoneAliases.class.getResourceAsStream(location);
 
-        if(stream != null){
+        if (stream != null) {
             return new InputStreamReader(stream);
         }
 
@@ -153,7 +153,7 @@ public class TimeZoneAliases {
                     String[] values = line.split(",");
                     if (values.length == 2) {
                         cache.addAlias(values[0], values[1]);
-                    } else if (values.length ==1) {
+                    } else if (values.length == 1) {
                         throw new IllegalArgumentException("Line contains too few values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
                     } else if (values.length > 2) {
                         throw new IllegalArgumentException("Line contains too many values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));

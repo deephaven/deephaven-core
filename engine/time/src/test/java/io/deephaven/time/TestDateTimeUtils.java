@@ -12,7 +12,6 @@ import org.jetbrains.annotations.NotNull;
 import java.time.*;
 import java.time.temporal.ChronoField;
 import java.util.Date;
-import java.util.Map;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -23,6 +22,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     private static final ZoneId TZ_AL = ZoneId.of("America/Anchorage");
     private static final ZoneId TZ_CT = ZoneId.of("America/Chicago");
     private static final ZoneId TZ_MN = ZoneId.of("America/Chicago");
+
+    public void testConstants() {
+        TestCase.assertEquals(0, DateTimeUtils.ZERO_LENGTH_DATETIME_ARRAY.length);
+        TestCase.assertEquals(0, DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY.length);
+
+        TestCase.assertEquals(1_000L, DateTimeUtils.MICRO);
+        TestCase.assertEquals(1_000_000L, DateTimeUtils.MILLI);
+        TestCase.assertEquals(1_000_000_000L, DateTimeUtils.SECOND);
+        TestCase.assertEquals(60_000_000_000L, DateTimeUtils.MINUTE);
+        TestCase.assertEquals(60*60_000_000_000L, DateTimeUtils.HOUR);
+        TestCase.assertEquals(24*60*60_000_000_000L, DateTimeUtils.DAY);
+        TestCase.assertEquals(7*24*60*60_000_000_000L, DateTimeUtils.WEEK);
+        TestCase.assertEquals(365*24*60*60_000_000_000L, DateTimeUtils.YEAR);
+
+        TestCase.assertEquals(1.0, DateTimeUtils.SECONDS_PER_NANO *DateTimeUtils.SECOND);
+        TestCase.assertEquals(1.0, DateTimeUtils.MINUTES_PER_NANO *DateTimeUtils.MINUTE);
+        TestCase.assertEquals(1.0, DateTimeUtils.HOURS_PER_NANO *DateTimeUtils.HOUR);
+        TestCase.assertEquals(1.0, DateTimeUtils.DAYS_PER_NANO *DateTimeUtils.DAY);
+        TestCase.assertEquals(1.0, DateTimeUtils.YEARS_PER_NANO *DateTimeUtils.YEAR);
+    }
 
     public void testParseDate() {
         assertEquals(LocalDate.of(2010,1,2), DateTimeUtils.parseDate("20100102", DateTimeUtils.DateStyle.YMD));
@@ -327,10 +346,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "2:00:00.123",
                 "2:00:00.1234",
                 "2:00:00.123456789",
-                "3T2:00",
-                "3T2:00:00",
-                "3T2:00:00.123",
-                "3T2:00:00.123456789",
                 "15:25:49.064106107",
         };
 
@@ -338,11 +353,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             for (String t : times) {
                 long offset = 0;
                 String lts = t;
-
-                if (t.contains("T")) {
-                    lts = t.split("T")[1];
-                    offset = Long.parseLong(t.split("T")[0]) * DateTimeUtils.DAY;
-                }
 
                 if (lts.indexOf(":") == 1) {
                     lts = "0" + lts;
@@ -403,10 +413,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "2:00:00.123",
                 "2:00:00.1234",
                 "2:00:00.123456789",
-                "3T2:00",
-                "3T2:00:00",
-                "3T2:00:00.123",
-                "3T2:00:00.123456789",
                 "15:25:49.064106107",
         };
 
@@ -414,11 +420,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             for (String t : times) {
                 long offset = 0;
                 String lts = t;
-
-                if (t.contains("T")) {
-                    lts = t.split("T")[1];
-                    offset = Long.parseLong(t.split("T")[0]) * DateTimeUtils.DAY;
-                }
 
                 if (lts.indexOf(":") == 1) {
                     lts = "0" + lts;
@@ -429,7 +430,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 }
 
                 final long sign = isNeg ? -1 : 1;
-                TestCase.assertEquals(sign*(LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanosQuiet(t));
+                TestCase.assertEquals(t,sign*(LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanosQuiet(t));
             }
         }
 
@@ -446,8 +447,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet("JUNK"));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet(null));
     }
-
-    //todo parse nanos quiet
 
     public void testParsePeriod() {
         final String[] periods = {

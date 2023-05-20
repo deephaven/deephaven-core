@@ -273,7 +273,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
-    //TODO: remove default?
    /**
      * Converts this DateTime into a date String using the default time zone.
      *
