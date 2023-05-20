@@ -1250,6 +1250,24 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt3, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt1, TZ_AL), TZ_AL));
         TestCase.assertTrue(DateTimeUtils.epochMillis(dt3) - DateTimeUtils.epochMillis(DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt1, TZ_AL), TZ_AL)) <= 1);
         TestCase.assertNull(DateTimeUtils.excelToZonedDateTime(123.4, null));
+
+        // Test daylight savings time
+
+        final DateTime dstDt1 = DateTimeUtils.parseDateTime("2023-03-12T01:00:00 America/Denver");
+        final DateTime dstDt2 = DateTimeUtils.parseDateTime("2023-11-05T01:00:00 America/Denver");
+        final Instant dstI1 = DateTimeUtils.parseInstant("2023-03-12T01:00:00 America/Denver");
+        final Instant dstI2 = DateTimeUtils.parseInstant("2023-11-05T01:00:00 America/Denver");
+        final ZonedDateTime dstZdt1 = DateTimeUtils.toZonedDateTime(dstI1, ZoneId.of("America/Denver"));
+        final ZonedDateTime dstZdt2 = DateTimeUtils.toZonedDateTime(dstI2, ZoneId.of("America/Denver"));
+
+        TestCase.assertEquals(dstDt1, DateTimeUtils.excelToDateTime(DateTimeUtils.toExcelTime(dstDt1, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstDt2, DateTimeUtils.excelToDateTime(DateTimeUtils.toExcelTime(dstDt2, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+
+        TestCase.assertEquals(dstI1, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dstI1, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstI2, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dstI2, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+
+        TestCase.assertEquals(dstZdt1, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt1), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstZdt2, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt2), ZoneId.of("America/Denver")));
     }
 
     public void testIsBefore() {

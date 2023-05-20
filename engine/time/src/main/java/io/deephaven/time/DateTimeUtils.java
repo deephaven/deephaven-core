@@ -435,9 +435,8 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<ZoneId, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
-    //TODO: have these return local time?
     /**
-     * Provides the current date according to the current clock.
+     * Provides the current date string according to the current clock.
      * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
@@ -452,10 +451,8 @@ public class DateTimeUtils {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
 
-    //TODO: default zone??
-    //TODO: have these return local time?
     /**
-     * Provides the current date according to the current clock and the default time zone.
+     * Provides the current date string according to the current clock and the default time zone.
      * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
      * this method can return the date according to replay time.
      *
@@ -1495,7 +1492,6 @@ public class DateTimeUtils {
     private static long excelTimeToEpochMillis(final double excel, final ZoneId timeZone) {
         final java.util.TimeZone tz = java.util.TimeZone.getTimeZone(timeZone);
 
-        //TODO: test this DST handling
         final long mpo = (long)((excel - 25569) * 86400000);
         final long o = tz.getOffset(mpo);
         final long m = mpo - o;
