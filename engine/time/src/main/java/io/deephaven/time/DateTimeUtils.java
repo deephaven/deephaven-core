@@ -3821,10 +3821,6 @@ public class DateTimeUtils {
         return buf.toString();
     }
 
-    //TODO: format micros
-    //TODO: format millis
-    //TODO: format seconds
-
     /**
      * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
@@ -3942,17 +3938,14 @@ public class DateTimeUtils {
 
     // region Parse
 
-    //TODO: review docstrings in this section
-    //TODO: java docs stuff like this as "Parses the string argument as a <type>.?
-
-    //TODO: Better docs
     /**
-     * Converts a time zone string to a {@link ZoneId}.
+     * Parses the string argument as a time zone.
      *
      * @param s string to be converted
      * @return a {@link ZoneId} represented by the input string.
      * @throws RuntimeException if the string cannot be converted.
      * @see ZoneId
+     * @see TimeZoneAliases
      */
     @ScriptApi
     @NotNull
@@ -3968,11 +3961,12 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a time zone string to a {@link ZoneId}.
+     * Parses the string argument as a time zone.
      *
      * @param s string to be converted
-     * @return a {@link ZoneId} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @return a {@link ZoneId} represented by the input string, or null if the string can not be parsed.
      * @see ZoneId
+     * @see TimeZoneAliases
      */
     //TODO: rename
     @ScriptApi
@@ -4031,8 +4025,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a time duration string to nanoseconds. The format for the string is a time string formatted as
-     * {@code hh:mm:ss[.nnnnnnnnn]}, or a duration string formatted as {@code [-]PnDTnHnMn.nS}.
+     * Parses the string argument as a time duration in nanoseconds.
+     *
+     * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
@@ -4087,8 +4082,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a time duration string to nanoseconds. The format for the string is a time string formatted as
-     * {@code hh:mm:ss[.nnnnnnnnn]}, or a duration string formatted as {@code [-]PnDTnHnMn.nS}.
+     * Parses the string argument as a time duration in nanoseconds.
+     *
+     * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string, or {@link QueryConstants#NULL_LONG} if the string cannot be parsed.
@@ -4109,7 +4105,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a period string to a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
+     * Parses the string argument as a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
      *
      * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
      * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -4148,7 +4144,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a period string to a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
+     * Parses the string argument as a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
      *
      * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
      * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
@@ -4185,7 +4181,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a duration string to a duration, which is a unit of time in terms of clock time (24-hour days, hours,
+     * Parses the string argument as a duration, which is a unit of time in terms of clock time (24-hour days, hours,
      * minutes, seconds, and nanoseconds).
      *
      * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
@@ -4225,7 +4221,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a duration string to a duration, which is a unit of time in terms of clock time (24-hour days, hours,
+     * Parses the string argument as a duration, which is a unit of time in terms of clock time (24-hour days, hours,
      * minutes, seconds, and nanoseconds).
      *
      * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
@@ -4263,7 +4259,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time string to a date time.
+     * Parses the string argument as a date time.
      *
      * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
@@ -4311,7 +4307,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time string to a date time.
+     * Parses the string argument as a date time.
      *
      * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
@@ -4334,7 +4330,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time string to a date time.
+     * Parses the string argument as a date time.
      *
      * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
@@ -4382,7 +4378,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time string to a date time.
+     * Parses the string argument as a date time.
      *
      * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
@@ -4425,7 +4421,6 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
@@ -4459,7 +4454,6 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
@@ -4616,27 +4610,26 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a string into a local date.
-     * A local date is a date without a time or time zone.
+     * Parses the string argument as a local date, which is a date without a time or time zone.
      *
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
      *
      * Supported formats:
-     * - YYYY-MM-DD
-     * - YYYYMMDD
-     * - YYYY/MM/DD
-     * - MM/DD/YYYY
-     * - MM-DD-YYYY
-     * - DD/MM/YYYY
-     * - DD-MM-YYYY
-     * - YY/MM/DD
-     * - YY-MM-DD
-     * - MM/DD/YY
-     * - MM-DD-YY
-     * - DD/MM/YY
-     * - DD-MM-YY
+     * - {@code YYYY-MM-DD}
+     * - {@code YYYYMMDD}
+     * - {@code YYYY/MM/DD}
+     * - {@code MM/DD/YYYY}
+     * - {@code MM-DD-YYYY}
+     * - {@code DD/MM/YYYY}
+     * - {@code DD-MM-YYYY}
+     * - {@code YY/MM/DD}
+     * - {@code YY-MM-DD}
+     * - {@code MM/DD/YY}
+     * - {@code MM-DD-YY}
+     * - {@code DD/MM/YY}
+     * - {@code DD-MM-YY}
      *
-     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
      *
      *
      * @param s date string.
@@ -4658,27 +4651,26 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a string into a local date using the default date style.
-     * A local date is a date without a time or time zone.
+     * Parses the string argument as a local date, which is a date without a time or time zone.
      *
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
      *
      * Supported formats:
-     * - YYYY-MM-DD
-     * - YYYYMMDD
-     * - YYYY/MM/DD
-     * - MM/DD/YYYY
-     * - MM-DD-YYYY
-     * - DD/MM/YYYY
-     * - DD-MM-YYYY
-     * - YY/MM/DD
-     * - YY-MM-DD
-     * - MM/DD/YY
-     * - MM-DD-YY
-     * - DD/MM/YY
-     * - DD-MM-YY
+     * - {@code YYYY-MM-DD}
+     * - {@code YYYYMMDD}
+     * - {@code YYYY/MM/DD}
+     * - {@code MM/DD/YYYY}
+     * - {@code MM-DD-YYYY}
+     * - {@code DD/MM/YYYY}
+     * - {@code DD-MM-YYYY}
+     * - {@code YY/MM/DD}
+     * - {@code YY-MM-DD}
+     * - {@code MM/DD/YY}
+     * - {@code MM-DD-YY}
+     * - {@code DD/MM/YY}
+     * - {@code DD-MM-YY}
      *
-     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
      *
      *
      * @param s date string.
@@ -4692,27 +4684,26 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a string into a local date using the default date style.
-     * A local date is a date without a time or time zone.
+     * Parses the string argument as a local date, which is a date without a time or time zone.
      *
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
      *
      * Supported formats:
-     * - YYYY-MM-DD
-     * - YYYYMMDD
-     * - YYYY/MM/DD
-     * - MM/DD/YYYY
-     * - MM-DD-YYYY
-     * - DD/MM/YYYY
-     * - DD-MM-YYYY
-     * - YY/MM/DD
-     * - YY-MM-DD
-     * - MM/DD/YY
-     * - MM-DD-YY
-     * - DD/MM/YY
-     * - DD-MM-YY
+     * - {@code YYYY-MM-DD}
+     * - {@code YYYYMMDD}
+     * - {@code YYYY/MM/DD}
+     * - {@code MM/DD/YYYY}
+     * - {@code MM-DD-YYYY}
+     * - {@code DD/MM/YYYY}
+     * - {@code DD-MM-YYYY}
+     * - {@code YY/MM/DD}
+     * - {@code YY-MM-DD}
+     * - {@code MM/DD/YY}
+     * - {@code MM-DD-YY}
+     * - {@code DD/MM/YY}
+     * - {@code DD-MM-YY}
      *
-     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
+     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
      *
      *
      * @param s date string.
@@ -4725,11 +4716,10 @@ public class DateTimeUtils {
     }
 
 
-    //TODO: Better docs
     /**
-     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a date or timezone.
      *
-     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string.
@@ -4765,14 +4755,13 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
-     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a date or timezone.
      *
-     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
      *
      * @param s string to be converted
-     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @return a {@link LocalTime} represented by the input string, or null if the string can not be parsed.
      */
     @ScriptApi
     @Nullable
