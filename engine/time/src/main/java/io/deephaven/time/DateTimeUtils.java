@@ -472,6 +472,31 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Time Zone
+
+    /**
+     * Gets the time zone for a time zone name.
+     *
+     * @param timeZone time zone name.
+     * @return time zone.
+     * @throws RuntimeException if the time zone does not exist.
+     */
+    public static ZoneId tz(@NotNull String timeZone) {
+        return TimeZoneAliases.zoneId(timeZone);
+    }
+
+    /**
+     * Gets the sysetm default time zone.
+     *
+     * @return time zone.
+     * @see ZoneId#systemDefault()
+     */
+    public static ZoneId tz() {
+        return ZoneId.systemDefault();
+    }
+
+    // end region
+
     // region Conversions: Time Units
 
     /**
@@ -3949,9 +3974,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    //TODO: rename
-    //TODO: add a tz format
-    public static ZoneId parseTimeZoneId(@NotNull final String s) {
+    public static ZoneId parseTimeZone(@NotNull final String s) {
         //noinspection ConstantConditions
         if (s == null) {
             throw new RuntimeException("Cannot parse time zone ID (null): " + s);
@@ -3968,34 +3991,20 @@ public class DateTimeUtils {
      * @see ZoneId
      * @see TimeZoneAliases
      */
-    //TODO: rename
     @ScriptApi
     @Nullable
-    public static ZoneId parseTimeZoneIdQuiet(@Nullable final String s) {
+    public static ZoneId parseTimeZoneQuiet(@Nullable final String s) {
         if (s == null || s.length() <= 1) {
             return null;
         }
 
         try {
-            return parseTimeZoneId(s);
+            return parseTimeZone(s);
         } catch (Exception ex){
             return null;
         }
     }
     
-    //todo: fix me
-    //TODO: test me
-    public static ZoneId tz(@NotNull String s) {
-        return TimeZoneAliases.zoneId(s);
-    }
-
-    //todo: fix me
-    //TODO: test me
-    //TODO: see ZoneId#systemDefault()
-    public static ZoneId tz() {
-        return ZoneId.systemDefault();
-    }
-
     /**
      * Converts a String of digits of any length to a nanoseconds long value. Will ignore anything longer than 9 digits,
      * and will throw a NumberFormatException if any non-numeric character is found. Strings shorter than 9 digits will
@@ -4291,7 +4300,7 @@ public class DateTimeUtils {
 
                 final String dateTimeString = s.substring(0, spaceIndex);
                 final String timeZoneString = s.substring(spaceIndex+1);
-                final ZoneId timeZone = parseTimeZoneIdQuiet(timeZoneString);
+                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
 
                 if (timeZone == null) {
                     throw new RuntimeException("No matching time zone: " + timeZoneString);
@@ -4362,7 +4371,7 @@ public class DateTimeUtils {
 
                 final String dateTimeString = s.substring(0, spaceIndex);
                 final String timeZoneString = s.substring(spaceIndex+1);
-                final ZoneId timeZone = parseTimeZoneIdQuiet(timeZoneString);
+                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
 
                 if (timeZone == null) {
                     throw new RuntimeException("No matching time zone: " + timeZoneString);
