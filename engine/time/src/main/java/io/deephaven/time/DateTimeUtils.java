@@ -4262,15 +4262,15 @@ public class DateTimeUtils {
         }
     }
 
-    //TODO: Better docs
     /**
-     * Converts a datetime string to a date time.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     * Converts a date time string to a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
      * @param s date time string.
-     * @return a {@link DateTime} represented by the input string.
+     * @return a date time represented by the input string.
      * @throws RuntimeException if the string cannot be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     @NotNull
@@ -4304,20 +4304,20 @@ public class DateTimeUtils {
                 return toDateTime(java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone).toInstant());
             }
 
-            throw new RuntimeException("DateTime does not match expected pattern");
+            throw new RuntimeException("Date time does not match expected pattern");
         } catch (Exception ex){
             throw new RuntimeException("Cannot parse datetime: " + s, ex);
         }
     }
 
-    //TODO: Better docs
     /**
-     * Converts a datetime string to a {@link DateTime}.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     * Converts a date time string to a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
      *
      * @param s date time string.
-     * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     * @return a date time represented by the input string, or null if the string can not be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     @Nullable
@@ -4328,6 +4328,77 @@ public class DateTimeUtils {
 
         try {
             return parseDateTime(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Converts a date time string to a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string.
+     * @throws RuntimeException if the string cannot be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    @NotNull
+    public static Instant parseInstant(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse datetime (null): " + s);
+        }
+
+        try {
+            return Instant.parse(s);
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
+
+        try {
+            if (DATETIME_PATTERN.matcher(s).matches()) {
+                int spaceIndex = s.indexOf(' ');
+                if (spaceIndex == -1) {
+                    throw new RuntimeException("No time zone provided");
+                }
+
+                final String dateTimeString = s.substring(0, spaceIndex);
+                final String timeZoneString = s.substring(spaceIndex+1);
+                final ZoneId timeZone = parseTimeZoneIdQuiet(timeZoneString);
+
+                if (timeZone == null) {
+                    throw new RuntimeException("No matching time zone: " + timeZoneString);
+                }
+
+                return java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone).toInstant();
+            }
+
+            throw new RuntimeException("Date time does not match expected pattern");
+        } catch (Exception ex){
+            throw new RuntimeException("Cannot parse datetime: " + s, ex);
+        }
+    }
+
+    /**
+     * Converts a date time string to a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string, or null if the string can not be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant parseInstantQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseInstant(s);
         } catch (Exception e) {
             return null;
         }

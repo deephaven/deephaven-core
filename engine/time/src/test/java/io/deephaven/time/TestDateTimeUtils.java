@@ -333,6 +333,102 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.parseDateTimeQuiet(iso8601));
     }
 
+    public void testParseInstant() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for(String tz : tzs) {
+            for(String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZoneId(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstant(s));
+            }
+        }
+
+        try {
+            DateTimeUtils.parseInstant("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            DateTimeUtils.parseInstant("2010-01-01T12:11");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            DateTimeUtils.parseInstant("2010-01-01T12:11 JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        try {
+            //noinspection ConstantConditions
+            DateTimeUtils.parseInstant(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            //pass
+        }
+
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstant(iso8601));
+    }
+
+    public void testParseInstantQuiet() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for(String tz : tzs) {
+            for(String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZoneId(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstantQuiet(s));
+            }
+        }
+
+        TestCase.assertNull(DateTimeUtils.parseInstantQuiet("JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseInstantQuiet("2010-01-01T12:11"));
+        TestCase.assertNull(DateTimeUtils.parseInstantQuiet("2010-01-01T12:11 JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseInstantQuiet(null));
+
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstantQuiet(iso8601));
+    }
+
     public void testParseNanos() {
         final String[] times = {
                 "12:00",
