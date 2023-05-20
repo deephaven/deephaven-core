@@ -30,11 +30,8 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 /**
  * Functions for working with time.
  */
-//TODO: @SuppressWarnings("unused")
-@SuppressWarnings({"RegExpRedundantEscape", "unused"})
+@SuppressWarnings({"RegExpRedundantEscape"})
 public class DateTimeUtils {
-    //TODO: replace null checks with: Objects.requireNonNull(...)
-    //TODO: test coverage
 
     // region Format Patterns
 
@@ -492,7 +489,7 @@ public class DateTimeUtils {
         return ZoneId.systemDefault();
     }
 
-    // end region
+    // endregion
 
     // region Conversions: Time Units
 
@@ -4347,39 +4344,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static Instant parseInstant(@NotNull final String s) {
-        //noinspection ConstantConditions
-        if (s == null) {
-            throw new RuntimeException("Cannot parse datetime (null): " + s);
-        }
-
-        try {
-            return Instant.parse(s);
-        } catch (DateTimeParseException e) {
-            // ignore
-        }
-
-        try {
-            if (DATETIME_PATTERN.matcher(s).matches()) {
-                int spaceIndex = s.indexOf(' ');
-                if (spaceIndex == -1) {
-                    throw new RuntimeException("No time zone provided");
-                }
-
-                final String dateTimeString = s.substring(0, spaceIndex);
-                final String timeZoneString = s.substring(spaceIndex+1);
-                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
-
-                if (timeZone == null) {
-                    throw new RuntimeException("No matching time zone: " + timeZoneString);
-                }
-
-                return java.time.LocalDateTime.parse(dateTimeString).atZone(timeZone).toInstant();
-            }
-
-            throw new RuntimeException("Date time does not match expected pattern");
-        } catch (Exception ex){
-            throw new RuntimeException("Cannot parse datetime: " + s, ex);
-        }
+        return parseZonedDateTime(s).toInstant();
     }
 
     /**
@@ -4400,6 +4365,77 @@ public class DateTimeUtils {
 
         try {
             return parseInstant(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parses the string argument as a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string.
+     * @throws RuntimeException if the string cannot be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    @NotNull
+    public static ZonedDateTime parseZonedDateTime(@NotNull final String s) {
+        //noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse datetime (null): " + s);
+        }
+
+        try {
+            return ZonedDateTime.parse(s);
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
+
+        try {
+            if (DATETIME_PATTERN.matcher(s).matches()) {
+                int spaceIndex = s.indexOf(' ');
+                if (spaceIndex == -1) {
+                    throw new RuntimeException("No time zone provided");
+                }
+
+                final String dateTimeString = s.substring(0, spaceIndex);
+                final String timeZoneString = s.substring(spaceIndex+1);
+                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
+
+                if (timeZone == null) {
+                    throw new RuntimeException("No matching time zone: " + timeZoneString);
+                }
+
+                return LocalDateTime.parse(dateTimeString).atZone(timeZone);
+            }
+
+            throw new RuntimeException("Date time does not match expected pattern");
+        } catch (Exception ex){
+            throw new RuntimeException("Cannot parse datetime: " + s, ex);
+        }
+    }
+
+    /**
+     * Parses the string argument as a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string, or null if the string can not be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime parseZonedDateTimeQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseZonedDateTime(s);
         } catch (Exception e) {
             return null;
         }

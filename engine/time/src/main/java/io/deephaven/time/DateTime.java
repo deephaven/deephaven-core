@@ -231,12 +231,11 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         return toZonedDateTime(timeZone).toLocalTime();
     }
 
-    //TODO: use instant instead
     /**
      * Convert this DateTime to a {@link Date}.  The date time will be truncated to millisecond resolution.
      *
      * @return a {@link Date}
-     * @deprecated use {@link #toZonedDateTime(ZoneId)} ()} instead.
+     * @deprecated use {@link #toZonedDateTime(ZoneId)} ()}  or {@link #toInstant()} instead.
      */
     @Deprecated
     @NotNull
