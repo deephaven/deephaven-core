@@ -9,14 +9,14 @@ import jpy
 from deephaven import DHError
 from deephaven.table import Table
 
-_JStreamTableTools = jpy.get_type("io.deephaven.engine.table.impl.StreamTableTools")
+_JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
 
 
 def stream_to_append_only(table: Table) -> Table:
-    """ Creates an 'append only' table from the stream table.
+    """ Creates an 'append only' table from the blink table.
 
     Args:
-        table (Table): a stream table
+        table (Table): a blink table
 
     Returns:
         an append-only table
@@ -25,6 +25,6 @@ def stream_to_append_only(table: Table) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JStreamTableTools.streamToAppendOnlyTable(table.j_table))
+        return Table(j_table=_JBlinkTableTools.blinkToAppendOnlyTable(table.j_table))
     except Exception as e:
         raise DHError(e, "failed to create an append-only table.") from e

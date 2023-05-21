@@ -201,14 +201,15 @@ class KafkaConsumerTestCase(BaseTestCase):
         Tests to make sure deprecated TableTypes are equivalent
         """
         self.assertEqual(TableType.append(), TableType.Append)
-        self.assertEqual(TableType.stream(), TableType.Stream)
+        self.assertEqual(TableType.blink(), TableType.Stream)
+        self.assertEqual(TableType.blink(), TableType.stream())
 
     def test_table_types(self):
         """
         Tests TableType construction
         """
         _ = TableType.append()
-        _ = TableType.stream()
+        _ = TableType.blink()
         _ = TableType.ring(4096)
 
     def test_json_spec_partitioned_table(self):

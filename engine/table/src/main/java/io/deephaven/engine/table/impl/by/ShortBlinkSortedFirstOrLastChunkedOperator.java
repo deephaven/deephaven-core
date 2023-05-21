@@ -3,7 +3,7 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStreamSortedFirstOrLastChunkedOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharBlinkSortedFirstOrLastChunkedOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.by;
@@ -13,9 +13,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.compare.IntComparisons;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
+import io.deephaven.engine.table.impl.sources.ShortArraySource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -28,17 +28,17 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Chunked aggregation operator for sorted first/last-by using a int sort-column on stream tables.
+ * Chunked aggregation operator for sorted first/last-by using a short sort-column on blink tables.
  */
-public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedStreamFirstOrLastChunkedOperator {
+public class ShortBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBlinkFirstOrLastChunkedOperator {
 
     private final boolean isFirst;
     private final boolean isCombo;
-    private final IntegerArraySource sortColumnValues;
+    private final ShortArraySource sortColumnValues;
 
     private RowSetBuilderRandom changedDestinationsBuilder;
 
-    IntStreamSortedFirstOrLastChunkedOperator(
+    ShortBlinkSortedFirstOrLastChunkedOperator(
             final boolean isFirst,
             final boolean isCombo,
             @NotNull final MatchPair[] resultPairs,
@@ -47,7 +47,7 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
         this.isFirst = isFirst;
         this.isCombo = isCombo;
         // region sortColumnValues initialization
-        sortColumnValues = new IntegerArraySource();
+        sortColumnValues = new ShortArraySource();
         // endregion sortColumnValues initialization
     }
 
@@ -73,7 +73,7 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
-        final IntChunk<? extends Values> typedValues = values.asIntChunk();
+        final ShortChunk<? extends Values> typedValues = values.asShortChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -88,10 +88,10 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
                             @NotNull final Chunk<? extends Values> values,
                             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
                             final long destination) {
-        return addChunk(values.asIntChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
+        return addChunk(values.asShortChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
-    private boolean addChunk(@NotNull final IntChunk<? extends Values> values,
+    private boolean addChunk(@NotNull final ShortChunk<? extends Values> values,
                              @NotNull final LongChunk<? extends RowKeys> indices,
                              final int start,
                              final int length,
@@ -102,7 +102,7 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
         final boolean newDestination = redirections.getUnsafe(destination) == QueryConstants.NULL_LONG;
 
         int bestChunkPos;
-        int bestValue;
+        short bestValue;
         if (newDestination) {
             bestChunkPos = start;
             bestValue = values.get(start);
@@ -113,8 +113,8 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
 
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
-            final int value = values.get(chunkPos);
-            final int comparison = IntComparisons.compare(value, bestValue);
+            final short value = values.get(chunkPos);
+            final int comparison = ShortComparisons.compare(value, bestValue);
             // @formatter:off
             // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
             final boolean better =

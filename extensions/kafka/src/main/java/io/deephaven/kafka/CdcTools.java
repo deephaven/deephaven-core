@@ -4,7 +4,6 @@
 package io.deephaven.kafka;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -282,7 +281,7 @@ public class CdcTools {
      *        {@code cdcSpec} static factory method.
      * @param partitionFilter A function specifying the desired initial offset for each partition consumed The
      *        convenience constant {@code KafkaTools.ALL_PARTITIONS} is defined to facilitate requesting all partitions.
-     * @param asStreamTable If true, return a stream table of row changes with an added 'op' column including the CDC
+     * @param asBlinkTable If true, return a blink table of row changes with an added 'op' column including the CDC
      *        operation affecting the row.
      * @param dropColumns Collection of column names that will be dropped from the resulting table; null for none. Note
      *        that only columns not included in the primary key can be dropped at this stage; you can chain a drop
@@ -294,7 +293,7 @@ public class CdcTools {
             @NotNull final Properties kafkaProperties,
             @NotNull final CdcSpec cdcSpec,
             @NotNull final IntPredicate partitionFilter,
-            final boolean asStreamTable,
+            final boolean asBlinkTable,
             Collection<String> dropColumns) {
         final Schema valueSchema = KafkaTools.getAvroSchema(
                 kafkaProperties, cdcSpec.valueSchemaName(), cdcSpec.valueSchemaVersion());
@@ -307,13 +306,13 @@ public class CdcTools {
                 KafkaTools.ALL_PARTITIONS_SEEK_TO_BEGINNING,
                 KafkaTools.Consume.avroSpec(keySchema),
                 KafkaTools.Consume.avroSpec(valueSchema),
-                KafkaTools.TableType.stream());
+                KafkaTools.TableType.blink());
         final List<String> dbTableColumnNames = dbTableColumnNames(streamingIn);
         List<String> allDroppedColumns = null;
         if (dropColumns != null && dropColumns.size() > 0) {
             allDroppedColumns = new ArrayList<>(dropColumns);
         }
-        if (!asStreamTable) {
+        if (!asBlinkTable) {
             if (allDroppedColumns == null) {
                 allDroppedColumns = new ArrayList<>(1);
             }
@@ -322,7 +321,7 @@ public class CdcTools {
         final List<String> dbTableKeyColumnNames = fieldNames(keySchema);
         final Table narrowerStreamingTable = streamingIn
                 .view(narrowerStreamingTableViewExpressions(dbTableKeyColumnNames, dbTableColumnNames));
-        if (asStreamTable) {
+        if (asBlinkTable) {
             if (allDroppedColumns != null) {
                 return narrowerStreamingTable.dropColumns(allDroppedColumns);
             }

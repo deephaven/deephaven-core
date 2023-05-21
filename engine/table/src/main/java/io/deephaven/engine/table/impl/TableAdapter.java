@@ -300,7 +300,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table dropStream() {
+    default Table removeBlink() {
         return throwUnsupported();
     }
 
