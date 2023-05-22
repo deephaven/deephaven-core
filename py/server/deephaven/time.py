@@ -825,6 +825,203 @@ def excel_to_zoned_date_time(excel: float, tz: TimeZone) -> ZonedDateTime:
 
 # endregion
 
+# region Arithmetic
+
+def plus_period(dt: Union[Instant,ZonedDateTime], period: Union[int, Duration, Period]) -> Union[Instant,ZonedDateTime]:
+    """ Adds a time period to a date time.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        period (Union[int, Duration, Period]): Time period to add.  Integer inputs are nanoseconds.
+
+    Returns:
+        Date time, or None if any input is None or NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.plus(dt, period)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def minus_period(dt: Union[Instant,ZonedDateTime], period: Union[int, Duration, Period]) -> Union[Instant,ZonedDateTime]:
+    """ Subtracts a time period from a date time.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        period (Union[int, Duration, Period]): Time period to subtract.  Integer inputs are nanoseconds.
+
+    Returns:
+        Date time, or None if any input is None or NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.minus(dt, period)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+    #TODO: ?
+    # /**
+    #  * Subtract one date time from another and return the difference in nanoseconds.
+    #  *
+    #  * @param dateTime1 first date time.
+    #  * @param dateTime2 second date time.
+    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
+    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+    #  */
+    # @ScriptApi
+    # public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
+    #
+    # /**
+    #  * Subtract one date time from another and return the difference in nanoseconds.
+    #  *
+    #  * @param dateTime1 first date time.
+    #  * @param dateTime2 second date time.
+    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
+    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+    #  */
+    # @ScriptApi
+    # public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
+
+
+def diff_nanos(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns the difference in nanoseconds between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in nanoseconds or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffNanos(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_micros(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns the difference in microseconds between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in microseconds or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffMicros(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_millis(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns the difference in milliseconds between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in milliseconds or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffMillis(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_seconds(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> float:
+    """ Returns the difference in seconds between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in seconds or NULL_DOUBLE if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffSeconds(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_minutes(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> float:
+    """ Returns the difference in minutes between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in minutes or NULL_DOUBLE if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffMinutes(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_days(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> float:
+    """ Returns the difference in days between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in days or NULL_DOUBLE if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffDays(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_years(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDateTime]) -> float:
+    """ Returns the difference in years between two date time values.  Both values must be of the same type.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in years or NULL_DOUBLE if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.diffYears(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
 
 ##############################################
 ##############################################
@@ -1643,496 +1840,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Arithmetic
-    #
-    # /**
-    #  * Adds nanoseconds to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to add.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime plus(@Nullable final DateTime dateTime, final long nanos) {
-    #
-    # /**
-    #  * Adds nanoseconds to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to add.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant plus(@Nullable final Instant dateTime, final long nanos) {
-    #
-    # /**
-    #  * Adds nanoseconds to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to add.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, final long nanos) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant plus(@Nullable final Instant dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant plus(@Nullable final Instant dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Adds a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Subtracts nanoseconds from a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to subtract.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime minus(@Nullable final DateTime dateTime, final long nanos) {
-    #
-    # /**
-    #  * Subtracts nanoseconds from a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to subtract.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant minus(@Nullable final Instant dateTime, final long nanos) {
-    #
-    # /**
-    #  * Subtracts nanoseconds from a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param nanos number of nanoseconds to subtract.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified number
-    #  *      of nanoseconds.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, final long nanos) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant minus(@Nullable final Instant dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant minus(@Nullable final Instant dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
-    #
-    # /**
-    #  * Subtracts a time period to a date time.
-    #  *
-    #  * @param dateTime starting date time value.
-    #  * @param period time period.
-    #  * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus the specified time period.
-    #  * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Period period) {
-    #
-    # /**
-    #  * Subtract one date time from another and return the difference in nanoseconds.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long minus(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
-    #
-    # /**
-    #  * Subtract one date time from another and return the difference in nanoseconds.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Subtract one date time from another and return the difference in nanoseconds.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
-    #
-    # /**
-    #  * Returns the difference in nanoseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffNanos(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in nanoseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffNanos(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in nanoseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffNanos(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in microseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMicros(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in microseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMicros(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in microseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMicros(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in milliseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMillis(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in milliseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMillis(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in milliseconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long diffMillis(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in seconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffSeconds(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in seconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffSeconds(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in seconds between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffSeconds(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in minutes between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffMinutes(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in minutes between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffMinutes(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in minutes between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffMinutes(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in days between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffDays(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in days between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffDays(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in days between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffDays(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # /**
-    #  * Returns the difference in years (365-days) between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffYears(@Nullable final DateTime start, @Nullable final DateTime end) {
-    #
-    # /**
-    #  * Returns the difference in years (365-days) between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffYears(@Nullable final Instant start, @Nullable final Instant end) {
-    #
-    # /**
-    #  * Returns the difference in years (365-days) between two date time values.
-    #  *
-    #  * @param start start time.
-    #  * @param end end time.
-    #  * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static double diffYears(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
-    #
-    # // endregion
+
     #
     # // region Comparisons
     #
