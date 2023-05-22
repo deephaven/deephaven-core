@@ -86,7 +86,6 @@ def today(tz: TimeZone) -> str:
 
 # endregion
 
-
 # region Time Zone
 
 def tz(time_zone: str) -> TimeZone:
@@ -122,7 +121,6 @@ def tz_default() -> TimeZone:
         raise DHError(e) from e
 
 # endregion
-
 
 # region Conversions: Time Units
 
@@ -343,7 +341,6 @@ def millis_to_seconds(millis: int) -> int:
 
 
 # endregion
-
 
 # region Conversions: Date Time Types
 
@@ -1018,6 +1015,89 @@ def diff_years(start: Union[Instant,ZonedDateTime], end: Union[Instant,ZonedDate
     """
     try:
         return _JDateTimeUtils.diffYears(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
+# region Comparisons
+
+def is_before(dt1: Union[Instant,ZonedDateTime], dt2: Union[Instant,ZonedDateTime]) -> bool:
+    """ Evaluates whether one date time value is before a second date time value.
+    Both values must be of the same type.
+
+    Args:
+        dt1 (Union[Instant,ZonedDateTime]): First date time.
+        dt2 (Union[Instant,ZonedDateTime]): Second date time.
+
+    Returns:
+        True if dt1 is before dt2; otherwise, False if either value is null or if dt2 is equal to or before dt1.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.isBefore(dt1, dt2)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def is_before_or_equal(dt1: Union[Instant,ZonedDateTime], dt2: Union[Instant,ZonedDateTime]) -> bool:
+    """ Evaluates whether one date time value is before or equal to a second date time value.
+    Both values must be of the same type.
+
+    Args:
+        dt1 (Union[Instant,ZonedDateTime]): First date time.
+        dt2 (Union[Instant,ZonedDateTime]): Second date time.
+
+    Returns:
+        True if dt1 is before or equal to dt2; otherwise, False if either value is null or if dt2 is before dt1.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.isBeforeOrEqual(dt1, dt2)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def is_after(dt1: Union[Instant,ZonedDateTime], dt2: Union[Instant,ZonedDateTime]) -> bool:
+    """ Evaluates whether one date time value is after a second date time value.
+    Both values must be of the same type.
+
+    Args:
+        dt1 (Union[Instant,ZonedDateTime]): First date time.
+        dt2 (Union[Instant,ZonedDateTime]): Second date time.
+
+    Returns:
+        True if dt1 is after dt2; otherwise, False if either value is null or if dt2 is equal to or after dt1.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.isAfter(dt1, dt2)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def is_after_or_equal(dt1: Union[Instant,ZonedDateTime], dt2: Union[Instant,ZonedDateTime]) -> bool:
+    """ Evaluates whether one date time value is after or equal to a second date time value.
+    Both values must be of the same type.
+
+    Args:
+        dt1 (Union[Instant,ZonedDateTime]): First date time.
+        dt2 (Union[Instant,ZonedDateTime]): Second date time.
+
+    Returns:
+        True if dt1 is after or equal to dt2; otherwise, False if either value is null or if dt2 is after dt1.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.isAfterOrEqual(dt1, dt2)
     except Exception as e:
         raise DHError(e) from e
 
@@ -1841,142 +1921,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Comparisons
-    #
-    # /**
-    #  * Evaluates whether one date time value is before a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBefore(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is before a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBefore(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is before a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBefore(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is before or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBeforeOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is before or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBeforeOrEqual(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is before or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is before dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isBeforeOrEqual(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfter(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfter(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
-    #  *      to or after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfter(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfterOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfterOrEqual(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Evaluates whether one date time value is after or equal to a second date time value.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
-    #  *      is after dateTime1.
-    #  */
-    # @ScriptApi
-    # public static boolean isAfterOrEqual(@Nullable final ZonedDateTime dateTime1, @Nullable ZonedDateTime dateTime2) {
-    #
-    # // endregion
+
     #
     # // region Chronology
     #
