@@ -29,7 +29,7 @@ import java.util.List;
 
 import static io.deephaven.engine.util.TableTools.*;
 
-public class TestStreamToTableAdapter {
+public class TestStreamToBlinkTableAdapter {
     @Before
     public void setUp() throws Exception {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -50,8 +50,8 @@ public class TestStreamToTableAdapter {
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -226,8 +226,8 @@ public class TestStreamToTableAdapter {
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -296,8 +296,8 @@ public class TestStreamToTableAdapter {
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -355,8 +355,8 @@ public class TestStreamToTableAdapter {
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
@@ -429,8 +429,8 @@ public class TestStreamToTableAdapter {
                 List.of(String.class, int.class, long.class, double.class));
         final DummyStreamPublisher streamPublisher = new DummyStreamPublisher();
 
-        final StreamToTableAdapter adapter =
-                new StreamToTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
+        final StreamToBlinkTableAdapter adapter =
+                new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, UpdateGraphProcessor.DEFAULT, "test");
         final Table result = adapter.table();
 
         final MutableBoolean listenerFailed = new MutableBoolean();

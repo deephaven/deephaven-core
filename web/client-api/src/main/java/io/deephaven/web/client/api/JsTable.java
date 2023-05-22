@@ -122,7 +122,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     private boolean hasInputTable;
 
-    private boolean isStreamTable;
+    private boolean isBlinkTable;
 
     private final List<JsRunnable> onClosed;
 
@@ -156,7 +156,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         this.subscriptionId = nextSubscriptionId++;
         this.workerConnection = table.workerConnection;
         this.hasInputTable = table.hasInputTable;
-        this.isStreamTable = table.isStreamTable;
+        this.isBlinkTable = table.isBlinkTable;
         this.currentState = table.currentState;
         this.lastVisibleState = table.lastVisibleState;
         this.size = table.size;
@@ -244,8 +244,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public boolean isStreamTable() {
-        return isStreamTable;
+    public boolean isBlinkTable() {
+        return isBlinkTable;
     }
 
     @JsMethod
@@ -1530,7 +1530,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             if (state == currentState) {
                 lastVisibleState = state;
                 hasInputTable = s.getTableDef().getAttributes().isInputTable();
-                isStreamTable = s.getTableDef().getAttributes().isStreamTable();
+                isBlinkTable = s.getTableDef().getAttributes().isBlinkTable();
 
                 // defer the size change so that is there is a viewport sub also waiting for onRunning, it gets it first
                 LazyPromise.runLater(() -> {

@@ -201,8 +201,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private volatile long lastUpdateTime = 0;
     private volatile long lastScheduledUpdateTime = 0;
 
-    private final boolean isStreamTable;
-    private long lastStreamTableUpdateSize = 0;
+    private final boolean isBlinkTable;
+    private long lastBlinkTableUpdateSize = 0;
 
     private final Stats stats;
 
@@ -307,7 +307,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         this.scheduler = scheduler;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.parent = parent;
-        this.isStreamTable = parent.isStream();
+        this.isBlinkTable = parent.isBlink();
 
         final String tableKey = BarragePerformanceLog.getKeyFor(parent);
         if (scheduler.inTestMode() || tableKey == null) {
@@ -665,7 +665,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final RowSet modsToRecord;
         final TrackingRowSet rowSet = parent.getRowSet();
 
-        if (isStreamTable || numFullSubscriptions > 0) {
+        if (isBlinkTable || numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null || activeReverseViewport != null) {
@@ -701,7 +701,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0
-                && !isStreamTable) {
+                && !isBlinkTable) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
 
             try (final RowSet prevRowSet = rowSet.copyPrev()) {
@@ -1119,7 +1119,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         BarrageMessage preSnapshot = null;
-        BarrageMessage streamTableFlushPreSnapshot = null;
+        BarrageMessage blinkTableFlushPreSnapshot = null;
         RowSet preSnapRowSet = null;
         BarrageMessage snapshot = null;
         BarrageMessage postSnapshot = null;
@@ -1265,7 +1265,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 // finally, grab the snapshot and measure elapsed time for next projections
                 long start = System.nanoTime();
-                if (!isStreamTable) {
+                if (!isBlinkTable) {
                     snapshot = getSnapshot(growingSubscriptions, snapshotColumns, snapshotRowSet,
                             reverseSnapshotRowSet);
                 } else {
@@ -1273,7 +1273,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     snapshot = getSnapshot(growingSubscriptions, snapshotColumns, RowSetFactory.empty(),
                             RowSetFactory.empty());
 
-                    // in the event that the stream table was not empty; pretend it was
+                    // in the event that the blink table was not empty; pretend it was
                     if (!snapshot.rowsAdded.isEmpty()) {
                         snapshot.rowsAdded.close();
                         snapshot.rowsAdded = RowSetFactory.empty();
@@ -1330,9 +1330,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 preSnapRowSet = propagationRowSet.copy();
             }
 
-            if (isStreamTable && lastStreamTableUpdateSize != 0 && snapshot != null) {
+            if (isBlinkTable && lastBlinkTableUpdateSize != 0 && snapshot != null) {
                 // we must create a dummy update that removes all rows so that the empty snapshot is valid
-                streamTableFlushPreSnapshot = aggregateUpdatesInRange(-1, -1);
+                blinkTableFlushPreSnapshot = aggregateUpdatesInRange(-1, -1);
             }
 
             if (firstSubscription) {
@@ -1377,11 +1377,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             preSnapRowSet.close();
         }
 
-        if (streamTableFlushPreSnapshot != null) {
+        if (blinkTableFlushPreSnapshot != null) {
             final long startTm = System.nanoTime();
             try (final RowSet fakeTableRowSet = RowSetFactory.empty()) {
                 // the method expects the post-update RowSet; which is empty after the flush
-                propagateToSubscribers(streamTableFlushPreSnapshot, fakeTableRowSet);
+                propagateToSubscribers(blinkTableFlushPreSnapshot, fakeTableRowSet);
             }
             recordMetric(stats -> stats.propagate, System.nanoTime() - startTm);
         }
@@ -1447,7 +1447,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
                 // There are four messages that might be sent this update:
                 // - pre-snapshot: snapshotViewport/snapshotColumn values apply during this phase
-                // - pre-snapshot flush: rm all existing rows from a stream table to make empty snapshot valid
+                // - pre-snapshot flush: rm all existing rows from a blink table to make empty snapshot valid
                 // - snapshot: here we close and clear the snapshotViewport/snapshotColumn values; officially we
                 // recognize the subscription change
                 // - post-snapshot: now we use the viewport/subscribedColumn values (these are the values the UGP
@@ -1561,7 +1561,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final BitSet modColumnSet;
         final Delta firstDelta;
 
-        if (isStreamTable) {
+        if (isBlinkTable) {
             long numRows = 0;
             for (int ii = startDelta; ii < endDelta; ++ii) {
                 numRows += pendingDeltas.get(ii).recordedAdds.size();
@@ -1569,7 +1569,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
             final TableUpdate update = new TableUpdateImpl(
                     RowSetFactory.flat(numRows),
-                    RowSetFactory.flat(lastStreamTableUpdateSize),
+                    RowSetFactory.flat(lastBlinkTableUpdateSize),
                     RowSetFactory.empty(),
                     RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY);
@@ -1586,12 +1586,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     new BitSet());
 
             // store our update size to remove on the next update
-            lastStreamTableUpdateSize = numRows;
+            lastBlinkTableUpdateSize = numRows;
         } else {
             firstDelta = pendingDeltas.get(startDelta);
         }
 
-        if (singleDelta || isStreamTable) {
+        if (singleDelta || isBlinkTable) {
             // We can use this update directly with minimal effort.
             final RowSet localAdded;
             if (firstDelta.recordedAdds.isEmpty()) {
@@ -1950,10 +1950,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         boolean rebuildViewport = false;
 
         for (final Subscription subscription : subscriptions) {
-            // note: stream tables send empty snapshots - so we are always complete
+            // note: blink tables send empty snapshots - so we are always complete
             boolean isComplete = subscription.growingRemainingViewport.isEmpty()
                     || subscription.growingRemainingViewport.firstRowKey() >= parentTableSize
-                    || isStreamTable;
+                    || isBlinkTable;
 
             if (isComplete) {
                 // this subscription is complete, remove it from the growing list

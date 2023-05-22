@@ -44,8 +44,8 @@ public class ReplicateOperators {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java");
         charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
-        replicateObjectAddOnlyAndStreamSortedFirstLast();
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharBlinkSortedFirstOrLastChunkedOperator.java");
+        replicateObjectAddOnlyAndBlinkSortedFirstLast();
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
         replicateObjectUnorderedMergeKernel();
@@ -102,10 +102,10 @@ public class ReplicateOperators {
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 
-    private static void replicateObjectAddOnlyAndStreamSortedFirstLast() throws IOException {
+    private static void replicateObjectAddOnlyAndBlinkSortedFirstLast() throws IOException {
         for (final String charClassJavaPath : new String[] {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java"}) {
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharBlinkSortedFirstOrLastChunkedOperator.java"}) {
             final String objectClassName =
                     charToObject(charClassJavaPath);
             final File objectClassFile = new File(objectClassName);

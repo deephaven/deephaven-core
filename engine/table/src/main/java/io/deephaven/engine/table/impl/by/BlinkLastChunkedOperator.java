@@ -18,14 +18,14 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A lastBy aggregation operator for stream tables.
+ * A lastBy aggregation operator for blink tables.
  *
- * @see Table#STREAM_TABLE_ATTRIBUTE
+ * @see Table#BLINK_TABLE_ATTRIBUTE
  */
-public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastChunkedOperator {
+public class BlinkLastChunkedOperator extends CopyingPermutedBlinkFirstOrLastChunkedOperator {
 
-    StreamLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
-        super(resultPairs, streamTable);
+    BlinkLastChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table blinkTable) {
+        super(resultPairs, blinkTable);
     }
 
     @Override

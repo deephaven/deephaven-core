@@ -126,31 +126,42 @@ public interface Table extends
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
+     * If this attribute is present with value {@code true}, this Table is a "blink table".
      * <p>
-     * If this attribute is present with value {@code true}, this Table is a "stream table".
+     * A blink table provides a tabular presentation of rows accumulated from a stream since the previous cycle. Rows
+     * added on a particular cycle are always removed on the following cycle. Note that this means any particular row of
+     * data (not to be confused with a row key) never exists for more than one cycle. A blink table will never deliver
+     * modifies or shifts as part of its {@link TableUpdate updates}, just adds for this cycle's new data and removes
+     * for the previous cycle's old data.
      * <p>
-     * A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle after
-     * the stream table is refreshed the rows are removed. Note that this means any particular row of data (not to be
-     * confused with a row key) never exists for more than one cycle.
+     * Aggregation operations (e.g. {@link #aggBy}, {@link #aggAllBy}, {@link #countBy}, etc) on blink tables have
+     * special semantics, allowing the result to aggregate over the entire observed stream of rows from the time the
+     * operation is initiated. That means, for example, that a {@link #sumBy} on a blink table will contain the result
+     * sums for each aggregation group over all observed rows since the {@code sumBy} was applied, rather than just the
+     * sums for the current update cycle. This allows for aggregations over the full history of a stream to be performed
+     * with greatly reduced memory costs when compared to the alternative strategy of holding the entirety of the stream
+     * as an in-memory table.
      * <p>
-     * Most operations are supported as normal on stream tables, but aggregation operations are treated specially,
-     * producing aggregate results that are valid over the entire observed stream from the time the operation is
-     * initiated. These semantics necessitate a few exclusions, i.e. unsupported operations that need to keep track of
-     * all rows:
+     * All other operations on blink tables behave exactly as they do on other tables; that is, adds and removes are
+     * processed as normal. For example {@link #select select} on a blink table will have only the newly added rows on
+     * current update cycle.
+     * <p>
+     * The special aggregation semantics necessitate a few exclusions, i.e. operations that cannot be supported because
+     * they need to keep track of all rows:
      * <ol>
-     * <li>{@link #groupBy} is unsupported
-     * <li>{@link #partitionBy} is unsupported</li>
+     * <li>{@link #groupBy groupBy} is unsupported
+     * <li>{@link #partitionBy partitionBy} is unsupported</li>
      * <li>{@link #partitionedAggBy(Collection, boolean, Table, String...) partitionedAggBy} is unsupported</li>
-     * <li>{@link #aggBy} is unsupported if either of {@link io.deephaven.api.agg.spec.AggSpecGroup group} or
-     * {@link io.deephaven.api.agg.Partition partition} are used</li>
-     * <li>{@link #rollup(Collection, boolean, Collection) rollup()} is unsupported if
+     * <li>{@link #aggBy aggBy} is unsupported if either {@link io.deephaven.api.agg.spec.AggSpecGroup group} or
+     * {@link io.deephaven.api.agg.Partition partition} is used</li>
+     * <li>{@link #rollup(Collection, boolean, Collection) rollup} is unsupported if
      * {@code includeConstituents == true}</li>
-     * <li>{@link #tree(String, String) tree()} is unsupported</li>
+     * <li>{@link #tree(String, String) tree} is unsupported</li>
      * </ol>
      * <p>
-     * To disable these semantics, a {@link #dropStream() dropStream} method is offered.
+     * To disable these semantics, a {@link #removeBlink() removeBlink} method is offered.
      */
-    String STREAM_TABLE_ATTRIBUTE = "StreamTable";
+    String BLINK_TABLE_ATTRIBUTE = "BlinkTable";
     /**
      * The query engine may set or read this attribute to determine if a table is sorted by a particular column.
      */
@@ -449,13 +460,13 @@ public interface Table extends
     Table applyToAllBy(String formulaColumn, String... groupByColumns);
 
     /**
-     * If this table is a stream table, i.e. it has {@link #STREAM_TABLE_ATTRIBUTE} set to {@code true}, return a child
+     * If this table is a blink table, i.e. it has {@link #BLINK_TABLE_ATTRIBUTE} set to {@code true}, return a child
      * without the attribute, restoring standard semantics for aggregation operations.
      *
-     * @return A non-stream child table, or this table if it is not a stream table
+     * @return A non-blink child table, or this table if it is not a blink table
      */
     @ConcurrentMethod
-    Table dropStream();
+    Table removeBlink();
 
     // -----------------------------------------------------------------------------------------------------------------
     // Disaggregation Operations

@@ -234,7 +234,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         private final ModifiedColumnSet keysModified;
         private final ModifiedColumnSet valuesModified;
-        private final boolean isStream;
+        private final boolean isBlink;
 
         private final PublicationGuard guard = new PublicationGuard();
 
@@ -244,7 +244,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             super("PublishToKafka", table, false);
             this.keysModified = keysModified;
             this.valuesModified = valuesModified;
-            this.isStream = StreamTableTools.isStream(table);
+            this.isBlink = BlinkTableTools.isBlink(table);
         }
 
         @Override
@@ -253,7 +253,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                     "!keysModified.containsAny(upstream.modifiedColumnSet())", "Key columns should never be modified");
 
             try (final SafeCloseable ignored = guard) {
-                if (isStream) {
+                if (isBlink) {
                     Assert.assertion(upstream.modified().isEmpty(), "upstream.modified.empty()");
                     Assert.assertion(upstream.shifted().empty(), "upstream.shifted.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts

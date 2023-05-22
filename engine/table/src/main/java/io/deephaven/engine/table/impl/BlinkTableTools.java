@@ -21,40 +21,38 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Tools for manipulating stream tables.
+ * Tools for manipulating blink tables.
  *
- * @see Table#STREAM_TABLE_ATTRIBUTE
+ * @see Table#BLINK_TABLE_ATTRIBUTE
  */
-public class StreamTableTools {
+public class BlinkTableTools {
 
     /**
-     * Convert a Stream Table to an in-memory append only table.
+     * Convert a Blink Table to an in-memory append only table.
+     * <p>
+     * Note, this table will grow without bound as new blink table rows are encountered.
      *
-     * Note, this table will grow without bound as new stream values are encountered.
-     *
-     * @param streamTable the input stream table
-     * @return an append-only in-memory table representing all data encountered in the stream
+     * @param blinkTable The input blink table
+     * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
      */
-    public static Table streamToAppendOnlyTable(final Table streamTable) {
-        return QueryPerformanceRecorder.withNugget("streamToAppendOnlyTable", () -> {
-            if (!isStream(streamTable)) {
-                throw new IllegalArgumentException("Input is not a stream table!");
+    public static Table blinkToAppendOnly(final Table blinkTable) {
+        return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
+            if (!isBlink(blinkTable)) {
+                throw new IllegalArgumentException("Input is not a blink table!");
             }
 
-            final BaseTable baseStreamTable = (BaseTable) streamTable.coalesce();
-
-            final SwapListener swapListener =
-                    baseStreamTable.createSwapListenerIfRefreshing(SwapListener::new);
-            // stream tables must tick
+            final BaseTable<?> baseBlinkTable = (BaseTable<?>) blinkTable.coalesce();
+            final SwapListener swapListener = baseBlinkTable.createSwapListenerIfRefreshing(SwapListener::new);
+            // blink tables must tick
             Assert.neqNull(swapListener, "swapListener");
 
             final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
-            ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(),
+            ConstructSnapshot.callDataSnapshotFunction("blinkToAppendOnly", swapListener.makeSnapshotControl(),
                     (boolean usePrev, long beforeClockValue) -> {
                         final Map<String, WritableColumnSource<?>> columns = new LinkedHashMap<>();
                         final Map<String, ? extends ColumnSource<?>> columnSourceMap =
-                                baseStreamTable.getColumnSourceMap();
+                                baseBlinkTable.getColumnSourceMap();
                         final int columnCount = columnSourceMap.size();
                         final ColumnSource<?>[] sourceColumns = new ColumnSource[columnCount];
                         final WritableColumnSource<?>[] destColumns = new WritableColumnSource[columnCount];
@@ -77,14 +75,13 @@ public class StreamTableTools {
 
                         final TrackingWritableRowSet rowSet;
                         if (usePrev) {
-                            try (final RowSet useRowSet = baseStreamTable.getRowSet().copyPrev()) {
+                            try (final RowSet useRowSet = baseBlinkTable.getRowSet().copyPrev()) {
                                 rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }
                         } else {
-                            rowSet = RowSetFactory.flat(baseStreamTable.getRowSet().size())
-                                    .toTracking();
-                            ChunkUtils.copyData(sourceColumns, baseStreamTable.getRowSet(), destColumns, rowSet,
+                            rowSet = RowSetFactory.flat(baseBlinkTable.getRowSet().size()).toTracking();
+                            ChunkUtils.copyData(sourceColumns, baseBlinkTable.getRowSet(), destColumns, rowSet,
                                     usePrev);
                         }
 
@@ -96,11 +93,11 @@ public class StreamTableTools {
                         resultHolder.setValue(result);
 
                         swapListener.setListenerAndResult(new BaseTable.ListenerImpl("streamToAppendOnly",
-                                baseStreamTable, result) {
+                                baseBlinkTable, result) {
                             @Override
                             public void onUpdate(TableUpdate upstream) {
                                 if (upstream.modified().isNonempty() || upstream.shifted().nonempty()) {
-                                    throw new IllegalArgumentException("Stream tables should not modify or shift!");
+                                    throw new IllegalArgumentException("Blink tables should not modify or shift!");
                                 }
                                 final long newRows = upstream.added().size();
                                 if (newRows == 0) {
@@ -109,9 +106,7 @@ public class StreamTableTools {
                                 final long currentSize = rowSet.size();
                                 columns.values().forEach(c -> c.ensureCapacity(currentSize + newRows));
 
-                                final RowSet newRange =
-                                        RowSetFactory.fromRange(currentSize,
-                                                currentSize + newRows - 1);
+                                final RowSet newRange = RowSetFactory.fromRange(currentSize, currentSize + newRows - 1);
 
                                 ChunkUtils.copyData(sourceColumns, upstream.added(), destColumns, newRange, false);
                                 rowSet.insertRange(currentSize, currentSize + newRows - 1);
@@ -134,16 +129,16 @@ public class StreamTableTools {
     }
 
     /**
-     * Returns true if table is a stream table.
+     * Returns true if table is a blink table.
      *
-     * @param table the table to check for stream behavior
-     * @return Whether this table is a stream table
-     * @see Table#STREAM_TABLE_ATTRIBUTE
+     * @param table The table to check for blink behavior
+     * @return Whether this table is a blink table
+     * @see Table#BLINK_TABLE_ATTRIBUTE
      */
-    public static boolean isStream(Table table) {
+    public static boolean isBlink(Table table) {
         if (!table.isRefreshing()) {
             return false;
         }
-        return Boolean.TRUE.equals(table.getAttribute(Table.STREAM_TABLE_ATTRIBUTE));
+        return Boolean.TRUE.equals(table.getAttribute(Table.BLINK_TABLE_ATTRIBUTE));
     }
 }

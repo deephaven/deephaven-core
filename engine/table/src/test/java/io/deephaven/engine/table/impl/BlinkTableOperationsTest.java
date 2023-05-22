@@ -33,9 +33,9 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 /**
- * Unit tests that exercise optimized operations for stream tables.
+ * Unit tests that exercise optimized operations for blink tables.
  */
-public class StreamTableOperationsTest {
+public class BlinkTableOperationsTest {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -57,43 +57,43 @@ public class StreamTableOperationsTest {
      * Execute a table operator.
      *
      * @param operator The operator to apply
-     * @param windowed Whether the stream table RowSet should be a sliding window (if {@code true}) or zero-based (if
+     * @param windowed Whether the blink table RowSet should be a sliding window (if {@code true}) or zero-based (if
      *        {@code false})
-     * @param expectStreamResult Whether the result is expected to be a stream table
+     * @param expectBlinkResult Whether the result is expected to be a blink table
      */
     private void doOperatorTest(
             @NotNull final UnaryOperator<Table> operator,
             final boolean windowed,
-            final boolean expectStreamResult) {
+            final boolean expectBlinkResult) {
         final QueryTable normal = new QueryTable(RowSetFactory.empty().toTracking(),
                 source.getColumnSourceMap());
         normal.setRefreshing(true);
 
-        final TrackingWritableRowSet streamInternalRowSet;
-        final Map<String, ? extends ColumnSource<?>> streamSources;
+        final TrackingWritableRowSet blinkInternalRowSet;
+        final Map<String, ? extends ColumnSource<?>> blinkSources;
         if (windowed) {
-            streamInternalRowSet = null;
-            streamSources = source.getColumnSourceMap();
+            blinkInternalRowSet = null;
+            blinkSources = source.getColumnSourceMap();
         } else {
-            // Redirecting so we can present a zero-based RowSet from the stream table
-            streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final RowRedirection streamRedirections = new WrappedRowSetRowRedirection(streamInternalRowSet);
-            streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
+            // Redirecting so we can present a zero-based RowSet from the blink table
+            blinkInternalRowSet = RowSetFactory.empty().toTracking();
+            final RowRedirection blinkRedirections = new WrappedRowSetRowRedirection(blinkInternalRowSet);
+            blinkSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
+                    (entry -> RedirectedColumnSource.maybeRedirect(blinkRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }
-        final QueryTable stream = new QueryTable(RowSetFactory.empty().toTracking(), streamSources);
-        stream.setRefreshing(true);
-        stream.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
+        final QueryTable blink = new QueryTable(RowSetFactory.empty().toTracking(), blinkSources);
+        blink.setRefreshing(true);
+        blink.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
-        TstUtils.assertTableEquals(normal, stream);
+        TstUtils.assertTableEquals(normal, blink);
 
         final Table expected = operator.apply(normal);
-        final Table streamExpected = operator.apply(stream);
-        TstUtils.assertTableEquals(expected, streamExpected);
-        TestCase.assertEquals(expectStreamResult, ((BaseTable<?>) streamExpected).isStream());
+        final Table blinkExpected = operator.apply(blink);
+        TstUtils.assertTableEquals(expected, blinkExpected);
+        TestCase.assertEquals(expectBlinkResult, ((BaseTable<?>) blinkExpected).isBlink());
 
         final PrimitiveIterator.OfLong refreshSizes = LongStream.concat(
                 LongStream.of(100, 0, 1, 2, 50, 0, 1000, 1, 0),
@@ -102,13 +102,13 @@ public class StreamTableOperationsTest {
         int step = 0;
         long usedSize = 0;
         RowSet normalLastInserted = RowSetFactory.empty();
-        RowSet streamLastInserted = RowSetFactory.empty();
+        RowSet blinkLastInserted = RowSetFactory.empty();
         while (usedSize < INPUT_SIZE) {
             final long refreshSize = Math.min(INPUT_SIZE - usedSize, refreshSizes.nextLong());
             final RowSet normalStepInserted = refreshSize == 0
                     ? RowSetFactory.empty()
                     : RowSetFactory.fromRange(usedSize, usedSize + refreshSize - 1);
-            final RowSet streamStepInserted = streamInternalRowSet == null ? normalStepInserted.copy()
+            final RowSet blinkStepInserted = blinkInternalRowSet == null ? normalStepInserted.copy()
                     : refreshSize == 0
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
@@ -123,16 +123,16 @@ public class StreamTableOperationsTest {
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
-                final RowSet finalStreamLastInserted = streamLastInserted;
+                final RowSet finalBlinkLastInserted = blinkLastInserted;
                 UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
-                    if (streamStepInserted.isNonempty() || finalStreamLastInserted.isNonempty()) {
-                        if (streamInternalRowSet != null) {
-                            streamInternalRowSet.clear();
-                            streamInternalRowSet.insert(normalStepInserted);
+                    if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
+                        if (blinkInternalRowSet != null) {
+                            blinkInternalRowSet.clear();
+                            blinkInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getRowSet().writableCast().clear();
-                        stream.getRowSet().writableCast().insert(streamStepInserted);
-                        stream.notifyListeners(new TableUpdateImpl(streamStepInserted.copy(), finalStreamLastInserted,
+                        blink.getRowSet().writableCast().clear();
+                        blink.getRowSet().writableCast().insert(blinkStepInserted);
+                        blink.notifyListeners(new TableUpdateImpl(blinkStepInserted.copy(), finalBlinkLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
                 });
@@ -140,7 +140,7 @@ public class StreamTableOperationsTest {
                 UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
             }
             try {
-                TstUtils.assertTableEquals(expected, streamExpected);
+                TstUtils.assertTableEquals(expected, blinkExpected);
             } catch (ComparisonFailure e) {
                 System.err.printf("FAILURE: step %d, previousUsedSize %d, refreshSize %d%n", step, usedSize,
                         refreshSize);
@@ -150,7 +150,7 @@ public class StreamTableOperationsTest {
             ++step;
             usedSize += refreshSize;
             normalLastInserted = normalStepInserted;
-            streamLastInserted = streamStepInserted;
+            blinkLastInserted = blinkStepInserted;
         }
     }
 
