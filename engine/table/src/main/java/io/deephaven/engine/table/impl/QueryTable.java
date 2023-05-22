@@ -743,7 +743,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private static UnsupportedOperationException unsupportedForBlinkTables(@NotNull final String operationName) {
         return new UnsupportedOperationException("Blink tables do not support " + operationName
-                + "; use BlinkTableTools.blinkToAppendOnlyTable to accumulate full history");
+                + "; use BlinkTableTools.blinkToAppendOnly to accumulate full history");
     }
 
     @Override

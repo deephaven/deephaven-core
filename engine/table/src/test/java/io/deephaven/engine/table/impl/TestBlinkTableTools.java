@@ -42,7 +42,7 @@ public class TestBlinkTableTools {
                 doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));
         blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
-        final Table appendOnly = BlinkTableTools.blinkToAppendOnlyTable(blinkTable);
+        final Table appendOnly = BlinkTableTools.blinkToAppendOnly(blinkTable);
 
         assertTableEquals(blinkTable, appendOnly);
         TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));

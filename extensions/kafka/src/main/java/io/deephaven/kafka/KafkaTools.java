@@ -1174,7 +1174,7 @@ public class KafkaTools {
         /**
          * Consume data into an in-memory append-only table.
          *
-         * @see BlinkTableTools#blinkToAppendOnlyTable(Table)
+         * @see BlinkTableTools#blinkToAppendOnly(Table)
          */
         @Immutable
         @SimpleStyle
@@ -1521,7 +1521,7 @@ public class KafkaTools {
 
         @Override
         public Table visit(Append append) {
-            return BlinkTableTools.blinkToAppendOnlyTable(blinkTable);
+            return BlinkTableTools.blinkToAppendOnly(blinkTable);
         }
 
         @Override

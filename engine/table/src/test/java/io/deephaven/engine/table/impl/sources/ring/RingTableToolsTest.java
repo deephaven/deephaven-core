@@ -92,7 +92,7 @@ public class RingTableToolsTest {
                 booleanHolder(appendSize),
         };
         final BlinkTableHelper streamHelper = new BlinkTableHelper(appendSize, holders);
-        final Table tail = BlinkTableTools.blinkToAppendOnlyTable(streamHelper.blinkTable).tail(capacity);
+        final Table tail = BlinkTableTools.blinkToAppendOnly(streamHelper.blinkTable).tail(capacity);
         final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
         for (int i = 0; i < times; ++i) {

@@ -35,8 +35,8 @@ public class BlinkTableTools {
      * @param blinkTable The input blink table
      * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
      */
-    public static Table blinkToAppendOnlyTable(final Table blinkTable) {
-        return QueryPerformanceRecorder.withNugget("blinkToAppendOnlyTable", () -> {
+    public static Table blinkToAppendOnly(final Table blinkTable) {
+        return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {
                 throw new IllegalArgumentException("Input is not a blink table!");
             }
@@ -48,7 +48,7 @@ public class BlinkTableTools {
 
             final Mutable<QueryTable> resultHolder = new MutableObject<>();
 
-            ConstructSnapshot.callDataSnapshotFunction("blinkToAppendOnlyTable", swapListener.makeSnapshotControl(),
+            ConstructSnapshot.callDataSnapshotFunction("blinkToAppendOnly", swapListener.makeSnapshotControl(),
                     (boolean usePrev, long beforeClockValue) -> {
                         final Map<String, WritableColumnSource<?>> columns = new LinkedHashMap<>();
                         final Map<String, ? extends ColumnSource<?>> columnSourceMap =

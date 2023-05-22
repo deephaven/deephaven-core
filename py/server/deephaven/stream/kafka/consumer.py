@@ -3,8 +3,8 @@
 #
 
 """ The kafka.consumer module supports consuming a Kakfa topic as a Deephaven live table. """
-from enum import Enum
 from typing import Dict, Tuple, List, Callable, Union
+from warnings import warn
 
 import jpy
 
@@ -61,7 +61,7 @@ in the properties as "key.column.name" or "value.column.name" in the config, and
 
 
 class TableType(JObjectWrapper):
-    """An Enum that defines the supported Table Type for consuming Kafka."""
+    """A factory that creates the supported Table Type for consuming Kafka."""
 
     j_object_type = jpy.get_type("io.deephaven.kafka.KafkaTools$TableType")
 
@@ -71,10 +71,11 @@ class TableType(JObjectWrapper):
          to downstream operations and visualizations."""
         return TableType(TableType.j_object_type.blink())
 
-    # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this
+    # TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this method
     @staticmethod
     def stream():
         """ Deprecated synonym for "blink"."""
+        warn('This function is deprecated, prefer blink', DeprecationWarning, stacklevel=2)
         return TableType.blink()
 
     @staticmethod
@@ -94,12 +95,12 @@ class TableType(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self._j_table_type
 
-# TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this
+# TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Stream = TableType.blink()
 """ Deprecated, prefer TableType.blink(). Consume all partitions into a single interleaved blink table, which will
 present only newly-available rows to downstream operations and visualizations."""
 
-# TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this
+# TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this attribute
 TableType.Append = TableType.append()
 """ Deprecated, prefer TableType.append(). Consume all partitions into a single interleaved in-memory append-only table."""
 
@@ -161,7 +162,7 @@ def consume(
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        table_type (TableType): a TableType enum, default is TableType.blink()
+        table_type (TableType): a TableType, default is TableType.blink()
 
     Returns:
         a Deephaven live table that will update based on Kafka messages consumed for the given topic
@@ -206,7 +207,7 @@ def consume_to_partitioned_table(
             works the same as KeyValueSpec.FROM_PROPERTIES, in which case, the kafka_config param should include values
             for dictionary keys 'deephaven.key.column.name' and 'deephaven.key.column.type', for the single resulting
             column name and type
-        table_type (TableType): a TableType enum, specifying the type of the expected result's constituent tables,
+        table_type (TableType): a TableType, specifying the type of the expected result's constituent tables,
             default is TableType.blink()
 
     Returns:

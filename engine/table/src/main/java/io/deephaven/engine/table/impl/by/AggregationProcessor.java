@@ -375,7 +375,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return;
             }
             throw new UnsupportedOperationException(String.format(
-                    "Blink tables do not support Agg%s; use BlinkTableTools.blinkToAppendOnlyTable to accumulate full history",
+                    "Blink tables do not support Agg%s; use BlinkTableTools.blinkToAppendOnly to accumulate full history",
                     operationName));
         }
 

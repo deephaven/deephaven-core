@@ -195,7 +195,6 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
 
-    @unittest.skip("https://github.com/deephaven/deephaven-core/pull/2277")
     def test_deprecated_table_types(self):
         """
         Tests to make sure deprecated TableTypes are equivalent
