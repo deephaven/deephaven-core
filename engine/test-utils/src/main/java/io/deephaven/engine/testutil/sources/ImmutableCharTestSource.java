@@ -57,6 +57,8 @@ public class ImmutableCharTestSource extends AbstractColumnSource<Character>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
+        setGroupingProvider(null);
+
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("Index=" + rowSet + ", data size=" + vs.size());
         }

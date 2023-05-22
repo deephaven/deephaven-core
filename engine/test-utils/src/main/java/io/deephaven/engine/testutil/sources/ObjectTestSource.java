@@ -76,6 +76,8 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
+        setGroupingProvider(null);
+
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }
@@ -108,12 +110,16 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
 
     @Override
     public synchronized void remove(RowSet rowSet) {
+        setGroupingProvider(null);
+
         maybeInitializePrevForStep();
         rowSet.forAllRowKeys(data::remove);
     }
 
     @Override
     public synchronized void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {
+        setGroupingProvider(null);
+
         maybeInitializePrevForStep();
 
         // Note: moving to the right, we need to start with rightmost data first.

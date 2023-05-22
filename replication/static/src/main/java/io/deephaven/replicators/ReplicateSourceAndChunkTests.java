@@ -232,7 +232,7 @@ public class ReplicateSourceAndChunkTests {
         }
         lines = replaceRegion(lines, "chunk add", Arrays.asList(
                 "    public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {\n" +
-                        "        setGroupToRange(null);\n" +
+                        "        setGroupingProvider(null);\n" +
                         "\n" +
                         "        if (rowSet.size() != vs.size()) {\n" +
                         "            throw new IllegalArgumentException(\"rowSet=\" + rowSet + \", data size=\" + vs.size());\n"

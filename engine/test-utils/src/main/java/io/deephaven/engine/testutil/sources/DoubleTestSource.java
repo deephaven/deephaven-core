@@ -76,6 +76,8 @@ public class DoubleTestSource extends AbstractColumnSource<Double>
     // region chunk add
     @Override
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
+        setGroupingProvider(null);
+
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("Index=" + rowSet + ", data size=" + vs.size());
         }
@@ -123,12 +125,16 @@ public class DoubleTestSource extends AbstractColumnSource<Double>
 
     @Override
     public synchronized void remove(RowSet rowSet) {
+        setGroupingProvider(null);
+
         maybeInitializePrevForStep();
         rowSet.forAllRowKeys(data::remove);
     }
 
     @Override
     public synchronized void shift(long startKeyInclusive, long endKeyInclusive, long shiftDelta) {
+        setGroupingProvider(null);
+
         maybeInitializePrevForStep();
 
         // Note: moving to the right, we need to start with rightmost data first.

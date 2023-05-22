@@ -45,7 +45,7 @@ public abstract class AbstractColumnSource<T> implements
     protected final Class<?> componentType;
 
     private transient GroupingProvider groupingProvider;
-    protected volatile List<ColumnSource<?>> rowSetWritableIndexerKey;
+    protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, Object.class);
@@ -106,10 +106,10 @@ public abstract class AbstractColumnSource<T> implements
     @Override
     public List<ColumnSource<?>> getColumnSources() {
         List<ColumnSource<?>> localRowSetWritableIndexerKey;
-        if ((localRowSetWritableIndexerKey = rowSetWritableIndexerKey) == null) {
+        if ((localRowSetWritableIndexerKey = rowSetIndexerKey) == null) {
             synchronized (this) {
-                if ((localRowSetWritableIndexerKey = rowSetWritableIndexerKey) == null) {
-                    rowSetWritableIndexerKey = localRowSetWritableIndexerKey = Collections.singletonList(this);
+                if ((localRowSetWritableIndexerKey = rowSetIndexerKey) == null) {
+                    rowSetIndexerKey = localRowSetWritableIndexerKey = Collections.singletonList(this);
                 }
             }
         }

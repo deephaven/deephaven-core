@@ -19,7 +19,6 @@ import java.time.ZoneId;
 
 import io.deephaven.engine.table.ColumnSource;
 
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.time.DateTime;
 
 import io.deephaven.chunk.*;
@@ -29,6 +28,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;

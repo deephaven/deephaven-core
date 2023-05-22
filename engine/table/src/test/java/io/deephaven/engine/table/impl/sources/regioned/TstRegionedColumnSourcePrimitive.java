@@ -149,45 +149,6 @@ public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends V
         assertEquals(dummyGrouping, SUT.getGroupingBuilder().buildGroupingMap());
         SUT.setGroupingProvider(null);
         assertFalse(SUT.hasGrouping());
-        //
-        //
-        // TestCase.assertNull(SUT.getGroupToRange());
-        //
-        // final Map<DATA_TYPE, RowSet> dummyGrouping = Collections.emptyMap();
-        // SUT.setGroupToRange(dummyGrouping);
-        // TestCase.assertEquals(dummyGrouping, SUT.getGroupToRange());
-        // SUT.setGroupToRange(null);
-        // TestCase.assertNull(SUT.getGroupToRange());
-        //
-        // // noinspection unchecked
-        // final GroupingProviderBase<DATA_TYPE> groupingProvider = mock(GroupingProviderBase.class);
-        //
-        // SUT.setGroupingProvider(groupingProvider);
-        // checking(new Expectations() {
-        // {
-        // oneOf(groupingProvider).getGroupToRange();
-        // will(returnValue(null));
-        // }
-        // });
-        // TestCase.assertNull(SUT.getGroupToRange());
-        // assertIsSatisfied();
-        // TestCase.assertNull(SUT.getGroupToRange());
-        // assertIsSatisfied();
-        //
-        // SUT.setGroupingProvider(groupingProvider);
-        // checking(new Expectations() {
-        // {
-        // oneOf(groupingProvider).getGroupToRange();
-        // will(returnValue(dummyGrouping));
-        // }
-        // });
-        // TestCase.assertEquals(dummyGrouping, SUT.getGroupToRange());
-        // assertIsSatisfied();
-        // TestCase.assertEquals(dummyGrouping, SUT.getGroupToRange());
-        // assertIsSatisfied();
-        // SUT.setGroupToRange(null);
-        // TestCase.assertNull(SUT.getGroupToRange());
-        // assertIsSatisfied();
     }
 
     @Test

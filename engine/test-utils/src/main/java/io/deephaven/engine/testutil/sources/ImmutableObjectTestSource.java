@@ -6,7 +6,9 @@
 package io.deephaven.engine.testutil.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -14,6 +16,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
+import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -60,6 +63,8 @@ public class ImmutableObjectTestSource<T> extends AbstractColumnSource<T>
 
     // region chunk add
     public synchronized void add(final RowSet rowSet, Chunk<Values> vs) {
+        setGroupingProvider(null);
+
         if (rowSet.size() != vs.size()) {
             throw new IllegalArgumentException("rowSet=" + rowSet + ", data size=" + vs.size());
         }

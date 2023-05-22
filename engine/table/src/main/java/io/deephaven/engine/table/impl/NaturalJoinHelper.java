@@ -178,8 +178,6 @@ class NaturalJoinHelper {
 
                     jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
 
-                    jsm.addRightSide(rightTable.getRowSet(), bucketingContext.rightSources);
-
                     if (bucketingContext.useLeftGrouping) {
                         rowRedirection = jsm.buildRowRedirectionFromHashSlotGrouped(leftTable, rowSetSource,
                                 groupingSize, exactMatch, initialBuildContext, control.getRedirectionType(leftTable));
