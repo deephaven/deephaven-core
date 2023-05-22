@@ -5,12 +5,11 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
-from enum import Enum
 
 import jpy
 
 from deephaven import DHError
-from deephaven.dtypes import Instant, Duration, Period, TimeZone #TODO, DateTime, Period
+from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone #TODO, DateTime, Period
 
 MICRO = 1000 #: One microsecond in nanoseconds.
 MILLI = 1000000 #: One millisecond in nanosecondsl
@@ -345,6 +344,130 @@ def millis_to_seconds(millis: int) -> int:
 # endregion
 
 
+# region Conversions: Date Time Types
+
+def to_instant(dt: ZonedDateTime) -> Instant:
+    """ Converts a date time to an Instant.
+
+    Args:
+        dt (ZonedDateTime): Date time to convert.
+
+    Returns:
+        Instant or None if dt is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toInstant(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+    #TODO: ?
+    # /**
+    #  * Converts a date, time, and time zone to an {@link Instant}.
+    #  *
+    #  * @param date date.
+    #  * @param time local time.
+    #  * @param timeZone time zone.
+    #  * @return {@link Instant}, or null if any input is null.
+    #  */
+    # @ScriptApi
+    # @Nullable
+    # public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+
+
+def to_zoned_date_time(dt: Instant, tz: TimeZone) -> ZonedDateTime:
+    """ Converts a date time to a ZonedDateTime.
+
+    Args:
+        dt (Instant): Date time to convert.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toZonedDateTime(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+    #TODO:
+    # /**
+    #  * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
+    #  *
+    #  * @param date date.
+    #  * @param time local time.
+    #  * @param timeZone time zone.
+    #  * @return {@link ZonedDateTime}, or null if any input is null.
+    #  */
+    # @ScriptApi
+    # @Nullable
+    # public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+
+def to_local_date(dt: Instant, tz: TimeZone) -> LocalDate:
+    """ Converts a date time to a LocalDate.
+
+    Args:
+        dt (Instant): Date time to convert.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        LocalDate or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toLocalDate(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+    #TODO?
+    # /**
+    #  * Converts a date time to a {@link LocalDate} with the time zone in the {@link ZonedDateTime}.
+    #  *
+    #  * @param dateTime date time to convert.
+    #  * @return {@link LocalDate}, or null if any input is null.
+    #  */
+    # @Nullable
+    # public static LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
+
+
+def to_local_time(dt: Instant, tz: TimeZone) -> LocalTime:
+    """ Converts a date time to a LocalTime.
+
+    Args:
+        dt (Instant): Date time to convert.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        LocalTime or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toLocalTime(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+    #TODO: ?
+    # /**
+    #  * Converts a date time to a {@link LocalTime} with the time zone in the {@link ZonedDateTime}.
+    #  *
+    #  * @param dateTime date time to convert.
+    #  * @return {@link LocalTime}, or null if any input is null.
+    #  */
+    # @Nullable
+    # public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
+
+
+# endregion
 
 ##############################################
 ##############################################
@@ -1144,225 +1267,23 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Conversions: Date Time Types
-    #
-    # /**
-    #  * Converts a date time to a {@link DateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link DateTime}, or null if zonedDateTime is null.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime toDateTime(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Converts a date time to a {@link DateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link DateTime}, or null if zonedDateTime is null.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime toDateTime(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Converts a date, time, and time zone to an {@link Instant}.
-    #  *
-    #  * @param date date.
-    #  * @param time local time.
-    #  * @param timeZone time zone.
-    #  * @return {@link Instant}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime toDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link DateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link DateTime}, or null if zonedDateTime is null.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # @Deprecated
-    # public static DateTime toDateTime(@Nullable final Date dateTime) {
-    #
-    # /**
-    #  * Converts a date time to an {@link Instant}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Instant}, or null if dateTime is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant toInstant(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Converts a date time to an {@link Instant}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Instant}, or null if dateTime is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant toInstant(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Converts a date, time, and time zone to an {@link Instant}.
-    #  *
-    #  * @param date date.
-    #  * @param time local time.
-    #  * @param timeZone time zone.
-    #  * @return {@link Instant}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to an {@link Instant}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Instant}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # @Deprecated
-    # public static Instant toInstant(@Nullable final Date dateTime) {
-    #
-    # /**
-    #  * Converts a date time to a {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link ZonedDateTime}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime, @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
-    #  *
-    #  * @param date date.
-    #  * @param time local time.
-    #  * @param timeZone time zone.
-    #  * @return {@link ZonedDateTime}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalDate} with the specified time zone.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link LocalDate}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalDate toLocalDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalDate} with the specified time zone.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link LocalDate}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalDate toLocalDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalDate} with the time zone in the {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link LocalDate}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalTime} with the specified time zone.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link LocalTime}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalTime toLocalTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalTime} with the specified time zone.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone.
-    #  * @return {@link LocalTime}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalTime toLocalTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to a {@link LocalTime} with the time zone in the {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link LocalTime}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
-    #
-    #
-    # /**
-    #  * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Date}, or null if any input is null.
-    #  * @deprecated
-    #  */
-    # @Deprecated
-    # @Nullable
-    # public static Date toDate(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Date}, or null if any input is null.
-    #  * @deprecated
-    #  */
-    # @Deprecated
-    # @Nullable
-    # public static Date toDate(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Converts a date time to a {@link Date}.  The date time will be truncated to millisecond resolution.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link Date}, or null if any input is null.
-    #  * @deprecated
-    #  */
-    # @Deprecated
-    # @Nullable
-    # public static Date toDate(@Nullable final ZonedDateTime dateTime) {
-    #
-    # // endregion
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+#TODO:
+
+
+
+
     #
     # // region Conversions: Epoch
     #
