@@ -5,6 +5,7 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
+from typing import Union
 
 import jpy
 
@@ -466,6 +467,291 @@ def to_local_time(dt: Instant, tz: TimeZone) -> LocalTime:
     # @Nullable
     # public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
 
+
+# endregion
+
+# region Conversions: Epoch
+
+def epoch_nanos(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns nanoseconds from the Epoch for a date time value.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochNanos(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_micros(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns microseconds from the Epoch for a date time value.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        microseconds since Epoch, or a NULL_LONG value if the date time is null.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMicros(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_millis(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns milliseconds from the Epoch for a date time value.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        milliseconds since Epoch, or a NULL_LONG value if the date time is null.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMillis(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_seconds(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns seconds from the Epoch for a date time value.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        seconds since Epoch, or a NULL_LONG value if the date time is null.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochSeconds(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_nanos_to_instant(nanos: int) -> Instant:
+    """ Converts nanoseconds from the Epoch to an Instant.
+
+    Args:
+        nanos (int): Nanoseconds since Epoch.
+
+    Returns:
+        Instant or None if the input is NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochNanosToInstant(nanos)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_micros_to_instant(micros: int) -> Instant:
+    """ Converts microseconds from the Epoch to an Instant.
+
+    Args:
+        micros (int): Microseconds since Epoch.
+
+    Returns:
+        Instant or None if the input is NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMicrosToInstant(micros)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_millis_to_instant(millis: int) -> Instant:
+    """ Converts milliseconds from the Epoch to an Instant.
+
+    Args:
+        millis (int): Milliseconds since Epoch.
+
+    Returns:
+        Instant or None if the input is NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMillisToInstant(millis)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_seconds_to_instant(seconds: int) -> Instant:
+    """ Converts seconds from the Epoch to an Instant.
+
+    Args:
+        seconds (int): Seconds since Epoch.
+
+    Returns:
+        Instant or None if the input is NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochSecondsToInstant(seconds)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: shorten zoned_date_time to zdt?
+def epoch_nanos_to_zoned_date_time(nanos: int, tz: TimeZone) -> ZonedDateTime:
+    """ Converts nanoseconds from the Epoch to a ZonedDateTime.
+
+    Args:
+        nanos (int): Nanoseconds since Epoch.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if the input is NULL_LONG or None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochNanosToZonedDateTime(nanos, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_micros_to_zoned_date_time(micros: int, tz: TimeZone) -> ZonedDateTime:
+    """ Converts microseconds from the Epoch to a ZonedDateTime.
+
+    Args:
+        micros (int): Microseconds since Epoch.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if the input is NULL_LONG or None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMicrosToZonedDateTime(micros, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_millis_to_zoned_date_time(millis: int, tz: TimeZone) -> ZonedDateTime:
+    """ Converts milliseconds from the Epoch to a ZonedDateTime.
+
+    Args:
+        millis (int): Milliseconds since Epoch.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if the input is NULL_LONG or None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochMillisToZonedDateTime(millis, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_seconds_to_zoned_date_time(seconds: int, tz: TimeZone) -> ZonedDateTime:
+    """ Converts seconds from the Epoch to a ZonedDateTime.
+
+    Args:
+        seconds (int): Seconds since Epoch.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if the input is NULL_LONG or None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochSecondsToZonedDateTime(seconds, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_auto_to_epoch_nanos(epoch_offset: int) -> int:
+    """ Converts an offset from the Epoch to a nanoseconds from the Epoch.
+    The offset can be in milliseconds, microseconds, or nanoseconds.
+    Expected date ranges are used to infer the units for the offset.
+
+    Args:
+        epoch_offset (int): Time offset from the Epoch.
+
+    Returns:
+        the input offset from the Epoch converted to nanoseconds from the Epoch, or NULL_LONG if the input is NULL_LONG.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochAutoToEpochNanos(epoch_offset)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_auto_to_instant(epoch_offset: int) -> Instant:
+    """ Converts an offset from the Epoch to an Instant.
+    The offset can be in milliseconds, microseconds, or nanoseconds.
+    Expected date ranges are used to infer the units for the offset.
+
+    Args:
+        epoch_offset (int): Time offset from the Epoch.
+
+    Returns:
+        Instant or None if the input is NULL_LONG
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochAutoToInstant(epoch_offset)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def epoch_auto_to_zoned_date_time(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
+    """ Converts an offset from the Epoch to a ZonedDateTime.
+    The offset can be in milliseconds, microseconds, or nanoseconds.
+    Expected date ranges are used to infer the units for the offset.
+
+    Args:
+        epoch_offset (int): Time offset from the Epoch.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if the input is NULL_LONG
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.epochAutoToZonedDateTime(epoch_offset, tz)
+    except Exception as e:
+        raise DHError(e) from e
 
 # endregion
 
@@ -1284,306 +1570,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Conversions: Epoch
-    #
-    # /**
-    #  * Returns nanoseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochNanos(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns nanoseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochNanos(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns nanoseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return nanoseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns microseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMicros(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns microseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMicros(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns microseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return microseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMicros(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns milliseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMillis(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns milliseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMillis(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns milliseconds from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return milliseconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochMillis(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns seconds since from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochSeconds(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns seconds since from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochSeconds(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns seconds since from the Epoch for a date time value.
-    #  *
-    #  * @param dateTime date time to compute the Epoch offset for.
-    #  * @return seconds since Epoch, or a NULL_LONG value if the date time is null.
-    #  */
-    # @ScriptApi
-    # public static long epochSeconds(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Converts nanoseconds from the Epoch to a {@link DateTime}.
-    #  *
-    #  * @param nanos nanoseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      nanoseconds from the Epoch converted to a {@link DateTime}.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime epochNanosToDateTime(final long nanos) {
-    #
-    # /**
-    #  * Converts microseconds from the Epoch to a {@link DateTime}.
-    #  *
-    #  * @param micros microseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      microseconds from the Epoch converted to a {@link DateTime}.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime epochMicrosToDateTime(final long micros) {
-    #
-    # /**
-    #  * Converts milliseconds from the Epoch to a {@link DateTime}.
-    #  *
-    #  * @param millis milliseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      milliseconds from the Epoch converted to a {@link DateTime}.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime epochMillisToDateTime(final long millis) {
-    #
-    # /**
-    #  * Converts seconds from the Epoch to a {@link DateTime}.
-    #  *
-    #  * @param seconds seconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      seconds from the Epoch converted to a {@link DateTime}.
-    #  * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime epochSecondsToDateTime(final long seconds) {
-    #
-    # /**
-    #  * Converts nanoseconds from the Epoch to an {@link Instant}.
-    #  *
-    #  * @param nanos nanoseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      nanoseconds from the Epoch converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant epochNanosToInstant(final long nanos) {
-    #
-    # /**
-    #  * Converts microseconds from the Epoch to an {@link Instant}.
-    #  *
-    #  * @param micros microseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      microseconds from the Epoch converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant epochMicrosToInstant(final long micros) {
-    #
-    # /**
-    #  * Converts milliseconds from the Epoch to an {@link Instant}.
-    #  *
-    #  * @param millis milliseconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      milliseconds from the Epoch converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant epochMillisToInstant(final long millis) {
-    #
-    # /**
-    #  * Converts seconds from the Epoch to an {@link Instant}.
-    #  *
-    #  * @param seconds seconds since Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      seconds from the Epoch converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant epochSecondsToInstant(final long seconds) {
-    #
-    # /**
-    #  * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-    #  *
-    #  * @param nanos nanoseconds since Epoch.
-    #  * @param timeZone time zone.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-    #  *
-    #  * @param micros microseconds since Epoch.
-    #  * @param timeZone time zone.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-    #  *
-    #  * @param millis milliseconds since Epoch.
-    #  * @param timeZone time zone.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime epochMillisToZonedDateTime(final long millis, final @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-    #  *
-    #  * @param seconds seconds since Epoch.
-    #  * @param timeZone time zone.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, final @Nullable ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts an offset from the Epoch to a nanoseconds from the Epoch.  The offset can be in milliseconds, microseconds,
-    #  * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-    #  *
-    #  * @param epochOffset time offset from the Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      offset from the Epoch converted to nanoseconds from the Epoch.
-    #  */
-    # @ScriptApi
-    # public static long epochAutoToEpochNanos(final long epochOffset) {
-    #
-    # /**
-    #  * Converts an offset from the Epoch to a {@link DateTime}.  The offset can be in milliseconds, microseconds,
-    #  * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-    #  *
-    #  * @param epochOffset time offset from the Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      offset from the Epoch converted to a {@link DateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime epochAutoToDateTime(final long epochOffset) {
-    #
-    # /**
-    #  * Converts an offset from the Epoch to an {@link Instant}.  The offset can be in milliseconds, microseconds,
-    #  * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-    #  *
-    #  * @param epochOffset time offset from the Epoch.
-    #  * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      offset from the Epoch converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant epochAutoToInstant(final long epochOffset) {
-    #
-    # /**
-    #  * Converts an offset from the Epoch to a {@link ZonedDateTime}.  The offset can be in milliseconds, microseconds,
-    #  * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
-    #  *
-    #  * @param epochOffset time offset from the Epoch.
-    #  * @param timeZone time zone.
-    #  * @return null if any input is null or {@link QueryConstants#NULL_LONG}; otherwise the input
-    #  *      offset from the Epoch converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime epochAutoToZonedDateTime(final long epochOffset, @Nullable ZoneId timeZone) {
-    #
-    # // endregion
+
     #
     # // region Conversions: Excel
     #
