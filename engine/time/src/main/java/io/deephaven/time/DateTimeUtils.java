@@ -3840,7 +3840,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     * Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
      * @param dateTime time to format as a string.
      * @param timeZone time zone to use when formatting the string.
@@ -3857,7 +3857,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     * Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
      * @param dateTime time to format as a string.
      * @param timeZone time zone to use when formatting the string.
@@ -3874,7 +3874,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     * Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
      * @param dateTime time to format as a string.
      * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
@@ -3903,7 +3903,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     * Returns a date time formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
      * @param timeZone time zone to use when formatting the string.
@@ -3920,7 +3920,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     * Returns a date time formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
      * @param timeZone time zone to use when formatting the string.
@@ -3937,7 +3937,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     * Returns a date time formatted as a "yyyy-MM-dd" string.
      *
      * @param dateTime time to format as a string.
      * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.

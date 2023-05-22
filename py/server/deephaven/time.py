@@ -1505,6 +1505,7 @@ def at_midnight(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> Union[Instant
 
 # endregion
 
+
 # region Binning
 
 def lower_bin(dt: Union[Instant,ZonedDateTime], interval: int, offset: int = 0) -> Union[Instant,ZonedDateTime]:
@@ -1553,6 +1554,69 @@ def upper_bin(dt: Union[Instant,ZonedDateTime], interval: int, offset: int = 0) 
         return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
+
+# endregion
+
+
+# region Format
+
+def format_nanos(nanos: int) -> str:
+    """ Returns a nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        Formatted string, or None if the input is NULL_INT.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.formatNanos(nanos)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def format_datetime(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
+    """ Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Formatted string, or None if the any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.formatDateTime(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
+    """ Returns a date time formatted as a "yyyy-MM-dd" string.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Formatted string, or None if the any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.formatDate(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
 
 # endregion
 
@@ -2377,84 +2441,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Format
-    #
-    # /**
-    #  * Returns a nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
-    #  *
-    #  * @param nanos nanoseconds, or null if the input is {@link QueryConstants#NULL_LONG}.
-    #  * @return the nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatNanos(long nanos) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @param timeZone time zone to use when formatting the string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDateTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @param timeZone time zone to use when formatting the string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDateTime(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @param timeZone time zone to use when formatting the string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDate(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @param timeZone time zone to use when formatting the string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDate(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a DateTime formatted as a "yyyy-MM-dd" string.
-    #  *
-    #  * @param dateTime time to format as a string.
-    #  * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static String formatDate(@Nullable final ZonedDateTime dateTime) {
-    #
-    # // endregion
+
     #
     # // region Parse
     #
