@@ -46,7 +46,6 @@ import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -684,10 +683,14 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
+            if (isStreamTable) {
+                streamTableUpdateSize += upstream.added().size();
+            }
         } else if (activeViewport != null || activeReverseViewport != null) {
             if (isBlinkTable) {
                 // note that reverse viewports are unsupported for stream tables
                 if (activeReverseViewport != null) {
+//                    BaseTable.assertValidViewport(activeReverseViewport);
                     throw new IllegalStateException("Reverse viewports are unsupported for stream tables");
                 }
 
@@ -700,11 +703,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 } else {
                     try (final WritableRowSet updateRows = RowSetFactory.fromRange(
                             streamTableUpdateSize, streamTableUpdateSize + newRows - 1)) {
-                        streamTableUpdateSize += newRows;
                         updateRows.retain(activeViewport);
-                        updateRows.shift(-streamTableUpdateSize);
+                        updateRows.shiftInPlace(-streamTableUpdateSize);
+                        streamTableUpdateSize += newRows;
                         // stream tables are not guaranteed to be flat or provide contiguous row keys
-                        addsToRecord = upstream.added().invert(updateRows);
+                        addsToRecord = upstream.added().subSetForPositions(updateRows);
                     }
                 }
             } else {
@@ -1615,9 +1618,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (int ii = startDelta; ii < endDelta; ++ii) {
                 final Delta delta = pendingDeltas.get(ii);
 
-                try (final WritableRowSet recorded = delta.recordedAdds.copy()) {
-                    recorded.shift(offset);
-                    recordedBuilder.appendRowSequence(recorded);
+                try (final WritableRowSet positions = delta.update.added().invert(delta.recordedAdds)) {
+                    positions.shiftInPlace(offset);
+                    recordedBuilder.appendRowSequence(positions);
                 }
 
                 offset += delta.update.added().size();
