@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Pair;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
