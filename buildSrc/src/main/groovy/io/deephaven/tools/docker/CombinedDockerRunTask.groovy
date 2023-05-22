@@ -44,8 +44,7 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
     final ListProperty<String> entrypoint = project.objects.listProperty(String)
 
     @Input
-    @Optional
-    final Property<Integer> awaitStatusTimeout = project.objects.property(Integer)
+    final Property<Integer> awaitStatusTimeoutSeconds = project.objects.property(Integer)
 
     @Input
     final Property<String> remotePath = project.objects.property(String)
@@ -86,7 +85,7 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                 WaitContainerCmd containerCommand = dockerClient.waitContainerCmd(containerId)
 
                 ResultCallback<WaitResponse> callback = containerCommand.start()
-                def exitCode = callback.awaitStatusCode(awaitStatusTimeout.get(), TimeUnit.SECONDS)
+                def exitCode = callback.awaitStatusCode(awaitStatusTimeoutSeconds.get(), TimeUnit.SECONDS)
                 logger.quiet "Container exited with code ${exitCode}"
 
                 // If the task failed, write all logs

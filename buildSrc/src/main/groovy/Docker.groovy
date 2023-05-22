@@ -168,6 +168,8 @@ class Docker {
         /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
+         * <p />
+         * Only intended for debugging, as this will often cause extra work during builds.
          */
         boolean showLogsOnSuccess;
 
@@ -328,7 +330,7 @@ class Docker {
                         entrypoint.set(cfg.entrypoint)
                     }
 
-                    awaitStatusTimeout.set cfg.waitTimeMinutes * 60
+                    awaitStatusTimeoutSeconds.set cfg.waitTimeMinutes * 60
 
                     remotePath.set(cfg.containerOutPath)
                     outputDir.set(project.file(dockerCopyLocation))
