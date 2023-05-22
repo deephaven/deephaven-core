@@ -4,6 +4,7 @@
 package io.deephaven.server.barrage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.rpc.Code;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
@@ -45,6 +46,7 @@ import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.jetbrains.annotations.NotNull;
@@ -202,6 +204,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private volatile long lastScheduledUpdateTime = 0;
 
     private final boolean isBlinkTable;
+    /** if the parent is a blink table, then this records number of items seen since last propagation */
+    private long blinkTableUpdateSize = 0;
+    /** if the parent is a blink table, then this records number of items sent last propagation */
     private long lastBlinkTableUpdateSize = 0;
 
     private final Stats stats;
@@ -474,6 +479,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 throw new IllegalStateException(
                         "Asking to add a subscription for an already existing session and listener");
             }
+            if (isBlinkTable && reverseViewport) {
+                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
+                        "Reverse viewport is not supported for stream tables");
+                return;
+            }
 
             final BitSet cols;
             if (columnsToSubscribe == null) {
@@ -539,6 +549,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             sub.pendingViewport = newViewport != null ? newViewport.copy() : null;
             sub.pendingReverseViewport = newReverseViewport;
+            if (isBlinkTable && newReverseViewport) {
+                GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
+                        "Reverse viewport is not supported for stream tables");
+                removeSubscription(listener);
+                return;
+            }
             final BitSet cols;
             if (columnsToSubscribe == null) {
                 cols = new BitSet(sourceColumns.length);
@@ -665,27 +681,51 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final RowSet modsToRecord;
         final TrackingRowSet rowSet = parent.getRowSet();
 
-        if (isBlinkTable || numFullSubscriptions > 0) {
+        if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
         } else if (activeViewport != null || activeReverseViewport != null) {
-            // build the combined position-space viewport (from forward and reverse)
-            try (final WritableRowSet forwardDeltaViewport =
-                    activeViewport == null ? null : rowSet.subSetForPositions(activeViewport);
-                    final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null
-                            : rowSet.subSetForReversePositions(activeReverseViewport)) {
-                final RowSet deltaViewport;
-                if (forwardDeltaViewport != null) {
-                    if (reverseDeltaViewport != null) {
-                        forwardDeltaViewport.insert(reverseDeltaViewport);
-                    }
-                    deltaViewport = forwardDeltaViewport;
-                } else {
-                    deltaViewport = reverseDeltaViewport;
+            if (isBlinkTable) {
+                // note that reverse viewports are unsupported for stream tables
+                if (activeReverseViewport != null) {
+                    throw new IllegalStateException("Reverse viewports are unsupported for stream tables");
                 }
 
-                addsToRecord = deltaViewport.intersect(upstream.added());
-                modsToRecord = deltaViewport.intersect(upstream.modified());
+                // there are no modifications on stream tables
+                modsToRecord = RowSetFactory.empty();
+
+                final long newRows = upstream.added().size();
+                if (newRows == 0) {
+                    addsToRecord = RowSetFactory.empty();
+                } else {
+                    try (final WritableRowSet updateRows = RowSetFactory.fromRange(
+                            streamTableUpdateSize, streamTableUpdateSize + newRows - 1)) {
+                        streamTableUpdateSize += newRows;
+                        updateRows.retain(activeViewport);
+                        updateRows.shift(-streamTableUpdateSize);
+                        // stream tables are not guaranteed to be flat or provide contiguous row keys
+                        addsToRecord = upstream.added().invert(updateRows);
+                    }
+                }
+            } else {
+                // build the combined position-space viewport (from forward and reverse)
+                try (final WritableRowSet forwardDeltaViewport =
+                        activeViewport == null ? null : rowSet.subSetForPositions(activeViewport);
+                        final WritableRowSet reverseDeltaViewport = activeReverseViewport == null ? null
+                                : rowSet.subSetForReversePositions(activeReverseViewport)) {
+                    final RowSet deltaViewport;
+                    if (forwardDeltaViewport != null) {
+                        if (reverseDeltaViewport != null) {
+                            forwardDeltaViewport.insert(reverseDeltaViewport);
+                        }
+                        deltaViewport = forwardDeltaViewport;
+                    } else {
+                        deltaViewport = reverseDeltaViewport;
+                    }
+
+                    addsToRecord = deltaViewport.intersect(upstream.added());
+                    modsToRecord = deltaViewport.intersect(upstream.modified());
+                }
             }
         } else {
             // we have new viewport subscriptions and we are actively fetching snapshots so there is no data to record
@@ -1562,31 +1602,42 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final Delta firstDelta;
 
         if (isBlinkTable) {
-            long numRows = 0;
-            for (int ii = startDelta; ii < endDelta; ++ii) {
-                numRows += pendingDeltas.get(ii).recordedAdds.size();
-            }
 
             final TableUpdate update = new TableUpdateImpl(
-                    RowSetFactory.flat(numRows),
+                    RowSetFactory.flat(BlinkTableUpdateSize),
                     RowSetFactory.flat(lastBlinkTableUpdateSize),
                     RowSetFactory.empty(),
                     RowSetShiftData.EMPTY,
                     ModifiedColumnSet.EMPTY);
 
+            long offset = 0;
+            final RowSetBuilderSequential recordedBuilder = RowSetFactory.builderSequential();
+            for (int ii = startDelta; ii < endDelta; ++ii) {
+                final Delta delta = pendingDeltas.get(ii);
+
+                try (final WritableRowSet recorded = delta.recordedAdds.copy()) {
+                    recorded.shift(offset);
+                    recordedBuilder.appendRowSequence(recorded);
+                }
+
+                offset += delta.update.added().size();
+            }
+
             final boolean hasDelta = startDelta < endDelta;
             final Delta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
+
             firstDelta = new Delta(
                     -1,
                     hasDelta ? origDelta.deltaColumnOffset : 0,
                     update,
-                    update.added().copy(),
+                    recordedBuilder.build(),
                     RowSetFactory.empty(),
                     hasDelta ? origDelta.subscribedColumns : new BitSet(),
                     new BitSet());
 
             // store our update size to remove on the next update
-            lastBlinkTableUpdateSize = numRows;
+            lastBlinkTableUpdateSize = blinkTableUpdateSize;
+            blinkTableUpdateSize = 0;
         } else {
             firstDelta = pendingDeltas.get(startDelta);
         }
