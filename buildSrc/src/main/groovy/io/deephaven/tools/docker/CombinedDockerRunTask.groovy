@@ -12,7 +12,6 @@ import com.github.dockerjava.api.command.StartContainerCmd
 import com.github.dockerjava.api.command.WaitContainerCmd
 import com.github.dockerjava.api.model.Frame
 import com.github.dockerjava.api.model.WaitResponse
-import com.github.dockerjava.core.command.LogContainerResultCallback
 import groovy.io.FileType
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
@@ -133,9 +132,8 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
         }
     }
 
-    // This return type is deprecated, but appears there is no other way
-    private LogContainerResultCallback createCallback() {
-        return new LogContainerResultCallback() {
+    private ResultCallback.Adapter<Frame> createCallback() {
+        return new ResultCallback.Adapter<Frame>() {
             @Override
             void onNext(Frame frame) {
                 // delegate to avoid an apparent groovy bytecode error
