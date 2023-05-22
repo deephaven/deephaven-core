@@ -2605,7 +2605,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(NULL_INT, DateTimeUtils.microsOfMilli((ZonedDateTime) null));
     }
 
-    public void testDateTimeAtMidnight() {
+    public void testAtMidnight() {
         final DateTime dt1 = DateTimeUtils.parseDateTime("2023-02-03T11:23:45.123456789 JP");
         final Instant dt2 = dt1.toInstant();
         final ZonedDateTime dt3 = dt1.toZonedDateTime(TZ_JP);
@@ -2614,16 +2614,16 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant rst2 = rst1.toInstant();
         final ZonedDateTime rst3 = rst1.toZonedDateTime(TZ_JP);
 
-        TestCase.assertEquals(rst1, DateTimeUtils.dateTimeAtMidnight(dt1, TZ_JP));
-        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt1, null));
-        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((DateTime) null, TZ_JP));
+        TestCase.assertEquals(rst1, DateTimeUtils.atMidnight(dt1, TZ_JP));
+        TestCase.assertNull(DateTimeUtils.atMidnight(dt1, null));
+        TestCase.assertNull(DateTimeUtils.atMidnight((DateTime) null, TZ_JP));
 
-        TestCase.assertEquals(rst2, DateTimeUtils.dateTimeAtMidnight(dt2, TZ_JP));
-        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(dt2, null));
-        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight((Instant) null, TZ_JP));
+        TestCase.assertEquals(rst2, DateTimeUtils.atMidnight(dt2, TZ_JP));
+        TestCase.assertNull(DateTimeUtils.atMidnight(dt2, null));
+        TestCase.assertNull(DateTimeUtils.atMidnight((Instant) null, TZ_JP));
 
-        TestCase.assertEquals(rst3, DateTimeUtils.dateTimeAtMidnight(dt3));
-        TestCase.assertNull(DateTimeUtils.dateTimeAtMidnight(null));
+        TestCase.assertEquals(rst3, DateTimeUtils.atMidnight(dt3));
+        TestCase.assertNull(DateTimeUtils.atMidnight(null));
     }
 
 }

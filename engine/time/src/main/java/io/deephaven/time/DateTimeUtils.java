@@ -416,7 +416,7 @@ public class DateTimeUtils {
             value = formatDate(epochMillisToDateTime(currentTimeMillis), timeZone);
 
             //noinspection ConstantConditions
-            valueExpirationTimeMillis = dateTimeAtMidnight( epochNanosToDateTime(millisToNanos(currentTimeMillis) + DAY), timeZone).getMillis();
+            valueExpirationTimeMillis = atMidnight( epochNanosToDateTime(millisToNanos(currentTimeMillis) + DAY), timeZone).getMillis();
         }
     }
 
@@ -2688,7 +2688,7 @@ public class DateTimeUtils {
      *
      * @param dateTime time.
      * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -2705,7 +2705,7 @@ public class DateTimeUtils {
      *
      * @param dateTime time.
      * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -2721,7 +2721,7 @@ public class DateTimeUtils {
      * Returns the number of nanoseconds that have elapsed since the top of the second.
      *
      * @param dateTime time.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -2738,7 +2738,7 @@ public class DateTimeUtils {
      *
      * @param dateTime time.
      * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of microseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -2755,7 +2755,7 @@ public class DateTimeUtils {
      *
      * @param dateTime time.
      * @param timeZone time zone.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of microseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -2771,7 +2771,7 @@ public class DateTimeUtils {
      * Returns the number of microseconds that have elapsed since the top of the second.
      *
      * @param dateTime time.
-     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise, number of microseconds that have
      *      elapsed since the top of the second.
      */
     @ScriptApi
@@ -3487,12 +3487,12 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+    public static DateTime atMidnight(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
 
-        return toDateTime(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+        return toDateTime(atMidnight(toZonedDateTime(dateTime, timeZone)));
     }
     
     /**
@@ -3505,12 +3505,12 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
+    public static Instant atMidnight(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
 
-        return toInstant(dateTimeAtMidnight(toZonedDateTime(dateTime, timeZone)));
+        return toInstant(atMidnight(toZonedDateTime(dateTime, timeZone)));
     }
 
     /**
@@ -3522,7 +3522,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime dateTimeAtMidnight(@Nullable final ZonedDateTime dateTime) {
+    public static ZonedDateTime atMidnight(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
             return null;
         }

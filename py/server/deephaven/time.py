@@ -1103,6 +1103,408 @@ def is_after_or_equal(dt1: Union[Instant,ZonedDateTime], dt2: Union[Instant,Zone
 
 # endregion
 
+
+# region Chronology
+
+def nanos_of_milli(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns the number of nanoseconds that have elapsed since the top of the millisecond.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        Number of nanoseconds that have elapsed since the top of the millisecond, or NULL_INT if the input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.nanosOfMilli(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def micros_of_milli(dt: Union[Instant,ZonedDateTime]) -> int:
+    """ Returns the number of microseconds that have elapsed since the top of the millisecond.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+
+    Returns:
+        Number of microseconds that have elapsed since the top of the millisecond, or NULL_INT if the input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.microsOfMilli(dt)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def nanos_of_second(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of nanoseconds that have elapsed since the top of the second.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of nanoseconds that have elapsed since the top of the second, or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.nanosOfSecond(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def micros_of_second(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of microseconds that have elapsed since the top of the second.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of microseconds that have elapsed since the top of the second, or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.microsOfSecond(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def millis_of_second(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of milliseconds that have elapsed since the top of the second.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of milliseconds that have elapsed since the top of the second, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.millisOfSecond(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def second_of_minute(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of seconds that have elapsed since the top of the minute.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of seconds that have elapsed since the top of the minute, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.secondOfMinute(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def minute_of_hour(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of minutes that have elapsed since the top of the hour.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of minutes that have elapsed since the top of the hour, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.minuteOfHour(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def nanos_of_day(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of nanoseconds that have elapsed since the top of the day.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of nanoseconds that have elapsed since the top of the day, or NULL_LONG if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.nanosOfDay(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def millis_of_day(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of milliseconds that have elapsed since the top of the day.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of milliseconds that have elapsed since the top of the day, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.millisOfDay(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def second_of_day(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of seconds that have elapsed since the top of the day.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of seconds that have elapsed since the top of the day, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.secondOfDay(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def minute_of_day(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of minutes that have elapsed since the top of the day.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of minutes that have elapsed since the top of the day, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.minuteOfDay(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def hour_of_day(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the number of hours that have elapsed since the top of the day.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Number of hours that have elapsed since the top of the day, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.hourOfDay(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+#TODO: ZonedDateTime -- no tz
+def day_of_week(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
+    Monday and 7 being Sunday.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Day of the week, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.dayOfWeek(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def day_of_month(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns a 1-based int value of the day of the month for a date time and specified time zone.
+    The first day of the month returns 1, the second day returns 2, etc.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Day of the month, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.dayOfMonth(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def day_of_year(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
+    The first day of the year returns 1, the second day returns 2, etc.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Day of the year, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.dayOfYear(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def month_of_year(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
+    January is 1, February is 2, etc.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Month of the year, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.monthOfYear(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+#TODO: ZonedDateTime -- no tz
+def year(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the year for a date time in the specified time zone.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Year, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.monthOfYear(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def year_of_century(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the year of the century (two-digit year) for a date time in the specified time zone.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Year of the century, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.yearOfCentury(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def year_of_century(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> int:
+    """ Returns the year of the century (two-digit year) for a date time in the specified time zone.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Year of the century, or NULL_INT if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.yearOfCentury(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: ZonedDateTime -- no tz
+def at_midnight(dt: Union[Instant,ZonedDateTime], tz: TimeZone) -> Union[Instant,ZonedDateTime]:
+    """ Returns a date time for the prior midnight in the specified time zone.
+
+    Args:
+        dt (Union[Instant,ZonedDateTime]): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        date time for the prior midnight in the specified time zone, or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.atMidnight(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
 ##############################################
 ##############################################
 ##############################################
@@ -1922,614 +2324,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Chronology
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int nanosOfMilli(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int nanosOfMilli(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int nanosOfMilli(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the millisecond.
-    #  * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int microsOfMilli(@Nullable final DateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the millisecond.
-    #  * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int microsOfMilli(@Nullable final Instant dateTime) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the millisecond.
-    #  * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the millisecond.
-    #  */
-    # @ScriptApi
-    # public static int microsOfMilli(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfSecond(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long microsOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of microseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static long microsOfSecond(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static int millisOfSecond(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the second.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the second.
-    #  */
-    # @ScriptApi
-    # public static int millisOfSecond(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the minute.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the minute.
-    #  */
-    # @ScriptApi
-    # public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the minute.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the minute.
-    #  */
-    # @ScriptApi
-    # public static int secondOfMinute(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the minute.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the minute.
-    #  */
-    # @ScriptApi
-    # public static int secondOfMinute(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the hour.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the hour.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the hour.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the hour.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfHour(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the hour.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the hour.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfHour(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of nanoseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static long nanosOfDay(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int millisOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of milliseconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int secondOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of seconds that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of minutes that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the number of hours that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of hours that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int hourOfDay(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the number of hours that have elapsed since the top of the day.
-    #  *
-    #  * @param dateTime time.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
-    #  *      elapsed since the top of the day.
-    #  */
-    # @ScriptApi
-    # public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-    #  * Monday and 7 being Sunday.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-    #  */
-    # @ScriptApi
-    # public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-    #  * Monday and 7 being Sunday.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-    #  */
-    # @ScriptApi
-    # public static int dayOfWeek(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
-    #  * Monday and 7 being Sunday.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
-    #  */
-    # @ScriptApi
-    # public static int dayOfWeek(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the month for a date time and specified time zone.
-    #  * The first day of the month returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-    #  */
-    # @ScriptApi
-    # public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the month for a date time and specified time zone.
-    #  * The first day of the month returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-    #  */
-    # @ScriptApi
-    # public static int dayOfMonth(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the month for a date time and specified time zone.
-    #  * The first day of the month returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
-    #  */
-    # @ScriptApi
-    # public static int dayOfMonth(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-    #  * The first day of the year returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-    #  */
-    # @ScriptApi
-    # public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-    #  * The first day of the year returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-    #  */
-    # @ScriptApi
-    # public static int dayOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
-    #  * The first day of the year returns 1, the second day returns 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
-    #  */
-    # @ScriptApi
-    # public static int dayOfYear(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-    #  * January is 1, February is 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-    #  */
-    # @ScriptApi
-    # public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-    #  * January is 1, February is 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-    #  */
-    # @ScriptApi
-    # public static int monthOfYear(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
-    #  * January is 1, February is 2, etc.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
-    #  */
-    # @ScriptApi
-    # public static int monthOfYear(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the year for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-    #  */
-    # @ScriptApi
-    # public static int year(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the year for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-    #  */
-    # @ScriptApi
-    # public static int year(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the year for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
-    #  */
-    # @ScriptApi
-    # public static int year(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns the year of the century (two-digit year) for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-    #  */
-    # @ScriptApi
-    # public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the year of the century (two-digit year) for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @param timeZone time zone.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-    #  */
-    # @ScriptApi
-    # public static int yearOfCentury(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns the year of the century (two-digit year) for a date time in the specified time zone.
-    #  *
-    #  * @param dateTime time to find the day of the month of.
-    #  * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
-    #  */
-    # @ScriptApi
-    # public static int yearOfCentury(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Returns a date time for the prior midnight in the specified time zone.
-    #  *
-    #  * @param dateTime time to compute the prior midnight for.
-    #  * @param timeZone time zone.
-    #  * @return null if either input is null; otherwise a date time representing the prior midnight in the
-    #  *      specified time zone.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a date time for the prior midnight in the specified time zone.
-    #  *
-    #  * @param dateTime time to compute the prior midnight for.
-    #  * @param timeZone time zone.
-    #  * @return null if either input is null; otherwise a date time representing the prior midnight in the
-    #  *      specified time zone.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant dateTimeAtMidnight(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Returns a date time for the prior midnight in the specified time zone.
-    #  *
-    #  * @param dateTime time to compute the prior midnight for.
-    #  * @return null if either input is null; otherwise a date time representing the prior midnight in the
-    #  *      specified time zone.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime dateTimeAtMidnight(@Nullable final ZonedDateTime dateTime) {
-    #
-    # // endregion
+
     #
     # // region Binning
     #
