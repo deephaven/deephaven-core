@@ -755,6 +755,77 @@ def epoch_auto_to_zoned_date_time(epoch_offset: int, tz: TimeZone) -> ZonedDateT
 
 # endregion
 
+# region Conversions: Excel
+
+def to_excel_time(dt: Instant, tz: TimeZone) -> float:
+    """ Converts a date time to an Excel time represented as a double.
+
+    Args:
+        dt (Instant): Date time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Excel time as a double or NULL_DOUBLE if any input is None
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toExcelTime(dt, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+    #TODO: ?
+    # /**
+    #  * Converts a date time to an Excel time represented as a double.
+    #  *
+    #  * @param dateTime date time to convert.
+    #  * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
+    #  */
+    # @ScriptApi
+    # public static double toExcelTime(@Nullable final ZonedDateTime dateTime) {
+
+
+def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
+    """ Converts an Excel time represented as a double to an Instant.
+
+    Args:
+        excel (float): Excel time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Instant or None if any input is None or NULL_DOUBLE.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.excelToInstant(excel, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def excel_to_zoned_date_time(excel: float, tz: TimeZone) -> ZonedDateTime:
+    """ Converts an Excel time represented as a double to a ZonedDateTime.
+
+    Args:
+        excel (float): Excel time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if any input is None or NULL_DOUBLE.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.excelToZonedDateTime(excel, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
+
 ##############################################
 ##############################################
 ##############################################
@@ -1571,76 +1642,7 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Conversions: Excel
-    #
-    # private static double epochMillisToExcelTime(final long millis, final ZoneId timeZone) {
-    #
-    # private static long excelTimeToEpochMillis(final double excel, final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to an Excel time represented as a double.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone to use when interpreting the date time.
-    #  * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-    #  */
-    # @ScriptApi
-    # public static double toExcelTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to an Excel time represented as a double.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @param timeZone time zone to use when interpreting the date time.
-    #  * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-    #  */
-    # @ScriptApi
-    # public static double toExcelTime(@Nullable final Instant dateTime, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts a date time to an Excel time represented as a double.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-    #  */
-    # @ScriptApi
-    # public static double toExcelTime(@Nullable final ZonedDateTime dateTime) {
-    #
-    # /**
-    #  * Converts an Excel time represented as a double to a {@link DateTime}.
-    #  *
-    #  * @param excel excel time represented as a double.
-    #  * @param timeZone time zone to use when interpreting the Excel time.
-    #  * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime excelToDateTime(final double excel, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts an Excel time represented as a double to an {@link Instant}.
-    #  *
-    #  * @param excel excel time represented as a double.
-    #  * @param timeZone time zone to use when interpreting the Excel time.
-    #  * @return null if timeZone is null; otherwise, the input Excel time converted to an {@link Instant}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant excelToInstant(final double excel, @Nullable final ZoneId timeZone) {
-    #
-    # /**
-    #  * Converts an Excel time represented as a double to a {@link ZonedDateTime}.
-    #  *
-    #  * @param excel excel time represented as a double.
-    #  * @param timeZone time zone to use when interpreting the Excel time.
-    #  * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link ZonedDateTime}.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime excelToZonedDateTime(final double excel, @Nullable final ZoneId timeZone) {
-    #
-    # // endregion
+
     #
     # // region Arithmetic
     #
