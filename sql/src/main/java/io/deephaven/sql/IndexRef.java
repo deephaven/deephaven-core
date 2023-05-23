@@ -13,8 +13,8 @@ import java.util.Objects;
 
 class IndexRef implements FieldAdapter, RelNodeAdapter {
 
-    public static String columnName(String prefix, int index) {
-        return String.format("%s%d", prefix, index);
+    private static String columnName(String prefix, int index) {
+        return prefix + index;
     }
 
     private final SqlRootContext rootContext;

@@ -43,7 +43,7 @@ final class SqlRootContext {
         // Calcite RelNode#getId is distinct for every relational expression that is created, even if the same SQL query
         // string is parsed again. From a unit testing perspective, and a server cacheability perspective, we would
         // prefer to assign consistent (internal) column names for the same SQL query string.
-        final String columnPrefix = String.format("%s%d_", context.prefix(), repeatableId(node));
+        final String columnPrefix = context.prefix() + repeatableId(node) + "_";
         return new IndexRef(this, columnPrefix, 0);
     }
 
