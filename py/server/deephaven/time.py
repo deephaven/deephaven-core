@@ -104,11 +104,11 @@ def today(tz: TimeZone) -> str:
 # region Time Zone
 
 # TODO: REname time_zone?
-def tz(time_zone: str) -> TimeZone:
+def tz(time_zone: Optional[str]) -> TimeZone:
     """ Gets the time zone for a time zone name.
 
     Args:
-        time_zone (str): Time zone name.
+        time_zone (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
 
     Returns:
         TimeZone
@@ -117,23 +117,10 @@ def tz(time_zone: str) -> TimeZone:
         DHError
     """
     try:
-        return _JDateTimeUtils.tz(time_zone)  # TODO: wrap the result?
-    except Exception as e:
-        raise DHError(e) from e
-
-
-# TODO: Rename time_zone? --> Maybe just provide None to the tz() function to get the default!
-def tz_default() -> TimeZone:
-    """ Gets the default time zone.
-
-    Returns:
-        TimeZone
-
-    Raises:
-        DHError
-    """
-    try:
-        return _JDateTimeUtils.tz()  # TODO: wrap the result?
+        if time_zone:
+            return _JDateTimeUtils.tz(time_zone)  # TODO: wrap the result?
+        else:
+            return _JDateTimeUtils.tz()  # TODO: wrap the result?
     except Exception as e:
         raise DHError(e) from e
 
@@ -141,6 +128,7 @@ def tz_default() -> TimeZone:
 # endregion
 
 # region Conversions: Time Units
+
 
 def micros_to_nanos(micros: int) -> int:
     """ Converts microseconds to nanoseconds.
@@ -1718,7 +1706,8 @@ def parse_nanos(s: str, quiet: bool = False) -> int:
 
     Args:
         s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause NULL_LONG to be returned.
+        quiet (bool): False will cause exceptions when strings can not be parsed.
+            False will cause NULL_LONG to be returned.
 
     Returns:
         number of nanoseconds represented by the string.
