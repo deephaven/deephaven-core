@@ -94,7 +94,7 @@ def today(tz: TimeZone) -> str:
         DHError
     """
     try:
-        return _JDateTimeUtils.today(tz)  # TODO: tz wrapped?
+        return _JDateTimeUtils.today(tz)
     except Exception as e:
         raise DHError(e) from e
 
@@ -118,9 +118,9 @@ def tz(time_zone: Optional[str]) -> TimeZone:
     """
     try:
         if time_zone:
-            return _JDateTimeUtils.tz(time_zone)  # TODO: wrap the result?
+            return _JDateTimeUtils.tz(time_zone)
         else:
-            return _JDateTimeUtils.tz()  # TODO: wrap the result?
+            return _JDateTimeUtils.tz()
     except Exception as e:
         raise DHError(e) from e
 
