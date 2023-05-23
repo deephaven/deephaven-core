@@ -3,20 +3,15 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
+import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.ColumnUpdateOperation;
-import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
@@ -142,6 +137,16 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptFill(spec.getFill());
             case EMA:
                 return adaptEma(spec.getEma());
+            case EMS:
+                return adaptEms(spec.getEms());
+            case EM_MAX:
+                return adaptEmMax(spec.getEmMax());
+            case EM_MIN:
+                return adaptEmMin(spec.getEmMin());
+            case EM_STD:
+                return adaptEmStd(spec.getEmStd());
+            case DELTA:
+                return adaptDelta(spec.getDelta());
 
             case ROLLING_SUM:
                 return adaptRollingSum(spec.getRollingSum());
@@ -155,6 +160,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptRollingMax(spec.getRollingMax());
             case ROLLING_PRODUCT:
                 return adaptRollingProduct(spec.getRollingProduct());
+            case ROLLING_COUNT:
+                return adaptRollingCount(spec.getRollingCount());
+            case ROLLING_STD:
+                return adaptRollingStd(spec.getRollingStd());
+            case ROLLING_WAVG:
+                return adaptRollingWAvg(spec.getRollingWavg());
 
             case TYPE_NOT_SET:
             default:
@@ -187,7 +198,30 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 : EmaSpec.of(adaptTimescale(ema.getTimescale()));
     }
 
-    private static OperationControl adaptEmaOptions(UpdateByEma.UpdateByEmaOptions options) {
+    private static EmsSpec adaptEms(UpdateByEms ems) {
+        return ems.hasOptions() ? EmsSpec.of(adaptEmaOptions(ems.getOptions()), adaptTimescale(ems.getTimescale()))
+                : EmsSpec.of(adaptTimescale(ems.getTimescale()));
+    }
+
+    private static EmMinMaxSpec adaptEmMax(UpdateByEmMax emMax) {
+        return emMax.hasOptions()
+                ? EmMinMaxSpec.of(adaptEmaOptions(emMax.getOptions()), true, adaptTimescale(emMax.getTimescale()))
+                : EmMinMaxSpec.of(true, adaptTimescale(emMax.getTimescale()));
+    }
+
+    private static EmMinMaxSpec adaptEmMin(UpdateByEmMin emMin) {
+        return emMin.hasOptions()
+                ? EmMinMaxSpec.of(adaptEmaOptions(emMin.getOptions()), false, adaptTimescale(emMin.getTimescale()))
+                : EmMinMaxSpec.of(false, adaptTimescale(emMin.getTimescale()));
+    }
+
+    private static EmStdSpec adaptEmStd(UpdateByEmStd emStd) {
+        return emStd.hasOptions()
+                ? EmStdSpec.of(adaptEmaOptions(emStd.getOptions()), adaptTimescale(emStd.getTimescale()))
+                : EmStdSpec.of(adaptTimescale(emStd.getTimescale()));
+    }
+
+    private static OperationControl adaptEmaOptions(UpdateByEmaOptions options) {
         final OperationControl.Builder builder = OperationControl.builder();
         if (options.hasOnNullValue()) {
             builder.onNullValue(adaptBadDataBehavior(options.getOnNullValue()));
@@ -201,41 +235,77 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return builder.build();
     }
 
-    private static RollingSumSpec adaptRollingSum(UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
+    private static DeltaSpec adaptDelta(@SuppressWarnings("unused") UpdateByDelta delta) {
+        return delta.hasOptions() ? DeltaSpec.of(adaptDeltaOptions(delta.getOptions()))
+                : DeltaSpec.of();
+    }
+
+    private static DeltaControl adaptDeltaOptions(UpdateByDeltaOptions options) {
+        switch (options.getNullBehavior()) {
+            case VALUE_DOMINATES:
+                return DeltaControl.VALUE_DOMINATES;
+            case ZERO_DOMINATES:
+                return DeltaControl.ZERO_DOMINATES;
+            default:
+                return DeltaControl.NULL_DOMINATES;
+        }
+    }
+
+    private static RollingSumSpec adaptRollingSum(UpdateByRollingSum sum) {
         return RollingSumSpec.of(
                 adaptTimescale(sum.getReverseTimescale()),
                 adaptTimescale(sum.getForwardTimescale()));
     }
 
-    private static RollingGroupSpec adaptRollingGroup(UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
+    private static RollingGroupSpec adaptRollingGroup(UpdateByRollingGroup group) {
         return RollingGroupSpec.of(
                 adaptTimescale(group.getReverseTimescale()),
                 adaptTimescale(group.getForwardTimescale()));
     }
 
-    private static RollingAvgSpec adaptRollingAvg(UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
+    private static RollingAvgSpec adaptRollingAvg(UpdateByRollingAvg avg) {
         return RollingAvgSpec.of(
                 adaptTimescale(avg.getReverseTimescale()),
                 adaptTimescale(avg.getForwardTimescale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMin(UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
+    private static RollingMinMaxSpec adaptRollingMin(UpdateByRollingMin min) {
         return RollingMinMaxSpec.of(false,
                 adaptTimescale(min.getReverseTimescale()),
                 adaptTimescale(min.getForwardTimescale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMax(UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
+    private static RollingMinMaxSpec adaptRollingMax(UpdateByRollingMax max) {
         return RollingMinMaxSpec.of(true,
                 adaptTimescale(max.getReverseTimescale()),
                 adaptTimescale(max.getForwardTimescale()));
     }
 
-    private static RollingProductSpec adaptRollingProduct(UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
+    private static RollingProductSpec adaptRollingProduct(UpdateByRollingProduct product) {
         return RollingProductSpec.of(
                 adaptTimescale(product.getReverseTimescale()),
                 adaptTimescale(product.getForwardTimescale()));
     }
+
+    private static RollingCountSpec adaptRollingCount(UpdateByRollingCount count) {
+        return RollingCountSpec.of(
+                adaptTimescale(count.getReverseTimescale()),
+                adaptTimescale(count.getForwardTimescale()));
+    }
+
+    private static RollingStdSpec adaptRollingStd(UpdateByRollingStd std) {
+        return RollingStdSpec.of(
+                adaptTimescale(std.getReverseTimescale()),
+                adaptTimescale(std.getForwardTimescale()));
+    }
+
+    private static RollingWAvgSpec adaptRollingWAvg(UpdateByRollingWAvg wavg) {
+        return RollingWAvgSpec.of(
+                adaptTimescale(wavg.getReverseTimescale()),
+                adaptTimescale(wavg.getForwardTimescale()),
+                wavg.getWeightColumn());
+    }
+
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {
         return new MathContext(bigValueContext.getPrecision(), adaptRoundingMode(bigValueContext.getRoundingMode()));
