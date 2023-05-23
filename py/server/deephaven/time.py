@@ -29,6 +29,15 @@ YEARS_PER_NANO = 1/YEAR #: Number of years per nanosecond.
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
+class DateStyle(Enum):
+    """ A Enum for date format styles. """
+    MDY = _JDateTimeUtils.DateStyle.MDY
+    """ Month, day, year date format. """
+    DMY = _JDateTimeUtils.DateStyle.DMY
+    """ Day, month, year date format. """
+    YMD = _JDateTimeUtils.DateStyle.YMD
+    """ Year, month, day date format. """
+
 # region Clock
 
 def now(system: bool=False, resolution: str='ns') -> Instant:
@@ -1620,6 +1629,366 @@ def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
 
 # endregion
 
+
+# region Parse
+
+#TODO: make quiet an option?
+def parse_time_zone(s: str) -> ZoneId:
+    """ Parses the string argument as a time zone.
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Time Zone
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseTimeZone(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_time_zone_quiet(s: str) -> ZoneId:
+    """ Parses the string argument as a time zone.
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Time Zone, None if the string can not be converted.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseTimeZoneQuiet(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_nanos(s: str) -> int:
+    """ Parses the string argument as a time duration in nanoseconds.
+
+    Time duration strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]' or as a duration string formatted as '[-]PnDTnHnMn.nS}'.
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        number of nanoseconds represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseTimeZone(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+#TODO: make quiet an option?
+def parse_nanos_quiet(s: str) -> int:
+    """ Parses the string argument as a time duration in nanoseconds.
+
+    Time duration strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]' or as a duration string formatted as '[-]PnDTnHnMn.nS}'.
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        number of nanoseconds represented by the string, None if the string can not be converted.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseTimeZone(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_period(s: str) -> Period:
+    """ Parses the string argument as a period, which is a unit of time in terms of calendar time
+    (days, weeks, months, years, etc.).
+
+    Period strings are formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
+    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+    begin with a negative sign.
+
+    Examples:
+      "P2Y"             -- 2 Years
+      "P3M"             -- 3 Months
+      "P4W"             -- 4 Weeks
+      "P5D"             -- 5 Days
+      "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
+      "P-1Y2M"          -- -1 Year, 2 Months
+      "-P1Y2M"          -- -1 Year, -2 Months
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Period represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parsePeriod(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_period_quiet(s: str) -> Period:
+    """ Parses the string argument as a period, which is a unit of time in terms of calendar time
+    (days, weeks, months, years, etc.).
+
+    Period strings are formatted according to the ISO-8601 duration format as 'PnYnMnD' and 'PnW', where the
+    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+    begin with a negative sign.
+
+    Examples:
+      "P2Y"             -- 2 Years
+      "P3M"             -- 3 Months
+      "P4W"             -- 4 Weeks
+      "P5D"             -- 5 Days
+      "P1Y2M3D"         -- 1 Year, 2 Months, 3 Days
+      "P-1Y2M"          -- -1 Year, 2 Months
+      "-P1Y2M"          -- -1 Year, -2 Months
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Period represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parsePeriodQuiet(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_duration(s: str) -> Duration:
+    """ Parses the string argument as a duration, which is a unit of time in terms of clock time
+    (24-hour days, hours, minutes, seconds, and nanoseconds).
+
+    Duration strings are formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
+    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+    begin with a negative sign.
+
+    Examples:
+       "PT20.345S" -- parses as "20.345 seconds"
+       "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+       "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+       "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+       "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+       "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+       "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+       "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Period represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseDuration(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+#TODO: make quiet an option?
+def parse_duration_quiet(s: str) -> Duration:
+    """ Parses the string argument as a duration, which is a unit of time in terms of clock time
+    (24-hour days, hours, minutes, seconds, and nanoseconds).
+
+    Duration strings are formatted according to the ISO-8601 duration format as '[-]PnDTnHnMn.nS', where the
+    coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
+    begin with a negative sign.
+
+    Examples:
+       "PT20.345S" -- parses as "20.345 seconds"
+       "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
+       "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
+       "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
+       "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
+       "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
+       "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
+       "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
+
+    Args:
+        s (str): String to be converted.
+
+    Returns:
+        Period represented by the string, None if the string can not be converted.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.parseDuration(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def parse_instant(s: str, quiet: bool=False) -> Instant:
+    """ Parses the string argument as an Instant.
+
+    Date time strings are formatted according to the ISO 8601 date time format
+    '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+
+    Args:
+        s (str): String to be converted.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+
+    Returns:
+        Instant represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            return _JDateTimeUtils.parseInstantQuiet(s)
+        else:
+            return _JDateTimeUtils.parseInstant(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def parse_zoned_date_time(s: str, quiet: bool=False) -> ZonedDateTime:
+    """ Parses the string argument as a ZonedDateTime.
+
+    Date time strings are formatted according to the ISO 8601 date time format
+    '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+
+    Args:
+        s (str): String to be converted.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+
+    Returns:
+        Instant represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            return _JDateTimeUtils.parseZonedDateTimeQuiet(s)
+        else:
+            return _JDateTimeUtils.parseZonedDateTime(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+    #TODO: ?
+    # /**
+    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+    #  *
+    #  * @param s time string.
+    #  * @return {@link ChronoField} for the finest units in the string (e.g. "10:00:00" would yield SecondOfMinute).
+    #  * @throws RuntimeException if the string cannot be parsed.
+    #  */
+    # @ScriptApi
+    # @NotNull
+    # public static ChronoField parseTimePrecision(@NotNull final String s) {
+    #
+    # /**
+    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+    #  *
+    #  * @param s time string.
+    #  * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
+    #  *      string (e.g. "10:00:00" would yield SecondOfMinute).
+    #  * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
+    #  */
+    # @ScriptApi
+    # @Nullable
+    # public static ChronoField parseTimePrecisionQuiet(@Nullable final String s) {
+
+
+#TODO: rename java method to parseLocalDate
+def parse_local_date(s: str, quiet: bool=False, style: DateStyle = DateStyle.MDY) -> LocalTime:
+    """ Parses the string argument as a local date, which is a date without a time or time zone.
+
+    The ideal date format is 'YYYY-MM-DD' since it's the least ambiguous, but other formats are supported.
+    
+    Supported formats:
+    - 'YYYY-MM-DD'
+    - 'YYYYMMDD'
+    - 'YYYY/MM/DD'
+    - 'MM/DD/YYYY'
+    - 'MM-DD-YYYY'
+    - 'DD/MM/YYYY'
+    - 'DD-MM-YYYY'
+    - 'YY/MM/DD'
+    - 'YY-MM-DD'
+    - 'MM/DD/YY'
+    - 'MM-DD-YY'
+    - 'DD/MM/YY'
+    - 'DD-MM-YY'
+    
+    If the format matches the ISO 'YYYY-MM-DD' or 'YYYYMMDD' formats, the date style is ignored.
+
+    Args:
+        s (str): String to be converted.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+        style (DateStyle): Date format style.  Defaults to MDY (month, day, year).
+
+    Returns:
+        LocalDate represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            return _JDateTimeUtils.parseDateQuiet(s, style)
+        else:
+            return _JDateTimeUtils.parseDate(s, style)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def parse_local_time(s: str, quiet: bool=False) -> LocalTime:
+    """ Parses the string argument as a local time, which is the time that would be read from a clock and
+    does not have a date or timezone.
+
+    Local time strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]'.
+
+    Args:
+        s (str): String to be converted.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+
+    Returns:
+        LocalTime represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            return _JDateTimeUtils.parseLocalTimeQuiet(s)
+        else:
+            return _JDateTimeUtils.parseLocalTime(s)
+    except Exception as e:
+        raise DHError(e) from e
+
+# endregion
+
 ##############################################
 ##############################################
 ##############################################
@@ -2442,448 +2811,3 @@ def year_of_century(dt: DateTime, tz: TimeZone) -> int:
 
 
 
-    #
-    # // region Parse
-    #
-    # /**
-    #  * Parses the string argument as a time zone.
-    #  *
-    #  * @param s string to be converted
-    #  * @return a {@link ZoneId} represented by the input string.
-    #  * @throws RuntimeException if the string cannot be converted.
-    #  * @see ZoneId
-    #  * @see TimeZoneAliases
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static ZoneId parseTimeZone(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a time zone.
-    #  *
-    #  * @param s string to be converted
-    #  * @return a {@link ZoneId} represented by the input string, or null if the string can not be parsed.
-    #  * @see ZoneId
-    #  * @see TimeZoneAliases
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZoneId parseTimeZoneQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a time duration in nanoseconds.
-    #  *
-    #  * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as {@code [-]PnDTnHnMn.nS}.
-    #  *
-    #  * @param s string to be converted.
-    #  * @return the number of nanoseconds represented by the string.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see #parseDuration(String)
-    #  * @see #parseDurationQuiet(String)
-    #  */
-    # @ScriptApi
-    # public static long parseNanos(@NotNull String s) {
-    #
-    # /**
-    #  * Parses the string argument as a time duration in nanoseconds.
-    #  *
-    #  * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as {@code [-]PnDTnHnMn.nS}.
-    #  *
-    #  * @param s string to be converted.
-    #  * @return the number of nanoseconds represented by the string, or {@link QueryConstants#NULL_LONG} if the string cannot be parsed.
-    #  * @see #parseDuration(String)
-    #  * @see #parseDurationQuiet(String)
-    #  */
-    # @ScriptApi
-    # public static long parseNanosQuiet(@Nullable String s) {
-    #
-    # /**
-    #  * Parses the string argument as a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
-    #  *
-    #  * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
-    #  * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    #  * begin with a negative sign.
-    #  *
-    #  * Examples:
-    #  * <pre>
-    #  *   "P2Y"             -- Period.ofYears(2)
-    #  *   "P3M"             -- Period.ofMonths(3)
-    #  *   "P4W"             -- Period.ofWeeks(4)
-    #  *   "P5D"             -- Period.ofDays(5)
-    #  *   "P1Y2M3D"         -- Period.of(1, 2, 3)
-    #  *   "P1Y2M3W4D"       -- Period.of(1, 2, 25)
-    #  *   "P-1Y2M"          -- Period.of(-1, 2, 0)
-    #  *   "-P1Y2M"          -- Period.of(-1, -2, 0)
-    #  * </pre>
-    #  *
-    #  * @param s period string.
-    #  * @return the period.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see Period#parse(CharSequence)
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static Period parsePeriod(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a period, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.).
-    #  *
-    #  * Period strings are formatted according to the ISO-8601 duration format as {@code PnYnMnD} and {@code PnW}, where the
-    #  * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    #  * begin with a negative sign.
-    #  *
-    #  * Examples:
-    #  * <pre>
-    #  *   "P2Y"             -- Period.ofYears(2)
-    #  *   "P3M"             -- Period.ofMonths(3)
-    #  *   "P4W"             -- Period.ofWeeks(4)
-    #  *   "P5D"             -- Period.ofDays(5)
-    #  *   "P1Y2M3D"         -- Period.of(1, 2, 3)
-    #  *   "P1Y2M3W4D"       -- Period.of(1, 2, 25)
-    #  *   "P-1Y2M"          -- Period.of(-1, 2, 0)
-    #  *   "-P1Y2M"          -- Period.of(-1, -2, 0)
-    #  * </pre>
-    #  *
-    #  * @param s period string.
-    #  * @return the period, or null if the string can not be parsed.
-    #  * @see Period#parse(CharSequence)
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Period parsePeriodQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a duration, which is a unit of time in terms of clock time (24-hour days, hours,
-    #  * minutes, seconds, and nanoseconds).
-    #  *
-    #  * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
-    #  * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    #  * begin with a negative sign.
-    #  *
-    #  * Examples:
-    #  * <pre>
-    #  *    "PT20.345S" -- parses as "20.345 seconds"
-    #  *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
-    #  *    "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
-    #  *    "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
-    #  *    "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
-    #  *    "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
-    #  *    "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
-    #  *    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
-    #  * </pre>
-    #  *
-    #  * @param s duration string.
-    #  * @return the duration.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see Duration#parse(CharSequence)
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static Duration parseDuration(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a duration, which is a unit of time in terms of clock time (24-hour days, hours,
-    #  * minutes, seconds, and nanoseconds).
-    #  *
-    #  * Duration strings are formatted according to the ISO-8601 duration format as {@code [-]PnDTnHnMn.nS}, where the
-    #  * coefficients can be positive or negative.  Zero coefficients can be omitted.  Optionally, the string can
-    #  * begin with a negative sign.
-    #  *
-    #  * Examples:
-    #  * <pre>
-    #  *    "PT20.345S" -- parses as "20.345 seconds"
-    #  *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
-    #  *    "PT10H"     -- parses as "10 hours" (where an hour is 3600 seconds)
-    #  *    "P2D"       -- parses as "2 days" (where a day is 24 hours or 86400 seconds)
-    #  *    "P2DT3H4M"  -- parses as "2 days, 3 hours and 4 minutes"
-    #  *    "PT-6H3M"    -- parses as "-6 hours and +3 minutes"
-    #  *    "-PT6H3M"    -- parses as "-6 hours and -3 minutes"
-    #  *    "-PT-6H+3M"  -- parses as "+6 hours and -3 minutes"
-    #  * </pre>
-    #  *
-    #  * @param s duration string.
-    #  * @return the duration, or null if the string can not be parsed.
-    #  * @see Duration#parse(CharSequence)
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Duration parseDurationQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static DateTime parseDateTime(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string, or null if the string can not be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static DateTime parseDateTimeQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static Instant parseInstant(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string, or null if the string can not be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant parseInstantQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static ZonedDateTime parseZonedDateTime(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a date time.
-    #  *
-    #  * Date time strings are formatted according to the ISO 8601 date time format {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-    #  *
-    #  * @param s date time string.
-    #  * @return a date time represented by the input string, or null if the string can not be parsed.
-    #  * @see DateTimeFormatter#ISO_INSTANT
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime parseZonedDateTimeQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-    #  *
-    #  * @param s time string.
-    #  * @return {@link ChronoField} for the finest units in the string (e.g. "10:00:00" would yield SecondOfMinute).
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static ChronoField parseTimePrecision(@NotNull final String s) {
-    #
-    # /**
-    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-    #  *
-    #  * @param s time string.
-    #  * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
-    #  *      string (e.g. "10:00:00" would yield SecondOfMinute).
-    #  * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ChronoField parseTimePrecisionQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Format style for a date string.
-    #  */
-    # @ScriptApi
-    # public enum DateStyle {
-    #     /**
-    #      * Month, day, year date format.
-    #      */
-    #     MDY,
-    #     /**
-    #      * Day, month, year date format.
-    #      */
-    #     DMY,
-    #     /**
-    #      * Year, month, day date format.
-    #      */
-    #     YMD
-    # }
-    #
-    # // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
-    # // system date style setting (for example Europeans often write dates as d/m/y).
-    # @NotNull
-    # private static LocalDate matchLocalDate(final Matcher matcher, final DateStyle dateStyle) {
-    #
-    # /**
-    #  * Converts a string into a local date.
-    #  * A local date is a date without a time or time zone.
-    #  *
-    #  * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-    #  *
-    #  * Supported formats:
-    #  * - YYYY-MM-DD
-    #  * - YYYYMMDD
-    #  * - YYYY/MM/DD
-    #  * - MM/DD/YYYY
-    #  * - MM-DD-YYYY
-    #  * - DD/MM/YYYY
-    #  * - DD-MM-YYYY
-    #  * - YY/MM/DD
-    #  * - YY-MM-DD
-    #  * - MM/DD/YY
-    #  * - MM-DD-YY
-    #  * - DD/MM/YY
-    #  * - DD-MM-YY
-    #  *
-    #  * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
-    #  *
-    #  * @param s date string.
-    #  * @param dateStyle style the date string is formatted in.
-    #  * @return local date.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static LocalDate parseDate(@NotNull final String s, @Nullable final DateStyle dateStyle) {
-    #
-    # /**
-    #  * Parses the string argument as a local date, which is a date without a time or time zone.
-    #  *
-    #  * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-    #  *
-    #  * Supported formats:
-    #  * - {@code YYYY-MM-DD}
-    #  * - {@code YYYYMMDD}
-    #  * - {@code YYYY/MM/DD}
-    #  * - {@code MM/DD/YYYY}
-    #  * - {@code MM-DD-YYYY}
-    #  * - {@code DD/MM/YYYY}
-    #  * - {@code DD-MM-YYYY}
-    #  * - {@code YY/MM/DD}
-    #  * - {@code YY-MM-DD}
-    #  * - {@code MM/DD/YY}
-    #  * - {@code MM-DD-YY}
-    #  * - {@code DD/MM/YY}
-    #  * - {@code DD-MM-YY}
-    #  *
-    #  * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-    #  *
-    #  *
-    #  * @param s date string.
-    #  * @param dateStyle style the date string is formatted in.
-    #  * @return local date, or null if the string can not be parsed.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static LocalDate parseDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
-    #
-    # /**
-    #  * Parses the string argument as a local date, which is a date without a time or time zone.
-    #  *
-    #  * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-    #  *
-    #  * Supported formats:
-    #  * - {@code YYYY-MM-DD}
-    #  * - {@code YYYYMMDD}
-    #  * - {@code YYYY/MM/DD}
-    #  * - {@code MM/DD/YYYY}
-    #  * - {@code MM-DD-YYYY}
-    #  * - {@code DD/MM/YYYY}
-    #  * - {@code DD-MM-YYYY}
-    #  * - {@code YY/MM/DD}
-    #  * - {@code YY-MM-DD}
-    #  * - {@code MM/DD/YY}
-    #  * - {@code MM-DD-YY}
-    #  * - {@code DD/MM/YY}
-    #  * - {@code DD-MM-YY}
-    #  *
-    #  * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-    #  *
-    #  *
-    #  * @param s date string.
-    #  * @return local date parsed according to the default date style.
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static LocalDate parseDate(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a local date, which is a date without a time or time zone.
-    #  *
-    #  * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-    #  *
-    #  * Supported formats:
-    #  * - {@code YYYY-MM-DD}
-    #  * - {@code YYYYMMDD}
-    #  * - {@code YYYY/MM/DD}
-    #  * - {@code MM/DD/YYYY}
-    #  * - {@code MM-DD-YYYY}
-    #  * - {@code DD/MM/YYYY}
-    #  * - {@code DD-MM-YYYY}
-    #  * - {@code YY/MM/DD}
-    #  * - {@code YY-MM-DD}
-    #  * - {@code MM/DD/YY}
-    #  * - {@code MM-DD-YY}
-    #  * - {@code DD/MM/YY}
-    #  * - {@code DD-MM-YY}
-    #  *
-    #  * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-    #  *
-    #  *
-    #  * @param s date string.
-    #  * @return local date parsed according to the default date style, or null if the string can not be parsed.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static LocalDate parseDateQuiet(@Nullable final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a date or timezone.
-    #  *
-    #  * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
-    #  *
-    #  * @param s string to be converted
-    #  * @return a {@link LocalTime} represented by the input string.
-    #  * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static LocalTime parseLocalTime(@NotNull final String s) {
-    #
-    # /**
-    #  * Parses the string argument as a local time, which is the time that would be read from a clock and does not have a date or timezone.
-    #  *
-    #  * Local time strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]}.
-    #  *
-    #  * @param s string to be converted
-    #  * @return a {@link LocalTime} represented by the input string, or null if the string can not be parsed.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static LocalTime parseLocalTimeQuiet(@Nullable final String s) {
-    #
-    # // endregion
