@@ -5,7 +5,7 @@
 """ This module defines functions for handling Deephaven date/time data. """
 
 from __future__ import annotations
-from typing import Union
+from typing import Union, Optional
 from enum import Enum
 
 import jpy
@@ -1688,7 +1688,7 @@ def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
 
 # region Parse
 
-def parse_time_zone(s: str, quiet: bool = False) -> TimeZone:
+def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
     """ Parses the string argument as a time zone.
 
     Args:
@@ -1718,7 +1718,7 @@ def parse_nanos(s: str, quiet: bool = False) -> int:
 
     Args:
         s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause NULL_LONG to be returned.
 
     Returns:
         number of nanoseconds represented by the string.
@@ -1735,7 +1735,7 @@ def parse_nanos(s: str, quiet: bool = False) -> int:
         raise DHError(e) from e
 
 
-def parse_period(s: str, quiet: bool = False) -> Period:
+def parse_period(s: str, quiet: bool = False) -> Optional[Period]:
     """ Parses the string argument as a period, which is a unit of time in terms of calendar time
     (days, weeks, months, years, etc.).
 
@@ -1771,7 +1771,7 @@ def parse_period(s: str, quiet: bool = False) -> Period:
         raise DHError(e) from e
 
 
-def parse_duration(s: str, quiet: bool = False) -> Duration:
+def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
     """ Parses the string argument as a duration, which is a unit of time in terms of clock time
     (24-hour days, hours, minutes, seconds, and nanoseconds).
 
@@ -1808,7 +1808,7 @@ def parse_duration(s: str, quiet: bool = False) -> Duration:
         raise DHError(e) from e
 
 
-def parse_instant(s: str, quiet: bool = False) -> Instant:
+def parse_instant(s: str, quiet: bool = False) -> Optional[Instant]:
     """ Parses the string argument as an Instant.
 
     Date time strings are formatted according to the ISO 8601 date time format
@@ -1833,7 +1833,7 @@ def parse_instant(s: str, quiet: bool = False) -> Instant:
         raise DHError(e) from e
 
 
-def parse_zdt(s: str, quiet: bool = False) -> ZonedDateTime:
+def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
     """ Parses the string argument as a ZonedDateTime.
 
     Date time strings are formatted according to the ISO 8601 date time format
@@ -1858,7 +1858,7 @@ def parse_zdt(s: str, quiet: bool = False) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-def parse_time_precision(s: str, quiet: bool = False) -> str:
+def parse_time_precision(s: str, quiet: bool = False) -> Optional[str]:
     """ Returns a string indicating the level of precision in a time or datetime string (e.g. 'SecondOfMinute').
 
     Args:
@@ -1885,7 +1885,7 @@ def parse_time_precision(s: str, quiet: bool = False) -> str:
         raise DHError(e) from e
 
 
-def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.MDY) -> LocalTime:
+def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.MDY) -> Optional[LocalTime]:
     """ Parses the string argument as a local date, which is a date without a time or time zone.
 
     The ideal date format is 'YYYY-MM-DD' since it's the least ambiguous, but other formats are supported.
@@ -1927,7 +1927,7 @@ def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.M
         raise DHError(e) from e
 
 
-def parse_local_time(s: str, quiet: bool = False) -> LocalTime:
+def parse_local_time(s: str, quiet: bool = False) -> Optional[LocalTime]:
     """ Parses the string argument as a local time, which is the time that would be read from a clock and
     does not have a date or timezone.
 
