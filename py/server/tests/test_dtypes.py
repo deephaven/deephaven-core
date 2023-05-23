@@ -12,7 +12,7 @@ import pandas as pd
 
 from deephaven import dtypes
 from deephaven.constants import *
-from deephaven.dtypes import DateTime
+from deephaven.dtypes import Instant
 from deephaven.time import now
 from tests.testbase import BaseTestCase
 
@@ -45,10 +45,17 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
         self.assertEqual(dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet"))
-        self.assertEqual(dtypes.DateTime.j_type, jpy.get_type("io.deephaven.time.DateTime"))
-        self.assertEqual(dtypes.Period.j_type, jpy.get_type("io.deephaven.time.Period"))
+        self.assertEqual(dtypes.Instant.j_type, jpy.get_type("java.time.Instant"))
+        self.assertEqual(dtypes.LocalDate.j_type, jpy.get_type("java.time.LocalDate"))
+        self.assertEqual(dtypes.LocalTime.j_type, jpy.get_type("java.time.LocalTime"))
+        self.assertEqual(dtypes.ZonedDateTime.j_type, jpy.get_type("java.time.ZonedDateTime"))
+        self.assertEqual(dtypes.Duration.j_type, jpy.get_type("java.time.Duration"))
+        self.assertEqual(dtypes.Period.j_type, jpy.get_type("java.time.Period"))
+        self.assertEqual(dtypes.TimeZone.j_type, jpy.get_type("java.time.ZoneId"))
         self.assertEqual(dtypes.PyObject.j_type, jpy.get_type("org.jpy.PyObject"))
         self.assertEqual(dtypes.JObject.j_type, jpy.get_type("java.lang.Object"))
+        self.assertEqual(dtypes.instant_array.j_type, jpy.get_type("L[java.time.Instant"))
+        self.assertEqual(dtypes.zdt_array.j_type, jpy.get_type("L[java.time.ZonedDateTime"))
 
     def test_np_type(self):
         self.assertEqual(dtypes.bool_.np_type, np.bool_)
@@ -62,14 +69,25 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.string.np_type, np.str_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
         self.assertEqual(dtypes.StringSet.np_type, np.object_)
-        self.assertEqual(dtypes.DateTime.np_type, np.dtype("datetime64[ns]"))
+        self.assertEqual(dtypes.Instant.np_type, np.dtype("datetime64[ns]"))
+        self.assertEqual(dtypes.LocalDate.np_type, np.object_)
+        self.assertEqual(dtypes.LocalTime.np_type, np.object_)
+        self.assertEqual(dtypes.ZonedDateTime.np_type, np.object_)
+        self.assertEqual(dtypes.Duration.np_type, np.object_)
         self.assertEqual(dtypes.Period.np_type, np.object_)
+        self.assertEqual(dtypes.TimeZone.np_type, np.object_)
         self.assertEqual(dtypes.PyObject.np_type, np.object_)
         self.assertEqual(dtypes.JObject.np_type, np.object_)
+        self.assertEqual(dtypes.instant_array.np_type, np.object_)
+        self.assertEqual(dtypes.zdt_array.np_type, np.object_)
+
+    def test_duration(self):
+        hour_duration = dtypes.Duration.j_type("PT1H")
+        self.assertTrue(isinstance(hour_duration, dtypes.Period.j_type))
 
     def test_period(self):
-        hour_period = dtypes.Period.j_type("T1H")
-        self.assertTrue(isinstance(hour_period, dtypes.Period.j_type))
+        day_period = dtypes.Period.j_type("P2D")
+        self.assertTrue(isinstance(day_period, dtypes.Period.j_type))
 
     def test_callable(self):
         big_decimal = dtypes.BigDecimal(12.88)
@@ -185,11 +203,11 @@ class DTypesTestCase(BaseTestCase):
         self.assertIn("[C", str(type(j_array)))
         self.assertEqual(expected, py_array)
 
-    def test_datetime(self):
-        dt1 = DateTime(round(time.time()))
+    def test_instant(self):
+        dt1 = Instant(round(time.time()))
         dt2 = now()
         values = [dt1, dt2, None]
-        j_array = dtypes.array(DateTime, values)
+        j_array = dtypes.array(Instant, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
 
     def test_bool_array(self):

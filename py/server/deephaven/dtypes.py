@@ -98,10 +98,20 @@ BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
-"""Deephaven DateTime type"""
-Period = DType(j_name="io.deephaven.time.Period")
-"""Deephaven time period type"""
+Instant = DType(j_name="java.time.Instant", np_type=np.dtype("datetime64[ns]"))
+"""Instant date time type"""
+LocalDate = DType(j_name="java.time.LocalDate")
+"""Local date type"""
+LocalTime = DType(j_name="java.time.LocalTime")
+"""Local time type"""
+ZonedDateTime = DType(j_name="java.time.ZonedDateTime")
+"""Zoned date time type"""
+Duration = DType(j_name="java.time.Duration")
+"""Time period type, which is a unit of time in terms of clock time (24-hour days, hours, minutes, seconds, and nanoseconds)."""
+Period = DType(j_name="java.time.Period")
+"""Time period type, which is a unit of time in terms of calendar time (days, weeks, months, years, etc.)."""
+TimeZone = DType(j_name="java.time.ZoneId")
+"""Time zone type."""
 PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
@@ -134,8 +144,10 @@ float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
-datetime_array = DType(j_name='[Lio.deephaven.time.DateTime;')
-"""Deephaven DateTime array type"""
+instant_array = DType(j_name='[Ljava.time.Instant;')
+"""Java Instant array type"""
+zdt_array = DType(j_name='[Ljava.time.ZonedDateTime;')
+"""Zoned date time array type"""
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
@@ -170,7 +182,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-            elif dtype == DateTime:
+            elif dtype == Instant:
                 longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
                 seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
 

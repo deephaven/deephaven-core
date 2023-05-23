@@ -44,7 +44,6 @@ class DateStyle(Enum):
 # region Clock
 
 
-# TODO: remove millis resolution?
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
 
@@ -1527,10 +1526,10 @@ def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offs
     """
     try:
         if isinstance(interval, str):
-            interval = parse_duration(interval)
+            interval = parse_nanos(interval)
 
         if isinstance(offset, str):
-            offset = parse_duration(offset)
+            offset = parse_nanos(offset)
 
         return _JDateTimeUtils.lowerBin(dt, interval, offset)
     except Exception as e:
@@ -1558,10 +1557,10 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
     """
     try:
         if isinstance(interval, str):
-            interval = parse_duration(interval)
+            interval = parse_nanos(interval)
 
         if isinstance(offset, str):
-            offset = parse_duration(offset)
+            offset = parse_nanos(offset)
 
         return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:

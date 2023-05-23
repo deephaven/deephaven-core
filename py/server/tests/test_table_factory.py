@@ -70,14 +70,14 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertIn("IllegalArgumentException", cm.exception.root_cause)
 
     def test_merge(self):
-        t1 = self.test_table.update(formulas=["Timestamp=new io.deephaven.time.DateTime(0L)"])
-        t2 = self.test_table.update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
+        t1 = self.test_table.update(formulas=["Timestamp=epochNanosToInstant(0L)"])
+        t2 = self.test_table.update(formulas=["Timestamp=nowSystem()"])
         mt = merge([t1, t2])
         self.assertFalse(mt.is_refreshing)
 
     def test_merge_sorted_error(self):
         t1 = time_table("00:00:01")
-        t2 = self.test_table.update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
+        t2 = self.test_table.update(formulas=["Timestamp=nowSystem()"])
         with self.assertRaises(DHError) as cm:
             mt = merge_sorted(order_by="a", tables=[t1, t2])
             self.assertFalse(mt.is_refreshing)
