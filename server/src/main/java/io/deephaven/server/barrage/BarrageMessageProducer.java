@@ -480,7 +480,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             }
             if (isBlinkTable && reverseViewport) {
                 GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
-                        "Reverse viewport is not supported for stream tables");
+                        "Reverse viewport is not supported for blink tables");
                 return;
             }
 
@@ -550,7 +550,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             sub.pendingReverseViewport = newReverseViewport;
             if (isBlinkTable && newReverseViewport) {
                 GrpcUtil.safelyError(listener, Code.INVALID_ARGUMENT,
-                        "Reverse viewport is not supported for stream tables");
+                        "Reverse viewport is not supported for blink tables");
                 removeSubscription(listener);
                 return;
             }
@@ -680,21 +680,21 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final RowSet modsToRecord;
         final TrackingRowSet rowSet = parent.getRowSet();
 
+        if (isBlinkTable) {
+            // assert that there are no modifications on blink tables
+            Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+        }
+
         if (numFullSubscriptions > 0) {
             addsToRecord = upstream.added().copy();
             modsToRecord = upstream.modified().copy();
-            if (isStreamTable) {
-                streamTableUpdateSize += upstream.added().size();
+            if (isBlinkTable) {
+                blinkTableUpdateSize += upstream.added().size();
             }
         } else if (activeViewport != null || activeReverseViewport != null) {
             if (isBlinkTable) {
-                // note that reverse viewports are unsupported for stream tables
-                if (activeReverseViewport != null) {
-//                    BaseTable.assertValidViewport(activeReverseViewport);
-                    throw new IllegalStateException("Reverse viewports are unsupported for stream tables");
-                }
-
-                // there are no modifications on stream tables
+                // note that reverse viewports are unsupported for blink tables
+                Assert.eqNull(activeReverseViewport, "activeReverseViewport");
                 modsToRecord = RowSetFactory.empty();
 
                 final long newRows = upstream.added().size();
@@ -702,11 +702,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     addsToRecord = RowSetFactory.empty();
                 } else {
                     try (final WritableRowSet updateRows = RowSetFactory.fromRange(
-                            streamTableUpdateSize, streamTableUpdateSize + newRows - 1)) {
+                            blinkTableUpdateSize, blinkTableUpdateSize + newRows - 1)) {
                         updateRows.retain(activeViewport);
-                        updateRows.shiftInPlace(-streamTableUpdateSize);
-                        streamTableUpdateSize += newRows;
-                        // stream tables are not guaranteed to be flat or provide contiguous row keys
+                        updateRows.shiftInPlace(-blinkTableUpdateSize);
+                        blinkTableUpdateSize += newRows;
+                        // blink tables are not guaranteed to be flat or provide contiguous row keys
                         addsToRecord = upstream.added().subSetForPositions(updateRows);
                     }
                 }
@@ -1607,7 +1607,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         if (isBlinkTable) {
 
             final TableUpdate update = new TableUpdateImpl(
-                    RowSetFactory.flat(BlinkTableUpdateSize),
+                    RowSetFactory.flat(blinkTableUpdateSize),
                     RowSetFactory.flat(lastBlinkTableUpdateSize),
                     RowSetFactory.empty(),
                     RowSetShiftData.EMPTY,
