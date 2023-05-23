@@ -26,6 +26,7 @@ import java.util.Date;
  *
  * @see DateTimeUtils
  */
+@Deprecated
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
