@@ -36,15 +36,30 @@ public final class Sql {
     private static final Logger log = LoggerFactory.getLogger(Sql.class);
 
     @ScriptApi
-    public static Table executeSql(String sql) {
-        return executeSql(sql, scriptSessionScope());
+    public static Table execute(String sql) {
+        return execute(sql, scriptSessionScope());
     }
 
-    public static Table executeSql(String sql, Map<String, Table> scope) {
-        final Map<TicketTable, Table> mapOut = new HashMap<>(scope.size());
-        final TableSpec tableSpec = SqlAdapter.parseSql(sql, scope(scope, mapOut));
+    @ScriptApi
+    public static TableSpec dryRun(String sql) {
+        return dryRun(sql, scriptSessionScope());
+    }
+
+    public static Table execute(String sql, Map<String, Table> scope) {
+        final Map<TicketTable, Table> map = new HashMap<>(scope.size());
+        final TableSpec tableSpec = parseSql(sql, scope, map);
         log.debug().append("Executing. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
-        return tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, mapOut));
+        return tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, map));
+    }
+
+    public static TableSpec dryRun(String sql, Map<String, Table> scope) {
+        final TableSpec tableSpec = parseSql(sql, scope, null);
+        log.info().append("Dry run. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
+        return tableSpec;
+    }
+
+    private static TableSpec parseSql(String sql, Map<String, Table> scope, Map<TicketTable, Table> out) {
+        return SqlAdapter.parseSql(sql, scope(scope, out));
     }
 
     private static Scope scope(Map<String, Table> scope, Map<TicketTable, Table> out) {
@@ -58,7 +73,9 @@ public final class Sql {
             final List<String> qualifiedName = List.of(tableName);
             final TableHeader header = adapt(table.getDefinition());
             builder.addTables(TableInformation.of(qualifiedName, header, spec));
-            out.put(spec, table);
+            if (out != null) {
+                out.put(spec, table);
+            }
         }
         return builder.build();
     }
