@@ -386,7 +386,7 @@ def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
 
 def emstd_tick(time_scale_ticks: float, cols: Union[str, List[str]],
              op_control: OperationControl = None) -> UpdateByOperation:
-    """Creates an EM (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
+    """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
     ticks as the decay unit.
 
     The formula used is
