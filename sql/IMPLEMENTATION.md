@@ -1,7 +1,7 @@
 # Implementation
 
 The Deephaven SQL integration is driven by [Apache Calcite](https://github.com/apache/calcite), a mature project that
-supports a wide variety of industry and enterprise use-cases. Calcite is a very configurable and modular, making it
+supports a wide variety of industry and enterprise use-cases. Calcite is very configurable and modular, making it
 applicable for many SQL use-cases. That said, the configurability and modularity, not to mention the SQL standard
 itself, makes wielding Calcite a non-trivial task.
 
