@@ -123,7 +123,7 @@ public class UpdateBySpecBuilderTest {
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
             final UpdateByDeltaOptions options;
-            switch(spec.deltaControl().nullBehavior()) {
+            switch (spec.deltaControl().nullBehavior()) {
                 case ValueDominates:
                     options = UpdateByDeltaOptions.newBuilder()
                             .setNullBehavior(UpdateByNullBehavior.VALUE_DOMINATES).build();
