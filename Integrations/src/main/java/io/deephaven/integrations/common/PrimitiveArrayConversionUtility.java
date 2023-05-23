@@ -7,6 +7,8 @@ import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 
+import java.time.Instant;
+
 /**
  * General purpose helper methods for array conversion methods from specific object types to/from primitive types. This
  * is specifically intended to improve performance in integration with Python, where conversion of primitive type arrays
@@ -69,6 +71,36 @@ public class PrimitiveArrayConversionUtility {
         final DateTime[] out = new DateTime[array.length];
         for (int ai = 0; ai < array.length; ai++) {
             out[ai] = DateTimeUtils.epochNanosToDateTime(array[ai]);
+        }
+        return out;
+    }
+
+    /**
+     * Translates an Instant array to a long array. The mapping will be performed according to
+     * {@link DateTimeUtils#epochNanos(Instant)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
+     *
+     * @param array - the Instant array
+     * @return the corresponding long array
+     */
+    public static long[] translateArrayInstantToLong(final Instant[] array) {
+        final long[] out = new long[array.length];
+        for (int ai = 0; ai < array.length; ai++) {
+            out[ai] = DateTimeUtils.epochNanos(array[ai]);
+        }
+        return out;
+    }
+
+    /**
+     * Translates a long array to an Instant array. The mapping will be performed according to
+     * {@link DateTimeUtils#epochNanosToInstant(long)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
+     *
+     * @param array - the long array
+     * @return the corresponding DateTime array
+     */
+    public static Instant[] translateArrayLongToInstant(final long[] array) {
+        final Instant[] out = new Instant[array.length];
+        for (int ai = 0; ai < array.length; ai++) {
+            out[ai] = DateTimeUtils.epochNanosToInstant(array[ai]);
         }
         return out;
     }

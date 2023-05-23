@@ -184,7 +184,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
                 seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
             elif dtype == Instant:
                 longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
-                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
+                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
