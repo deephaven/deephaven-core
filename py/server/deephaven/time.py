@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 from typing import Union
+from enum import Enum
 
 import jpy
 
@@ -390,7 +391,8 @@ def to_instant(dt: ZonedDateTime) -> Instant:
     # public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
 
 
-def to_zoned_date_time(dt: Instant, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     """ Converts a date time to a ZonedDateTime.
 
     Args:
@@ -422,7 +424,8 @@ def to_zoned_date_time(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     # public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
 
 
-def to_local_date(dt: Instant, tz: TimeZone) -> LocalDate:
+# noinspection PyShadowingNames
+def to_local_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalDate:
     """ Converts a date time to a LocalDate.
 
     Args:
@@ -436,22 +439,16 @@ def to_local_date(dt: Instant, tz: TimeZone) -> LocalDate:
         DHError
     """
     try:
+        if from_jtype(dt) == ZonedDateTime:
+            dt = to_instant(dt)
+
         return _JDateTimeUtils.toLocalDate(dt, tz)
     except Exception as e:
         raise DHError(e) from e
 
-    # TODO?
-    # /**
-    #  * Converts a date time to a {@link LocalDate} with the time zone in the {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link LocalDate}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
 
-
-def to_local_time(dt: Instant, tz: TimeZone) -> LocalTime:
+# noinspection PyShadowingNames
+def to_local_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalTime:
     """ Converts a date time to a LocalTime.
 
     Args:
@@ -465,19 +462,12 @@ def to_local_time(dt: Instant, tz: TimeZone) -> LocalTime:
         DHError
     """
     try:
+        if from_jtype(dt) == ZonedDateTime:
+            dt = to_instant(dt)
+
         return _JDateTimeUtils.toLocalTime(dt, tz)
     except Exception as e:
         raise DHError(e) from e
-
-    # TODO: ?
-    # /**
-    #  * Converts a date time to a {@link LocalTime} with the time zone in the {@link ZonedDateTime}.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return {@link LocalTime}, or null if any input is null.
-    #  */
-    # @Nullable
-    # public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
 
 
 # endregion
@@ -628,8 +618,8 @@ def epoch_seconds_to_instant(seconds: int) -> Instant:
         raise DHError(e) from e
 
 
-# TODO: shorten zoned_date_time to zdt?
-def epoch_nanos_to_zoned_date_time(nanos: int, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def epoch_nanos_to_zdt(nanos: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts nanoseconds from the Epoch to a ZonedDateTime.
 
     Args:
@@ -648,7 +638,8 @@ def epoch_nanos_to_zoned_date_time(nanos: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-def epoch_micros_to_zoned_date_time(micros: int, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def epoch_micros_to_zdt(micros: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts microseconds from the Epoch to a ZonedDateTime.
 
     Args:
@@ -667,7 +658,8 @@ def epoch_micros_to_zoned_date_time(micros: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-def epoch_millis_to_zoned_date_time(millis: int, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def epoch_millis_to_zdt(millis: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts milliseconds from the Epoch to a ZonedDateTime.
 
     Args:
@@ -686,7 +678,8 @@ def epoch_millis_to_zoned_date_time(millis: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-def epoch_seconds_to_zoned_date_time(seconds: int, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def epoch_seconds_to_zdt(seconds: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts seconds from the Epoch to a ZonedDateTime.
 
     Args:
@@ -745,7 +738,8 @@ def epoch_auto_to_instant(epoch_offset: int) -> Instant:
         raise DHError(e) from e
 
 
-def epoch_auto_to_zoned_date_time(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def epoch_auto_to_zdt(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts an offset from the Epoch to a ZonedDateTime.
     The offset can be in milliseconds, microseconds, or nanoseconds.
     Expected date ranges are used to infer the units for the offset.
@@ -770,7 +764,8 @@ def epoch_auto_to_zoned_date_time(epoch_offset: int, tz: TimeZone) -> ZonedDateT
 
 # region Conversions: Excel
 
-def to_excel_time(dt: Instant, tz: TimeZone) -> float:
+# noinspection PyShadowingNames
+def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
     """ Converts a date time to an Excel time represented as a double.
 
     Args:
@@ -784,21 +779,15 @@ def to_excel_time(dt: Instant, tz: TimeZone) -> float:
         DHError
     """
     try:
+        if from_jtype(dt) == ZonedDateTime:
+            dt = to_instant(dt)
+
         return _JDateTimeUtils.toExcelTime(dt, tz)
     except Exception as e:
         raise DHError(e) from e
 
-    # TODO: ?
-    # /**
-    #  * Converts a date time to an Excel time represented as a double.
-    #  *
-    #  * @param dateTime date time to convert.
-    #  * @return 0.0 if either input is null; otherwise, the input date time converted to an Excel time represented as a double.
-    #  */
-    # @ScriptApi
-    # public static double toExcelTime(@Nullable final ZonedDateTime dateTime) {
 
-
+# noinspection PyShadowingNames
 def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
     """ Converts an Excel time represented as a double to an Instant.
 
@@ -818,7 +807,8 @@ def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
         raise DHError(e) from e
 
 
-def excel_to_zoned_date_time(excel: float, tz: TimeZone) -> ZonedDateTime:
+# noinspection PyShadowingNames
+def excel_to_zdt(excel: float, tz: TimeZone) -> ZonedDateTime:
     """ Converts an Excel time represented as a double to a ZonedDateTime.
 
     Args:
@@ -861,8 +851,8 @@ def plus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, 
         raise DHError(e) from e
 
 
-def minus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, Period]) -> Union[
-    Instant, ZonedDateTime]:
+def minus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, Period]) -> \
+        Union[Instant, ZonedDateTime]:
     """ Subtracts a time period from a date time.
 
     Args:
@@ -879,29 +869,6 @@ def minus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration,
         return _JDateTimeUtils.minus(dt, period)
     except Exception as e:
         raise DHError(e) from e
-
-    # TODO: ? -- NOPE
-    # /**
-    #  * Subtract one date time from another and return the difference in nanoseconds.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
-    #
-    # /**
-    #  * Subtract one date time from another and return the difference in nanoseconds.
-    #  *
-    #  * @param dateTime1 first date time.
-    #  * @param dateTime2 second date time.
-    #  * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
-    #  * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
-    #  */
-    # @ScriptApi
-    # public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
 
 
 def diff_nanos(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> int:
@@ -1844,7 +1811,7 @@ def parse_instant(s: str, quiet: bool = False) -> Instant:
         raise DHError(e) from e
 
 
-def parse_zoned_date_time(s: str, quiet: bool = False) -> ZonedDateTime:
+def parse_zdt(s: str, quiet: bool = False) -> ZonedDateTime:
     """ Parses the string argument as a ZonedDateTime.
 
     Date time strings are formatted according to the ISO 8601 date time format
@@ -1868,29 +1835,32 @@ def parse_zoned_date_time(s: str, quiet: bool = False) -> ZonedDateTime:
     except Exception as e:
         raise DHError(e) from e
 
-    # TODO: ?
-    # /**
-    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-    #  *
-    #  * @param s time string.
-    #  * @return {@link ChronoField} for the finest units in the string (e.g. "10:00:00" would yield SecondOfMinute).
-    #  * @throws RuntimeException if the string cannot be parsed.
-    #  */
-    # @ScriptApi
-    # @NotNull
-    # public static ChronoField parseTimePrecision(@NotNull final String s) {
-    #
-    # /**
-    #  * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-    #  *
-    #  * @param s time string.
-    #  * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
-    #  *      string (e.g. "10:00:00" would yield SecondOfMinute).
-    #  * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ChronoField parseTimePrecisionQuiet(@Nullable final String s) {
+
+def parse_time_precision(s: str, quiet: bool = False) -> str:
+    """ Returns a string indicating the level of precision in a time or datetime string (e.g. 'SecondOfMinute').
+
+    Args:
+        s (str): Time string.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+
+    Returns:
+        String indicating the level of precision in a time or datetime string (e.g. 'SecondOfMinute').
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            p = _JDateTimeUtils.parseTimePrecisionQuiet(s)
+
+            if p:
+                return p.toString()
+            else:
+                return None
+        else:
+            return _JDateTimeUtils.parseTimePrecision(s).toString()
+    except Exception as e:
+        raise DHError(e) from e
 
 
 # TODO: rename java method to parseLocalDate
