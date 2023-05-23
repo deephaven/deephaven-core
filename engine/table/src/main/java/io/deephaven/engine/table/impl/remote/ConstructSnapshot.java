@@ -22,6 +22,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
+import io.deephaven.proto.backplane.grpc.Config;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -79,7 +80,10 @@ public class ConstructSnapshot {
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
-    public static final int SNAPSHOT_CHUNK_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+    // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
+    // For now we'll assume 100MB limit with 8B values which is exceeded by 12.5M values, so default to 16M.
+    public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 16_000_000);
 
     /**
      * Holder for thread-local state.
@@ -1459,6 +1463,7 @@ public class ConstructSnapshot {
             return result;
         }
 
+        // TODO: SNAPSHOT_CHUNK_SIZE should be configurable -- and not have a limit until jsapi is updated
         final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
 
         try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
