@@ -341,6 +341,18 @@ enum BadDataBehavior {
   POISON = 3;
 }
 
+// Directives for how to handle {@code null} and {@code NaN} values
+enum UpdateByNullBehavior {
+  // In the case of Current - null, the null dominates so Column[i] - null = null
+  NULL_DOMINATES = 0;
+
+  // In the case of Current - null, the current value dominates so Column[i] - null = Column[i]
+  VALUE_DOMINATES = 1;
+
+  // In the case of Current - null, return zero so Column[i] - null = 0
+  ZERO_DOMINATES = 2;
+}
+
 // Reusable timescale message for the UpdateBy rolling operations.
 message UpdateByEmaTimescale {
   message UpdateByEmaTicks {
@@ -354,6 +366,33 @@ message UpdateByEmaTimescale {
     UpdateByEmaTicks ticks = 1;
     UpdateByEmaTime time = 2;
   }
+}
+
+// Reusable options for the UpdateBy exponential moving operations.
+message UpdateByEmaOptions {
+  // If unset, defaults to server-provided defaults.
+  optional BadDataBehavior on_null_value = 1;
+
+  // If unset, defaults to server-provided defaults.
+  optional BadDataBehavior on_nan_value = 2;
+
+  // If unset, defaults to server-provided defaults.
+  optional BadDataBehavior on_null_time = 3;
+
+  // If unset, defaults to server-provided defaults.
+  optional BadDataBehavior on_negative_delta_time = 4;
+
+  // If unset, defaults to server-provided defaults.
+  optional BadDataBehavior on_zero_delta_time = 5;
+
+  // If unset, defaults to server-provided defaults.
+  MathContext big_value_context = 6;
+}
+
+// Reusable options for the UpdateBy delta operation.
+message UpdateByDeltaOptions {
+  // If unset, defaults to server-provided defaults.
+  optional UpdateByNullBehavior null_behavior = 1;
 }
 
 // Create a table with the same rowset as its parent that will perform the specified set of row
@@ -418,28 +457,38 @@ message UpdateByRequest {
         }
 
         message UpdateByEma {
-          message UpdateByEmaOptions {
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_null_value = 1;
-
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_nan_value = 2;
-
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_null_time = 3;
-
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_negative_delta_time = 4;
-
-            // If unset, defaults to server-provided defaults.
-            optional BadDataBehavior on_zero_delta_time = 5;
-
-            // If unset, defaults to server-provided defaults.
-            MathContext big_value_context = 6;
-          }
           // If unset, defaults to server-provided defaults.
           UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByEms {
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByEmMin {
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByEmMax {
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByEmStd {
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByDelta {
+          // If unset, defaults to server-provided defaults.
+          UpdateByDeltaOptions options = 1;
         }
 
         message UpdateByRollingSum {
@@ -472,6 +521,24 @@ message UpdateByRequest {
           UpdateByEmaTimescale forward_timescale = 2;
         }
 
+        message UpdateByRollingCount {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingStd {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingWAvg {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+          // Column name for the source of input weights.
+          string weight_column = 3;
+        }
+
+
         oneof type {
           UpdateByCumulativeSum sum = 1;
           UpdateByCumulativeMin min = 2;
@@ -485,6 +552,14 @@ message UpdateByRequest {
           UpdateByRollingMin rolling_min = 10;
           UpdateByRollingMax rolling_max = 11;
           UpdateByRollingProduct rolling_product = 12;
+          UpdateByDelta delta = 13;
+          UpdateByEms ems = 14;
+          UpdateByEmMin em_min = 15;
+          UpdateByEmMax em_max = 16;
+          UpdateByEmStd em_std = 17;
+          UpdateByRollingCount rolling_count = 18;
+          UpdateByRollingStd rolling_std = 19;
+          UpdateByRollingWAvg rolling_wavg = 20;
         }
       }
 

@@ -3,22 +3,12 @@ package io.deephaven.client.impl;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
 import io.deephaven.api.Pair;
+import io.deephaven.api.updateby.*;
 import io.deephaven.api.updateby.BadDataBehavior;
-import io.deephaven.api.updateby.ColumnUpdateOperation;
-import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.api.updateby.UpdateByControl;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
-import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import io.deephaven.qst.table.UpdateByTable;
 
@@ -107,6 +97,24 @@ class UpdateByBuilder {
             }
         }
 
+        private static UpdateByDeltaOptions adapt(DeltaControl control) {
+            final UpdateByNullBehavior nullBehavior;
+            switch (control.nullBehavior()) {
+                case ValueDominates:
+                    nullBehavior = UpdateByNullBehavior.VALUE_DOMINATES;
+                    break;
+                case ZeroDominates:
+                    nullBehavior = UpdateByNullBehavior.ZERO_DOMINATES;
+                    break;
+                default:
+                    nullBehavior = UpdateByNullBehavior.NULL_DOMINATES;
+                    break;
+            }
+
+            return UpdateByDeltaOptions.newBuilder()
+                    .setNullBehavior(nullBehavior).build();
+        }
+
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmaSpec spec) {
             UpdateByEma.Builder builder = UpdateByEma.newBuilder().setTimescale(adapt(spec.timeScale()));
@@ -116,16 +124,30 @@ class UpdateByBuilder {
                     .build();
         }
 
-        // TODO: complete properly (DHC ticket #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmsSpec spec) {
-            throw new UnsupportedOperationException("EmsSpec not added to table.proto");
+            UpdateByEms.Builder builder = UpdateByEms.newBuilder().setTimescale(adapt(spec.timeScale()));
+            spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setEms(builder.build())
+                    .build();
         }
 
-        // TODO: complete properly (DHC ticket #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmMinMaxSpec spec) {
-            return null;
+            if (spec.isMax()) {
+                UpdateByEmMax.Builder builder = UpdateByEmMax.newBuilder().setTimescale(adapt(spec.timeScale()));
+                spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
+                return UpdateByColumn.UpdateBySpec.newBuilder()
+                        .setEmMax(builder.build())
+                        .build();
+            } else {
+                UpdateByEmMin.Builder builder = UpdateByEmMin.newBuilder().setTimescale(adapt(spec.timeScale()));
+                spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
+                return UpdateByColumn.UpdateBySpec.newBuilder()
+                        .setEmMin(builder.build())
+                        .build();
+            }
         }
 
         @Override
@@ -162,22 +184,27 @@ class UpdateByBuilder {
                     .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
-            return null;
+            UpdateByEmStd.Builder builder = UpdateByEmStd.newBuilder().setTimescale(adapt(spec.timeScale()));
+            spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setEmStd(builder.build())
+                    .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
-            return null;
+            UpdateByDelta.Builder builder = UpdateByDelta.newBuilder().setOptions(adapt(spec.deltaControl()));
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setDelta(builder.build())
+                    .build();
         }
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec rs) {
-            final UpdateByColumn.UpdateBySpec.UpdateByRollingSum.Builder builder =
-                    UpdateByColumn.UpdateBySpec.UpdateByRollingSum.newBuilder()
+            final UpdateByRollingSum.Builder builder =
+                    UpdateByRollingSum.newBuilder()
                             .setReverseTimescale(adapt(rs.revWindowScale()))
                             .setForwardTimescale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -187,8 +214,8 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec rs) {
-            final UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.Builder builder =
-                    UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.newBuilder()
+            final UpdateByRollingGroup.Builder builder =
+                    UpdateByRollingGroup.newBuilder()
                             .setReverseTimescale(adapt(rs.revWindowScale()))
                             .setForwardTimescale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -198,8 +225,8 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec rs) {
-            final UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.Builder builder =
-                    UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.newBuilder()
+            final UpdateByRollingAvg.Builder builder =
+                    UpdateByRollingAvg.newBuilder()
                             .setReverseTimescale(adapt(rs.revWindowScale()))
                             .setForwardTimescale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -210,16 +237,16 @@ class UpdateByBuilder {
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec rs) {
             if (rs.isMax()) {
-                final UpdateByColumn.UpdateBySpec.UpdateByRollingMax.Builder builder =
-                        UpdateByColumn.UpdateBySpec.UpdateByRollingMax.newBuilder()
+                final UpdateByRollingMax.Builder builder =
+                        UpdateByRollingMax.newBuilder()
                                 .setReverseTimescale(adapt(rs.revWindowScale()))
                                 .setForwardTimescale(adapt(rs.fwdWindowScale()));
                 return UpdateByColumn.UpdateBySpec.newBuilder()
                         .setRollingMax(builder.build())
                         .build();
             } else {
-                final UpdateByColumn.UpdateBySpec.UpdateByRollingMin.Builder builder =
-                        UpdateByColumn.UpdateBySpec.UpdateByRollingMin.newBuilder()
+                final UpdateByRollingMin.Builder builder =
+                        UpdateByRollingMin.newBuilder()
                                 .setReverseTimescale(adapt(rs.revWindowScale()))
                                 .setForwardTimescale(adapt(rs.fwdWindowScale()));
                 return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -230,8 +257,8 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rs) {
-            final UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.Builder builder =
-                    UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.newBuilder()
+            final UpdateByRollingProduct.Builder builder =
+                    UpdateByRollingProduct.newBuilder()
                             .setReverseTimescale(adapt(rs.revWindowScale()))
                             .setForwardTimescale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -239,22 +266,38 @@ class UpdateByBuilder {
                     .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingCountSpec rs) {
+            final UpdateByRollingCount.Builder builder =
+                    UpdateByRollingCount.newBuilder()
+                            .setReverseTimescale(adapt(rs.revWindowScale()))
+                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingCount(builder.build())
+                    .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingStdSpec spec) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingStdSpec rs) {
+            final UpdateByRollingStd.Builder builder =
+                    UpdateByRollingStd.newBuilder()
+                            .setReverseTimescale(adapt(rs.revWindowScale()))
+                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingStd(builder.build())
+                    .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec spec) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec rs) {
+            final UpdateByRollingWAvg.Builder builder =
+                    UpdateByRollingWAvg.newBuilder()
+                            .setReverseTimescale(adapt(rs.revWindowScale()))
+                            .setForwardTimescale(adapt(rs.fwdWindowScale()))
+                            .setWeightColumn(rs.weightCol());
+            return UpdateByColumn.UpdateBySpec.newBuilder()
+                    .setRollingWavg(builder.build())
+                    .build();
         }
     }
 
