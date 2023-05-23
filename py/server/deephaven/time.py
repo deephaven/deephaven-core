@@ -10,8 +10,7 @@ from typing import Union
 import jpy
 
 from deephaven import DHError
-from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, \
-    TimeZone, from_jtype  # TODO, DateTime, Period
+from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
 
 MICRO = 1000  #: One microsecond in nanoseconds.
 MILLI = 1000000  #: One millisecond in nanosecondsl
@@ -101,7 +100,7 @@ def today(tz: TimeZone) -> str:
 
 # region Time Zone
 
-#TODO: REname time_zone?
+# TODO: REname time_zone?
 def tz(time_zone: str) -> TimeZone:
     """ Gets the time zone for a time zone name.
 
@@ -120,7 +119,7 @@ def tz(time_zone: str) -> TimeZone:
         raise DHError(e) from e
 
 
-#TODO: Rename time_zone?
+# TODO: Rename time_zone?
 def tz_default() -> TimeZone:
     """ Gets the default time zone.
 
@@ -1563,16 +1562,19 @@ def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instan
 
 # region Binning
 
-def lower_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0) -> Union[Instant, ZonedDateTime]:
-    """ Returns a DateTime value, which is at the starting (lower) end of a time range defined by the interval
-     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the DateTime value for the start of the
+def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offset: Union[int, str] = 0) -> \
+        Union[Instant, ZonedDateTime]:
+    """ Returns a date time value, which is at the starting (lower) end of a time range defined by the interval
+     nanoseconds. For example, a 5*MINUTE interval value would return the date time value for the start of the
      five minute window that contains the input date time.
 
     Args:
-        dt (DateTime): the DateTime for which to evaluate the start of the containing window
-        interval (int): the size of the window in nanoseconds
-        offset (int): the window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-              one minute. Default is 0
+        dt (DateTime): the date time for which to evaluate the start of the containing window.
+        interval (Union[int,str]): the size of the window.  Integer values are in nanoseconds,
+            and strings are parsed as Durations.
+        offset (Union[int,str]): the window start offset.  Integer values are in nanoseconds,
+            and strings are parsed as Durations. For example, a value of MINUTE would offset all windows by one minute.
+            Default is 0.
 
     Returns:
         DateTime
@@ -1581,22 +1583,29 @@ def lower_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
         DHError
     """
     try:
-        # TODO: *** parse interval
+        if isinstance(interval, str):
+            interval = parse_duration(interval)
+
+        if isinstance(offset, str):
+            offset = parse_duration(offset)
+
         return _JDateTimeUtils.lowerBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
 
 
 def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0) -> Union[Instant, ZonedDateTime]:
-    """ Returns a DateTime value, which is at the ending (upper) end of a time range defined by the interval
-     nanoseconds. For example, a 5*MINUTE intervalNanos value would return the DateTime value for the end of the five
+    """ Returns a date time value, which is at the ending (upper) end of a time range defined by the interval
+     nanoseconds. For example, a 5*MINUTE interval value would return the date time value for the end of the five
      minute window that contains the input date time.
 
     Args:
-        dt (DateTime): the DateTime for which to evaluate the end of the containing window
-        interval (int): the size of the window in nanoseconds
-        offset (int): the window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-              one minute. Default is 0
+        dt (DateTime): the date time for which to evaluate the end of the containing window.
+        interval (Union[int,str]): the size of the window.  Integer values are in nanoseconds,
+            and strings are parsed as Durations.
+        offset (Union[int,str]): the window start offset.  Integer values are in nanoseconds,
+            and strings are parsed as Durations. For example, a value of MINUTE would offset all windows by one minute.
+            Default is 0.
 
     Returns:
         DateTime
@@ -1605,7 +1614,12 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
         DHError
     """
     try:
-        # TODO: *** parse interval
+        if isinstance(interval, str):
+            interval = parse_duration(interval)
+
+        if isinstance(offset, str):
+            offset = parse_duration(offset)
+
         return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:
         raise DHError(e) from e
