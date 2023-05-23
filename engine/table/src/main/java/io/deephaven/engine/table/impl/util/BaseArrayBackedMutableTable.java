@@ -14,13 +14,12 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdatableTable;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +49,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private final Map<String, Object[]> enumValues;
 
     private String description = getDefaultDescription();
-    private Runnable onPendingChange = () -> UpdateGraphProcessor.DEFAULT.requestRefresh();
+    private Runnable onPendingChange = UpdateGraphProcessor.DEFAULT::requestRefresh;
 
     long nextRow = 0;
     private long pendingProcessed = -1L;
@@ -123,8 +122,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
      */
     @TestUseOnly
     void setOnPendingChange(final Runnable onPendingChange) {
-        this.onPendingChange =
-                onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh() : onPendingChange;
+        this.onPendingChange = onPendingChange == null ? UpdateGraphProcessor.DEFAULT::requestRefresh : onPendingChange;
     }
 
     private void processPending(RowSetChangeRecorder rowSetChangeRecorder) {
@@ -319,8 +317,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             final String[] kabmtColumns =
                     getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
             // noinspection unchecked
-            final ArrayBackedColumnSource<Object>[] sourcesByPosition =
-                    Arrays.stream(kabmtColumns).map(sources::get).toArray(ArrayBackedColumnSource[]::new);
+            final WritableColumnSource<Object>[] sourcesByPosition =
+                    Arrays.stream(kabmtColumns).map(sources::get).toArray(WritableColumnSource[]::new);
 
             final Set<String> missingColumns = new HashSet<>(getTableDefinition().getColumnNames());
 
@@ -356,6 +354,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 }
             }
 
+            // noinspection resource
             final QueryTable newData = new QueryTable(getTableDefinition(),
                     RowSetFactory.flat(valueArray.length).toTracking(), sources);
             add(newData, true, listener);
@@ -375,6 +374,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
             }
 
+            // noinspection resource
             final QueryTable newData = new QueryTable(getTableDefinition(),
                     RowSetFactory.flat(valueArray.length).toTracking(), sources);
 
@@ -389,7 +389,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
                         capacity, columnDefinition.getDataType());
                 // noinspection unchecked
-                final ArrayBackedColumnSource<Object> memoryColumnSource = (ArrayBackedColumnSource<Object>) cs;
+                final WritableColumnSource<Object> memoryColumnSource = (WritableColumnSource<Object>) cs;
                 memoryColumnSource.ensureCapacity(capacity);
                 sources.put(columnDefinition.getName(), memoryColumnSource);
             }
