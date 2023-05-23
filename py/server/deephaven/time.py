@@ -43,6 +43,7 @@ class DateStyle(Enum):
 
 # region Clock
 
+
 # TODO: remove millis resolution?
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
@@ -78,7 +79,6 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def today(tz: TimeZone) -> str:
     """ Provides the current date string according to the current clock.
     Under most circumstances, this method will return the date according to current system time,
@@ -103,12 +103,12 @@ def today(tz: TimeZone) -> str:
 
 # region Time Zone
 
-# TODO: REname time_zone?
-def tz(time_zone: Optional[str]) -> TimeZone:
+
+def time_zone(tz: Optional[str]) -> TimeZone:
     """ Gets the time zone for a time zone name.
 
     Args:
-        time_zone (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
+        tz (Optional[str]): Time zone name.  If None is provided, the system default time zone is returned.
 
     Returns:
         TimeZone
@@ -118,7 +118,7 @@ def tz(time_zone: Optional[str]) -> TimeZone:
     """
     try:
         if time_zone:
-            return _JDateTimeUtils.tz(time_zone)
+            return _JDateTimeUtils.tz(tz)
         else:
             return _JDateTimeUtils.tz()
     except Exception as e:
@@ -368,7 +368,6 @@ def to_instant(dt: ZonedDateTime) -> Instant:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     """ Converts a date time to a ZonedDateTime.
 
@@ -387,10 +386,7 @@ def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     except Exception as e:
         raise DHError(e) from e
 
-    # noinspection PyShadowingNames
 
-
-# noinspection PyShadowingNames
 def make_instant(date: LocalDate, time: LocalTime, tz: TimeZone) -> Instant:
     """ Makes an Instant.
 
@@ -410,10 +406,7 @@ def make_instant(date: LocalDate, time: LocalTime, tz: TimeZone) -> Instant:
     except Exception as e:
         raise DHError(e) from e
 
-    # noinspection PyShadowingNames
 
-
-# noinspection PyShadowingNames
 def make_zdt(date: LocalDate, time: LocalTime, tz: TimeZone) -> ZonedDateTime:
     """ Makes a ZonedDateTime.
 
@@ -434,7 +427,6 @@ def make_zdt(date: LocalDate, time: LocalTime, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def to_local_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalDate:
     """ Converts a date time to a LocalDate.
 
@@ -457,7 +449,6 @@ def to_local_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalDate:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def to_local_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalTime:
     """ Converts a date time to a LocalTime.
 
@@ -628,7 +619,6 @@ def epoch_seconds_to_instant(seconds: int) -> Instant:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def epoch_nanos_to_zdt(nanos: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts nanoseconds from the Epoch to a ZonedDateTime.
 
@@ -648,7 +638,6 @@ def epoch_nanos_to_zdt(nanos: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def epoch_micros_to_zdt(micros: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts microseconds from the Epoch to a ZonedDateTime.
 
@@ -668,7 +657,6 @@ def epoch_micros_to_zdt(micros: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def epoch_millis_to_zdt(millis: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts milliseconds from the Epoch to a ZonedDateTime.
 
@@ -688,7 +676,6 @@ def epoch_millis_to_zdt(millis: int, tz: TimeZone) -> ZonedDateTime:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def epoch_seconds_to_zdt(seconds: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts seconds from the Epoch to a ZonedDateTime.
 
@@ -748,7 +735,6 @@ def epoch_auto_to_instant(epoch_offset: int) -> Instant:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def epoch_auto_to_zdt(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
     """ Converts an offset from the Epoch to a ZonedDateTime.
     The offset can be in milliseconds, microseconds, or nanoseconds.
@@ -774,7 +760,6 @@ def epoch_auto_to_zdt(epoch_offset: int, tz: TimeZone) -> ZonedDateTime:
 
 # region Conversions: Excel
 
-# noinspection PyShadowingNames
 def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
     """ Converts a date time to an Excel time represented as a double.
 
@@ -797,7 +782,6 @@ def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
     """ Converts an Excel time represented as a double to an Instant.
 
@@ -817,7 +801,6 @@ def excel_to_instant(excel: float, tz: TimeZone) -> Instant:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def excel_to_zdt(excel: float, tz: TimeZone) -> ZonedDateTime:
     """ Converts an Excel time represented as a double to a ZonedDateTime.
 
@@ -1139,7 +1122,6 @@ def micros_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def nanos_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of nanoseconds that have elapsed since the top of the second.
 
@@ -1162,7 +1144,6 @@ def nanos_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def micros_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of microseconds that have elapsed since the top of the second.
 
@@ -1185,7 +1166,6 @@ def micros_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def millis_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of milliseconds that have elapsed since the top of the second.
 
@@ -1208,7 +1188,6 @@ def millis_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def second_of_minute(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of seconds that have elapsed since the top of the minute.
 
@@ -1231,7 +1210,6 @@ def second_of_minute(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def minute_of_hour(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of minutes that have elapsed since the top of the hour.
 
@@ -1254,7 +1232,6 @@ def minute_of_hour(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def nanos_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of nanoseconds that have elapsed since the top of the day.
 
@@ -1277,7 +1254,6 @@ def nanos_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def millis_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of milliseconds that have elapsed since the top of the day.
 
@@ -1300,7 +1276,6 @@ def millis_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def second_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of seconds that have elapsed since the top of the day.
 
@@ -1323,7 +1298,6 @@ def second_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def minute_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of minutes that have elapsed since the top of the day.
 
@@ -1346,7 +1320,6 @@ def minute_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def hour_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the number of hours that have elapsed since the top of the day.
 
@@ -1369,7 +1342,6 @@ def hour_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the week for a date time in the specified time zone, with 1 being
     Monday and 7 being Sunday.
@@ -1393,7 +1365,6 @@ def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the month for a date time and specified time zone.
     The first day of the month returns 1, the second day returns 2, etc.
@@ -1417,7 +1388,6 @@ def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the day of the year (Julian date) for a date time in the specified time zone.
     The first day of the year returns 1, the second day returns 2, etc.
@@ -1441,7 +1411,6 @@ def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns a 1-based int value of the month of the year (Julian date) for a date time in the specified time zone.
     January is 1, February is 2, etc.
@@ -1465,7 +1434,6 @@ def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the year for a date time in the specified time zone.
 
@@ -1488,7 +1456,6 @@ def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
     """ Returns the year of the century (two-digit year) for a date time in the specified time zone.
 
@@ -1511,7 +1478,6 @@ def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instant, ZonedDateTime]:
     """ Returns a date time for the prior midnight in the specified time zone.
 
@@ -1625,7 +1591,6 @@ def format_nanos(nanos: int) -> str:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def format_datetime(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
     """ Returns a date time formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
 
@@ -1648,7 +1613,6 @@ def format_datetime(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
         raise DHError(e) from e
 
 
-# noinspection PyShadowingNames
 def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
     """ Returns a date time formatted as a "yyyy-MM-dd" string.
 
