@@ -43,29 +43,29 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(1.0, DateTimeUtils.YEARS_PER_NANO * DateTimeUtils.YEAR);
     }
 
-    public void testParseDate() {
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("20100102", DateTimeUtils.DateStyle.YMD));
+    public void testParseLocalDate() {
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("20100102", DateTimeUtils.DateStyle.YMD));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("2010-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("01-02-2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("02-01-2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("2010-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("01-02-2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("02-01-2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("2010/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("01/02/2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("02/01/2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("2010/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("01/02/2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("02/01/2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("10-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("01-02-10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("02-01-10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("10-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("01-02-10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("02-01-10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("10/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("01/02/10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDate("02/01/10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("10/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("01/02/10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("02/01/10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(DateTimeUtils.parseDate("01/02/03"), DateTimeUtils.parseDate("01/02/03", DateTimeUtils.DateStyle.MDY));
+        assertEquals(DateTimeUtils.parseLocalDate("01/02/03"), DateTimeUtils.parseLocalDate("01/02/03", DateTimeUtils.DateStyle.MDY));
 
         try {
-            DateTimeUtils.parseDate("JUNK", DateTimeUtils.DateStyle.YMD);
+            DateTimeUtils.parseLocalDate("JUNK", DateTimeUtils.DateStyle.YMD);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
             //pass
@@ -73,44 +73,44 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         try {
             //noinspection ConstantConditions
-            DateTimeUtils.parseDate(null, DateTimeUtils.DateStyle.YMD);
+            DateTimeUtils.parseLocalDate(null, DateTimeUtils.DateStyle.YMD);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
             //pass
         }
 
         try {
-            DateTimeUtils.parseDate("JUNK", null);
+            DateTimeUtils.parseLocalDate("JUNK", null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
             //pass
         }
     }
 
-    public void testParseDateQuiet() {
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("20100102", DateTimeUtils.DateStyle.YMD));
+    public void testParseLocalDateQuiet() {
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("20100102", DateTimeUtils.DateStyle.YMD));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("2010-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("01-02-2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("02-01-2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("2010-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01-02-2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02-01-2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("2010/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("01/02/2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("02/01/2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("2010/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01/02/2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02/01/2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("10-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("01-02-10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("02-01-10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("10-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01-02-10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02-01-10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("10/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("01/02/10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseDateQuiet("02/01/10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("10/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01/02/10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02/01/10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(DateTimeUtils.parseDateQuiet("01/02/03"), DateTimeUtils.parseDateQuiet("01/02/03", DateTimeUtils.DateStyle.MDY));
+        assertEquals(DateTimeUtils.parseLocalDateQuiet("01/02/03"), DateTimeUtils.parseLocalDateQuiet("01/02/03", DateTimeUtils.DateStyle.MDY));
 
-        assertNull(DateTimeUtils.parseDateQuiet("JUNK", DateTimeUtils.DateStyle.YMD));
-        assertNull(DateTimeUtils.parseDateQuiet(null, DateTimeUtils.DateStyle.YMD));
-        assertNull(DateTimeUtils.parseDateQuiet("JUNK", null));
+        assertNull(DateTimeUtils.parseLocalDateQuiet("JUNK", DateTimeUtils.DateStyle.YMD));
+        assertNull(DateTimeUtils.parseLocalDateQuiet(null, DateTimeUtils.DateStyle.YMD));
+        assertNull(DateTimeUtils.parseLocalDateQuiet("JUNK", null));
     }
 
     public void testParseLocalTime() {

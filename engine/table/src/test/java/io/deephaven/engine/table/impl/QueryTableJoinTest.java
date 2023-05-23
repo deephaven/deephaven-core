@@ -241,9 +241,9 @@ public class QueryTableJoinTest {
         QueryScope.addParam("f", new DateTimeFormatter("dd HH:mm:ss"));
 
         final DateTime start = DateTimeUtils.toDateTime(
-                DateTimeUtils.parseDate("2011-02-02").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+                DateTimeUtils.parseLocalDate("2011-02-02").atStartOfDay().atZone(ZoneId.of("America/New_York")));
         final DateTime end = DateTimeUtils.toDateTime(
-                DateTimeUtils.parseDate("2011-02-03").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+                DateTimeUtils.parseLocalDate("2011-02-03").atStartOfDay().atZone(ZoneId.of("America/New_York")));
         final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},

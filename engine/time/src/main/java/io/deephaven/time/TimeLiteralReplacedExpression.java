@@ -122,10 +122,10 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_nanos" + nanosIndex, long.class);
 
                 nanosIndex++;
-            } else if (DateTimeUtils.parseDateQuiet(s) != null) {
+            } else if (DateTimeUtils.parseLocalDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
-                        .append("=DateTimeUtils.parseDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
+                        .append("=DateTimeUtils.parseLocalDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;

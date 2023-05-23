@@ -13,6 +13,8 @@ import jpy
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
 
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+
 MICRO = 1000  #: One microsecond in nanoseconds.
 MILLI = 1000000  #: One millisecond in nanosecondsl
 SECOND = 1000000000  #: One second in nanoseconds.
@@ -27,8 +29,6 @@ MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
 HOURS_PER_NANO = 1 / HOUR  #: Number of hours per nanosecond.
 DAYS_PER_NANO = 1 / DAY  #: Number of days per nanosecond.
 YEARS_PER_NANO = 1 / YEAR  #: Number of years per nanosecond.
-
-_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 class DateStyle(Enum):
@@ -1885,7 +1885,6 @@ def parse_time_precision(s: str, quiet: bool = False) -> str:
         raise DHError(e) from e
 
 
-# TODO: rename java method to parseLocalDate
 def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.MDY) -> LocalTime:
     """ Parses the string argument as a local date, which is a date without a time or time zone.
 
@@ -1921,9 +1920,9 @@ def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.M
     """
     try:
         if quiet:
-            return _JDateTimeUtils.parseDateQuiet(s, style)
+            return _JDateTimeUtils.parseLocalDateQuiet(s, style)
         else:
-            return _JDateTimeUtils.parseDate(s, style)
+            return _JDateTimeUtils.parseLocalDate(s, style)
     except Exception as e:
         raise DHError(e) from e
 

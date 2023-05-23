@@ -4607,7 +4607,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static LocalDate parseDate(@NotNull final String s, @Nullable final DateStyle dateStyle) {
+    public static LocalDate parseLocalDate(@NotNull final String s, @Nullable final DateStyle dateStyle) {
         //noinspection ConstantConditions
         if (s == null) {
             throw new RuntimeException("Cannot parse date (null): " + s);
@@ -4679,13 +4679,13 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static LocalDate parseDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
+    public static LocalDate parseLocalDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
         if (s == null || s.length() <= 1 || dateStyle == null) {
             return null;
         }
 
         try {
-            return parseDate(s, dateStyle);
+            return parseLocalDate(s, dateStyle);
         } catch (Exception e) {
             return null;
         }
@@ -4720,8 +4720,8 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @NotNull
-    public static LocalDate parseDate(@NotNull final String s) {
-        return parseDate(s, DEFAULT_DATE_STYLE);
+    public static LocalDate parseLocalDate(@NotNull final String s) {
+        return parseLocalDate(s, DEFAULT_DATE_STYLE);
     }
 
     /**
@@ -4752,8 +4752,8 @@ public class DateTimeUtils {
      */
     @ScriptApi
     @Nullable
-    public static LocalDate parseDateQuiet(@Nullable final String s) {
-        return parseDateQuiet(s, DEFAULT_DATE_STYLE);
+    public static LocalDate parseLocalDateQuiet(@Nullable final String s) {
+        return parseLocalDateQuiet(s, DEFAULT_DATE_STYLE);
     }
 
 
