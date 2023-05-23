@@ -43,6 +43,7 @@ class DateStyle(Enum):
 
 # region Clock
 
+# TODO: remove millis resolution?
 def now(system: bool = False, resolution: str = 'ns') -> Instant:
     """ Provides the current datetime according to a clock.
 
@@ -77,6 +78,7 @@ def now(system: bool = False, resolution: str = 'ns') -> Instant:
         raise DHError(e) from e
 
 
+# noinspection PyShadowingNames
 def today(tz: TimeZone) -> str:
     """ Provides the current date string according to the current clock.
     Under most circumstances, this method will return the date according to current system time,
@@ -120,7 +122,7 @@ def tz(time_zone: str) -> TimeZone:
         raise DHError(e) from e
 
 
-# TODO: Rename time_zone?
+# TODO: Rename time_zone? --> Maybe just provide None to the tz() function to get the default!
 def tz_default() -> TimeZone:
     """ Gets the default time zone.
 
@@ -377,19 +379,6 @@ def to_instant(dt: ZonedDateTime) -> Instant:
     except Exception as e:
         raise DHError(e) from e
 
-    # TODO: ?
-    # /**
-    #  * Converts a date, time, and time zone to an {@link Instant}.
-    #  *
-    #  * @param date date.
-    #  * @param time local time.
-    #  * @param timeZone time zone.
-    #  * @return {@link Instant}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
-
 
 # noinspection PyShadowingNames
 def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
@@ -410,18 +399,51 @@ def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     except Exception as e:
         raise DHError(e) from e
 
-    # TODO:
-    # /**
-    #  * Converts a local date, local time, and time zone to a {@link ZonedDateTime}.
-    #  *
-    #  * @param date date.
-    #  * @param time local time.
-    #  * @param timeZone time zone.
-    #  * @return {@link ZonedDateTime}, or null if any input is null.
-    #  */
-    # @ScriptApi
-    # @Nullable
-    # public static ZonedDateTime toZonedDateTime(@Nullable final LocalDate date, @Nullable final LocalTime time, @Nullable ZoneId timeZone) {
+    # noinspection PyShadowingNames
+
+
+# noinspection PyShadowingNames
+def make_instant(date: LocalDate, time: LocalTime, tz: TimeZone) -> Instant:
+    """ Makes an Instant.
+
+    Args:
+        date (LocalDate): Local date.
+        time (LocalTime): Local time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        Instant or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toInstant(date, time, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+    # noinspection PyShadowingNames
+
+
+# noinspection PyShadowingNames
+def make_zdt(date: LocalDate, time: LocalTime, tz: TimeZone) -> ZonedDateTime:
+    """ Makes a ZonedDateTime.
+
+    Args:
+        date (LocalDate): Local date.
+        time (LocalTime): Local time.
+        tz (TimeZone): Time zone.
+
+    Returns:
+        ZonedDateTime or None if any input is None.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.toZonedDateTime(date, time, tz)
+    except Exception as e:
+        raise DHError(e) from e
 
 
 # noinspection PyShadowingNames
@@ -1666,7 +1688,7 @@ def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
 
 # region Parse
 
-def parse_time_zone(s: str, quiet: bool = False) -> ZoneId:
+def parse_time_zone(s: str, quiet: bool = False) -> TimeZone:
     """ Parses the string argument as a time zone.
 
     Args:
