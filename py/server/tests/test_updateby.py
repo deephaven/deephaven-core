@@ -58,7 +58,6 @@ class UpdateByTestCase(BaseTestCase):
             emmax_time(ts_col="Timestamp", time_scale=10, cols="emmax_a = a"),
             emmax_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="emmax_c = c",
                              op_control=cls.em_op_ctrl),
-
             # exponential moving standard deviation
             emstd_tick(time_scale_ticks=100, cols="emstd_a = a"),
             emstd_tick(time_scale_ticks=100, cols="emstd_a = a", op_control=cls.em_op_ctrl),
