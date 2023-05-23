@@ -3,11 +3,11 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Arrays;
 
 /**
@@ -17,8 +17,8 @@ public class BusinessSchedule implements Serializable {
 
     private static final long serialVersionUID = 1118129010491637735L;
     private final BusinessPeriod[] openPeriods;
-    private final DateTime startOfDay;
-    private final DateTime endOfDay;
+    private final Instant startOfDay;
+    private final Instant endOfDay;
     private final long lengthOfDay;
 
     /**
@@ -32,7 +32,7 @@ public class BusinessSchedule implements Serializable {
 
         // make sure the periods are in order
         Arrays.sort(this.openPeriods, (o1, o2) -> {
-            final long compared = o2.getStartTime().getNanos() - o1.getStartTime().getNanos();
+            final long compared = DateTimeUtils.epochNanos(o2.getStartTime()) - DateTimeUtils.epochNanos(o1.getStartTime());
             if (compared > 0) {
                 return -1;
             } else if (compared == 0) {
@@ -68,7 +68,7 @@ public class BusinessSchedule implements Serializable {
             final BusinessPeriod p0 = this.openPeriods[i - 1];
             final BusinessPeriod p1 = this.openPeriods[i];
 
-            if (p1.getStartTime().getNanos() < p0.getEndTime().getNanos()) {
+            if (DateTimeUtils.epochNanos(p1.getStartTime()) < DateTimeUtils.epochNanos(p0.getEndTime())) {
                 throw new IllegalArgumentException("Periods overlap.");
             }
         }
@@ -88,7 +88,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return start of the business day
      */
-    public DateTime getSOBD() {
+    public Instant getSOBD() {
         return startOfDay;
     }
 
@@ -97,7 +97,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return start of the business day
      */
-    public DateTime getStartOfBusinessDay() {
+    public Instant getStartOfBusinessDay() {
         return getSOBD();
     }
 
@@ -106,7 +106,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return end of the business day
      */
-    public DateTime getEOBD() {
+    public Instant getEOBD() {
         return endOfDay;
     }
 
@@ -115,7 +115,7 @@ public class BusinessSchedule implements Serializable {
      *
      * @return end of the business day
      */
-    public DateTime getEndOfBusinessDay() {
+    public Instant getEndOfBusinessDay() {
         return getEOBD();
     }
 
@@ -154,7 +154,7 @@ public class BusinessSchedule implements Serializable {
      * @param time time.
      * @return true if the time is a business time for the day; otherwise, false.
      */
-    public boolean isBusinessTime(final DateTime time) {
+    public boolean isBusinessTime(final Instant time) {
         for (BusinessPeriod p : openPeriods) {
             if (p.contains(time)) {
                 return true;
@@ -170,7 +170,7 @@ public class BusinessSchedule implements Serializable {
      * @param time time
      * @return business time in nanoseconds that has elapsed on the given day by the specified time
      */
-    public long businessTimeElapsed(final DateTime time) {
+    public long businessTimeElapsed(final Instant time) {
         long elapsed = 0;
 
         for (BusinessPeriod businessPeriod : openPeriods) {

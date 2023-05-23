@@ -3,21 +3,21 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * A period of business time during a business day.
  */
 public class BusinessPeriod implements Serializable {
     private static final long serialVersionUID = 8196837269495115196L;
-    private final DateTime startTime;
-    private final DateTime endTime;
+    private final Instant startTime;
+    private final Instant endTime;
 
     @SuppressWarnings("ConstantConditions")
-    BusinessPeriod(final DateTime startTime, final DateTime endTime) {
+    BusinessPeriod(final Instant startTime, final Instant endTime) {
         this.startTime = startTime;
         this.endTime = endTime;
 
@@ -25,7 +25,7 @@ public class BusinessPeriod implements Serializable {
             throw new IllegalArgumentException("Null argument: startTime=" + startTime + " endTime=" + endTime);
         }
 
-        if (startTime.getNanos() > endTime.getNanos()) {
+        if (DateTimeUtils.epochNanos(startTime) > DateTimeUtils.epochNanos(endTime)) {
             throw new IllegalArgumentException("Start is after end: startTime=" + startTime + " endTime=" + endTime);
         }
     }
@@ -35,7 +35,7 @@ public class BusinessPeriod implements Serializable {
      *
      * @return the start of the period
      */
-    public DateTime getStartTime() {
+    public Instant getStartTime() {
         return startTime;
     }
 
@@ -44,7 +44,7 @@ public class BusinessPeriod implements Serializable {
      *
      * @return the end of the period
      */
-    public DateTime getEndTime() {
+    public Instant getEndTime() {
         return endTime;
     }
 
@@ -63,7 +63,7 @@ public class BusinessPeriod implements Serializable {
      * @param time time.
      * @return true if the time is in this period; otherwise, false.
      */
-    public boolean contains(final DateTime time) {
-        return time != null && (startTime.getNanos() <= time.getNanos() && time.getNanos() <= endTime.getNanos());
+    public boolean contains(final Instant time) {
+        return time != null && (DateTimeUtils.epochNanos(startTime) <= DateTimeUtils.epochNanos(time) && DateTimeUtils.epochNanos(time) <= DateTimeUtils.epochNanos(endTime));
     }
 }

@@ -3,23 +3,20 @@ package io.deephaven.time;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.Period;
+import java.time.*;
 import java.util.HashMap;
 
 public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
 
     public void testConvertExpressionDateTime() throws Exception {
         final TimeLiteralReplacedExpression tlre = TimeLiteralReplacedExpression.convertExpression("'2010-01-01T12:34:56.891 NY'");
-        TestCase.assertEquals("_dateTime0", tlre.getConvertedFormula());
+        TestCase.assertEquals("_instant0", tlre.getConvertedFormula());
 
         final HashMap<String, Class<?>> newVars = new HashMap<>();
-        newVars.put("_dateTime0", DateTime.class);
+        newVars.put("_instant0", Instant.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private DateTime _dateTime0=DateTimeUtils.parseDateTime(\"2010-01-01T12:34:56.891 NY\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private Instant _instant0=DateTimeUtils.parseInstant(\"2010-01-01T12:34:56.891 NY\");\n", tlre.getInstanceVariablesString());
 
     }
 
@@ -31,7 +28,7 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_localDate0", LocalDate.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private java.time.LocalDate _localDate0=DateTimeUtils.parseDate(\"2010-01-01\");\n", tlre.getInstanceVariablesString());
+        TestCase.assertEquals("        private java.time.LocalDate _localDate0=DateTimeUtils.parseLocalDate(\"2010-01-01\");\n", tlre.getInstanceVariablesString());
     }
 
     public void testConvertExpressionTime() throws Exception {

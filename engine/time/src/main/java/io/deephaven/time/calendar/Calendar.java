@@ -3,10 +3,10 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.ZoneId;
 
 /**
@@ -16,7 +16,7 @@ import java.time.ZoneId;
  * To comply with the ISO-8601 standard for Dates, Strings should be of the form "yyyy-MM-dd",
  *
  *
- * Methods on DateTime may not be precisely defined enough to return a DateTime, e.g nextDay(). In these cases, the
+ * Methods on Instant may not be precisely defined enough to return a DateTime, e.g nextDay(). In these cases, the
  * method will return a String as discussed above.
  *
  *
@@ -71,7 +71,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day before {@code time}
      */
-    String previousDay(final DateTime time);
+    String previousDay(final Instant time);
 
     /**
      * Gets the date the specified number of days prior to the input date.
@@ -80,7 +80,7 @@ public interface Calendar {
      * @param days number of days;
      * @return the date {@code days} before {@code date}
      */
-    String previousDay(final DateTime time, final int days);
+    String previousDay(final Instant time, final int days);
 
     /**
      * Gets the previous date.
@@ -124,7 +124,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day after {@code time}
      */
-    String nextDay(final DateTime time);
+    String nextDay(final Instant time);
 
     /**
      * Gets the date {@code days} after the input {@code time}.
@@ -133,7 +133,7 @@ public interface Calendar {
      * @param days number of days;
      * @return the day after {@code time}
      */
-    String nextDay(final DateTime time, final int days);
+    String nextDay(final Instant time, final int days);
 
     /**
      * Gets the next date.
@@ -159,7 +159,7 @@ public interface Calendar {
      * @param end end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    String[] daysInRange(DateTime start, DateTime end);
+    String[] daysInRange(Instant start, Instant end);
 
     /**
      * Gets the days in a given range.
@@ -177,7 +177,7 @@ public interface Calendar {
      * @param end end of a time range; if null, return {@code NULL_INT}
      * @return the number days between {@code start} and {@code end}, inclusive and exclusive respectively.
      */
-    int numberOfDays(final DateTime start, final DateTime end);
+    int numberOfDays(final Instant start, final Instant end);
 
     /**
      * Gets the number of days in a given range.
@@ -188,7 +188,7 @@ public interface Calendar {
      * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    int numberOfDays(final DateTime start, final DateTime end, final boolean endInclusive);
+    int numberOfDays(final Instant start, final Instant end, final boolean endInclusive);
 
     /**
      * Gets the number of days in a given range, end date exclusive.
@@ -217,7 +217,7 @@ public interface Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of time in nanoseconds between the {@code start} and {@code end}
      */
-    long diffNanos(final DateTime start, final DateTime end);
+    long diffNanos(final Instant start, final Instant end);
 
     /**
      * Returns the amount of time in days between {@code start} and {@code end}.
@@ -226,7 +226,7 @@ public interface Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of time in days between the {@code start} and {@code end}
      */
-    double diffDay(final DateTime start, final DateTime end);
+    double diffDay(final Instant start, final Instant end);
 
     /**
      * Returns the number of years between {@code start} and {@code end}.
@@ -235,7 +235,7 @@ public interface Calendar {
      * @param end end; if null, return null
      * @return the amount of time in years between the {@code start} and {@code end}
      */
-    double diffYear(DateTime start, DateTime end);
+    double diffYear(Instant start, Instant end);
 
     /**
      * Gets the day of the week for the current day.
@@ -252,7 +252,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day of the week of {@code time}
      */
-    DayOfWeek dayOfWeek(final DateTime time);
+    DayOfWeek dayOfWeek(final Instant time);
 
     /**
      * Gets the day of the week for a time.

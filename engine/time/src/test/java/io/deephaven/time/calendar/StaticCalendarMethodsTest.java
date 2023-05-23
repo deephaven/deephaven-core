@@ -4,9 +4,9 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -15,8 +15,8 @@ import java.time.LocalDate;
 public class StaticCalendarMethodsTest extends BaseArrayTestCase {
 
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DateTime time1 = DateTimeUtils.parseDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DateTime time2 = DateTimeUtils.parseDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final Instant time1 = DateTimeUtils.parseInstant("2002-01-01T01:00:00.000000000 NY");
+    private final Instant time2 = DateTimeUtils.parseInstant("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 

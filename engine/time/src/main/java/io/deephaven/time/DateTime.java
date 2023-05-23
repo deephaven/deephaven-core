@@ -59,7 +59,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @return the date time.
      */
     public static DateTime of(Instant instant) {
-        return DateTimeUtils.toDateTime(instant);
+        return new DateTime(DateTimeUtils.epochNanos(instant));
     }
 
     /**
@@ -269,7 +269,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
         //noinspection ConstantConditions
-        return DateTimeUtils.formatDateTime(this, timeZone);
+        return DateTimeUtils.formatDateTime(DateTimeUtils.epochNanosToInstant(this.getNanos()), timeZone);
     }
 
    /**
@@ -301,7 +301,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
         //noinspection ConstantConditions
-        return DateTimeUtils.formatDate(this, timeZone);
+        return DateTimeUtils.formatDate(DateTimeUtils.epochNanosToInstant(this.getNanos()), timeZone);
     }
 
     // endregion

@@ -168,7 +168,7 @@ public class TestDateTime extends BaseArrayTestCase {
     }
 
     public void testToDateString() {
-        DateTime dateTime = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
+        DateTime dateTime = new DateTime(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2016-11-06T04:00 UTC"))); // 11/6 is the last day of DST
 
         {
             TestCase.assertEquals(dateTime.toDateString(), dateTime.toDateString(ZoneId.systemDefault()));
@@ -211,8 +211,8 @@ public class TestDateTime extends BaseArrayTestCase {
     }
 
     public void testToString() {
-        final DateTime utc = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
-        final DateTime ny = DateTimeUtils.parseDateTime("2016-11-06T04:00 NY"); // 11/6 is the last day of DST
+        final DateTime utc = new DateTime(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2016-11-06T04:00 UTC"))); // 11/6 is the last day of DST
+        final DateTime ny = new DateTime(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2016-11-06T04:00 NY"))); // 11/6 is the last day of DST
 
         { // UTC
             String zoneId = "UTC";
@@ -257,7 +257,7 @@ public class TestDateTime extends BaseArrayTestCase {
     }
 
     public void testSerialization() throws IOException, ClassNotFoundException {
-        final DateTime obj = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC");
+        final DateTime obj = new DateTime(DateTimeUtils.epochNanos(DateTimeUtils.parseInstant("2016-11-06T04:00 UTC")));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ObjectOutputStream oos = new ObjectOutputStream(baos);

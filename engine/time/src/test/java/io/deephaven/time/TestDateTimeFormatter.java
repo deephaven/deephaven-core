@@ -6,18 +6,19 @@ package io.deephaven.time;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import junit.framework.TestCase;
 
+import java.time.Instant;
 import java.time.ZoneId;
 
 public class TestDateTimeFormatter extends BaseArrayTestCase {
     
     private static final ZoneId TZ_MN = ZoneId.of("America/Chicago");
 
-    private DateTime t;
+    private Instant t;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        t = DateTimeUtils.parseDateTime("2015-06-13T13:12:11.123456789 MT");
+        t = DateTimeUtils.parseInstant("2015-06-13T13:12:11.123456789 MT");
     }
 
     public void test1() {

@@ -13,6 +13,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 
+import java.time.Instant;
 import java.util.regex.Pattern;
 
 public class GenericRecordDateTimeArrayFieldCopier extends GenericRecordFieldCopier {
@@ -22,15 +23,15 @@ public class GenericRecordDateTimeArrayFieldCopier extends GenericRecordFieldCop
         this.multiplier = multiplier;
     }
 
-    private static DateTime[] convertArray(final GenericArray<?> ga, final long multiplier) {
+    private static Instant[] convertArray(final GenericArray<?> ga, final long multiplier) {
         final int gaSize = ga.size();
         if (gaSize == 0) {
-            return DateTimeUtils.ZERO_LENGTH_DATETIME_ARRAY;
+            return DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY;
         }
-        final DateTime[] out = new DateTime[ga.size()];
+        final Instant[] out = new Instant[][ga.size()];
         int i = 0;
         for (Object o : ga) {
-            out[i] = new DateTime(multiplier * (long) o);
+            out[i] = DateTimeUtils.epochNanosToInstant(multiplier * (long) o);
             ++i;
         }
         return out;
