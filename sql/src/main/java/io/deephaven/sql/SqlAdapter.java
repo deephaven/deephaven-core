@@ -9,6 +9,7 @@ import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.CharLiteralStyle;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -39,6 +40,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * This is the main public entrypoint for converting a SQL query into {@link TableSpec}.
@@ -51,19 +53,28 @@ public final class SqlAdapter {
      * By default, calcite operates with the equivalent of {@link Lex#ORACLE} (via the defaults exposed through
      * {@link SqlParser#config()}, and the default value for {@link CalciteConnectionProperty#LEX}). This has the
      * side-effect of tokenizing unquoted identifiers into {@link Casing#TO_UPPER upper-case}, which is not what one
-     * might expect by default. By setting to {@link Lex#JAVA}, we are choosing more reasonable defaults that leave
-     * unquoted identifiers in the {@link Casing#UNCHANGED same case} the user wrote them in. The one other change this
-     * introduces is that quoting is now expressed as {@link Quoting#BACK_TICK back-ticks} (what {@link Lex#MYSQL} uses
-     * as the default) instead of {@link Quoting#DOUBLE_QUOTE double-quotes} (what {@link Lex#ORACLE} uses as the
-     * default). If we need both {@link Quoting#DOUBLE_QUOTE} <b>and</b> {@link Casing#UNCHANGED} (or, any other
-     * combination that is unsupported by a built-in {@link Lex}), we can be explicit with
-     * {@link Config#withQuoting(Quoting)}, {@link Config#withUnquotedCasing(Casing)},
+     * might expect by default. Additionally, there is no {@link Lex} that has all of the defaults we want
+     * ({@link Lex#JAVA} comes close, but uses {@link Quoting#BACK_TICK} instead of {@link Quoting#DOUBLE_QUOTE}). We
+     * can be explicit with {@link Config#withQuoting(Quoting)}, {@link Config#withUnquotedCasing(Casing)},
      * {@link Config#withQuotedCasing(Casing)}, {@link Config#withCaseSensitive(boolean)},
      * {@link Config#withCharLiteralStyles(Iterable)}, {@link CalciteConnectionProperty#QUOTING},
      * {@link CalciteConnectionProperty#UNQUOTED_CASING}, {@link CalciteConnectionProperty#QUOTED_CASING}, and
      * {@link CalciteConnectionProperty#CASE_SENSITIVE}.
+     *
+     * <p>
+     * If a new {@link Lex} that has our defaults is introduced, or an interface is added, we'd be able to simplify how
+     * these configurations get built via {@link Config#withLex(Lex)} and {@link CalciteConnectionProperty#LEX}.
+     *
+     * @see #parserConfig()
+     * @see #calciteConnectionConfig()
      */
-    private static final Lex LEX = Lex.JAVA;
+    @SuppressWarnings("unused")
+    private static final Lex _LEX = null; // leaving for the javadoc note
+    private static final Quoting QUOTING = Quoting.DOUBLE_QUOTE;
+    private static final Casing UNQUOTED_CASING = Casing.UNCHANGED;
+    private static final Casing QUOTED_CASING = Casing.UNCHANGED;
+    private static final boolean CASE_SENSITIVE = true;
+    private static final Set<CharLiteralStyle> CHAR_LITERAL_STYLES = Set.of(CharLiteralStyle.STANDARD);
 
     /**
      * Parses the {@code sql} query into a {@link TableSpec}.
@@ -84,7 +95,8 @@ public final class SqlAdapter {
         // Allow for customization of calcite parsing details. Would this mean that calcite should / would become part
         // of the public API, or would it be kept as an implementation detail?
         //
-        // For example, should we allow the user to configure io.deephaven.sql.SqlAdapter#LEX?
+        // For example, should we allow the user to configure lexing configuration? #parserConfig() /
+        // #calciteConnectionConfig()
 
         // 1: Parse into AST
         final SqlNode node = parse(sql);
@@ -130,8 +142,7 @@ public final class SqlAdapter {
     }
 
     private static SqlNode parse(String sql) {
-        final SqlParser.Config config = SqlParser.config().withLex(LEX);
-        final SqlParser parser = SqlParser.create(sql, config);
+        final SqlParser parser = SqlParser.create(sql, parserConfig());
         final SqlNode sqlNode;
         try {
             sqlNode = parser.parseQuery();
@@ -165,10 +176,28 @@ public final class SqlAdapter {
             }
             schema.add(info.qualifiedName().get(0), new DeephavenTable(TypeAdapter.of(info.header(), typeFactory)));
         }
+        return new CalciteCatalogReader(schema, Collections.emptyList(), typeFactory, calciteConnectionConfig());
+    }
+
+    private static SqlParser.Config parserConfig() {
+        // return SqlParser.config().withLex(_LEX);
+        return SqlParser.config()
+                .withQuoting(QUOTING)
+                .withUnquotedCasing(UNQUOTED_CASING)
+                .withQuotedCasing(QUOTED_CASING)
+                .withCaseSensitive(CASE_SENSITIVE)
+                .withCharLiteralStyles(CHAR_LITERAL_STYLES);
+    }
+
+    private static CalciteConnectionConfig calciteConnectionConfig() {
         final Properties props = new Properties();
-        props.setProperty(CalciteConnectionProperty.LEX.camelName(), LEX.name());
-        final CalciteConnectionConfig config = new CalciteConnectionConfigImpl(props);
-        return new CalciteCatalogReader(schema, Collections.emptyList(), typeFactory, config);
+        // props.setProperty(CalciteConnectionProperty.LEX.camelName(), _LEX.name());
+        props.setProperty(CalciteConnectionProperty.QUOTING.camelName(), QUOTING.name());
+        props.setProperty(CalciteConnectionProperty.UNQUOTED_CASING.camelName(), UNQUOTED_CASING.name());
+        props.setProperty(CalciteConnectionProperty.QUOTED_CASING.camelName(), QUOTED_CASING.name());
+        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), String.valueOf(CASE_SENSITIVE));
+        // Note: there is no CalciteConnectionProperty.CHAR_LITERAL_STYLES or equivalent
+        return new CalciteConnectionConfigImpl(props);
     }
 
     private static SqlValidator validator(
