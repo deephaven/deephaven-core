@@ -187,10 +187,37 @@ class TimeTestCase(BaseTestCase):
 
     # region: Comparisons
 
-    #TODO:  is_before
-    #TODO:  is_before_or_equal
-    #TODO:  is_after
-    #TODO:  is_after_or_equal
+    def test_is_before(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:21:18.123456789 NY")
+        self.assertTrue(is_before(dt1, dt2))
+        self.assertFalse(is_before(dt2, dt1))
+        self.assertFalse(is_before(dt1, dt1))
+        self.assertFalse(is_before(None, dt1))
+
+    def test_is_before_or_equal(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:21:18.123456789 NY")
+        self.assertTrue(is_before_or_equal(dt1, dt2))
+        self.assertFalse(is_before_or_equal(dt2, dt1))
+        self.assertTrue(is_before_or_equal(dt1, dt1))
+        self.assertFalse(is_before_or_equal(None, dt1))
+
+    def test_is_after(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:21:18.123456789 NY")
+        self.assertFalse(is_after(dt1, dt2))
+        self.assertTrue(is_after(dt2, dt1))
+        self.assertFalse(is_after(dt1, dt1))
+        self.assertFalse(is_after(None, dt1))
+
+    def test_is_after_or_equal(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:21:18.123456789 NY")
+        self.assertFalse(is_after_or_equal(dt1, dt2))
+        self.assertTrue(is_after_or_equal(dt2, dt1))
+        self.assertTrue(is_after_or_equal(dt1, dt1))
+        self.assertFalse(is_after_or_equal(None, dt1))
 
     # endregion
 
@@ -578,19 +605,6 @@ class TimeTestCase(BaseTestCase):
 
 
 
-    def test_is_after(self):
-        dt1 = now()
-        sleep(0.001)
-        dt2 = now()
-        self.assertTrue(is_after(dt2, dt1))
-        self.assertFalse(is_after(None, dt1))
-
-    def test_is_before(self):
-        dt1 = now()
-        sleep(0.001)
-        dt2 = now()
-        self.assertFalse(is_before(dt2, dt1))
-        self.assertFalse(is_after(None, dt1))
 
 
     def test_millis(self):
