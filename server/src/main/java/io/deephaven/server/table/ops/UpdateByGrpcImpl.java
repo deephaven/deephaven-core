@@ -193,28 +193,33 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return FillBySpec.of();
     }
 
+    // Create a spec for the Exponential Moving Average
     private static EmaSpec adaptEma(UpdateByEma ema) {
         return ema.hasOptions() ? EmaSpec.of(adaptEmaOptions(ema.getOptions()), adaptTimescale(ema.getTimescale()))
                 : EmaSpec.of(adaptTimescale(ema.getTimescale()));
     }
 
+    // Create a spec for the Exponential Moving Sum
     private static EmsSpec adaptEms(UpdateByEms ems) {
         return ems.hasOptions() ? EmsSpec.of(adaptEmaOptions(ems.getOptions()), adaptTimescale(ems.getTimescale()))
                 : EmsSpec.of(adaptTimescale(ems.getTimescale()));
     }
 
+    // Create a spec for the Exponential Moving Maximum
     private static EmMinMaxSpec adaptEmMax(UpdateByEmMax emMax) {
         return emMax.hasOptions()
                 ? EmMinMaxSpec.of(adaptEmaOptions(emMax.getOptions()), true, adaptTimescale(emMax.getTimescale()))
                 : EmMinMaxSpec.of(true, adaptTimescale(emMax.getTimescale()));
     }
 
+    // Create a spec for the Exponential Moving Minimum
     private static EmMinMaxSpec adaptEmMin(UpdateByEmMin emMin) {
         return emMin.hasOptions()
                 ? EmMinMaxSpec.of(adaptEmaOptions(emMin.getOptions()), false, adaptTimescale(emMin.getTimescale()))
                 : EmMinMaxSpec.of(false, adaptTimescale(emMin.getTimescale()));
     }
 
+    // Create a spec for the Exponential Moving Standard Deviation
     private static EmStdSpec adaptEmStd(UpdateByEmStd emStd) {
         return emStd.hasOptions()
                 ? EmStdSpec.of(adaptEmaOptions(emStd.getOptions()), adaptTimescale(emStd.getTimescale()))
