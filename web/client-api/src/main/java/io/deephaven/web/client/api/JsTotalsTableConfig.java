@@ -7,7 +7,6 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
-import elemental2.core.JsString;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggSpec;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggregation;
@@ -27,7 +26,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggs
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -135,7 +133,6 @@ public class JsTotalsTableConfig {
         builder.defaultOperation = frontMatter[2];
         checkOperation(builder.defaultOperation);
 
-
         if (splitSemi.length > 1) {
             final String[] columnDirectives = splitSemi[1].split(",");
             for (final String columnDirective : columnDirectives) {
@@ -166,7 +163,7 @@ public class JsTotalsTableConfig {
 
     @Override
     public String toString() {
-        return "JsTotalsTableConfig{" +
+        return "TotalsTableConfig{" +
                 "showTotalsByDefault=" + showTotalsByDefault +
                 ", showGrandTotalsByDefault=" + showGrandTotalsByDefault +
                 ", defaultOperation='" + defaultOperation + '\'' +
@@ -184,23 +181,12 @@ public class JsTotalsTableConfig {
     @JsIgnore
     public String serialize() {
         final StringBuilder builder = new StringBuilder();
-        builder.append(Boolean.toString(showTotalsByDefault)).append(",")
-                .append(Boolean.toString(showGrandTotalsByDefault)).append(",").append(defaultOperation).append(";");
+        builder.append(showTotalsByDefault).append(",")
+                .append(showGrandTotalsByDefault).append(",").append(defaultOperation).append(";");
         operationMap
                 .forEach(key -> builder.append(key).append("=").append(operationMap.get(key).join(":")).append(","));
         return builder.toString();
     }
-
-    /**
-     * Expose groupBy as a plain Java array, so it can be serialized correctly to the server.
-     */
-    @JsIgnore
-    public String[] groupByArray() {
-        String[] strings = new String[groupBy.length];
-        groupBy.forEach((str, index, array) -> strings[index] = Js.cast(str));
-        return strings;
-    }
-
 
     @JsIgnore
     public AggregateRequest buildRequest() {
@@ -235,7 +221,7 @@ public class JsTotalsTableConfig {
             switch (aggregationType) {
                 case JsAggregationOperation.COUNT: {
                     AggregationCount count = new AggregationCount();
-                    count.setColumnName("Count");// TODO likely need to dedup
+                    count.setColumnName("Count");
                     agg.setCount(count);
                     break;
                 }
@@ -383,32 +369,5 @@ public class JsTotalsTableConfig {
                 JsArray<String>::new,
                 JsArray::push,
                 (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))));
-    }
-
-    private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
-        // Try to use the default column names
-        for (String suggestedName : suggestedNames) {
-            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName))) {
-                return suggestedName;
-            }
-        }
-
-        // Next add a suffix and use that if possible
-        for (String suggestedName : suggestedNames) {
-            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_"))) {
-                return suggestedName + "_";
-            }
-        }
-
-        // Give up and add a timestamp suffix
-        for (String suggestedName : suggestedNames) {
-            if (!existingColumns
-                    .some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_" + System.currentTimeMillis()))) {
-                return suggestedName + "_" + System.currentTimeMillis();
-            }
-        }
-
-        // Really give up so Java is happy
-        throw new IllegalStateException("Failed to generate a name");
     }
 }
