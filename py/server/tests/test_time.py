@@ -268,9 +268,16 @@ class TimeTestCase(BaseTestCase):
     
     # region: Conversions: Excel
 
-    #TODO:  to_excel_time
-    #TODO:  excel_to_instant
-    #TODO:  excel_to_zdt
+    def test_excel(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+        tz = time_zone("NY")
+        excel = to_excel_time(dt, tz)
+
+        self.assertEqual(dt1, excel_to_instant(excel, tz))
+        self.assertEqual(dt2, excel_to_zdt(excel, tz))
+        self.assertNone(excel_to_instant(excel, None))
+        self.assertNone(excel_to_zdt(excel, None))
 
     # endregion
     
