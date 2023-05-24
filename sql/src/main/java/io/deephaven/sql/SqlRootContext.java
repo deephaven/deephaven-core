@@ -50,7 +50,8 @@ final class SqlRootContext {
     private int repeatableId(RelNode node) {
         final Integer id = repeatableId.get(node);
         if (id == null) {
-            throw new IllegalArgumentException("node does not belong to this context");
+            throw new IllegalStateException(
+                    "Unexpected error. Trying to get repeatable id from RelNode, but RelNode was not seen in #encounterOrder. Either the logic in #encounterOrder is not exhaustive, or this SqlRootContext is being used in an incorrect context.");
         }
         return id;
     }
