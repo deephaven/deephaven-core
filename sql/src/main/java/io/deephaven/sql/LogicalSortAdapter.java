@@ -32,33 +32,41 @@ final class LogicalSortAdapter {
         if (sort.offset != null) {
             throw new UnsupportedOperationException("SQLTODO(sort-offset): QST does not support slice...");
         }
-        final SortTable.Builder builder = SortTable.builder()
-                .parent(relNodeAdapter.table(sort.getInput()));
-        for (RelFieldCollation fieldCollation : sort.collation.getFieldCollations()) {
-            final int inputFieldIndex = fieldCollation.getFieldIndex();
-            final RelDataTypeField inputField = sort.getInput().getRowType().getFieldList().get(inputFieldIndex);
-            final RexInputRef inputRef = new RexInputRef(inputFieldIndex, inputField.getType());
-            final ColumnName inputColumnName = fieldAdapter.input(inputRef, inputField);
-            switch (fieldCollation.direction) {
-                case ASCENDING:
-                    if (fieldCollation.nullDirection == NullDirection.LAST) {
+        final TableSpec parent = relNodeAdapter.table(sort.getInput());
+        final TableSpec sortTable;
+        if (sort.collation.getFieldCollations().isEmpty()) {
+            // Calcite represents `SELECT * FROM my_table LIMIT 7` as a LogicalSort with an empty field collation.
+            // We can skip all of the SortTable.builder() wrapping in this case.
+            sortTable = parent;
+        } else {
+            final SortTable.Builder builder = SortTable.builder().parent(parent);
+            for (RelFieldCollation fieldCollation : sort.collation.getFieldCollations()) {
+                final int inputFieldIndex = fieldCollation.getFieldIndex();
+                final RelDataTypeField inputField = sort.getInput().getRowType().getFieldList().get(inputFieldIndex);
+                final RexInputRef inputRef = new RexInputRef(inputFieldIndex, inputField.getType());
+                final ColumnName inputColumnName = fieldAdapter.input(inputRef, inputField);
+                switch (fieldCollation.direction) {
+                    case ASCENDING:
+                        if (fieldCollation.nullDirection == NullDirection.LAST) {
+                            throw new UnsupportedOperationException(
+                                    "Deephaven does not currently support ascending sort with nulls last");
+                        }
+                        builder.addColumns(SortColumn.asc(inputColumnName));
+                        break;
+                    case DESCENDING:
+                        if (fieldCollation.nullDirection == NullDirection.FIRST) {
+                            throw new UnsupportedOperationException(
+                                    "Deephaven does not currently support descending sort with nulls first");
+                        }
+                        builder.addColumns(SortColumn.desc(inputColumnName));
+                        break;
+                    default:
                         throw new UnsupportedOperationException(
-                                "Deephaven does not currently support ascending sort with nulls last");
-                    }
-                    builder.addColumns(SortColumn.asc(inputColumnName));
-                    break;
-                case DESCENDING:
-                    if (fieldCollation.nullDirection == NullDirection.FIRST) {
-                        throw new UnsupportedOperationException(
-                                "Deephaven does not currently support descending sort with nulls first");
-                    }
-                    builder.addColumns(SortColumn.desc(inputColumnName));
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unsupported sort direction " + fieldCollation.direction);
+                                "Unsupported sort direction " + fieldCollation.direction);
+                }
             }
+            sortTable = builder.build();
         }
-        final SortTable sortTable = builder.build();
         if (sort.fetch != null) {
             final Expression expression = fieldAdapter.expression(sort, sort.fetch);
             if (!(expression instanceof Literal)) {

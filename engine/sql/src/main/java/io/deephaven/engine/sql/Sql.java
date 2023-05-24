@@ -36,8 +36,8 @@ public final class Sql {
     private static final Logger log = LoggerFactory.getLogger(Sql.class);
 
     @ScriptApi
-    public static Table execute(String sql) {
-        return execute(sql, scriptSessionScope());
+    public static Table evaluate(String sql) {
+        return evaluate(sql, scriptSessionScope());
     }
 
     @ScriptApi
@@ -45,7 +45,7 @@ public final class Sql {
         return dryRun(sql, scriptSessionScope());
     }
 
-    public static Table execute(String sql, Map<String, Table> scope) {
+    public static Table evaluate(String sql, Map<String, Table> scope) {
         final Map<TicketTable, Table> map = new HashMap<>(scope.size());
         final TableSpec tableSpec = parseSql(sql, scope, map);
         log.debug().append("Executing. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();

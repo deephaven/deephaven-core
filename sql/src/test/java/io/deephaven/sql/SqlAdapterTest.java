@@ -247,6 +247,12 @@ public class SqlAdapterTest {
         check(scope, 32);
     }
 
+    @Test
+    void sql33() throws IOException, URISyntaxException {
+        final Scope scope = scope("books", BOOKS);
+        check(scope, 33);
+    }
+
     private static void check(Scope scope, int index) throws IOException, URISyntaxException {
         check(scope, String.format("query-%d.sql", index), String.format("qst-%d.dot", index));
     }

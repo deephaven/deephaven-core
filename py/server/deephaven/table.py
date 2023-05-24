@@ -454,8 +454,8 @@ def _query_scope_ctx():
     if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
+        j_py_script_session.pushScope(scope_dict)
         try:
-            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
             j_py_script_session.popScope()
