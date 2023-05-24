@@ -368,7 +368,6 @@ class TimeTestCase(BaseTestCase):
         mid_night_time_pt = datetime_at_midnight(dt, tz_pt)
         self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -22 * 60 * 60)
 
-
     # endregion
 
     # region: Binning
@@ -385,9 +384,29 @@ class TimeTestCase(BaseTestCase):
     
     # region: Format
 
-    #TODO:  format_nanos
-    #TODO:  format_datetime
-    #TODO:  format_date
+    def test_format_nanos(self):
+        nanos = 123456789
+        ns_str = format_nanos(nanos)
+        self.assertEqual("0:00:00.123456789", ns_str)
+
+    def test_format_datetime(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        dt_str = format_datetime(dt, tz)
+        self.assertEqual(f"{datetime_str} {timezone_str}", dt_str)
+
+    def test_format_date(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        dt_str = format_date(dt, tz)
+        self.assertEqual("2021-12-10", dt_str)
+
+        dt = now()
+        self.assertEqual(3, len(format_date(dt, TimeZone.MOS).split("-")))
 
     # endregion
     
@@ -557,20 +576,6 @@ class TimeTestCase(BaseTestCase):
         dt2 = plus_nanos(dt1, 2*YEAR)
         self.assertGreaterEqual(diff_years(dt2, dt1), 1.9)
 
-    def test_format_datetime(self):
-        dt = now()
-        self.assertIn(TimeZone.SYD.name, format_datetime(dt, TimeZone.SYD))
-
-    def test_format_nanos(self):
-        dt = now()
-        ns = nanos(dt)
-        ns_str1 = format_nanos(ns).split(".")[-1]
-        ns_str2 = format_datetime(dt, TimeZone.UTC).split(".")[-1]
-        self.assertTrue(ns_str2.startswith(ns_str1))
-
-    def test_format_date(self):
-        dt = now()
-        self.assertEqual(3, len(format_date(dt, TimeZone.MOS).split("-")))
 
 
     def test_is_after(self):
