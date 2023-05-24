@@ -24,9 +24,9 @@ import org.jetbrains.annotations.NotNull;
  * Arrow Vector: {@link TimeStampVector}
  * Deephaven Type: io.deephaven.time.DateTime
  */
-public class ArrowDateTimeColumnSource extends AbstractArrowColumnSource<DateTime> implements ImmutableColumnSourceGetDefaults.ForObject<DateTime> {
-    public ArrowDateTimeColumnSource(final int highBit, final @NotNull Field field,
-            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+public class ArrowInstantColumnSource extends AbstractArrowColumnSource<DateTime> implements ImmutableColumnSourceGetDefaults.ForObject<DateTime> {
+    public ArrowInstantColumnSource(final int highBit, final @NotNull Field field,
+                                    final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
         super(DateTime.class, highBit, field, arrowTableContext);
     }
 

@@ -23,8 +23,8 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 /**
- * Code generation for basic {@link RegionedColumnSource} implementations as well as well as the primary region
- * interfaces for some primitive types.
+ * Code generation for basic RegionedColumnSource implementations as well as well as the primary region interfaces for
+ * some primitive types.
  */
 public class ReplicateRegionsAndRegionedSources {
 
@@ -63,7 +63,7 @@ public class ReplicateRegionsAndRegionedSources {
     private static void fixupLong(String path) throws IOException {
         final File file = new File(path);
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.time.DateTime;",
+        lines = addImport(lines,
                 "import io.deephaven.engine.table.ColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;",
                 "import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;",
@@ -77,8 +77,7 @@ public class ReplicateRegionsAndRegionedSources {
                 "            return true;",
                 "        }",
                 "",
-                "        return alternateDataType == Instant.class ||",
-                "                alternateDataType == DateTime.class;",
+                "        return alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",
@@ -86,8 +85,6 @@ public class ReplicateRegionsAndRegionedSources {
                 "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
                 "        if(alternateDataType == Instant.class) {",
                 "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();",
-                "        } else if(alternateDataType == DateTime.class) {",
-                "            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();",
                 "        }",
                 "",
                 "        return super.doReinterpret(alternateDataType);",
@@ -101,11 +98,6 @@ public class ReplicateRegionsAndRegionedSources {
                 "    public ColumnSource<Instant> toInstant() {",
                 "        //noinspection unchecked",
                 "        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);",
-                "    }",
-                "",
-                "    public ColumnSource<DateTime> toDateTime() {",
-                "        //noinspection unchecked",
-                "        return new RegionedColumnSourceDateTime((RegionedColumnSourceLong<Values>) this);",
                 "    }",
                 "",
                 "    @Override",

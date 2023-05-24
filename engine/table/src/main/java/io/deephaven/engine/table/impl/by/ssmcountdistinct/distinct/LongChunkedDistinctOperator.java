@@ -8,9 +8,8 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
-import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
+import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -65,7 +64,7 @@ public class LongChunkedDistinctOperator implements IterativeChunkedAggregationO
         // endregion SsmCreation
         // region ResultAssignment
         if(type == DateTime.class) {
-            externalResult = new DateTimeSsmSourceWrapper(internalResult);
+            externalResult = new InstantSsmSourceWrapper(internalResult);
         } else {
             externalResult = internalResult;
         }
