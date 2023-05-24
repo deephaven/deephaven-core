@@ -526,6 +526,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+                "import io.deephaven.api.updateby.UpdateByControl;\n" +
+                "import io.deephaven.api.updateby.OperationControl;\n" +
+                "import io.deephaven.api.updateby.DeltaControl;\n" +
+                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
