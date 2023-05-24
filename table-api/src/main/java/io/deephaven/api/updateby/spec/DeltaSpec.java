@@ -2,20 +2,18 @@ package io.deephaven.api.updateby.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.updateby.DeltaControl;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
+
+import java.util.Optional;
 
 /**
  * A {@link UpdateBySpec} for performing a Cumulative Sum of the specified columns.
  */
 @Immutable
 @BuildableStyle
-public class DeltaSpec extends UpdateBySpecBase {
+public abstract class DeltaSpec extends UpdateBySpecBase {
     // provide a default delta control
-    @Value.Default
-    public DeltaControl deltaControl() {
-        return DeltaControl.DEFAULT;
-    }
+    public abstract Optional<DeltaControl> deltaControl();
 
     public static DeltaSpec of() {
         return ImmutableDeltaSpec.builder().build();
@@ -23,6 +21,10 @@ public class DeltaSpec extends UpdateBySpecBase {
 
     public static DeltaSpec of(DeltaControl control) {
         return ImmutableDeltaSpec.builder().deltaControl(control).build();
+    }
+
+    public final DeltaControl deltaControlOrDefault() {
+        return deltaControl().orElse(DeltaControl.DEFAULT);
     }
 
     @Override

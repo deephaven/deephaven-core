@@ -870,23 +870,23 @@ public class UpdateByOperatorFactory {
             final Class<?> csType = columnSource.getType();
 
             if (csType == Character.class || csType == char.class) {
-                return new CharDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new CharDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new ByteDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new ShortDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new IntDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
-                return new LongDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new LongDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new FloatDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new DoubleDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new BigDecimalDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+                return new BigIntegerDeltaOperator(pair, rowRedirection, ds.deltaControlOrDefault(), columnSource);
             }
 
             throw new IllegalArgumentException("Can not perform Delta on type " + csType);

@@ -122,24 +122,29 @@ public class UpdateBySpecBuilderTest {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
-            final UpdateByDeltaOptions options;
-            switch (spec.deltaControl().nullBehavior()) {
-                case ValueDominates:
-                    options = UpdateByDeltaOptions.newBuilder()
-                            .setNullBehavior(UpdateByNullBehavior.VALUE_DOMINATES).build();
-                    break;
-                case ZeroDominates:
-                    options = UpdateByDeltaOptions.newBuilder()
-                            .setNullBehavior(UpdateByNullBehavior.ZERO_DOMINATES).build();
-                    break;
-                default:
-                    options = UpdateByDeltaOptions.newBuilder()
-                            .setNullBehavior(UpdateByNullBehavior.NULL_DOMINATES).build();
+            if (spec.deltaControl().isPresent()) {
+                final UpdateByDeltaOptions options;
+                switch (spec.deltaControlOrDefault().nullBehavior()) {
+                    case ValueDominates:
+                        options = UpdateByDeltaOptions.newBuilder()
+                                .setNullBehavior(UpdateByNullBehavior.VALUE_DOMINATES).build();
+                        break;
+                    case ZeroDominates:
+                        options = UpdateByDeltaOptions.newBuilder()
+                                .setNullBehavior(UpdateByNullBehavior.ZERO_DOMINATES).build();
+                        break;
+                    default:
+                        options = UpdateByDeltaOptions.newBuilder()
+                                .setNullBehavior(UpdateByNullBehavior.NULL_DOMINATES).build();
+                }
+                return UpdateByColumn.UpdateBySpec.newBuilder().setDelta(
+                        UpdateByDelta.newBuilder().setOptions(options).build())
+                        .build();
+            } else {
+                return UpdateByColumn.UpdateBySpec.newBuilder().setDelta(
+                        UpdateByDelta.newBuilder().build())
+                        .build();
             }
-
-            return UpdateByColumn.UpdateBySpec.newBuilder().setDelta(
-                    UpdateByDelta.newBuilder().setOptions(options).build())
-                    .build();
         }
 
         @Override

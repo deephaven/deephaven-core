@@ -195,7 +195,8 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
-            UpdateByDelta.Builder builder = UpdateByDelta.newBuilder().setOptions(adapt(spec.deltaControl()));
+            UpdateByDelta.Builder builder = UpdateByDelta.newBuilder();
+            spec.deltaControl().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setDelta(builder.build())
                     .build();
