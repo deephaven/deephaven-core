@@ -1,6 +1,6 @@
 digraph {
-"op_0" ["label"="ticketTable(scan/AUTHORS)"]
-"op_1" ["label"="ticketTable(scan/BOOKS)"]
+"op_0" ["label"="ticketTable(scan/authors)"]
+"op_1" ["label"="ticketTable(scan/books)"]
 "op_2" ["label"="view(__p_0_4=Id,__p_0_5=Name)"]
 "op_3" ["label"="view(__p_2_0=Id,__p_2_1=Title,__p_2_2=AuthorId)"]
 "op_4" ["label"="view(__p_0_0=__p_2_0,__p_0_1=__p_2_1,__p_0_2=__p_2_2,__p_0_3=plus(__p_2_2, (int)1))"]

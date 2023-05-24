@@ -1,6 +1,6 @@
 SELECT
   Title
 FROM
-  BOOKS
+  books
 ORDER BY
   Id

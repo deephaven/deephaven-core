@@ -1,5 +1,5 @@
 digraph {
-"op_0" ["label"="ticketTable(scan/MY_TIME)"]
+"op_0" ["label"="ticketTable(scan/my_time)"]
 "op_1" ["label"="view(__p_1_0=Timestamp,__p_1_1=I,__p_1_2=B)"]
 "op_2" ["label"="view(B=__p_1_2,Timestamp=__p_1_0,I=__p_1_1)"]
 "op_3" ["label"="sort([ASCENDING(B),DESCENDING(Timestamp)])"]

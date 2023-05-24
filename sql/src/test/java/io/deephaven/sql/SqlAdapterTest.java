@@ -45,102 +45,102 @@ public class SqlAdapterTest {
     @Test
     void sql1() throws IOException, URISyntaxException {
         final Scope scope = scope(
-                "AUTHORS", AUTHORS,
-                "BOOKS", BOOKS);
+                "authors", AUTHORS,
+                "books", BOOKS);
         check(scope, 1);
     }
 
     @Test
     void sql2() throws IOException, URISyntaxException {
         final Scope scope = scope(
-                "AUTHORS", AUTHORS,
-                "BOOKS", BOOKS);
+                "authors", AUTHORS,
+                "books", BOOKS);
         check(scope, 2);
     }
 
     @Test
     void sql3() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 3);
     }
 
     @Test
     void sql4() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 4);
     }
 
     @Test
     void sql5() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 5);
     }
 
     @Test
     void sql6() throws IOException, URISyntaxException {
-        final Scope scope = scope("LONGI", LONG_I);
+        final Scope scope = scope("longi", LONG_I);
         check(scope, 6);
     }
 
     @Test
     void sql7() throws IOException, URISyntaxException {
-        final Scope scope = scope("LONGI", LONG_I);
+        final Scope scope = scope("longi", LONG_I);
         check(scope, 7);
     }
 
     @Test
     void sql8() throws IOException, URISyntaxException {
         final Scope scope = scope(
-                "AUTHORS", AUTHORS,
-                "BOOKS", BOOKS);
+                "authors", AUTHORS,
+                "books", BOOKS);
         check(scope, 8);
     }
 
     @Test
     void sql9() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 9);
     }
 
     @Test
     void sql10() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 10);
     }
 
     @Test
     void sql11() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 11);
     }
 
     @Test
     void sql12() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 12);
     }
 
     @Test
     void sql13() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 13);
     }
 
     @Test
     void sql14() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 14);
     }
 
     @Test
     void sql15() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 15);
     }
 
     @Test
     void sql16() throws IOException, URISyntaxException {
-        final Scope scope = scope("MY_TIME", TIB);
+        final Scope scope = scope("my_time", TIB);
         check(scope, 16);
     }
 
@@ -155,7 +155,7 @@ public class SqlAdapterTest {
 
     @Test
     void sql18() throws IOException, URISyntaxException {
-        final Scope scope = scope("MY_TIME", TIB);
+        final Scope scope = scope("my_time", TIB);
         check(scope, 18);
     }
 
@@ -197,53 +197,53 @@ public class SqlAdapterTest {
 
     @Test
     void sql25() throws IOException, URISyntaxException {
-        final Scope scope = scope("MY_TIME", TIB);
+        final Scope scope = scope("my_time", TIB);
         check(scope, 25);
     }
 
     @Test
     void sql26() throws IOException, URISyntaxException {
-        final Scope scope = scope("MY_TIME", TIB);
+        final Scope scope = scope("my_time", TIB);
         check(scope, 26);
     }
 
     @Test
     void sql27() throws IOException, URISyntaxException {
-        final Scope scope = scope("MY_TIME", TIB);
+        final Scope scope = scope("my_time", TIB);
         check(scope, 27);
     }
 
     @Test
     void sql28() throws IOException, URISyntaxException {
         final Scope scope = scope(
-                "AUTHORS", AUTHORS,
-                "BOOKS", BOOKS);
+                "authors", AUTHORS,
+                "books", BOOKS);
         check(scope, 28);
     }
 
     @Test
     void sql29() throws IOException, URISyntaxException {
         final Scope scope = scope(
-                "AUTHORS", AUTHORS,
-                "BOOKS", BOOKS);
+                "authors", AUTHORS,
+                "books", BOOKS);
         check(scope, 29);
     }
 
     @Test
     void sql30() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 30);
     }
 
     @Test
     void sql31() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 31);
     }
 
     @Test
     void sql32() throws IOException, URISyntaxException {
-        final Scope scope = scope("BOOKS", BOOKS);
+        final Scope scope = scope("books", BOOKS);
         check(scope, 32);
     }
 

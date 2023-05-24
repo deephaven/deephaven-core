@@ -1,6 +1,6 @@
 SELECT
   AuthorId,
   Title,
-  id
+  Id
 FROM
-  BOOKS
+  books

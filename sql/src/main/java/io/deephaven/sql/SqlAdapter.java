@@ -4,9 +4,12 @@
 package io.deephaven.sql;
 
 import io.deephaven.qst.table.TableSpec;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
+import org.apache.calcite.config.Lex;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
@@ -26,6 +29,7 @@ import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParser.Config;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
@@ -42,6 +46,24 @@ import java.util.Properties;
 public final class SqlAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(SqlAdapter.class);
+
+    /**
+     * By default, calcite operates with the equivalent of {@link Lex#ORACLE} (via the defaults exposed through
+     * {@link SqlParser#config()}, and the default value for {@link CalciteConnectionProperty#LEX}). This has the
+     * side-effect of tokenizing unquoted identifiers into {@link Casing#TO_UPPER upper-case}, which is not what one
+     * might expect by default. By setting to {@link Lex#JAVA}, we are choosing more reasonable defaults that leave
+     * unquoted identifiers in the {@link Casing#UNCHANGED same case} the user wrote them in. The one other change this
+     * introduces is that quoting is now expressed as {@link Quoting#BACK_TICK back-ticks} (what {@link Lex#MYSQL} uses
+     * as the default) instead of {@link Quoting#DOUBLE_QUOTE double-quotes} (what {@link Lex#ORACLE} uses as the
+     * default). If we need both {@link Quoting#DOUBLE_QUOTE} <b>and</b> {@link Casing#UNCHANGED} (or, any other
+     * combination that is unsupported by a built-in {@link Lex}), we can be explicit with
+     * {@link Config#withQuoting(Quoting)}, {@link Config#withUnquotedCasing(Casing)},
+     * {@link Config#withQuotedCasing(Casing)}, {@link Config#withCaseSensitive(boolean)},
+     * {@link Config#withCharLiteralStyles(Iterable)}, {@link CalciteConnectionProperty#QUOTING},
+     * {@link CalciteConnectionProperty#UNQUOTED_CASING}, {@link CalciteConnectionProperty#QUOTED_CASING}, and
+     * {@link CalciteConnectionProperty#CASE_SENSITIVE}.
+     */
+    private static final Lex LEX = Lex.JAVA;
 
     /**
      * Parses the {@code sql} query into a {@link TableSpec}.
@@ -61,6 +83,8 @@ public final class SqlAdapter {
         //
         // Allow for customization of calcite parsing details. Would this mean that calcite should / would become part
         // of the public API, or would it be kept as an implementation detail?
+        //
+        // For example, should we allow the user to configure io.deephaven.sql.SqlAdapter#LEX?
 
         // 1: Parse into AST
         final SqlNode node = parse(sql);
@@ -106,7 +130,7 @@ public final class SqlAdapter {
     }
 
     private static SqlNode parse(String sql) {
-        final SqlParser.Config config = SqlParser.config();
+        final SqlParser.Config config = SqlParser.config().withLex(LEX);
         final SqlParser parser = SqlParser.create(sql, config);
         final SqlNode sqlNode;
         try {
@@ -142,7 +166,7 @@ public final class SqlAdapter {
             schema.add(info.qualifiedName().get(0), new DeephavenTable(TypeAdapter.of(info.header(), typeFactory)));
         }
         final Properties props = new Properties();
-        props.setProperty(CalciteConnectionProperty.CASE_SENSITIVE.camelName(), "false");
+        props.setProperty(CalciteConnectionProperty.LEX.camelName(), LEX.name());
         final CalciteConnectionConfig config = new CalciteConnectionConfigImpl(props);
         return new CalciteCatalogReader(schema, Collections.emptyList(), typeFactory, config);
     }

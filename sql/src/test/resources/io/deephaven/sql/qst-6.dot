@@ -1,5 +1,5 @@
 digraph {
-"op_0" ["label"="ticketTable(scan/LONGI)"]
+"op_0" ["label"="ticketTable(scan/longi)"]
 "op_1" ["label"="view(__p_0_0=I)"]
 "op_2" ["label"="view(I=__p_0_0)"]
 "op_1" -> "op_0"

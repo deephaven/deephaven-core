@@ -4,14 +4,14 @@ SELECT
 FROM
   (
     SELECT
-      name,
+      Name AS name,
       1 AS source
     FROM
-      AUTHORS
+      authors
     UNION ALL
     SELECT
-      title AS name,
+      Title AS name,
       2 AS source
     FROM
-      BOOKS
+      books
   )
