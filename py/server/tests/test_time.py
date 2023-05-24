@@ -196,25 +196,178 @@ class TimeTestCase(BaseTestCase):
 
     # region: Chronology
 
-    #TODO:  nanos_of_milli
-    #TODO:  micros_of_milli
-    #TODO:  nanos_of_second
-    #TODO:  micros_of_second
-    #TODO:  millis_of_second
-    #TODO:  second_of_minute
-    #TODO:  minute_of_hour
-    #TODO:  nanos_of_day
-    #TODO:  millis_of_day
-    #TODO:  second_of_day
-    #TODO:  minute_of_day
-    #TODO:  hour_of_day
-    #TODO:  day_of_week
-    #TODO:  day_of_month
-    #TODO:  day_of_year
-    #TODO:  month_of_year
-    #TODO:  year
-    #TODO:  year_of_century
-    #TODO:  at_midnight
+    def test_nanos_of_milli(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(456789, nanos_of_milli(dt, tz))
+        self.assertEqual(NULL_LONG, nanos_of_milli(None, tz))
+        self.assertEqual(NULL_LONG, nanos_of_milli(dt, None))
+
+    def test_micros_of_milli(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(456, micros_of_milli(dt, tz))
+        self.assertEqual(NULL_LONG, micros_of_milli(None, tz))
+        self.assertEqual(NULL_LONG, micros_of_milli(dt, None))
+
+    def test_micros_of_second(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(123456, micros_of_second(dt, tz))
+        self.assertEqual(NULL_LONG, micros_of_second(None, tz))
+        self.assertEqual(NULL_LONG, micros_of_second(tz, None))
+
+    def test_millis_of_second(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(123, millis_of_second(dt, tz))
+        self.assertEqual(NULL_INT, millis_of_second(None, tz))
+        self.assertEqual(NULL_INT, millis_of_second(dt, None))
+
+    def test_second_of_minute(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(17, second_of_minute(dt, tz))
+        self.assertEqual(NULL_INT, second_of_minute(None, tz))
+        self.assertEqual(NULL_INT, second_of_minute(tz, None))
+
+    def test_minute_of_hour(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(21, minute_of_hour(dt, tz))
+        self.assertEqual(NULL_INT, minute_of_hour(None, tz))
+        self.assertEqual(NULL_INT, minute_of_hour(dt, None))
+
+    def test_nanos_of_day(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(123456789+17*SECOND+21*MINUTE+14*HOUR, nanos_of_day(dt, tz))
+        self.assertEqual(NULL_LONG, nanos_of_day(None, tz))
+        self.assertEqual(NULL_LONG, nanos_of_day(dt, None))
+
+    def test_millis_of_day(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual((123456789+17*SECOND+21*MINUTE+14*HOUR) // 10**6, millis_of_day(dt, tz))
+        self.assertEqual(NULL_INT, millis_of_day(None, tz))
+        self.assertEqual(NULL_INT, millis_of_day(dt, None))
+
+    def test_second_of_day(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual((123456789+17*SECOND+21*MINUTE+14*HOUR) // 10**9, second_of_day(dt, tz))
+        self.assertEqual(NULL_INT, second_of_day(None, tz))
+        self.assertEqual(NULL_INT, second_of_day(dt, None))
+
+    def test_minute_of_day(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(21+14*60, minute_of_day(dt, tz))
+        self.assertEqual(NULL_INT, minute_of_day(None, tz))
+        self.assertEqual(NULL_INT, minute_of_day(dt, None))
+
+    def test_hour_of_day(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(14, hour_of_day(dt, tz))
+        self.assertEqual(NULL_INT, hour_of_day(None, tz))
+        self.assertEqual(NULL_INT, hour_of_day(dt, None))
+
+    def test_day_of_week(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        # 5 - Fri
+        self.assertEqual(5, day_of_week(dt, tz))
+        self.assertEqual(NULL_INT, day_of_week(None, tz))
+        self.assertEqual(NULL_INT, day_of_week(dt, None))
+
+    def test_day_of_month(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(10, day_of_month(dt, tz))
+        self.assertEqual(NULL_INT, day_of_month(None, tz))
+        self.assertEqual(NULL_INT, day_of_month(dt, None))
+
+    def test_day_of_year(self):
+        datetime_str = "2021-02-03T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(31+3, day_of_year(dt, tz))
+        self.assertEqual(NULL_INT, day_of_year(None, tz))
+        self.assertEqual(NULL_INT, day_of_year(dt, None))
+
+    def test_month_of_year(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(12, month_of_year(dt, tz))
+        self.assertEqual(NULL_INT, month_of_year(None, tz))
+        self.assertEqual(NULL_INT, month_of_year(dt, None))
+
+    def test_year(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(2021, year(dt, tz))
+        self.assertEqual(NULL_INT, year(None, tz))
+        self.assertEqual(NULL_INT, year(dt, None))
+
+    def test_year_of_century(self):
+        datetime_str = "2021-12-10T14:21:17.123456789"
+        timezone_str = "NY"
+        tz = time_zone(timezone_str)
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertEqual(21, year_of_century(dt, tz))
+        self.assertEqual(NULL_INT, year_of_century(None, tz))
+        self.assertEqual(NULL_INT, year_of_century(dt, None))
+
+    def test_at_midnight(self):
+        datetime_str = "2021-12-10T02:59:59"
+        timezone_str = "NY"
+        tz_ny = time_zone("NY")
+        tz_pt = time_zone("PT")
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        mid_night_time_ny = at_midnight(dt, tz_ny)
+        mid_night_time_pt = at_midnight(dt, tz_pt)
+        self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -21 * 60 * 60)
+
+        # DST ended in NY but not in PT
+        datetime_str = "2021-11-08T02:59:59"
+        timezone_str = "NY"
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        mid_night_time_ny = datetime_at_midnight(dt, tz_ny)
+        mid_night_time_pt = datetime_at_midnight(dt, tz_pt)
+        self.assertEqual(diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -22 * 60 * 60)
+
 
     # endregion
 
@@ -392,44 +545,7 @@ class TimeTestCase(BaseTestCase):
 
 
 
-    def test_datetime_at_midnight(self):
-        datetime_str = "2021-12-10T02:59:59"
-        timezone_str = "NY"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
-        mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
-        self.assertEqual(
-            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -21 * 60 * 60
-        )
 
-        # DST ended in NY but not in PT
-        datetime_str = "2021-11-08T02:59:59"
-        timezone_str = "NY"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        mid_night_time_ny = datetime_at_midnight(dt, TimeZone.NY)
-        mid_night_time_pt = datetime_at_midnight(dt, TimeZone.PT)
-        self.assertEqual(
-            diff_nanos(mid_night_time_ny, mid_night_time_pt) // 10 ** 9, -22 * 60 * 60
-        )
-
-    def test_day_of_month(self):
-        dt = now()
-        self.assertIn(day_of_month(dt, TimeZone.MT), range(1, 32))
-        datetime_str = "2021-12-01T00:01:05"
-        timezone_str = "HI"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(day_of_month(dt, TimeZone.HI), 1)
-        self.assertEqual(day_of_month(None, TimeZone.HI), NULL_INT)
-
-    def test_day_of_week(self):
-        dt = now()
-        self.assertIn(day_of_week(dt, TimeZone.MT), range(1, 8))
-        self.assertEqual(day_of_week(None, TimeZone.MT), NULL_INT)
-
-    def test_day_of_year(self):
-        dt = now()
-        self.assertIn(day_of_year(dt, TimeZone.MT), range(1, 366))
-        self.assertEqual(day_of_year(None, TimeZone.MT), NULL_INT)
 
     def test_diff_days(self):
         dt1 = now()
@@ -456,10 +572,6 @@ class TimeTestCase(BaseTestCase):
         dt = now()
         self.assertEqual(3, len(format_date(dt, TimeZone.MOS).split("-")))
 
-    def test_hour_of_day(self):
-        dt = now()
-        self.assertIn(hour_of_day(dt, TimeZone.AL), range(0, 24))
-        self.assertEqual(hour_of_day(None, TimeZone.AL), NULL_INT)
 
     def test_is_after(self):
         dt1 = now()
@@ -481,10 +593,6 @@ class TimeTestCase(BaseTestCase):
         self.assertGreaterEqual(nanos(dt), millis(dt) * 10 ** 6)
         self.assertEqual(millis(None), NULL_LONG)
 
-    def test_millis_of_second(self):
-        dt = now()
-        self.assertGreaterEqual(millis_of_second(dt, TimeZone.AT), 0)
-        self.assertEqual(millis_of_second(None, TimeZone.AT), NULL_INT)
 
     def test_millis_to_nanos(self):
         dt = now()
@@ -511,40 +619,6 @@ class TimeTestCase(BaseTestCase):
         dt1 = minus_period(dt, period)
         self.assertEqual(diff_nanos(dt1, dt), 60 * 60 * 10 ** 9)
 
-    def test_minute_of_day(self):
-        datetime_str = "2021-12-10T00:59:59"
-        timezone_str = "BT"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(59, minute_of_day(dt, TimeZone.BT))
-        self.assertEqual(NULL_INT, minute_of_day(None, TimeZone.BT))
-
-    def test_minute_of_hour(self):
-        datetime_str = "2021-12-10T23:59:59"
-        timezone_str = "CE"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(59, minute_of_hour(dt, TimeZone.CE))
-        self.assertEqual(NULL_INT, minute_of_hour(None, TimeZone.CE))
-
-    def test_month_of_year(self):
-        datetime_str = "2021-08-10T23:59:59"
-        timezone_str = "CH"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(8, month_of_year(dt, TimeZone.CH))
-        self.assertEqual(NULL_INT, month_of_year(None, TimeZone.CH))
-
-    def test_nanos_of_day(self):
-        datetime_str = "2021-12-10T00:00:01"
-        timezone_str = "CT"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(10 ** 9, nanos_of_day(dt, TimeZone.CT))
-        self.assertEqual(NULL_LONG, nanos_of_day(None, TimeZone.CT))
-
-    def test_nanos_of_second(self):
-        datetime_str = "2021-12-10T00:00:01.000000123"
-        timezone_str = "ET"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(123, nanos_of_second(dt, TimeZone.ET))
-        self.assertEqual(NULL_LONG, nanos_of_second(None, TimeZone.ET))
 
 
     def test_nanos_to_time(self):
@@ -573,34 +647,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(1, diff_nanos(dt, dt1))
         self.assertEqual(None, plus_nanos(None, 1))
 
-    def test_second_of_day(self):
-        datetime_str = "2021-12-10T00:01:05"
-        timezone_str = "HI"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(65, second_of_day(dt, TimeZone.HI))
-        self.assertEqual(NULL_INT, second_of_day(None, TimeZone.HI))
-
-    def test_second_of_minute(self):
-        datetime_str = "2021-12-10T00:01:05"
-        timezone_str = "HK"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(5, second_of_minute(dt, TimeZone.HK))
-        self.assertEqual(NULL_INT, second_of_minute(None, TimeZone.HK))
-
-
-    def test_year(self):
-        datetime_str = "2021-12-10T00:01:05"
-        timezone_str = "IN"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(2021, year(dt, TimeZone.IN))
-        self.assertEqual(NULL_INT, year(None, TimeZone.IN))
-
-    def test_year_of_century(self):
-        datetime_str = "2021-12-10T00:01:05"
-        timezone_str = "JP"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertEqual(21, year_of_century(dt, TimeZone.JP))
-        self.assertEqual(NULL_INT, year_of_century(None, TimeZone.JP))
 
     # def test_timezone(self):
     #     default_tz = TimeZone.get_default_timezone()
