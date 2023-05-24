@@ -16,6 +16,14 @@ such as ODBC, JDBC, or Flight SQL.
 ## Column references
 
 Calcite treats all references as indexes (with callers responsible for knowing the proper context in which those indexes
-exist).
+exist); see org.apache.calcite.rex.RexInputRef.
 
-TODO: discuss index ref vs named ref
+Since Deephaven refers to everything by name instead of index, there needs to be some translation layer that bridges
+this gap. An "index-string" strategy is used to name columns internally based on their SQL / calcite field index. Of
+course, the final node in the dag (the table the user actually cares about), needs to be named appropriately as the user
+expects.
+
+This strategy of maintaining internal names that are different than the final names may lead to "excessive" or confusing
+operations that don't seem to serve much purpose. In fact though, this strategy greatly simplifies and aids in the
+ease-of-implementation and maintenance of these adapting layers. There's potential to improve this in the future with
+SQLTODO(qst-optimization).
