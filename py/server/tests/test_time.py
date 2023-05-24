@@ -134,12 +134,65 @@ class TimeTestCase(BaseTestCase):
     
     # region: Conversions: Date Time Types
 
-    #TODO:  to_instant
-    #TODO:  to_zdt
-    #TODO:  make_instant
-    #TODO:  make_zdt
-    #TODO:  to_local_date
-    #TODO:  to_local_time
+    def test_to_instant(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+        
+        self.assertEqual(dt1, to_instant(dt2))
+        self.assertNone(to_instant(None))
+
+    def test_to_zdt(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+
+        self.assertEqual(dt2, to_zdt(dt1))
+        self.assertNone(to_zdt(None))
+
+    def test_make_instant(self):
+        dt = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        ld = parse_local_date("2021-12-10")
+        lt = to_local_time("14:21:17.123456789")
+        tz = time_zone("NY")
+
+        self.assertEqual(dt, make_instant(ld, lt, tz))
+        self.assertNone(make_instant(ld, lt, None))
+        self.assertNone(make_instant(ld, None, tz))
+        self.assertNone(make_instant(None, lt, tz))
+
+    def test_make_zdt(self):
+        dt = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+        ld = parse_local_date("2021-12-10")
+        lt = to_local_time("14:21:17.123456789")
+        tz = time_zone("NY")
+
+        self.assertEqual(dt, make_zdt(ld, lt, tz))
+        self.assertNone(make_zdt(ld, lt, None))
+        self.assertNone(make_zdt(ld, None, tz))
+        self.assertNone(make_zdt(None, lt, tz))
+
+    def test_to_local_date(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+        tz = time_zone("NY")
+        ld = parse_local_date("2021-12-10")
+
+        self.assertEqual(ld, to_local_date(dt1, tz))
+        self.assertEqual(ld, to_local_date(dt2, tz))
+        self.assertNone(to_local_date(dt1, None))
+        self.assertNone(to_local_date(dt2, None))
+        self.assertNone(to_local_date(None, tz))
+
+    def test_to_local_time(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_zdt("2021-12-10T14:21:17.123456789 NY")
+        tz = time_zone("NY")
+        lt = to_local_time("14:21:17.123456789")
+
+        self.assertEqual(lt, to_local_time(dt1, tz))
+        self.assertEqual(lt, to_local_time(dt2, tz))
+        self.assertNone(to_local_time(dt1, None))
+        self.assertNone(to_local_time(dt2, None))
+        self.assertNone(to_local_time(None, tz))
 
     # endregion
     
