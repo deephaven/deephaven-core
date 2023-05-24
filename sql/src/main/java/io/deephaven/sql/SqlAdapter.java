@@ -13,14 +13,12 @@ import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptTable.ViewExpander;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.ViewExpanders;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.Prepare.CatalogReader;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.sql.SqlExplainFormat;
@@ -32,12 +30,10 @@ import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Properties;
 
 /**
@@ -165,19 +161,14 @@ public final class SqlAdapter {
             SqlValidator validator,
             SqlNode validNode) {
         final RelOptCluster cluster = newCluster(typeFactory);
-        final SqlToRelConverter converter = new SqlToRelConverter(NoopExpander.INSTANCE, validator, catalogReader,
-                cluster, StandardConvertletTable.INSTANCE, SqlToRelConverter.config());
+        final SqlToRelConverter converter = new SqlToRelConverter(
+                ViewExpanders.simpleContext(cluster),
+                validator,
+                catalogReader,
+                cluster,
+                StandardConvertletTable.INSTANCE,
+                SqlToRelConverter.config());
         return converter.convertQuery(validNode, false, true).rel;
-    }
-
-    enum NoopExpander implements ViewExpander {
-        INSTANCE;
-
-        @Override
-        public RelRoot expandView(RelDataType rowType, String queryString, List<String> schemaPath,
-                @Nullable List<String> viewPath) {
-            return null;
-        }
     }
 
     private static RelOptCluster newCluster(RelDataTypeFactory factory) {
