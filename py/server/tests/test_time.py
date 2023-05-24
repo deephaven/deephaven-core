@@ -69,18 +69,66 @@ class TimeTestCase(BaseTestCase):
     
     # region: Conversions: Time Units
 
-    #TODO:  micros_to_nanos
-    #TODO:  millis_to_nanos
-    #TODO:  seconds_to_nanos
-    #TODO:  nanos_to_micros
-    #TODO:  millis_to_micros
-    #TODO:  seconds_to_micros
-    #TODO:  nanos_to_millis
-    #TODO:  micros_to_millis
-    #TODO:  seconds_to_millis
-    #TODO:  nanos_to_seconds
-    #TODO:  micros_to_seconds
-    #TODO:  millis_to_seconds
+    def test_micros_to_nanos(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 3, micros_to_nanos(t))
+        self.assertEqual(NULL_LONG, micros_to_nanos(NULL_LONG))
+
+    def test_millis_to_nanos(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 6, millis_to_nanos(t))
+        self.assertEqual(NULL_LONG, millis_to_nanos(NULL_LONG))
+
+    def test_seconds_to_nanos(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 9, seconds_to_nanos(t))
+        self.assertEqual(NULL_LONG, seconds_to_nanos(NULL_LONG))
+
+    def test_nanos_to_micros(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 3, nanos_to_micros(t))
+        self.assertEqual(NULL_LONG, nanos_to_micros(NULL_LONG))
+
+    def test_millis_to_micros(self):
+        t = 123456789
+        self.assertEqual(t * 10 ** 3, millis_to_micros(t))
+        self.assertEqual(NULL_LONG, millis_to_micros(NULL_LONG))
+
+    def test_seconds_to_micros(self):
+        t = 123456789
+        self.assertEqual(t * 10 ** 6, seconds_to_micros(t))
+        self.assertEqual(NULL_LONG, seconds_to_micros(NULL_LONG))
+
+    def test_nanos_to_millis(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 6, nanos_to_millis(t))
+        self.assertEqual(NULL_LONG, nanos_to_millis(NULL_LONG))
+
+    def test_micros_to_millis(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 3, micros_to_millis(t))
+        self.assertEqual(NULL_LONG, micros_to_millis(NULL_LONG))
+
+    def test_seconds_to_millis(self):
+        t = 123456789
+        self.assertEqual(t * 10 ** 3, seconds_to_millis(t))
+        self.assertEqual(NULL_LONG, seconds_to_millis(NULL_LONG))
+
+    def test_nanos_to_seconds(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 9, nanos_to_seconds(t))
+        self.assertEqual(NULL_LONG, nanos_to_seconds(NULL_LONG))
+
+    def test_micros_to_seconds(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 6, micros_to_seconds(t))
+        self.assertEqual(NULL_LONG, micros_to_seconds(NULL_LONG))
+
+    def test_millis_to_seconds(self):
+        t = 123456789
+        self.assertEqual(t // 10 ** 3, millis_to_seconds(t))
+        self.assertEqual(NULL_LONG, millis_to_seconds(NULL_LONG))
+
 
     # endregion
     
@@ -498,11 +546,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(123, nanos_of_second(dt, TimeZone.ET))
         self.assertEqual(NULL_LONG, nanos_of_second(None, TimeZone.ET))
 
-    def test_nanos_to_millis(self):
-        dt = now()
-        ns = nanos(dt)
-        self.assertEqual(ns // 10 ** 6, nanos_to_millis(ns))
-        self.assertEqual(NULL_LONG, nanos_to_millis(NULL_LONG))
 
     def test_nanos_to_time(self):
         dt = now()
