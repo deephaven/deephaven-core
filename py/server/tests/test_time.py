@@ -152,8 +152,13 @@ class TimeTestCase(BaseTestCase):
 
     # region: Binning
 
-    #TODO:  lower_bin
-    #TODO:  upper_bin
+    def test_lower_bin(self):
+        dt = now()
+        self.assertGreaterEqual(diff_nanos(lower_bin(dt, 1000000, MINUTE), dt), 0)
+
+    def test_upper_bin(self):
+        dt = now()
+        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, 1000000, MINUTE)), 0)
 
     # endregion
     
@@ -167,15 +172,146 @@ class TimeTestCase(BaseTestCase):
     
     # region: Parse
 
-    #TODO:  parse_time_zone
-    #TODO:  parse_nanos
-    #TODO:  parse_period
-    #TODO:  parse_duration
-    #TODO:  parse_instant
-    #TODO:  parse_zdt
-    #TODO:  parse_time_precision
-    #TODO:  parse_local_date
-    #TODO:  parse_local_time
+    def test_parse_time_zone:
+        tz = time_zone("America/New_York")
+        self.assertEqual(str(tz), "America/New_York")
+
+        tz = time_zone("MN")
+        self.assertEqual(str(tz), "America/Chicago")
+
+        tz = time_zone(None)
+        self.assertEqual(str(tz), "America/New_York")
+
+    def test_parse_nanos(self):
+        time_str = "530000:59:39.123456789"
+        in_nanos = parse_nanos(time_str)
+        self.assertEqual(str(in_nanos), "1908003579123456789")
+
+        with self.assertRaises(DHError) as cm:
+            time_str = "530000:59:39.X"
+            in_nanos = parse_nanos(time_str)
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        time_str = "00:59:39.X"
+        in_nanos = parse_nanos(time_str, quiet=True)
+        self.assertEqual(in_nanos, NULL_LONG)
+
+        time_str = "1:02:03"
+        in_nanos = parse_nanos(time_str)
+        time_str2 = format_nanos(in_nanos)
+        self.assertEqual(time_str2, time_str)
+
+    def test_parse_period(self):
+        period_str = "P1W"
+        period = parse_period(period_str)
+        self.assertEqual(str(period).upper(), period_str)
+
+        period_str = "P1M"
+        period = parse_period(period_str)
+        self.assertEqual(str(period).upper(), period_str)
+
+        with self.assertRaises(DHError) as cm:
+            period_str = "PT1Y"
+            period = parse_period(period_str)
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        period = parse_period(period_str, quiet=True)
+        self.assertNone(period)
+
+    def test_parse_duration(self):
+        duration_str = "PT1M"
+        duration = parse_duration(duration_str)
+        self.assertEqual(str(duration).upper(), duration_str)
+
+        duration_str = "PT1H"
+        duration = parse_duration(duration_str)
+        self.assertEqual(str(duration).upper(), duration_str)
+
+        with self.assertRaises(DHError) as cm:
+            duration = parse_duration("T1Q")
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        duration = parse_duration("T1Q", quiet=True)
+        self.assertNone(duration)
+
+    def test_parse_instant(self):
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "NY"
+        dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertTrue(str(dt).startswith(datetime_str))
+
+        with self.assertRaises(DHError) as cm:
+            datetime_str = "2021-12-10T23:59:59"
+            timezone_str = "--"
+            dt = parse_instant(f"{datetime_str} {timezone_str}")
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "--"
+        dt = parse_instant(f"{datetime_str} {timezone_str}", quiet=True)
+        self.assertNone(dt)
+
+    def test_parse_zdt(self):
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "NY"
+        dt = parse_zdt(f"{datetime_str} {timezone_str}")
+        self.assertTrue(str(dt).startswith(datetime_str))
+
+        with self.assertRaises(DHError) as cm:
+            datetime_str = "2021-12-10T23:59:59"
+            timezone_str = "--"
+            dt = parse_zdt(f"{datetime_str} {timezone_str}")
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "--"
+        dt = parse_zdt(f"{datetime_str} {timezone_str}", quiet=True)
+        self.assertNone(dt)
+
+    def test_parse_time_precision(self):
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "NY"
+        tp = parse_time_precision(f"{datetime_str} {timezone_str}")
+        self.assertEqual(tp, "SecondOfMinute")
+
+        with self.assertRaises(DHError) as cm:
+            datetime_str = "2021-12-10T23:59:59"
+            timezone_str = "--"
+            tp = parse_time_precision(f"{datetime_str} {timezone_str}")
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        datetime_str = "2021-12-10T23:59:59"
+        timezone_str = "--"
+        tp = parse_time_precision(f"{datetime_str} {timezone_str}", quiet=True)
+        self.assertNone(tp)
+
+    def test_parse_local_date(self):
+        date_str = "2021-12-10"
+        dt = parse_local_date(date_str)
+        self.assertTrue(str(dt), date_str)
+
+        with self.assertRaises(DHError) as cm:
+            date_str = "2021-x12-10"
+            dt = parse_local_date(date_str)
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        date_str = "2021-x12-10"
+        dt = parse_local_date(date_str, quiet=True)
+        self.assertNone(dt)
+
+    def test_parse_local_time(self):
+        time_str = "23:59:59"
+        dt = parse_local_time(time_str)
+        self.assertTrue(str(dt), time_str)
+
+        with self.assertRaises(DHError) as cm:
+            time_str = "23:59x:59"
+            dt = parse_local_time(time_str)
+        self.assertIn("RuntimeException", str(cm.exception))
+
+        time_str = "23:59x:59"
+        dt = parse_local_time(time_str, quiet=True)
+        self.assertNone(dt)
 
     # endregion
 
@@ -184,50 +320,8 @@ class TimeTestCase(BaseTestCase):
 
 
 
-    def test_to_datetime(self):
-        datetime_str = "2021-12-10T23:59:59"
-        timezone_str = "NY"
-        dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertTrue(str(dt).startswith(datetime_str))
 
-        with self.assertRaises(DHError) as cm:
-            datetime_str = "2021-12-10T23:59:59"
-            timezone_str = "--"
-            dt = to_datetime(f"{datetime_str} {timezone_str}")
-        self.assertIn("RuntimeException", str(cm.exception))
 
-    def test_to_period(self):
-        period_str = "1W"
-        period = to_period(period_str)
-        self.assertEqual(str(period).upper(), period_str)
-
-        period_str = "T1M"
-        period = to_period(period_str)
-        self.assertEqual(str(period).upper(), period_str)
-
-        with self.assertRaises(DHError) as cm:
-            period_str = "T1Y"
-            period = to_period(period_str)
-        self.assertIn("RuntimeException", str(cm.exception))
-
-    def test_to_nanos(self):
-        time_str = "530000:59:39.123456789"
-        in_nanos = to_nanos(time_str)
-        self.assertEqual(str(in_nanos), "1908003579123456789")
-
-        with self.assertRaises(DHError) as cm:
-            time_str = "530000:59:39.X"
-            in_nanos = to_nanos(time_str)
-        self.assertIn("RuntimeException", str(cm.exception))
-
-        time_str = "00:59:39.X"
-        in_nanos = to_nanos(time_str, quiet=True)
-        self.assertEqual(in_nanos, NULL_LONG)
-
-        time_str = "1:02:03"
-        in_nanos = to_nanos(time_str)
-        time_str2 = format_nanos(in_nanos)
-        self.assertEqual(time_str2, time_str)
 
     def test_current_time_and_diff(self):
         dt = now()
@@ -318,9 +412,6 @@ class TimeTestCase(BaseTestCase):
         self.assertFalse(is_before(dt2, dt1))
         self.assertFalse(is_after(None, dt1))
 
-    def test_lower_bin(self):
-        dt = now()
-        self.assertGreaterEqual(diff_nanos(lower_bin(dt, 1000000, MINUTE), dt), 0)
 
     def test_millis(self):
         dt = now()
@@ -438,9 +529,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(5, second_of_minute(dt, TimeZone.HK))
         self.assertEqual(NULL_INT, second_of_minute(None, TimeZone.HK))
 
-    def test_upper_bin(self):
-        dt = now()
-        self.assertGreaterEqual(diff_nanos(dt, upper_bin(dt, 1000000, MINUTE)), 0)
 
     def test_year(self):
         datetime_str = "2021-12-10T00:01:05"
