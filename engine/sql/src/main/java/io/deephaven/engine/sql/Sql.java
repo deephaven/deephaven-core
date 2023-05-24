@@ -111,7 +111,8 @@ public final class Sql {
             }
             return ColumnHeader.of(columnDef.getName(), columnDef.getDataType());
         }
-        throw new UnsupportedOperationException("todo, adapt array / vector types");
+        // SQLTODO(array-type)
+        throw new UnsupportedOperationException("SQLTODO(array-type)");
     }
 
     private enum ToGraphvizDot implements ObjFormatter<TableSpec> {

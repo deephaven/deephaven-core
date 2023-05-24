@@ -113,13 +113,13 @@ final class TypeAdapter implements Type.Visitor, GenericType.Visitor, PrimitiveT
     @Override
     public void visit(ArrayType<?, ?> arrayType) {
         // SQLTODO(array-type)
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("SQLTODO(array-type)");
     }
 
     @Override
     public void visit(CustomType<?> customType) {
         // SQLTODO(custom-type)
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("SQLTODO(custom-type)");
     }
 
     private RelDataType create(SqlTypeName typeName) {
