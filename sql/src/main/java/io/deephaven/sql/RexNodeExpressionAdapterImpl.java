@@ -62,6 +62,14 @@ final class RexNodeExpressionAdapterImpl extends RexVisitorBase<Expression> impl
 
     @Override
     public Expression expression(RexNode node) {
+        // SQLTODO(custom-expression)
+        // At a minimum, we'll probably want a way to express creating an expression referencing query scope params:
+        //
+        // SELECT MyIntColumn + query_scope("MyQueryScopeVar") FROM ...
+        //
+        // We'll likely want to be more general in support of this, and have a way to express generic
+        //
+        // SELECT custom_function("com.example.Example.myFunction", MyIntColumn) FROM ...
         return node.accept(this);
     }
 

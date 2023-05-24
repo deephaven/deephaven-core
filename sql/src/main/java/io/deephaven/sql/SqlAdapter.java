@@ -104,6 +104,10 @@ public final class SqlAdapter {
         // SQLTODO(qst-optimization)
         // There are QST optimizations that are orthogonal to SQL, but none-the-less may be useful and can be guided
         // based on the types of unoptimized structures that this implementation may make.
+        //
+        // Most immediately, this may be optimize away some of the "excessive" implementation layers that the SQL
+        // adapting layer is adding. (Note: these "excessive" layers are implementation details that aid in ease of
+        // implementing and maintaining said adapting.)
     }
 
     private static SqlNode parse(String sql) {

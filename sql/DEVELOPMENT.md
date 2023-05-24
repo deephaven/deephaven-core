@@ -16,6 +16,7 @@
  * emulate-count-non-null
  * array-type
  * custom-type
+ * custom-expression
 
 ## DH TODO
  * [deephaven-core#3515](https://github.com/deephaven/deephaven-core/issues/3515): Count non-null / count condition aggregations
