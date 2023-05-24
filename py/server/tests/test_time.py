@@ -173,15 +173,102 @@ class TimeTestCase(BaseTestCase):
     
     # region: Arithmetic
 
-    #TODO:  plus_period
-    #TODO:  minus_period
-    #TODO:  diff_nanos
-    #TODO:  diff_micros
-    #TODO:  diff_millis
-    #TODO:  diff_seconds
-    #TODO:  diff_minutes
-    #TODO:  diff_days
-    #TODO:  diff_years
+    #TODO:  OK with plus_period name???
+    def test_plus_period(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+
+        dt2 = parse_instant("2021-12-12T14:21:17.123456800 NY")
+        dt3 = plus_period(dt1, 11)
+        self.assertEqual(dt2, dt3)
+
+        dt2 = parse_instant("2021-12-12T16:21:17.123456789 NY")
+        duration_str = "PT2H"
+        duration = parse_duration(duration_str)
+        dt3 = plus_period(dt1, duration)
+        self.assertEqual(dt2, dt3)
+
+        dt2 = parse_instant("2021-12-12T14:21:17.123456789 NY")
+        period_str = "P2D"
+        period = parse_period(period_str)
+        dt3 = plus_period(dt1, period)
+        self.assertEqual(dt2, dt3)
+
+
+    #TODO:  OK with minus_period name???
+    def test_minus_period(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+
+        dt2 = parse_instant("2021-12-12T14:21:17.123456778 NY")
+        dt3 = minus_period(dt1, 11)
+        self.assertEqual(dt2, dt3)
+
+        dt2 = parse_instant("2021-12-08T12:21:17.123456789 NY")
+        duration_str = "PT2H"
+        duration = parse_duration(duration_str)
+        dt3 = minus_period(dt1, duration)
+        self.assertEqual(dt2, dt3)
+
+        dt2 = parse_instant("2021-12-08T14:21:17.123456789 NY")
+        period_str = "P2D"
+        period = parse_period(period_str)
+        dt3 = minus_period(dt1, period)
+        self.assertEqual(dt2, dt3)
+
+    def test_diff_nanos(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-12T14:21:17.123456800 NY")
+        self.assertEqual(11, diff_nanos(dt1, dt2))
+        self.assertEqual(-11, diff_nanos(dt2, dt1))
+        self.assertEqual(NULL_LONG, diff_nanos(None, dt2))
+        self.assertEqual(NULL_LONG, diff_nanos(dt1, None))
+
+    def test_diff_micros(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-12T14:21:17.123 NY")
+        self.assertEqual(456, diff_micros(dt1, dt2))
+        self.assertEqual(-456, diff_micros(dt2, dt1))
+        self.assertEqual(NULL_LONG, diff_micros(None, dt2))
+        self.assertEqual(NULL_LONG, diff_micros(dt1, None))
+
+    def test_diff_millis(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-12T14:21:17 NY")
+        self.assertEqual(123, diff_millis(dt1, dt2))
+        self.assertEqual(-123, diff_millis(dt2, dt1))
+        self.assertEqual(NULL_LONG, diff_millis(None, dt2))
+        self.assertEqual(NULL_LONG, diff_millis(dt1, None))
+
+    def test_diff_seconds(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:21:19.123456789 NY")
+        self.assertEqual(2.0, diff_seconds(dt1, dt2))
+        self.assertEqual(-2.0, diff_seconds(dt2, dt1))
+        self.assertEqual(NULL_DOUBLE, diff_seconds(None, dt2))
+        self.assertEqual(NULL_DOUBLE, diff_seconds(dt1, None))
+
+    def test_diff_minutes(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-10T14:27:19.123456789 NY")
+        self.assertEqual(6, diff_minutes(dt1, dt2))
+        self.assertEqual(-6, diff_minutes(dt2, dt1))
+        self.assertEqual(NULL_INT, diff_minutes(None, dt2))
+        self.assertEqual(NULL_INT, diff_minutes(dt1, None))
+
+    def test_diff_days(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2021-12-13T14:21:17.123456789 NY")
+        self.assertEqual(3.0, diff_days(dt1, dt2))
+        self.assertEqual(-3.0, diff_days(dt2, dt1))
+        self.assertEqual(NULL_DOUBLE, diff_days(None, dt2))
+        self.assertEqual(NULL_DOUBLE, diff_days(dt1, None))
+
+    def test_diff_years(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
+        dt2 = parse_instant("2023-12-10T14:21:17.123456789 NY")
+        self.assertEqual(2.0, diff_years(dt1, dt2))
+        self.assertEqual(-2.0, diff_years(dt2, dt1))
+        self.assertEqual(NULL_DOUBLE, diff_years(None, dt2))
+        self.assertEqual(NULL_DOUBLE, diff_years(dt1, None))
 
     # endregion
 
@@ -593,15 +680,6 @@ class TimeTestCase(BaseTestCase):
 
 
 
-    def test_diff_days(self):
-        dt1 = now()
-        dt2 = plus_nanos(dt1, 2*DAY)
-        self.assertGreaterEqual(diff_days(dt2, dt1), 1.9)
-
-    def test_diff_years(self):
-        dt1 = now()
-        dt2 = plus_nanos(dt1, 2*YEAR)
-        self.assertGreaterEqual(diff_years(dt2, dt1), 1.9)
 
 
 
@@ -647,24 +725,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt, dt1)
         self.assertEqual(None, nanos_to_datetime(NULL_LONG))
 
-    def test_plus_period(self):
-        period_str = "T1H"
-        period = to_period(period_str)
-
-        dt = now()
-        dt1 = plus_period(dt, period)
-        self.assertEqual(diff_nanos(dt, dt1), 60 * 60 * 10 ** 9)
-
-        period_str = "1WT1H"
-        period = to_period(period_str)
-        dt2 = plus_period(dt, period)
-        self.assertEqual(diff_nanos(dt, dt2), (7 * 24 + 1) * 60 * 60 * 10 ** 9)
-
-    def test_plus_nanos(self):
-        dt = now()
-        dt1 = plus_nanos(dt, 1)
-        self.assertEqual(1, diff_nanos(dt, dt1))
-        self.assertEqual(None, plus_nanos(None, 1))
 
 
     # def test_timezone(self):
