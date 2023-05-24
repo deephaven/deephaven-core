@@ -11,6 +11,179 @@ from tests.testbase import BaseTestCase
 
 
 class TimeTestCase(BaseTestCase):
+
+    # region Constants
+
+    def test_constants(self):
+        self.assertEqual(1000,MICRO)
+        self.assertEqual(1000000,MILLI)
+        self.assertEqual(1000000000,SECOND)
+        self.assertEqual(60*1000000000,MINUTE)
+        self.assertEqual(60*60*1000000000,HOUR)
+        self.assertEqual(24*60*60*1000000000,DAY)
+        self.assertEqual(7*24*60*60*1000000000,WEEK)
+        self.assertEqual(365*24*60*60*1000000000,YEAR)
+
+        self.assertEqual(1/SECOND, SECONDS_PER_NANO)
+        self.assertEqual(1/MINUTE, MINUTES_PER_NANO)
+        self.assertEqual(1/HOUR, HOURS_PER_NANO)
+        self.assertEqual(1/DAY, DAYS_PER_NANO)
+        self.assertEqual(1/YEAR, YEARS_PER_NANO)
+
+    #TODO:  DateStyle
+
+    # endregion
+
+    # region: CLock
+
+    #TODO:  now
+    #TODO:  today
+
+    # endregion
+    
+    # region: Time Zone
+
+    #TODO:  time_zone
+
+    # endregion
+    
+    # region: Conversions: Time Units
+
+    #TODO:  micros_to_nanos
+    #TODO:  millis_to_nanos
+    #TODO:  seconds_to_nanos
+    #TODO:  nanos_to_micros
+    #TODO:  millis_to_micros
+    #TODO:  seconds_to_micros
+    #TODO:  nanos_to_millis
+    #TODO:  micros_to_millis
+    #TODO:  seconds_to_millis
+    #TODO:  nanos_to_seconds
+    #TODO:  micros_to_seconds
+    #TODO:  millis_to_seconds
+
+    # endregion
+    
+    # region: Conversions: Date Time Types
+
+    #TODO:  to_instant
+    #TODO:  to_zdt
+    #TODO:  make_instant
+    #TODO:  make_zdt
+    #TODO:  to_local_date
+    #TODO:  to_local_time
+
+    # endregion
+    
+    # region: Conversions: Epoch
+
+    #TODO:  epoch_nanos
+    #TODO:  epoch_micros
+    #TODO:  epoch_millis
+    #TODO:  epoch_seconds
+    #TODO:  epoch_nanos_to_instant
+    #TODO:  epoch_micros_to_instant
+    #TODO:  epoch_millis_to_instant
+    #TODO:  epoch_seconds_to_instant
+    #TODO:  epoch_nanos_to_zdt
+    #TODO:  epoch_micros_to_zdt
+    #TODO:  epoch_millis_to_zdt
+    #TODO:  epoch_seconds_to_zdt
+    #TODO:  epoch_auto_to_epoch_nanos
+    #TODO:  epoch_auto_to_instant
+    #TODO:  epoch_auto_to_zdt
+
+    # endregion
+    
+    # region: Conversions: Excel
+
+    #TODO:  to_excel_time
+    #TODO:  excel_to_instant
+    #TODO:  excel_to_zdt
+
+    # endregion
+    
+    # region: Arithmetic
+
+    #TODO:  plus_period
+    #TODO:  minus_period
+    #TODO:  diff_nanos
+    #TODO:  diff_micros
+    #TODO:  diff_millis
+    #TODO:  diff_seconds
+    #TODO:  diff_minutes
+    #TODO:  diff_days
+    #TODO:  diff_years
+
+    # endregion
+
+    # region: Comparisons
+
+    #TODO:  is_before
+    #TODO:  is_before_or_equal
+    #TODO:  is_after
+    #TODO:  is_after_or_equal
+
+    # endregion
+
+    # region: Chronology
+
+    #TODO:  nanos_of_milli
+    #TODO:  micros_of_milli
+    #TODO:  nanos_of_second
+    #TODO:  micros_of_second
+    #TODO:  millis_of_second
+    #TODO:  second_of_minute
+    #TODO:  minute_of_hour
+    #TODO:  nanos_of_day
+    #TODO:  millis_of_day
+    #TODO:  second_of_day
+    #TODO:  minute_of_day
+    #TODO:  hour_of_day
+    #TODO:  day_of_week
+    #TODO:  day_of_month
+    #TODO:  day_of_year
+    #TODO:  month_of_year
+    #TODO:  year
+    #TODO:  year_of_century
+    #TODO:  at_midnight
+
+    # endregion
+
+    # region: Binning
+
+    #TODO:  lower_bin
+    #TODO:  upper_bin
+
+    # endregion
+    
+    # region: Format
+
+    #TODO:  format_nanos
+    #TODO:  format_datetime
+    #TODO:  format_date
+
+    # endregion
+    
+    # region: Parse
+
+    #TODO:  parse_time_zone
+    #TODO:  parse_nanos
+    #TODO:  parse_period
+    #TODO:  parse_duration
+    #TODO:  parse_instant
+    #TODO:  parse_zdt
+    #TODO:  parse_time_precision
+    #TODO:  parse_local_date
+    #TODO:  parse_local_time
+
+    # endregion
+
+
+
+
+
+
     def test_to_datetime(self):
         datetime_str = "2021-12-10T23:59:59"
         timezone_str = "NY"

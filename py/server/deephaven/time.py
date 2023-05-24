@@ -1082,7 +1082,6 @@ def is_after_or_equal(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, Zo
 
 # endregion
 
-
 # region Chronology
 
 def nanos_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
@@ -1501,7 +1500,6 @@ def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instan
 
 # endregion
 
-
 # region Binning
 
 def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offset: Union[int, str] = 0) -> \
@@ -1569,7 +1567,6 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
 
 # endregion
 
-
 # region Format
 
 def format_nanos(nanos: int) -> str:
@@ -1635,7 +1632,6 @@ def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
 
 
 # endregion
-
 
 # region Parse
 
