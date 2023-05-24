@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
@@ -16,15 +16,14 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.mutable.MutableInt;
 
-
-public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperator.PercentileTypeHelper {
+public class InstantPercentileTypeHelper implements SsmChunkedPercentileOperator.PercentileTypeHelper {
     private final double percentile;
-    private final DateTimeArraySource resultColumn;
+    private final InstantArraySource resultColumn;
 
-    DateTimePercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
+    InstantPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
-        this.resultColumn = (DateTimeArraySource) resultColumn;
+        this.resultColumn = (InstantArraySource) resultColumn;
         // endregion
     }
 

@@ -34,7 +34,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final DateTime threshold2 = new DateTime(data[199] - DateTimeUtils.secondsToNanos(600));
 
         final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
-                ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
         TableTools.showWithRowSet(filtered);
         assertEquals(44, filtered.size());

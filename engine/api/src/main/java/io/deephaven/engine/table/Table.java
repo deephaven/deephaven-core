@@ -359,6 +359,7 @@ public interface Table extends
     @ConcurrentMethod
     Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
+    // TODO-RWC: This needs a new immutable wrapping a pair and a target type
     /**
      * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
      * column as a Long column (with each DateTime represented instead as the corresponding number of nanos since the

@@ -327,7 +327,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 .toArray();
 
         final ColumnHolder<?> dateTimeCol = col("DateTimeColumn", data);
-        final ColumnHolder<?> dateTimeCol2 = ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
+        final ColumnHolder<?> dateTimeCol2 = ColumnHolder.getInstantColumnHolder("DateTimeColumn2", false, longData);
 
         final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
 

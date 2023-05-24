@@ -4,19 +4,18 @@
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
+import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
+import io.deephaven.util.QueryConstants;
 
-
-public class DateTimeSetResult implements SsmChunkedMinMaxOperator.SetResult {
+public class InstantSetResult implements SsmChunkedMinMaxOperator.SetResult {
     private final boolean minimum;
-    private final DateTimeArraySource resultColumn;
+    private final InstantArraySource resultColumn;
 
-    public DateTimeSetResult(boolean minimum, WritableColumnSource resultColumn) {
+    public InstantSetResult(boolean minimum, WritableColumnSource resultColumn) {
         this.minimum = minimum;
-        this.resultColumn = (DateTimeArraySource) resultColumn;
+        this.resultColumn = (InstantArraySource) resultColumn;
     }
 
     @Override

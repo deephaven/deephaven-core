@@ -44,7 +44,7 @@ public class ColumnInfo<T, U> {
         if (dataType == Long.class && (type == DateTime.class || type == Instant.class)) {
             Require.eqFalse(immutable, "immutable");
             Require.eqFalse(grouped, "grouped");
-            return ColumnHolder.getDateTimeColumnHolder(name, false, initialData);
+            return ColumnHolder.getInstantColumnHolder(name, false, initialData);
         }
 
         if (immutable) {
