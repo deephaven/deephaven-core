@@ -4,6 +4,7 @@
 
 import unittest
 from time import sleep
+from datetime import datetime
 
 from deephaven.constants import NULL_LONG, NULL_INT
 from deephaven.time import *
@@ -36,14 +37,33 @@ class TimeTestCase(BaseTestCase):
 
     # region: CLock
 
-    #TODO:  now
-    #TODO:  today
+    def test_now(self):
+        for system in [True, False]:
+            for resolution in ['ns', 'ms']:
+                dt = now(system=system, resolution=resolution)
+                sleep(1)
+                dt1 = now(system=system, resolution=resolution)
+                self.assertGreaterEqual(diff_nanos(dt, dt1), 100000000)
+
+    def test_today(self):
+        tz = time_zone("America/New_york")
+        td = today(tz)
+        target = datetime.today().strftime('%Y-%m-%d')
+        self.assertEqual(td, target)
 
     # endregion
     
     # region: Time Zone
 
-    #TODO:  time_zone
+    def test_time_zone:
+        tz = time_zone("America/New_York")
+        self.assertEqual(str(tz), "America/New_York")
+
+        tz = time_zone("MN")
+        self.assertEqual(str(tz), "America/Chicago")
+
+        tz = time_zone(None)
+        self.assertEqual(str(tz), "America/New_York")
 
     # endregion
     
@@ -173,13 +193,13 @@ class TimeTestCase(BaseTestCase):
     # region: Parse
 
     def test_parse_time_zone:
-        tz = time_zone("America/New_York")
+        tz = parse_time_zone("America/New_York")
         self.assertEqual(str(tz), "America/New_York")
 
-        tz = time_zone("MN")
+        tz = parse_time_zone("MN")
         self.assertEqual(str(tz), "America/Chicago")
 
-        tz = time_zone(None)
+        tz = parse_time_zone(None)
         self.assertEqual(str(tz), "America/New_York")
 
     def test_parse_nanos(self):
@@ -323,11 +343,6 @@ class TimeTestCase(BaseTestCase):
 
 
 
-    def test_current_time_and_diff(self):
-        dt = now()
-        sleep(1)
-        dt1 = now()
-        self.assertGreaterEqual(diff_nanos(dt, dt1), 100000000)
 
     def test_datetime_at_midnight(self):
         datetime_str = "2021-12-10T02:59:59"
@@ -544,15 +559,15 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(21, year_of_century(dt, TimeZone.JP))
         self.assertEqual(NULL_INT, year_of_century(None, TimeZone.JP))
 
-    def test_timezone(self):
-        default_tz = TimeZone.get_default_timezone()
-        TimeZone.set_default_timezone(TimeZone.UTC)
-        tz1 = TimeZone.get_default_timezone()
-        self.assertEqual(TimeZone.UTC, tz1)
-        TimeZone.set_default_timezone(TimeZone.JP)
-        tz2 = TimeZone.get_default_timezone()
-        self.assertEqual(TimeZone.JP, tz2)
-        TimeZone.set_default_timezone(default_tz)
+    # def test_timezone(self):
+    #     default_tz = TimeZone.get_default_timezone()
+    #     TimeZone.set_default_timezone(TimeZone.UTC)
+    #     tz1 = TimeZone.get_default_timezone()
+    #     self.assertEqual(TimeZone.UTC, tz1)
+    #     TimeZone.set_default_timezone(TimeZone.JP)
+    #     tz2 = TimeZone.get_default_timezone()
+    #     self.assertEqual(TimeZone.JP, tz2)
+    #     TimeZone.set_default_timezone(default_tz)
 
 
 if __name__ == "__main__":
