@@ -77,8 +77,13 @@ public final class SqlAdapter {
 
         // 3: Convert into relational node
         final RelNode relNode = convert(typeFactory, catalogReader, validator, validNode);
-        log.debug(
-                RelOptUtil.dumpPlan("[Logical plan]", relNode, SqlExplainFormat.TEXT, SqlExplainLevel.ALL_ATTRIBUTES));
+        if (log.isDebugEnabled()) {
+            log.debug(RelOptUtil.dumpPlan(
+                    "[Logical plan]",
+                    relNode,
+                    SqlExplainFormat.TEXT,
+                    SqlExplainLevel.ALL_ATTRIBUTES));
+        }
 
         // 4: Relational optimization
         // SQLTODO(rel-node-optimization)
