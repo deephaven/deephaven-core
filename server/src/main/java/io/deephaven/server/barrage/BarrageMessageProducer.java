@@ -203,7 +203,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private volatile long lastScheduledUpdateTime = 0;
 
     private final boolean isBlinkTable;
-    /** if the parent is a blink table, then this records number of items seen since last propagation */
+    /** if the parent is a blink table, then this records number of items seen since last propagation or snapshot */
     private long blinkTableUpdateSize = 0;
     /** if the parent is a blink table, then this records number of items sent last propagation */
     private long lastBlinkTableUpdateSize = 0;
@@ -1605,26 +1605,25 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         final Delta firstDelta;
 
         if (isBlinkTable) {
-
-            final TableUpdate update = new TableUpdateImpl(
-                    RowSetFactory.flat(blinkTableUpdateSize),
-                    RowSetFactory.flat(lastBlinkTableUpdateSize),
-                    RowSetFactory.empty(),
-                    RowSetShiftData.EMPTY,
-                    ModifiedColumnSet.EMPTY);
-
-            long offset = 0;
+            long size = 0;
             final RowSetBuilderSequential recordedBuilder = RowSetFactory.builderSequential();
             for (int ii = startDelta; ii < endDelta; ++ii) {
                 final Delta delta = pendingDeltas.get(ii);
 
                 try (final WritableRowSet positions = delta.update.added().invert(delta.recordedAdds)) {
-                    positions.shiftInPlace(offset);
+                    positions.shiftInPlace(size);
                     recordedBuilder.appendRowSequence(positions);
                 }
 
-                offset += delta.update.added().size();
+                size += delta.update.added().size();
             }
+
+            final TableUpdate update = new TableUpdateImpl(
+                    RowSetFactory.flat(size),
+                    RowSetFactory.flat(lastBlinkTableUpdateSize),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY);
 
             final boolean hasDelta = startDelta < endDelta;
             final Delta origDelta = hasDelta ? pendingDeltas.get(startDelta) : null;
@@ -1639,8 +1638,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     new BitSet());
 
             // store our update size to remove on the next update
-            lastBlinkTableUpdateSize = blinkTableUpdateSize;
-            blinkTableUpdateSize = 0;
+            lastBlinkTableUpdateSize = size;
         } else {
             firstDelta = pendingDeltas.get(startDelta);
         }
@@ -2172,6 +2170,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                     flipSnapshotStateForSubscriptions(snapshotSubscriptions);
                     finalizeSnapshotForSubscriptions(snapshotSubscriptions);
                     promoteSnapshotToActive();
+                    // the snapshot must separate blink updates (due to subscription changes); this requires that
+                    // pre/post the snapshot are independent updates w.r.t. filtering data to within the viewport
+                    blinkTableUpdateSize = 0;
                 }
             }
             if (log.isDebugEnabled()) {
