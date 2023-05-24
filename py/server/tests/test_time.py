@@ -31,7 +31,9 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(1/DAY, DAYS_PER_NANO)
         self.assertEqual(1/YEAR, YEARS_PER_NANO)
 
-    #TODO:  DateStyle
+    def test_datestyle(self):
+        for v in DateStyle:
+            self.assertEqual(str(v), str(v.value))
 
     # endregion
 
@@ -336,7 +338,6 @@ class TimeTestCase(BaseTestCase):
     
     # region: Arithmetic
 
-    #TODO:  OK with plus_period name???
     def test_plus_period(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
 
@@ -357,7 +358,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(dt2, dt3)
 
 
-    #TODO:  OK with minus_period name???
     def test_minus_period(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 NY")
 
