@@ -15,7 +15,7 @@ import java.time.ZonedDateTime;
  * Array-backed ColumnSource for {@link ZonedDateTime}s. Allows reinterpretation as long.
  */
 public class ZonedDateTimeArraySource extends NanosBasedTimeArraySource<ZonedDateTime>
-        implements MutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertableTimeSource.Zoned {
+        implements MutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertibleTimeSource.Zoned {
     private final ZoneId zone;
 
     public ZonedDateTimeArraySource(final @NotNull String zone) {

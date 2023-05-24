@@ -23,7 +23,7 @@ import java.time.*;
 
 public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<TIME_TYPE>,
-        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertableTimeSource {
+        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource {
 
     protected final LongArraySource nanoSource;
 

@@ -15,7 +15,7 @@ import java.time.Instant;
  * Sparse Array-backed ColumnSource for {@link Instant}s. Allows reinterpret as long.
  */
 public class InstantSparseArraySource extends NanosBasedTimeSparseArraySource<Instant>
-        implements MutableColumnSourceGetDefaults.ForLongAsInstant, DefaultChunkSource<Values>, ConvertableTimeSource {
+        implements MutableColumnSourceGetDefaults.ForLongAsInstant, DefaultChunkSource<Values>, ConvertibleTimeSource {
     public InstantSparseArraySource() {
         super(Instant.class);
     }

@@ -8,8 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +23,7 @@ import java.time.ZonedDateTime;
  */
 final class RegionedColumnSourceInstant
         extends RegionedColumnSourceReferencing<Instant, Values, Long, ColumnRegionLong<Values>>
-        implements ColumnSourceGetDefaults.ForObject<Instant>, ConvertableTimeSource {
+        implements ColumnSourceGetDefaults.ForObject<Instant>, ConvertibleTimeSource {
 
     public RegionedColumnSourceInstant() {
         this(new RegionedColumnSourceLong.AsValues());
@@ -82,11 +81,6 @@ final class RegionedColumnSourceInstant
     public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
         return RegionedColumnSourceZonedDateTime.asLocalTime(zone,
                 (RegionedColumnSourceLong<Values>) getNativeSource());
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new RegionedColumnSourceDateTime((RegionedColumnSourceLong<Values>) getNativeSource());
     }
 
     @Override

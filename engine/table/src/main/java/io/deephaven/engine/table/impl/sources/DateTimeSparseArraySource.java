@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * Array-backed ColumnSource for DateTimes. Allows reinterpret as long.
  */
 public class DateTimeSparseArraySource extends NanosBasedTimeSparseArraySource<DateTime>
-        implements MutableColumnSourceGetDefaults.ForLongAsDateTime, DefaultChunkSource<Values>, ConvertableTimeSource {
+        implements MutableColumnSourceGetDefaults.ForLongAsDateTime, DefaultChunkSource<Values>, ConvertibleTimeSource {
 
     public DateTimeSparseArraySource() {
         super(DateTime.class);

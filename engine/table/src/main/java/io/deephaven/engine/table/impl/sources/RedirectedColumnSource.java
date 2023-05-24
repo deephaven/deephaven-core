@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.text.Convert;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
@@ -43,7 +42,7 @@ import static io.deephaven.util.QueryConstants.*;
  * @param <T>
  */
 public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
-        implements UngroupableColumnSource, ConvertableTimeSource {
+        implements UngroupableColumnSource, ConvertibleTimeSource {
     /**
      * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
      *
@@ -388,43 +387,43 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     @Override
     public boolean supportsTimeConversion() {
-        return innerSource instanceof ConvertableTimeSource
-                && ((ConvertableTimeSource) innerSource).supportsTimeConversion();
+        return innerSource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) innerSource).supportsTimeConversion();
     }
 
     @Override
     public ColumnSource<Long> toEpochNano() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toEpochNano());
     }
 
     @Override
     public ColumnSource<DateTime> toDateTime() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toDateTime());
     }
 
     @Override
     public ColumnSource<Instant> toInstant() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toInstant());
     }
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toZonedDateTime(zone));
     }
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toLocalDate(zone));
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toLocalTime(zone));
     }
 

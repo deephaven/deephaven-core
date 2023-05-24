@@ -10,7 +10,6 @@ package io.deephaven.engine.table.impl.by;
 
 import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -19,6 +18,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.LongComparisons;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;

@@ -115,7 +115,7 @@ public class ReplicateSourcesAndChunks {
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillChunkByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillChunkByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
@@ -188,7 +188,7 @@ public class ReplicateSourcesAndChunks {
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, Require.class,
                 ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
@@ -246,7 +246,7 @@ public class ReplicateSourcesAndChunks {
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillChunkByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillChunkByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
@@ -867,7 +867,7 @@ public class ReplicateSourcesAndChunks {
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "getAndAddUnsafe", Arrays.asList(
                 "    public final long getAndAddUnsafe(long index, long addend) {",
                 "        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);",
@@ -963,7 +963,7 @@ public class ReplicateSourcesAndChunks {
         lines = addImport(lines, LongFunction.class, ToLongFunction.class, Instant.class, ZonedDateTime.class,
                 LocalDate.class, LocalTime.class, Require.class, ZoneId.class);
         lines = standardCleanups(lines);
-        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertableTimeSource");
+        lines = globalReplacements(lines, "/\\*\\s*MIXIN_IMPLS\\s*\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "fillByRanges", l -> addLongToBoxedAdapter(l, "LongFunction<R>",
                 "WritableObjectChunk<R, ? super Values>", "asWritableObjectChunk"));
         lines = replaceRegion(lines, "fillByKeys", l -> addLongToBoxedAdapter(l, "LongFunction<R>",

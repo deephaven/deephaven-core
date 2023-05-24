@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
 public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
         implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>, InMemoryColumnSource,
         PossiblyImmutableColumnSource, WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback,
-        ConvertableTimeSource {
+        ConvertibleTimeSource {
 
     protected final LongSparseArraySource nanoSource;
 

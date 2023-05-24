@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.time.DateTime;
 
 import java.time.*;
 
@@ -12,7 +11,7 @@ import java.time.*;
  * An interface for {@link ColumnSource}s that indicate that it both represents a time value, and may be converted
  * between other common time values efficiently.
  */
-public interface ConvertableTimeSource {
+public interface ConvertibleTimeSource {
     /**
      * Convert this source to a {@link ZonedDateTime} source at the specified {@link ZoneId zone}.
      *
@@ -43,13 +42,6 @@ public interface ConvertableTimeSource {
      * @return a view of this source as a {@link Instant}
      */
     ColumnSource<Instant> toInstant();
-
-    /**
-     * Convert this source to a {@link DateTime} source.
-     *
-     * @return a view of this source as a {@link DateTime}
-     */
-    ColumnSource<DateTime> toDateTime();
 
     /**
      * Convert this source to a {@code long} source of nanoseconds of epoch.

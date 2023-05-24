@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
@@ -24,7 +24,7 @@ import java.time.ZonedDateTime;
  */
 final class RegionedColumnSourceDateTime
         extends RegionedColumnSourceReferencing<DateTime, Values, Long, ColumnRegionLong<Values>>
-        implements ColumnSourceGetDefaults.ForObject<DateTime>, ConvertableTimeSource {
+        implements ColumnSourceGetDefaults.ForObject<DateTime>, ConvertibleTimeSource {
 
     public RegionedColumnSourceDateTime() {
         this(new RegionedColumnSourceLong.AsValues());

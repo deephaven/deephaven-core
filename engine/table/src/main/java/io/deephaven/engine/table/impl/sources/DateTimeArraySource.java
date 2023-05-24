@@ -13,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
  * Array-backed {@link ColumnSource} for DateTimes. Allows reinterpretation to long and {@link java.time.Instant}.
  */
 public class DateTimeArraySource extends NanosBasedTimeArraySource<DateTime>
-        implements MutableColumnSourceGetDefaults.ForLongAsDateTime, ConvertableTimeSource {
+        implements MutableColumnSourceGetDefaults.ForLongAsDateTime, ConvertibleTimeSource {
     public DateTimeArraySource() {
         super(DateTime.class);
     }

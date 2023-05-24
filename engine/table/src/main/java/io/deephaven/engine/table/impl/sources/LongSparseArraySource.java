@@ -17,8 +17,6 @@ import java.time.LocalTime;
 import io.deephaven.base.verify.Require;
 import java.time.ZoneId;
 
-import io.deephaven.time.DateTime;
-
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -56,7 +54,7 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
 public class LongSparseArraySource extends SparseArrayColumnSource<Long>
-        implements MutableColumnSourceGetDefaults.ForLong , ConvertableTimeSource {
+        implements MutableColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
     // region recyclers
     private static final SoftRecycler<long[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[BLOCK_SIZE], null);
@@ -1388,7 +1386,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     // region reinterpretation
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;
+        return alternateDataType == long.class || alternateDataType == Instant.class
     }
 
     @SuppressWarnings("unchecked")
@@ -1396,8 +1394,6 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == this.getType()) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) this;
-        } else if(alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         } else if (alternateDataType == Instant.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
         }
@@ -1423,11 +1419,6 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
         return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new DateTimeSparseArraySource(this);
     }
 
     @Override

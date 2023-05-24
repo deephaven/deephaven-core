@@ -67,9 +67,9 @@ public class ReplicateRegionsAndRegionedSources {
                 "import io.deephaven.engine.table.ColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;",
                 "import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;",
-                "import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;");
+                "import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;");
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, ZoneId.class);
-        lines = globalReplacements(lines, "/\\*\\s+MIXIN_INTERFACES\\s+\\*/", ",ConvertableTimeSource ");
+        lines = globalReplacements(lines, "/\\*\\s+MIXIN_INTERFACES\\s+\\*/", ", ConvertibleTimeSource");
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
