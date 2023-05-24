@@ -149,7 +149,9 @@ public final class SqlAdapter {
     private static SqlValidator validator(
             RelDataTypeFactory typeFactory,
             CatalogReader catalogReader) {
-        // add documentation about why DH does this
+        // DH sorts nulls first when ascending and nulls last when descending; when the user / SQL string doesn't
+        // specify NULLS FIRST nor NULLS LAST, we should assume the DH-safe defaults. This aligns with
+        // NullCollation.LOW configuration.
         final SqlValidator.Config config = SqlValidator.Config.DEFAULT.withDefaultNullCollation(NullCollation.LOW);
         return SqlValidatorUtil.newValidator(SqlStdOperatorTable.instance(), catalogReader, typeFactory, config);
     }
