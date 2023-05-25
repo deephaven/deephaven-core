@@ -81,33 +81,44 @@ class CombinedDockerRunTask extends AbstractDockerRemoteApiTask {
                 StartContainerCmd startContainerCmd = dockerClient.startContainerCmd(containerId)
                 startContainerCmd.exec()
 
-                WaitContainerCmd containerCommand = dockerClient.waitContainerCmd(containerId)
+                WaitContainerCmd waitCommand = dockerClient.waitContainerCmd(containerId)
 
-                ResultCallback<WaitResponse> callback = containerCommand.start()
-                def exitCode = callback.awaitStatusCode(awaitStatusTimeoutSeconds.get(), TimeUnit.SECONDS)
-                logger.quiet "Container exited with code ${exitCode}"
+                ResultCallback<WaitResponse> callback = waitCommand.start()
+                def failedMessage = null;
+                try {
+                    def exitCode = callback.awaitStatusCode(awaitStatusTimeoutSeconds.get(), TimeUnit.SECONDS)
+                    logger.quiet "Container exited with code ${exitCode}"
+                    if (exitCode != 0) {
+                        failedMessage = "Command '${entrypoint.get()}' failed with status code ${exitCode}";
+                    }
+                } catch (Exception exception) {
+                    if (exception.message.contains('timeout')) {
+                        failedMessage = "Command '${entrypoint.get()}' timed out after ${awaitStatusTimeoutSeconds.get()} seconds"
+                    } else {
+                        failedMessage = "Command '${entrypoint.get()}' failed: " + exception.message
+                    }
+                }
 
                 // If the task failed, write all logs
-                if (exitCode != 0) {
+                if (failedMessage) {
                     LogContainerCmd logCommand = dockerClient.logContainerCmd(containerId)
                     logCommand.withContainerId(containerId)
                     logCommand.withStdErr(true)
                     logCommand.withStdOut(true)
 
-                    logCommand.exec(createCallback())?.awaitCompletion()
+                    logCommand.exec(createCallback())?.awaitCompletion(10, TimeUnit.SECONDS)
 
-
-                    throw new GradleException("Command '${entrypoint.get()}' failed with status code ${exitCode}, check logs for details")
+                    throw new GradleException("${failedMessage}, check logs for details")
                 }
             }
 
             // Copy output to internal output directory
-            CopyArchiveFromContainerCmd containerCommand = dockerClient.copyArchiveFromContainerCmd(containerId, remotePath.get())
+            CopyArchiveFromContainerCmd copyCommand = dockerClient.copyArchiveFromContainerCmd(containerId, remotePath.get())
             logger.quiet "Copying '${remotePath.get()}' from container with ID '${containerId}' to '${outputDir.get()}'."
 
             InputStream tarStream
             try {
-                tarStream = containerCommand.exec()
+                tarStream = copyCommand.exec()
 
                 def hostDestination = outputDir.get().asFile
 
