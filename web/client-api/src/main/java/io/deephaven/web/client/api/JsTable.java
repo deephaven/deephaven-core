@@ -632,7 +632,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     }
 
     private Promise<JsTotalsTable> fetchTotals(Object config, JsProvider<ClientTableState> state) {
-
+        //TODO put a updateView on top for any distinct to toString arrays
         JsTotalsTableConfig directive = getTotalsDirectiveFromOptionalConfig(config);
         ClientTableState[] lastGood = {null};
         final JsTableFetch totalsFactory = (callback, newState, metadata) -> {

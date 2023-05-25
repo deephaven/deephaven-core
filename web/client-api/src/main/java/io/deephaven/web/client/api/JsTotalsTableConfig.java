@@ -7,9 +7,11 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggSpec;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggregation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NullValueMap;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationColumns;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationCount;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAbsSum;
@@ -20,6 +22,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggs
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecLast;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMax;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMin;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecNonUniqueSentinel;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecStd;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSum;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
@@ -68,8 +71,8 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.FIRST,
             JsAggregationOperation.LAST,
             JsAggregationOperation.COUNT_DISTINCT,
-            JsAggregationOperation.DISTINCT,
-            JsAggregationOperation.UNIQUE);
+            JsAggregationOperation.DISTINCT/*,
+            JsAggregationOperation.UNIQUE*/);
 
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
@@ -324,15 +327,19 @@ public class JsTotalsTableConfig {
                     columns.setMatchPairsList(aggColumns);
                     break;
                 }
-                case JsAggregationOperation.UNIQUE: {
-                    AggSpec spec = new AggSpec();
-                    spec.setUnique(new AggSpecUnique());
-                    columns = new AggregationColumns();
-                    columns.setSpec(spec);
-                    agg.setColumns(columns);
-                    columns.setMatchPairsList(aggColumns);
-                    break;
-                }
+//                case JsAggregationOperation.UNIQUE: {
+//                    AggSpec spec = new AggSpec();
+//                    AggSpecUnique unique = new AggSpecUnique();
+//                    AggSpecNonUniqueSentinel sentinel = new AggSpecNonUniqueSentinel();
+//                    sentinel.setNullValue(Table_pb.NullValue.getNULL_VALUE());
+//                    unique.setNonUniqueSentinel(sentinel);
+//                    spec.setUnique(unique);
+//                    columns = new AggregationColumns();
+//                    columns.setSpec(spec);
+//                    agg.setColumns(columns);
+//                    columns.setMatchPairsList(aggColumns);
+//                    break;
+//                }
                 // case JsAggregationOperation.SORTED_FIRST: {
                 // // TODO #3302 support this
                 // }
