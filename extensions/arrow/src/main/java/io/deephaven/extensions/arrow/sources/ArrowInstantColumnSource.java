@@ -15,20 +15,18 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.extensions.arrow.ArrowWrapperTools;
-import io.deephaven.time.DateTimeUtils;
+import java.time.Instant;
 import org.apache.arrow.vector.TimeStampVector;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
-
 /**
  * Arrow Vector: {@link TimeStampVector}
- * Deephaven Type: io.deephaven.time.Instant
+ * Deephaven Type: java.time.Instant
  */
 public class ArrowInstantColumnSource extends AbstractArrowColumnSource<Instant> implements ImmutableColumnSourceGetDefaults.ForObject<Instant> {
     public ArrowInstantColumnSource(final int highBit, final @NotNull Field field,
-                                    final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
         super(Instant.class, highBit, field, arrowTableContext);
     }
 
@@ -51,6 +49,6 @@ public class ArrowInstantColumnSource extends AbstractArrowColumnSource<Instant>
     }
 
     private Instant extract(final int posInBlock, final TimeStampVector vector) {
-        return vector.isSet(posInBlock) == 0 ? null : DateTimeUtils.epochNanosToInstant(vector.get(posInBlock));
+        return vector.isSet(posInBlock) == 0 ? null : io.deephaven.time.DateTimeUtils.epochNanosToInstant(vector.get(posInBlock));
     }
 }

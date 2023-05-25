@@ -19,8 +19,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -29,14 +27,7 @@ import org.junit.Test;
 public class ArrowTimestampVectorTest {
     private static final List<Long> expectedRows = Arrays.asList(0L, 1L, 2L, 4L, 8L, 9L);
 
-    private static final Instant[] expectedValues = new Instant[] {
-            DateTimeUtils.epochNanosToInstant(1670443801),
-            DateTimeUtils.epochNanosToInstant(1570443532),
-            null,
-            DateTimeUtils.epochNanosToInstant(0),
-            DateTimeUtils.epochNanosToInstant(170443801),
-            DateTimeUtils.epochNanosToInstant(-72309740)
-    };
+    private static final Instant[] expectedValues = new Instant[] {io.deephaven.time.DateTimeUtils.epochNanosToInstant(1670443801), io.deephaven.time.DateTimeUtils.epochNanosToInstant(1570443532), null, io.deephaven.time.DateTimeUtils.epochNanosToInstant(0), io.deephaven.time.DateTimeUtils.epochNanosToInstant(170443801), io.deephaven.time.DateTimeUtils.epochNanosToInstant(-72309740)};
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();

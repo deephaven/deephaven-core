@@ -125,7 +125,7 @@ public class GenerateArrowColumnSources {
                 "get", "ForObject", WritableObjectChunk.class, List.of(
                         preparePrivateExtractMethod(instant, TimeStampVector.class)
                                 .addStatement(
-                                        "return vector.isSet(posInBlock) == 0 ? null : new $T(vector.get(posInBlock))",
+                                        "return vector.isSet(posInBlock) == 0 ? null : io.deephaven.time.DateTimeUtils.epochNanosToInstant(vector.get(posInBlock))",
                                         instant)
                                 .build()));
     }

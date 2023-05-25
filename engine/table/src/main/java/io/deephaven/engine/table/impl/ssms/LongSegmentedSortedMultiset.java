@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.time.Instant;
 
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.time.DateTimeUtils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
