@@ -1608,11 +1608,11 @@ public class DateTimeUtils {
      * @return A long value representing an Epoch offset in nanoseconds. Throws {@link RuntimeException} if the String
      *         cannot be parsed.
      */
-    public static long convertTime(String date) {
-        long ret = convertTimeQuiet(date);
+    public static long convertTime(String time) {
+        long ret = convertTimeQuiet(time);
 
         if (ret == NULL_LONG) {
-            throw new RuntimeException("Cannot parse time : " + date);
+            throw new RuntimeException("Cannot parse time : " + time);
         }
 
         return ret;
@@ -1621,16 +1621,16 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
+     * @param period The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
      *        e.g. T1M for one minute.
      * @throws RuntimeException if the String cannot be parsed, otherwise a {@link Period} object.
      */
     @SuppressWarnings("WeakerAccess")
-    public static Period convertPeriod(String date) {
-        Period ret = convertPeriodQuiet(date);
+    public static Period convertPeriod(String period) {
+        Period ret = convertPeriodQuiet(period);
 
         if (ret == null) {
-            throw new RuntimeException("Cannot parse period : " + date);
+            throw new RuntimeException("Cannot parse period : " + period);
         }
 
         return ret;
@@ -1661,14 +1661,14 @@ public class DateTimeUtils {
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
      *
-     * @param date The String to convert.
+     * @param time The String to convert.
      * @return null if the String cannot be parsed, otherwise a {@link LocalTime}.
      */
-    public static LocalTime convertLocalTimeQuiet(String date) {
+    public static LocalTime convertLocalTimeQuiet(String time) {
         try {
             // private static final Pattern LOCAL_TIME_PATTERN =
             // Pattern.compile("([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
-            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(date);
+            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(time);
             if (matcher.matches()) {
                 final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
                 final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
@@ -1852,40 +1852,40 @@ public class DateTimeUtils {
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a long nanoseconds offset from Epoch.
      *
-     * @param date The String to convert.
+     * @param time The String to convert.
      * @return {@link QueryConstants#NULL_LONG} if the String cannot be parsed, otherwise long nanoseconds offset from
      *         Epoch.
      */
-    public static long convertTimeQuiet(String date) {
+    public static long convertTimeQuiet(String time) {
         try {
-            if (TIME_AND_DURATION_PATTERN.matcher(date).matches()) {
+            if (TIME_AND_DURATION_PATTERN.matcher(time).matches()) {
                 long multiplier = 1;
                 long dayNanos = 0;
                 long subsecondNanos = 0;
 
-                if (date.charAt(0) == '-') {
+                if (time.charAt(0) == '-') {
                     multiplier = -1;
 
-                    date = date.substring(1);
+                    time = time.substring(1);
                 }
 
-                int tIndex = date.indexOf('T');
+                int tIndex = time.indexOf('T');
 
                 if (tIndex != -1) {
-                    dayNanos = 86400000000000L * Integer.parseInt(date.substring(0, tIndex));
+                    dayNanos = 86400000000000L * Integer.parseInt(time.substring(0, tIndex));
 
-                    date = date.substring(tIndex + 1);
+                    time = time.substring(tIndex + 1);
                 }
 
-                int decimalIndex = date.indexOf('.');
+                int decimalIndex = time.indexOf('.');
 
                 if (decimalIndex != -1) {
-                    subsecondNanos = parseNanos(date.substring(decimalIndex + 1));
+                    subsecondNanos = parseNanos(time.substring(decimalIndex + 1));
 
-                    date = date.substring(0, decimalIndex);
+                    time = time.substring(0, decimalIndex);
                 }
 
-                String[] tokens = date.split(":");
+                String[] tokens = time.split(":");
 
                 if (tokens.length == 2) { // hh:mm
                     return multiplier
@@ -1907,18 +1907,18 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
+     * @param period The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
      *        e.g. T1M for one minute.
      * @return null if the String cannot be parsed, otherwise a {@link Period} object.
      */
-    public static Period convertPeriodQuiet(String date) {
-        if (date.length() <= 1) {
+    public static Period convertPeriodQuiet(String period) {
+        if (period.length() <= 1) {
             return null;
         }
 
         try {
-            if (PERIOD_PATTERN.matcher(date).matches()) {
-                return new Period(date);
+            if (PERIOD_PATTERN.matcher(period).matches()) {
+                return new Period(period);
             }
         } catch (Exception e) {
             // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
