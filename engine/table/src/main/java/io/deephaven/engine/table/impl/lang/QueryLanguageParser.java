@@ -1538,7 +1538,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         if (op == BinaryExpr.Operator.EQUALS) {
-            // TODO: it's bit weird to use isNull() here as it's not part of QueryLanguageFunctionUtils.
+            // Note that `isNull()` is the only method used here that's not from QueryLanguageFunctionUtils.
             if (leftExpr.isNullLiteralExpr()) {
                 if (printer.hasStringBuilder()) {
                     final MethodCallExpr isNullExpr = new MethodCallExpr("isNull", rightExpr);
