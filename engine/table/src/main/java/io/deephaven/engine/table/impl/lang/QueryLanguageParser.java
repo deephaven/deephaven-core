@@ -233,12 +233,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final boolean unboxArguments,
             final boolean verifyIdempotence)
             throws QueryLanguageParseException {
-        this.packageImports = Set.copyOf(packageImports);
-        this.classImports = Set.copyOf(classImports);
-        this.staticImports = Set.copyOf(staticImports);
+        this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
+        this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
+        this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
         this.testOverrideClassLookups = testOverrideClassLookups;
-        this.variables = Map.copyOf(variables);
-        this.variableTypeArguments = Map.copyOf(variableTypeArguments);
+        this.variables = variables == null ? Collections.emptyMap() : Map.copyOf(variables);
+        this.variableTypeArguments =
+                variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
         this.unboxArguments = unboxArguments;
 
         // Convert backticks *before* converting single equals!
@@ -1378,6 +1379,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Check whether {@code name} is in scope from a static import. Results are cached.
+     * 
      * @param name The name to look up.
      * @return The type of {@code name}, if {@code name} is imported by a static import.
      */
@@ -1396,7 +1398,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
 
                 for (final Class<?> nestedClass : staticImportedClass.getDeclaredClasses()) {
-                    if (Modifier.isStatic(nestedClass.getModifiers()) && nestedClass.getSimpleName().equals(nameForLookup)) {
+                    if (Modifier.isStatic(nestedClass.getModifiers())
+                            && nestedClass.getSimpleName().equals(nameForLookup)) {
                         return nestedClass;
                     }
                 }
