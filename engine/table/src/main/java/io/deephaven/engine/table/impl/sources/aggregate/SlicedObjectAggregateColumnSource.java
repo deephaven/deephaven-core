@@ -23,13 +23,17 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * {@link ColumnSource} implementation for aggregation result short columns.
  */
-public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends BaseAggregateSlicedColumnSource<ObjectVector, COMPONENT_TYPE> {
+public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE>
+        extends BaseAggregateSlicedColumnSource<ObjectVector<COMPONENT_TYPE>, COMPONENT_TYPE> {
+
     public SlicedObjectAggregateColumnSource(
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             @NotNull final ColumnSource<Long> startSource,
             @NotNull final ColumnSource<Long> endSource) {
-        super(ObjectVector.class, aggregatedSource, groupRowSetSource, startSource, endSource);
+        // noinspection unchecked,rawtypes
+        super((Class<ObjectVector<COMPONENT_TYPE>>) (Class) ObjectVector.class,
+                aggregatedSource, groupRowSetSource, startSource, endSource);
     }
 
     public SlicedObjectAggregateColumnSource(
@@ -37,18 +41,20 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             final long startOffset,
             final long endOffset) {
-        super(ObjectVector.class, aggregatedSource, groupRowSetSource, startOffset, endOffset);
+        // noinspection unchecked,rawtypes
+        super((Class<ObjectVector<COMPONENT_TYPE>>) (Class) ObjectVector.class,
+                aggregatedSource, groupRowSetSource, startOffset, endOffset);
     }
 
     private ObjectVector<COMPONENT_TYPE> makeVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR
+                ? ObjectVectorDirect.empty()
                 : new ObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
     }
 
     private ObjectVector<COMPONENT_TYPE> makePrevVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR
+                ? ObjectVectorDirect.empty()
                 : new ObjectVectorColumnWrapper<>(aggregatedSourcePrev, rowSetSlice);
     }
 
@@ -70,7 +76,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
+        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -95,7 +101,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
+        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -110,14 +116,15 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk<? extends Values> startChunk = startSource != null ?
-                startSource.getChunk(ctx.startGetContext, rowSequence).asLongChunk()
+        final LongChunk<? extends Values> startChunk = startSource != null
+                ? startSource.getChunk(ctx.startGetContext, rowSequence).asLongChunk()
                 : null;
-        final LongChunk<? extends Values> endChunk = endSource != null ?
-                endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
+        final LongChunk<? extends Values> endChunk = endSource != null
+                ? endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
@@ -128,7 +135,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
+                typedDestination.set(di, ObjectVectorDirect.empty());
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -136,7 +143,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = bucketRowSet.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
+                final long end = ClampUtil.clampLong(0, rowSetSize, rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -154,14 +161,15 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk<? extends Values> startPrevChunk = startSource != null ?
-                startSource.getPrevChunk(ctx.startGetContext, rowSequence).asLongChunk()
+        final LongChunk<? extends Values> startPrevChunk = startSource != null
+                ? startSource.getPrevChunk(ctx.startGetContext, rowSequence).asLongChunk()
                 : null;
-        final LongChunk<? extends Values> endPrevChunk = endSource != null ?
-                endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
+        final LongChunk<? extends Values> endPrevChunk = endSource != null
+                ? endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
@@ -172,7 +180,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
+                typedDestination.set(di, ObjectVectorDirect.empty());
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
@@ -183,11 +191,12 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = groupRowSetToUse.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
+                final long end = ClampUtil.clampLong(0, rowSetSize, rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, makePrevVector(rowSetSlice));            }
+                typedDestination.set(di, makePrevVector(rowSetSlice));
+            }
         }
         typedDestination.setSize(size);
     }

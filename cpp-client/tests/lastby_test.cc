@@ -3,14 +3,14 @@
  */
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore//utility/utility.h"
 
 using deephaven::client::BooleanExpression;
 using deephaven::client::NumericExpression;
 using deephaven::client::TableHandleManager;
 using deephaven::client::TableHandle;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Last By", "[lastby]") {

@@ -6,7 +6,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -107,7 +107,7 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits,
+            final double windowScaleUnits,
             final ColumnSource<?> valueSource,
             @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource,

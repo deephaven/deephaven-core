@@ -20,7 +20,7 @@ public abstract class EmMinMaxSpec extends UpdateBySpecBase {
     }
 
     public static EmMinMaxSpec of(boolean isMax, WindowScale windowScale) {
-        return ImmutableEmMinMaxSpec.builder().timeScale(windowScale).build();
+        return ImmutableEmMinMaxSpec.builder().isMax(isMax).timeScale(windowScale).build();
     }
 
     public static EmMinMaxSpec ofTime(OperationControl control,
@@ -45,11 +45,11 @@ public abstract class EmMinMaxSpec extends UpdateBySpecBase {
         return of(isMax, WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmMinMaxSpec ofTicks(OperationControl control, boolean isMax, long tickWindow) {
+    public static EmMinMaxSpec ofTicks(OperationControl control, boolean isMax, double tickWindow) {
         return of(control, isMax, WindowScale.ofTicks(tickWindow));
     }
 
-    public static EmMinMaxSpec ofTicks(boolean isMax, long tickWindow) {
+    public static EmMinMaxSpec ofTicks(boolean isMax, double tickWindow) {
         return of(isMax, WindowScale.ofTicks(tickWindow));
     }
 

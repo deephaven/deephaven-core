@@ -5,8 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterOr;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -79,15 +77,15 @@ public abstract class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertTableEquals(table.where(Filter.from("k%2 == 0")), table);
+        assertTableEquals(table.where("k%2 == 0"), table);
         assertTableEquals(table.where(filter.apply("k%2 == 0")), table);
 
-        assertTableEquals(table.where(Filter.from("i%2 == 0")),
+        assertTableEquals(table.where("i%2 == 0"),
                 testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
         assertTableEquals(table.where(filter.apply("i%2 == 0")), testRefreshingTable(
                 i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
-        assertTableEquals(table.where((Filter.from("(y-'a') = 2"))), testRefreshingTable(
+        assertTableEquals(table.where("(y-'a') = 2"), testRefreshingTable(
                 i(2).toTracking(), col("x", 3), col("y", 'c')));
         assertTableEquals(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(
                 i(2).toTracking(), col("x", 3), col("y", 'c')));
@@ -170,7 +168,7 @@ public abstract class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 col("x", 1, 2, 3, 4), col("y", 'a', 'b', 'c', 'f'));
 
-        final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
+        final QueryTable whereResult = (QueryTable) table.where(Filter.or(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.addUpdateListener(whereResultListener);
         assertTableEquals(whereResult, testRefreshingTable(
@@ -228,7 +226,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.modified, i());
 
         showWithRowSet(table);
-        final Table usingStringArray = table.where(FilterOr.of(Filter.from("x%3 == 0", "y=='f'")));
+        final Table usingStringArray = table.where(Filter.or(Filter.from("x%3 == 0", "y=='f'")));
         assertTableEquals(usingStringArray, testRefreshingTable(
                 i(4, 6, 8).toTracking(), col("x", 21, 3, 4), col("y", 'x', 'c', 'f')));
     }
@@ -605,26 +603,27 @@ public abstract class QueryTableWhereTest {
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.where(FilterOr.of(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
+                        return filteredTable
+                                .where(Filter.or(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.where(FilterOr.of(
-                                FilterAnd.of(Filter.from("intCol % 2 == 0", "intCol % 2 == 1")),
+                        return filteredTable.where(Filter.or(
+                                Filter.and(Filter.from("intCol % 2 == 0", "intCol % 2 == 1")),
                                 RawString.of("Sym in `aa`, `ee`")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.where(FilterOr.of(
-                                FilterAnd.of(Filter.from("intCol % 2 == 0", "Sym in `aa`, `ii`")),
+                        return filteredTable.where(Filter.or(
+                                Filter.and(Filter.from("intCol % 2 == 0", "Sym in `aa`, `ii`")),
                                 RawString.of("Sym in `aa`, `ee`")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.where(FilterOr.of(
+                        return filteredTable.where(Filter.or(
                                 RawString.of("intCol % 2 == 0"),
                                 RawString.of("intCol % 2 == 1"),
                                 RawString.of("Sym in `aa`, `ee`")));
@@ -801,6 +800,7 @@ public abstract class QueryTableWhereTest {
             try (final SafeCloseable ignored = executionContext.open()) {
                 tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
             } catch (Exception e) {
+                log.error().append("extra thread caught ").append(e).endl();
                 caught.setValue(e);
             }
             final long end1 = System.currentTimeMillis();
@@ -813,7 +813,11 @@ public abstract class QueryTableWhereTest {
         t.interrupt();
 
         try {
-            t.join();
+            final long timeout_ms = 300_000; // 5 min
+            t.join(timeout_ms);
+            if (t.isAlive()) {
+                throw new RuntimeException("Thread did not terminate within " + timeout_ms + " ms");
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

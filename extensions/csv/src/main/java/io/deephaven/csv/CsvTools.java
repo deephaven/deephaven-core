@@ -3,6 +3,8 @@
  */
 package io.deephaven.csv;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -34,7 +36,6 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -74,6 +75,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -269,31 +271,30 @@ public class CsvTools {
     }
 
     /**
-     * Convert an ordered collection of column names to use for a result table into a series of {@link MatchPair rename
-     * pairs} to pass to {@link Table#renameColumns(MatchPair...)}.
+     * Convert an ordered collection of column names to use for a result table into a series of {@link Pair rename
+     * pairs} to pass to {@link Table#renameColumns(Collection)}.
      *
      * @param columnNames The column names
-     * @return An array of {@link MatchPair rename columns}
+     * @return A collection of {@link Pair rename columns}
      */
-    public static MatchPair[] renamesForHeaderless(Collection<String> columnNames) {
-        final MatchPair[] renames = new MatchPair[columnNames.size()];
+    public static Collection<Pair> renamesForHeaderless(Collection<String> columnNames) {
         int ci = 0;
+        final List<Pair> out = new ArrayList<>(columnNames.size());
         for (String columnName : columnNames) {
-            // CsvSpecs.headerless() column names are 1-based index
-            renames[ci] = new MatchPair(columnName, String.format("Column%d", ci + 1));
+            out.add(Pair.of(ColumnName.of(columnName), ColumnName.of(String.format("Column%d", ci + 1))));
             ++ci;
         }
-        return renames;
+        return out;
     }
 
     /**
-     * Convert an array of column names to use for a result table into a series of {@link MatchPair rename pairs} to
-     * pass to {@link Table#renameColumns(MatchPair...)}.
+     * Convert an array of column names to use for a result table into a series of {@link Pair rename pairs} to pass to
+     * {@link Table#renameColumns(Collection)}.
      *
      * @param columnNames The column names
-     * @return An array of {@link MatchPair rename columns}
+     * @return A collection of {@link Pair rename columns}
      */
-    public static MatchPair[] renamesForHeaderless(String... columnNames) {
+    public static Collection<Pair> renamesForHeaderless(String... columnNames) {
         return renamesForHeaderless(Arrays.asList(columnNames));
     }
 

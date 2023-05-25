@@ -8,7 +8,7 @@ import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -44,15 +44,16 @@ public class CharDeltaOperator extends BaseCharUpdateByOperator {
             // read the value from the values chunk
             final char currentVal = charValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_CHAR) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_CHAR
-                        : currentVal;
-            } else if (currentVal != NULL_CHAR) {
-                curVal = (char)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_CHAR) {
                 curVal = NULL_CHAR;
+            } else if (lastVal == NULL_CHAR) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_CHAR
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (char)0
+                            : currentVal);
+            } else {
+                curVal = (char)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

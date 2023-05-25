@@ -49,8 +49,8 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
     }
 
     @Override
-    public void prepareForParallelPopulation(final RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(final RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
 
     // region Getters & Setters

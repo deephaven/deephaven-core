@@ -4,13 +4,15 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -252,18 +254,19 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new PatternFilter(
+                                return WhereFilterAdapter.of(FilterPattern.of(
                                         ColumnName.of(colName),
                                         Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
                                         Mode.MATCHES,
-                                        false);
+                                        false), false);
                             }
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
                             final String[] parts = quickFilter.split("\\s+");
-                            final List<WhereFilter> filters =
-                                    Arrays.stream(parts).map(part -> getSelectFilterForAnd(colName, part, colClass))
-                                            .filter(Objects::nonNull).collect(Collectors.toList());
+                            final List<WhereFilter> filters = Arrays.stream(parts)
+                                    .map(part -> getSelectFilterForAnd(colName, part, colClass))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
@@ -272,15 +275,16 @@ public class WhereFilterFactory {
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
                             final List<WhereFilter> filters = Arrays.stream(parts)
-                                    .map(part -> getSelectFilter(colName, part, filterMode, colClass))
-                                    .filter(Objects::nonNull).collect(Collectors.toList());
+                                    .map(part -> createQuickFilter(cd, part, filterMode))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
                             return DisjunctiveFilter.makeDisjunctiveFilter(
                                     filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
                         } else {
-                            return getSelectFilter(colName, quickFilter, filterMode, colClass);
+                            return createQuickFilter(cd, quickFilter, filterMode);
                         }
 
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
@@ -296,11 +300,9 @@ public class WhereFilterFactory {
         for (String part : parts) {
             final WhereFilter[] filterArray = tableDefinition.getColumnStream()
                     .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()))
-                    .map(cd -> {
-                        final Class<?> colClass = cd.getDataType();
-                        final String colName = cd.getName();
-                        return getSelectFilter(colName, part, QuickFilterMode.MULTI, colClass);
-                    }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
+                    .map(cd -> createQuickFilter(cd, part, QuickFilterMode.MULTI))
+                    .filter(Objects::nonNull)
+                    .toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
                 filters.add(DisjunctiveFilter.makeDisjunctiveFilter(filterArray));
             }
@@ -309,8 +311,10 @@ public class WhereFilterFactory {
         return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    private static WhereFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
-            Class<?> colClass) {
+    private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,
+            QuickFilterMode filterMode) {
+        final String colName = colDef.getName();
+        final Class<?> colClass = colDef.getDataType();
         final InferenceResult typeData = new InferenceResult(quickFilter);
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {
@@ -338,11 +342,11 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new PatternFilter(
+                return WhereFilterAdapter.of(FilterPattern.of(
                         ColumnName.of(colName),
                         Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                         Mode.FIND,
-                        false);
+                        false), false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == Instant.class && typeData.dateLower != null && typeData.dateUpper != null) {
@@ -357,11 +361,11 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new PatternFilter(
+            return WhereFilterAdapter.of(FilterPattern.of(
                     ColumnName.of(colName),
                     Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                     Mode.FIND,
-                    false);
+                    false), false);
         }
         return null;
     }
@@ -385,7 +389,7 @@ public class WhereFilterFactory {
     }
 
     @VisibleForTesting
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -394,11 +398,11 @@ public class WhereFilterFactory {
             String... values) {
         final String value =
                 constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
-        return new PatternFilter(
+        return WhereFilterAdapter.of(FilterPattern.of(
                 ColumnName.of(columnName),
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
                 Mode.FIND,
-                matchType == MatchType.Inverted);
+                matchType == MatchType.Inverted), false);
     }
 
     private static String constructStringContainsRegex(

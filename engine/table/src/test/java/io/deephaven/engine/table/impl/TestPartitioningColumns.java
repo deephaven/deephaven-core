@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -26,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -88,9 +90,9 @@ public class TestPartitioningColumns {
 
         TstUtils.assertTableEquals(expected, result);
 
-        final WhereFilter[] filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(WhereFilter[]::new);
-        TstUtils.assertTableEquals(expected.where(filters), result.where(filters));
+        final List<WhereFilter> filters = input.getDefinition().getColumnStream()
+                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).collect(Collectors.toList());
+        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
     }

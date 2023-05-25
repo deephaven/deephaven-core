@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.HierarchicalTableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
@@ -204,7 +205,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                     rollupTable.getGroupByColumns(),
                                     filters,
                                     message -> Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, message));
-                            rollupTable = rollupTable.withFilters(filters);
+                            rollupTable = rollupTable.withFilter(Filter.and(filters));
                         }
                         if (translatedSorts != null) {
                             RollupTable.NodeOperationsRecorder aggregatedSorts =
@@ -223,7 +224,8 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         TreeTable treeTable = (TreeTable) inputHierarchicalTable;
                         final TableDefinition nodeDefinition = treeTable.getNodeDefinition();
                         if (finishedConditions != null) {
-                            treeTable = treeTable.withFilters(makeWhereFilters(finishedConditions, nodeDefinition));
+                            treeTable = treeTable
+                                    .withFilter(Filter.and(makeWhereFilters(finishedConditions, nodeDefinition)));
                         }
                         if (translatedSorts != null) {
                             TreeTable.NodeOperationsRecorder treeSorts = treeTable.makeNodeOperationsRecorder();

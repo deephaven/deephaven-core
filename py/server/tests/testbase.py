@@ -52,7 +52,7 @@ class BaseTestCase(unittest.TestCase):
             timeout *= 10 ** 9
             while table.size < row_count and timeout > 0:
                 s_time = time.time_ns()
-                table.j_table.awaitUpdate(timeout // 10 ** 6)
+                table.await_update(timeout // 10 ** 6)
                 timeout -= time.time_ns() - s_time
 
             self.assertGreaterEqual(table.size, row_count)
@@ -65,9 +65,9 @@ class BaseTestCase(unittest.TestCase):
             row_count (int): the target row count of the constituent tables
             timeout (int): the number of seconds to wait
         """
-        end_ns = time.time_ns() + timeout * 10 ** 6
+        end_ns = time.time_ns() + timeout * 10 ** 9
         for ct in pt.target.constituent_tables:
-            self.wait_ticking_table_update(ct, row_count, (end_ns - time.time_ns()) // 10 ** 6)
+            self.wait_ticking_table_update(ct, row_count, (end_ns - time.time_ns()) // 10 ** 9)
 
     def assert_table_equals(self, table_a: Table, table_b: Table):
         self.assertTrue(table_equals(table_a, table_b))

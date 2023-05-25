@@ -6,6 +6,8 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/utility/arrow_util.h"
 
+using deephaven::client::utility::okOrThrow;
+
 namespace deephaven::client {
 FlightWrapper TableHandleManager::createFlightWrapper() const {
   return FlightWrapper(impl_);

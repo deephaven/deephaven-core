@@ -8,7 +8,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
@@ -123,10 +122,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         // First time ok
         // noinspection unused
-        final Table t1 = empty.select(sc);
+        final Table t1 = empty.select(List.of(sc));
         // Second time throws exception
         // noinspection unused
-        final Table t2 = empty.select(sc);
+        final Table t2 = empty.select(List.of(sc));
     }
 
     /**
@@ -149,7 +148,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table empty = emptyTable(5);
         final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         ((QueryTable) empty).validateSelect(sc);
-        empty.select(sc);
+        empty.select(List.of(sc));
     }
 
     /**
@@ -174,7 +173,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t = emptyTable(10).select("II = ii").where("II > 5");
         final SelectColumn sc = SelectColumnFactory.getExpression("XX = II + 1000");
         ((QueryTable) t).validateSelect(sc);
-        final Table result = t.select(sc);
+        final Table result = t.select(List.of(sc));
     }
 
     public void testIds1822() {
@@ -449,7 +448,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
         final Table result = source.view(List.of(new ReinterpretedColumn<>("dt", Instant.class, "dt", long.class)));
         assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class));
+        final Table reflexive = result.view(List.of(new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class)));
         assertTableEquals(reflexive, source.dropColumns("n"));
         final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
         final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
@@ -672,20 +671,20 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             String columnName,
             String... values) {
         return stringContainsFilter(MatchType.Regular, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             MatchType matchType,
             String columnName,
             String... values) {
         return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -2772,7 +2771,7 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.where("Sym=`aa`"));
             testMemoize(source, t -> t.where("Sym in `aa`, `bb`"));
             testMemoize(source,
-                    t -> t.where(FilterOr.of(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
+                    t -> t.where(Filter.or(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(DisjunctiveFilter
                     .makeDisjunctiveFilter(WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(ConjunctiveFilter

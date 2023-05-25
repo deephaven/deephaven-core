@@ -17,8 +17,9 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_C
 /**
  * {@link ResettableWritableChunk} implementation for double data.
  */
-@SuppressWarnings("rawtypes")
-public final class ResettableWritableDoubleChunk<ATTR_BASE extends Any> extends WritableDoubleChunk implements ResettableWritableChunk<ATTR_BASE> {
+public final class ResettableWritableDoubleChunk<ATTR_BASE extends Any>
+        extends WritableDoubleChunk<ATTR_BASE>
+        implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableDoubleChunk<ATTR_BASE> makeResettableChunk() {
         if (POOL_RESETTABLE_CHUNKS) {
@@ -40,7 +41,7 @@ public final class ResettableWritableDoubleChunk<ATTR_BASE extends Any> extends 
     }
 
     @Override
-    public ResettableWritableDoubleChunk slice(int offset, int capacity) {
+    public ResettableWritableDoubleChunk<ATTR_BASE> slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableWritableDoubleChunk<>(data, this.offset + offset, capacity);
     }
@@ -77,8 +78,8 @@ public final class ResettableWritableDoubleChunk<ATTR_BASE extends Any> extends 
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        // noinspection unchecked
-        return this;
+        //noinspection unchecked
+        return (WritableDoubleChunk<ATTR>) this;
     }
 
     @Override

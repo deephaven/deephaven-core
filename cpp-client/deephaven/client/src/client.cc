@@ -15,7 +15,7 @@
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -35,11 +35,11 @@ using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::SimpleOstringstream;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::separatedList;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::utility::separatedList;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::SimpleOstringstream;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client {
 namespace {

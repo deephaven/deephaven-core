@@ -12,7 +12,6 @@ import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.*;
@@ -169,8 +168,8 @@ public abstract class ImmutableNanosBasedTimeArraySource<TIME_TYPE>
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
 
     // region reinterpretation

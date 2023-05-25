@@ -42,11 +42,11 @@ public abstract class EmaSpec extends UpdateBySpecBase {
         return of(WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmaSpec ofTicks(OperationControl control, long tickWindow) {
+    public static EmaSpec ofTicks(OperationControl control, double tickWindow) {
         return of(control, WindowScale.ofTicks(tickWindow));
     }
 
-    public static EmaSpec ofTicks(long tickWindow) {
+    public static EmaSpec ofTicks(double tickWindow) {
         return of(WindowScale.ofTicks(tickWindow));
     }
 

@@ -2,7 +2,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
@@ -95,13 +95,13 @@ class UpdateByBuilder {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
                                 .setColumn(windowScale.timestampCol())
-                                .setPeriodNanos(windowScale.timescaleUnits())
+                                .setPeriodNanos(windowScale.timeUnits())
                                 .build())
                         .build();
             } else {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTicks(UpdateByEmaTimescale.UpdateByEmaTicks.newBuilder()
-                                .setTicks(windowScale.timescaleUnits())
+                                .setTicks(windowScale.tickUnits())
                                 .build())
                         .build();
             }
@@ -162,12 +162,18 @@ class UpdateByBuilder {
                     .build();
         }
 
+        // TODO: add this correctly to `table.proto` (DHC #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
+            return null;
+        }
+
+        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
             return null;
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec rs) {
             final UpdateByColumn.UpdateBySpec.UpdateByRollingSum.Builder builder =
@@ -233,19 +239,19 @@ class UpdateByBuilder {
                     .build();
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3392)
+        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
             return null;
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3392)
+        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingStdSpec spec) {
             return null;
         }
 
-        // TODO: add this correctly to `table.proto` (DHC #3392)
+        // TODO: add this correctly to `table.proto` (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec spec) {
             return null;

@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-from pydeephaven import Table
+from pydeephaven.table import Table
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import inputtable_pb2, inputtable_pb2_grpc
 from pydeephaven.table import InputTable
@@ -13,6 +13,7 @@ class InputTableService:
         self._grpc_input_table_stub = inputtable_pb2_grpc.InputTableServiceStub(session.grpc_channel)
 
     def add(self, input_table: InputTable, table: Table):
+        """Adds a table to the InputTable."""
         try:
             response = self._grpc_input_table_stub.AddTableToInputTable(
                 inputtable_pb2.AddTableRequest(input_table=input_table.ticket,
@@ -22,6 +23,7 @@ class InputTableService:
             raise DHError("failed to add to InputTable") from e
 
     def delete(self, input_table: InputTable, table: Table):
+        """Deletes a table from an InputTable."""
         try:
             response = self._grpc_input_table_stub.DeleteTableFromInputTable(
                 inputtable_pb2.DeleteTableRequest(input_table=input_table.ticket,

@@ -8,7 +8,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +74,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                     } else {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            final double alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             final double oneMinusAlpha = 1.0 - alpha;
                             curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
                             lastStamp = timestamp;
@@ -125,7 +125,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                            @Nullable final RowRedirection rowRedirection,
                            @NotNull final OperationControl control,
                            @Nullable final String timestampColumnName,
-                           final long windowScaleUnits,
+                           final double windowScaleUnits,
                            final ColumnSource<?> valueSource,
                            @NotNull final EmFunction aggFunction
                            // region extra-constructor-args

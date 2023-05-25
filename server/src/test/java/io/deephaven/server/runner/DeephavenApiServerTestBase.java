@@ -5,6 +5,7 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -43,6 +44,7 @@ public abstract class DeephavenApiServerTestBase {
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
+            ClientDefaultsModule.class,
     })
     public interface TestComponent {
 
@@ -79,8 +81,10 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        }
 
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
@@ -113,6 +117,10 @@ public abstract class DeephavenApiServerTestBase {
             server.server().join();
         } finally {
             LogBufferGlobal.clear(logBuffer);
+        }
+
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 

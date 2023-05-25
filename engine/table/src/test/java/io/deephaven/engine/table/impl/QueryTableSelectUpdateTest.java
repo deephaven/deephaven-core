@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.JoinMatch;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -42,6 +43,7 @@ import java.util.function.Supplier;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static java.util.Collections.emptyList;
 
 /**
  * Test QueryTable select and update operations.
@@ -483,7 +485,7 @@ public class QueryTableSelectUpdateTest {
         final Table leftWithKey = leftTable.updateView("Key=`a`", "LI=ii");
         final Table rightWithKey = rightTable.updateView("Key=`a`", "RI=ii");
 
-        final Table joined = leftWithKey.join(rightWithKey, "Key", 2);
+        final Table joined = leftWithKey.join(rightWithKey, List.of(JoinMatch.parse("Key")), emptyList(), 2);
 
         final Table updated = joined.update("LRI=LI*RI", "Str=Long.toString(LRI)");
 

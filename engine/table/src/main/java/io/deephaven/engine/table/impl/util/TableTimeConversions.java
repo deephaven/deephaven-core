@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * This class contains static methods to support conversions between various time types such as {@link Instant},
@@ -52,7 +53,8 @@ public class TableTimeConversions {
             return source;
         }
 
-        return source.updateView(new ReinterpretedColumn<>(mp.rightColumn, colType, mp.leftColumn, resultType, params));
+        return source.updateView(
+                List.of(new ReinterpretedColumn<>(mp.rightColumn, colType, mp.leftColumn, resultType, params)));
     }
 
     // region To ZonedDateTime

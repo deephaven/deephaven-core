@@ -162,7 +162,7 @@ struct MathContextDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MathContextDefaultTypeInternal _MathContext_default_instance_;
 PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByEmaTimescale_UpdateByEmaTicks(
     ::_pbi::ConstantInitialized)
-  : ticks_(int64_t{0}){}
+  : ticks_(0){}
 struct UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal {
   PROTOBUF_CONSTEXPR UpdateByEmaTimescale_UpdateByEmaTicksDefaultTypeInternal()
       : _instance(::_pbi::ConstantInitialized{}) {}
@@ -650,6 +650,29 @@ struct AsOfJoinTablesRequestDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AsOfJoinTablesRequestDefaultTypeInternal _AsOfJoinTablesRequest_default_instance_;
+PROTOBUF_CONSTEXPR RangeJoinTablesRequest::RangeJoinTablesRequest(
+    ::_pbi::ConstantInitialized)
+  : exact_match_columns_()
+  , aggregations_()
+  , left_start_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , right_range_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , left_end_column_(&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{})
+  , result_id_(nullptr)
+  , left_id_(nullptr)
+  , right_id_(nullptr)
+  , range_start_rule_(0)
+
+  , range_end_rule_(0)
+{}
+struct RangeJoinTablesRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RangeJoinTablesRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RangeJoinTablesRequestDefaultTypeInternal() {}
+  union {
+    RangeJoinTablesRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RangeJoinTablesRequestDefaultTypeInternal _RangeJoinTablesRequest_default_instance_;
 PROTOBUF_CONSTEXPR ComboAggregateRequest_Aggregate::ComboAggregateRequest_Aggregate(
     ::_pbi::ConstantInitialized)
   : match_pairs_()
@@ -1472,8 +1495,8 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2ftable_2eproto[108];
-static const ::_pb::EnumDescriptor* file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[9];
+static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2ftable_2eproto[109];
+static const ::_pb::EnumDescriptor* file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[11];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2ftable_2eproto = nullptr;
 
 const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -1900,6 +1923,22 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, columns_to_match_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, columns_to_add_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, as_of_match_rule_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, result_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, right_id_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, exact_match_columns_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_start_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, range_start_rule_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, right_range_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, range_end_rule_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, left_end_column_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest, aggregations_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -2484,6 +2523,7 @@ const uint32_t TableStruct_deephaven_2fproto_2ftable_2eproto::offsets[] PROTOBUF
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation, op_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::BatchTableRequest, _internal_metadata_),
@@ -2539,69 +2579,70 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 389, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest)},
   { 400, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest)},
   { 411, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest)},
-  { 423, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate)},
-  { 434, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest)},
-  { 445, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateAllRequest)},
-  { 455, 463, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecApproximatePercentile)},
-  { 465, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecCountDistinct)},
-  { 472, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecDistinct)},
-  { 479, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFormula)},
-  { 487, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMedian)},
-  { 494, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecPercentile)},
-  { 502, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSorted)},
-  { 509, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSortedColumn)},
-  { 516, 523, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecTDigest)},
-  { 524, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecUnique)},
-  { 532, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecNonUniqueSentinel)},
-  { 549, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecWeighted)},
-  { 556, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAbsSum)},
-  { 562, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAvg)},
-  { 568, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFirst)},
-  { 574, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFreeze)},
-  { 580, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecGroup)},
-  { 586, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecLast)},
-  { 592, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMax)},
-  { 598, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMin)},
-  { 604, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecStd)},
-  { 610, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSum)},
-  { 616, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecVar)},
-  { 622, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec)},
-  { 652, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateRequest)},
-  { 664, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColumns)},
-  { 672, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount)},
-  { 679, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey)},
-  { 686, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition)},
-  { 694, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation)},
-  { 706, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortDescriptor)},
-  { 715, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortTableRequest)},
-  { 724, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FilterTableRequest)},
-  { 733, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowRequest)},
-  { 746, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowResponse)},
-  { 753, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Reference)},
-  { 760, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Literal)},
-  { 772, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Value)},
-  { 781, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Condition)},
-  { 798, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AndCondition)},
-  { 805, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::OrCondition)},
-  { 812, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NotCondition)},
-  { 819, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CompareCondition)},
-  { 829, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InCondition)},
-  { 839, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InvokeCondition)},
-  { 848, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::IsNullCondition)},
-  { 855, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MatchesCondition)},
-  { 865, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ContainsCondition)},
-  { 875, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SearchCondition)},
-  { 883, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FlattenRequest)},
-  { 891, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MetaTableRequest)},
-  { 899, 907, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange)},
-  { 909, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest)},
-  { 921, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)},
-  { 927, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)},
-  { 934, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind)},
-  { 943, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest)},
-  { 954, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WhereInRequest)},
-  { 965, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation)},
-  { 1008, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest)},
+  { 423, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest)},
+  { 439, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate)},
+  { 450, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ComboAggregateRequest)},
+  { 461, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateAllRequest)},
+  { 471, 479, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecApproximatePercentile)},
+  { 481, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecCountDistinct)},
+  { 488, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecDistinct)},
+  { 495, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFormula)},
+  { 503, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMedian)},
+  { 510, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecPercentile)},
+  { 518, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSorted)},
+  { 525, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSortedColumn)},
+  { 532, 539, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecTDigest)},
+  { 540, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecUnique)},
+  { 548, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecNonUniqueSentinel)},
+  { 565, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecWeighted)},
+  { 572, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAbsSum)},
+  { 578, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecAvg)},
+  { 584, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFirst)},
+  { 590, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecFreeze)},
+  { 596, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecGroup)},
+  { 602, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecLast)},
+  { 608, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMax)},
+  { 614, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecMin)},
+  { 620, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecStd)},
+  { 626, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecSum)},
+  { 632, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec_AggSpecVar)},
+  { 638, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggSpec)},
+  { 668, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AggregateRequest)},
+  { 680, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColumns)},
+  { 688, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount)},
+  { 695, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey)},
+  { 702, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition)},
+  { 710, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Aggregation)},
+  { 722, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortDescriptor)},
+  { 731, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SortTableRequest)},
+  { 740, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FilterTableRequest)},
+  { 749, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowRequest)},
+  { 762, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SeekRowResponse)},
+  { 769, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Reference)},
+  { 776, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Literal)},
+  { 788, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Value)},
+  { 797, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::Condition)},
+  { 814, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AndCondition)},
+  { 821, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::OrCondition)},
+  { 828, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::NotCondition)},
+  { 835, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CompareCondition)},
+  { 845, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InCondition)},
+  { 855, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::InvokeCondition)},
+  { 864, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::IsNullCondition)},
+  { 871, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MatchesCondition)},
+  { 881, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ContainsCondition)},
+  { 891, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SearchCondition)},
+  { 899, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FlattenRequest)},
+  { 907, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MetaTableRequest)},
+  { 915, 923, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest_ZoomRange)},
+  { 925, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest)},
+  { 937, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryAppendOnly)},
+  { 943, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind_InMemoryKeyBacked)},
+  { 950, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest_InputTableKind)},
+  { 959, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateInputTableRequest)},
+  { 970, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::WhereInRequest)},
+  { 981, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation)},
+  { 1025, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::BatchTableRequest)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -2650,6 +2691,7 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::io::deephaven::proto::backplane::grpc::_ExactJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_LeftJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_AsOfJoinTablesRequest_default_instance_._instance,
+  &::io::deephaven::proto::backplane::grpc::_RangeJoinTablesRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_ComboAggregateRequest_Aggregate_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_ComboAggregateRequest_default_instance_._instance,
   &::io::deephaven::proto::backplane::grpc::_AggregateAllRequest_default_instance_._instance,
@@ -2754,712 +2796,737 @@ const char descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto[] PROTOBU
   "plane.grpc.MathContext.RoundingMode\"t\n\014R"
   "oundingMode\022\006\n\002UP\020\000\022\010\n\004DOWN\020\001\022\013\n\007CEILING"
   "\020\002\022\t\n\005FLOOR\020\003\022\013\n\007HALF_UP\020\004\022\r\n\tHALF_DOWN\020"
-  "\005\022\r\n\tHALF_EVEN\020\006\022\017\n\013UNNECESSARY\020\007\"\266\002\n\024Up"
+  "\005\022\r\n\tHALF_EVEN\020\006\022\017\n\013UNNECESSARY\020\007\"\262\002\n\024Up"
   "dateByEmaTimescale\022Y\n\005ticks\030\001 \001(\0132H.io.d"
   "eephaven.proto.backplane.grpc.UpdateByEm"
   "aTimescale.UpdateByEmaTicksH\000\022W\n\004time\030\002 "
   "\001(\0132G.io.deephaven.proto.backplane.grpc."
-  "UpdateByEmaTimescale.UpdateByEmaTimeH\000\032%"
-  "\n\020UpdateByEmaTicks\022\021\n\005ticks\030\001 \001(\022B\0020\001\032;\n"
-  "\017UpdateByEmaTime\022\016\n\006column\030\001 \001(\t\022\030\n\014peri"
-  "od_nanos\030\002 \001(\022B\0020\001B\006\n\004type\"\243&\n\017UpdateByR"
-  "equest\022<\n\tresult_id\030\001 \001(\0132).io.deephaven"
-  ".proto.backplane.grpc.Ticket\022D\n\tsource_i"
-  "d\030\002 \001(\01321.io.deephaven.proto.backplane.g"
-  "rpc.TableReference\022S\n\007options\030\003 \001(\0132B.io"
+  "UpdateByEmaTimescale.UpdateByEmaTimeH\000\032!"
+  "\n\020UpdateByEmaTicks\022\r\n\005ticks\030\001 \001(\001\032;\n\017Upd"
+  "ateByEmaTime\022\016\n\006column\030\001 \001(\t\022\030\n\014period_n"
+  "anos\030\002 \001(\022B\0020\001B\006\n\004type\"\243&\n\017UpdateByReque"
+  "st\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pro"
+  "to.backplane.grpc.Ticket\022D\n\tsource_id\030\002 "
+  "\001(\01321.io.deephaven.proto.backplane.grpc."
+  "TableReference\022S\n\007options\030\003 \001(\0132B.io.dee"
+  "phaven.proto.backplane.grpc.UpdateByRequ"
+  "est.UpdateByOptions\022X\n\noperations\030\004 \003(\0132"
+  "D.io.deephaven.proto.backplane.grpc.Upda"
+  "teByRequest.UpdateByOperation\022\030\n\020group_b"
+  "y_columns\030\005 \003(\t\032\303\003\n\017UpdateByOptions\022\034\n\017u"
+  "se_redirection\030\001 \001(\010H\000\210\001\001\022\033\n\016chunk_capac"
+  "ity\030\002 \001(\005H\001\210\001\001\022.\n!max_static_sparse_memo"
+  "ry_overhead\030\003 \001(\001H\002\210\001\001\022$\n\027initial_hash_t"
+  "able_size\030\004 \001(\005H\003\210\001\001\022 \n\023maximum_load_fac"
+  "tor\030\005 \001(\001H\004\210\001\001\022\037\n\022target_load_factor\030\006 \001"
+  "(\001H\005\210\001\001\022D\n\014math_context\030\007 \001(\0132..io.deeph"
+  "aven.proto.backplane.grpc.MathContextB\022\n"
+  "\020_use_redirectionB\021\n\017_chunk_capacityB$\n\""
+  "_max_static_sparse_memory_overheadB\032\n\030_i"
+  "nitial_hash_table_sizeB\026\n\024_maximum_load_"
+  "factorB\025\n\023_target_load_factor\032\374\037\n\021Update"
+  "ByOperation\022e\n\006column\030\001 \001(\0132S.io.deephav"
+  "en.proto.backplane.grpc.UpdateByRequest."
+  "UpdateByOperation.UpdateByColumnH\000\032\367\036\n\016U"
+  "pdateByColumn\022n\n\004spec\030\001 \001(\0132`.io.deephav"
+  "en.proto.backplane.grpc.UpdateByRequest."
+  "UpdateByOperation.UpdateByColumn.UpdateB"
+  "ySpec\022\023\n\013match_pairs\030\002 \003(\t\032\337\035\n\014UpdateByS"
+  "pec\022\205\001\n\003sum\030\001 \001(\0132v.io.deephaven.proto.b"
+  "ackplane.grpc.UpdateByRequest.UpdateByOp"
+  "eration.UpdateByColumn.UpdateBySpec.Upda"
+  "teByCumulativeSumH\000\022\205\001\n\003min\030\002 \001(\0132v.io.d"
+  "eephaven.proto.backplane.grpc.UpdateByRe"
+  "quest.UpdateByOperation.UpdateByColumn.U"
+  "pdateBySpec.UpdateByCumulativeMinH\000\022\205\001\n\003"
+  "max\030\003 \001(\0132v.io.deephaven.proto.backplane"
+  ".grpc.UpdateByRequest.UpdateByOperation."
+  "UpdateByColumn.UpdateBySpec.UpdateByCumu"
+  "lativeMaxH\000\022\215\001\n\007product\030\004 \001(\0132z.io.deeph"
+  "aven.proto.backplane.grpc.UpdateByReques"
+  "t.UpdateByOperation.UpdateByColumn.Updat"
+  "eBySpec.UpdateByCumulativeProductH\000\022}\n\004f"
+  "ill\030\005 \001(\0132m.io.deephaven.proto.backplane"
+  ".grpc.UpdateByRequest.UpdateByOperation."
+  "UpdateByColumn.UpdateBySpec.UpdateByFill"
+  "H\000\022{\n\003ema\030\006 \001(\0132l.io.deephaven.proto.bac"
+  "kplane.grpc.UpdateByRequest.UpdateByOper"
+  "ation.UpdateByColumn.UpdateBySpec.Update"
+  "ByEmaH\000\022\212\001\n\013rolling_sum\030\007 \001(\0132s.io.deeph"
+  "aven.proto.backplane.grpc.UpdateByReques"
+  "t.UpdateByOperation.UpdateByColumn.Updat"
+  "eBySpec.UpdateByRollingSumH\000\022\216\001\n\rrolling"
+  "_group\030\010 \001(\0132u.io.deephaven.proto.backpl"
+  "ane.grpc.UpdateByRequest.UpdateByOperati"
+  "on.UpdateByColumn.UpdateBySpec.UpdateByR"
+  "ollingGroupH\000\022\212\001\n\013rolling_avg\030\t \001(\0132s.io"
   ".deephaven.proto.backplane.grpc.UpdateBy"
-  "Request.UpdateByOptions\022X\n\noperations\030\004 "
-  "\003(\0132D.io.deephaven.proto.backplane.grpc."
-  "UpdateByRequest.UpdateByOperation\022\030\n\020gro"
-  "up_by_columns\030\005 \003(\t\032\303\003\n\017UpdateByOptions\022"
-  "\034\n\017use_redirection\030\001 \001(\010H\000\210\001\001\022\033\n\016chunk_c"
-  "apacity\030\002 \001(\005H\001\210\001\001\022.\n!max_static_sparse_"
-  "memory_overhead\030\003 \001(\001H\002\210\001\001\022$\n\027initial_ha"
-  "sh_table_size\030\004 \001(\005H\003\210\001\001\022 \n\023maximum_load"
-  "_factor\030\005 \001(\001H\004\210\001\001\022\037\n\022target_load_factor"
-  "\030\006 \001(\001H\005\210\001\001\022D\n\014math_context\030\007 \001(\0132..io.d"
-  "eephaven.proto.backplane.grpc.MathContex"
-  "tB\022\n\020_use_redirectionB\021\n\017_chunk_capacity"
-  "B$\n\"_max_static_sparse_memory_overheadB\032"
-  "\n\030_initial_hash_table_sizeB\026\n\024_maximum_l"
-  "oad_factorB\025\n\023_target_load_factor\032\374\037\n\021Up"
-  "dateByOperation\022e\n\006column\030\001 \001(\0132S.io.dee"
-  "phaven.proto.backplane.grpc.UpdateByRequ"
-  "est.UpdateByOperation.UpdateByColumnH\000\032\367"
-  "\036\n\016UpdateByColumn\022n\n\004spec\030\001 \001(\0132`.io.dee"
-  "phaven.proto.backplane.grpc.UpdateByRequ"
-  "est.UpdateByOperation.UpdateByColumn.Upd"
-  "ateBySpec\022\023\n\013match_pairs\030\002 \003(\t\032\337\035\n\014Updat"
-  "eBySpec\022\205\001\n\003sum\030\001 \001(\0132v.io.deephaven.pro"
-  "to.backplane.grpc.UpdateByRequest.Update"
-  "ByOperation.UpdateByColumn.UpdateBySpec."
-  "UpdateByCumulativeSumH\000\022\205\001\n\003min\030\002 \001(\0132v."
-  "io.deephaven.proto.backplane.grpc.Update"
-  "ByRequest.UpdateByOperation.UpdateByColu"
-  "mn.UpdateBySpec.UpdateByCumulativeMinH\000\022"
-  "\205\001\n\003max\030\003 \001(\0132v.io.deephaven.proto.backp"
-  "lane.grpc.UpdateByRequest.UpdateByOperat"
-  "ion.UpdateByColumn.UpdateBySpec.UpdateBy"
-  "CumulativeMaxH\000\022\215\001\n\007product\030\004 \001(\0132z.io.d"
-  "eephaven.proto.backplane.grpc.UpdateByRe"
-  "quest.UpdateByOperation.UpdateByColumn.U"
-  "pdateBySpec.UpdateByCumulativeProductH\000\022"
-  "}\n\004fill\030\005 \001(\0132m.io.deephaven.proto.backp"
-  "lane.grpc.UpdateByRequest.UpdateByOperat"
-  "ion.UpdateByColumn.UpdateBySpec.UpdateBy"
-  "FillH\000\022{\n\003ema\030\006 \001(\0132l.io.deephaven.proto"
-  ".backplane.grpc.UpdateByRequest.UpdateBy"
-  "Operation.UpdateByColumn.UpdateBySpec.Up"
-  "dateByEmaH\000\022\212\001\n\013rolling_sum\030\007 \001(\0132s.io.d"
-  "eephaven.proto.backplane.grpc.UpdateByRe"
-  "quest.UpdateByOperation.UpdateByColumn.U"
-  "pdateBySpec.UpdateByRollingSumH\000\022\216\001\n\rrol"
-  "ling_group\030\010 \001(\0132u.io.deephaven.proto.ba"
+  "Request.UpdateByOperation.UpdateByColumn"
+  ".UpdateBySpec.UpdateByRollingAvgH\000\022\212\001\n\013r"
+  "olling_min\030\n \001(\0132s.io.deephaven.proto.ba"
   "ckplane.grpc.UpdateByRequest.UpdateByOpe"
   "ration.UpdateByColumn.UpdateBySpec.Updat"
-  "eByRollingGroupH\000\022\212\001\n\013rolling_avg\030\t \001(\0132"
-  "s.io.deephaven.proto.backplane.grpc.Upda"
-  "teByRequest.UpdateByOperation.UpdateByCo"
-  "lumn.UpdateBySpec.UpdateByRollingAvgH\000\022\212"
-  "\001\n\013rolling_min\030\n \001(\0132s.io.deephaven.prot"
-  "o.backplane.grpc.UpdateByRequest.UpdateB"
-  "yOperation.UpdateByColumn.UpdateBySpec.U"
-  "pdateByRollingMinH\000\022\212\001\n\013rolling_max\030\013 \001("
-  "\0132s.io.deephaven.proto.backplane.grpc.Up"
-  "dateByRequest.UpdateByOperation.UpdateBy"
-  "Column.UpdateBySpec.UpdateByRollingMaxH\000"
-  "\022\222\001\n\017rolling_product\030\014 \001(\0132w.io.deephave"
-  "n.proto.backplane.grpc.UpdateByRequest.U"
-  "pdateByOperation.UpdateByColumn.UpdateBy"
-  "Spec.UpdateByRollingProductH\000\032\027\n\025UpdateB"
-  "yCumulativeSum\032\027\n\025UpdateByCumulativeMin\032"
-  "\027\n\025UpdateByCumulativeMax\032\033\n\031UpdateByCumu"
-  "lativeProduct\032\016\n\014UpdateByFill\032\320\006\n\013Update"
-  "ByEma\022\220\001\n\007options\030\001 \001(\0132\177.io.deephaven.p"
-  "roto.backplane.grpc.UpdateByRequest.Upda"
-  "teByOperation.UpdateByColumn.UpdateBySpe"
-  "c.UpdateByEma.UpdateByEmaOptions\022J\n\ttime"
-  "scale\030\002 \001(\01327.io.deephaven.proto.backpla"
-  "ne.grpc.UpdateByEmaTimescale\032\341\004\n\022UpdateB"
-  "yEmaOptions\022N\n\ron_null_value\030\001 \001(\01622.io."
-  "deephaven.proto.backplane.grpc.BadDataBe"
-  "haviorH\000\210\001\001\022M\n\014on_nan_value\030\002 \001(\01622.io.d"
-  "eephaven.proto.backplane.grpc.BadDataBeh"
-  "aviorH\001\210\001\001\022M\n\014on_null_time\030\003 \001(\01622.io.de"
-  "ephaven.proto.backplane.grpc.BadDataBeha"
-  "viorH\002\210\001\001\022W\n\026on_negative_delta_time\030\004 \001("
-  "\01622.io.deephaven.proto.backplane.grpc.Ba"
-  "dDataBehaviorH\003\210\001\001\022S\n\022on_zero_delta_time"
-  "\030\005 \001(\01622.io.deephaven.proto.backplane.gr"
-  "pc.BadDataBehaviorH\004\210\001\001\022I\n\021big_value_con"
-  "text\030\006 \001(\0132..io.deephaven.proto.backplan"
-  "e.grpc.MathContextB\020\n\016_on_null_valueB\017\n\r"
-  "_on_nan_valueB\017\n\r_on_null_timeB\031\n\027_on_ne"
-  "gative_delta_timeB\025\n\023_on_zero_delta_time"
-  "\032\274\001\n\022UpdateByRollingSum\022R\n\021reverse_times"
-  "cale\030\001 \001(\01327.io.deephaven.proto.backplan"
-  "e.grpc.UpdateByEmaTimescale\022R\n\021forward_t"
-  "imescale\030\002 \001(\01327.io.deephaven.proto.back"
-  "plane.grpc.UpdateByEmaTimescale\032\276\001\n\024Upda"
-  "teByRollingGroup\022R\n\021reverse_timescale\030\001 "
-  "\001(\01327.io.deephaven.proto.backplane.grpc."
-  "UpdateByEmaTimescale\022R\n\021forward_timescal"
+  "eByRollingMinH\000\022\212\001\n\013rolling_max\030\013 \001(\0132s."
+  "io.deephaven.proto.backplane.grpc.Update"
+  "ByRequest.UpdateByOperation.UpdateByColu"
+  "mn.UpdateBySpec.UpdateByRollingMaxH\000\022\222\001\n"
+  "\017rolling_product\030\014 \001(\0132w.io.deephaven.pr"
+  "oto.backplane.grpc.UpdateByRequest.Updat"
+  "eByOperation.UpdateByColumn.UpdateBySpec"
+  ".UpdateByRollingProductH\000\032\027\n\025UpdateByCum"
+  "ulativeSum\032\027\n\025UpdateByCumulativeMin\032\027\n\025U"
+  "pdateByCumulativeMax\032\033\n\031UpdateByCumulati"
+  "veProduct\032\016\n\014UpdateByFill\032\320\006\n\013UpdateByEm"
+  "a\022\220\001\n\007options\030\001 \001(\0132\177.io.deephaven.proto"
+  ".backplane.grpc.UpdateByRequest.UpdateBy"
+  "Operation.UpdateByColumn.UpdateBySpec.Up"
+  "dateByEma.UpdateByEmaOptions\022J\n\ttimescal"
   "e\030\002 \001(\01327.io.deephaven.proto.backplane.g"
-  "rpc.UpdateByEmaTimescale\032\274\001\n\022UpdateByRol"
-  "lingAvg\022R\n\021reverse_timescale\030\001 \001(\01327.io."
+  "rpc.UpdateByEmaTimescale\032\341\004\n\022UpdateByEma"
+  "Options\022N\n\ron_null_value\030\001 \001(\01622.io.deep"
+  "haven.proto.backplane.grpc.BadDataBehavi"
+  "orH\000\210\001\001\022M\n\014on_nan_value\030\002 \001(\01622.io.deeph"
+  "aven.proto.backplane.grpc.BadDataBehavio"
+  "rH\001\210\001\001\022M\n\014on_null_time\030\003 \001(\01622.io.deepha"
+  "ven.proto.backplane.grpc.BadDataBehavior"
+  "H\002\210\001\001\022W\n\026on_negative_delta_time\030\004 \001(\01622."
+  "io.deephaven.proto.backplane.grpc.BadDat"
+  "aBehaviorH\003\210\001\001\022S\n\022on_zero_delta_time\030\005 \001"
+  "(\01622.io.deephaven.proto.backplane.grpc.B"
+  "adDataBehaviorH\004\210\001\001\022I\n\021big_value_context"
+  "\030\006 \001(\0132..io.deephaven.proto.backplane.gr"
+  "pc.MathContextB\020\n\016_on_null_valueB\017\n\r_on_"
+  "nan_valueB\017\n\r_on_null_timeB\031\n\027_on_negati"
+  "ve_delta_timeB\025\n\023_on_zero_delta_time\032\274\001\n"
+  "\022UpdateByRollingSum\022R\n\021reverse_timescale"
+  "\030\001 \001(\01327.io.deephaven.proto.backplane.gr"
+  "pc.UpdateByEmaTimescale\022R\n\021forward_times"
+  "cale\030\002 \001(\01327.io.deephaven.proto.backplan"
+  "e.grpc.UpdateByEmaTimescale\032\276\001\n\024UpdateBy"
+  "RollingGroup\022R\n\021reverse_timescale\030\001 \001(\0132"
+  "7.io.deephaven.proto.backplane.grpc.Upda"
+  "teByEmaTimescale\022R\n\021forward_timescale\030\002 "
+  "\001(\01327.io.deephaven.proto.backplane.grpc."
+  "UpdateByEmaTimescale\032\274\001\n\022UpdateByRolling"
+  "Avg\022R\n\021reverse_timescale\030\001 \001(\01327.io.deep"
+  "haven.proto.backplane.grpc.UpdateByEmaTi"
+  "mescale\022R\n\021forward_timescale\030\002 \001(\01327.io."
   "deephaven.proto.backplane.grpc.UpdateByE"
-  "maTimescale\022R\n\021forward_timescale\030\002 \001(\01327"
-  ".io.deephaven.proto.backplane.grpc.Updat"
-  "eByEmaTimescale\032\274\001\n\022UpdateByRollingMin\022R"
-  "\n\021reverse_timescale\030\001 \001(\01327.io.deephaven"
+  "maTimescale\032\274\001\n\022UpdateByRollingMin\022R\n\021re"
+  "verse_timescale\030\001 \001(\01327.io.deephaven.pro"
+  "to.backplane.grpc.UpdateByEmaTimescale\022R"
+  "\n\021forward_timescale\030\002 \001(\01327.io.deephaven"
   ".proto.backplane.grpc.UpdateByEmaTimesca"
-  "le\022R\n\021forward_timescale\030\002 \001(\01327.io.deeph"
-  "aven.proto.backplane.grpc.UpdateByEmaTim"
-  "escale\032\274\001\n\022UpdateByRollingMax\022R\n\021reverse"
-  "_timescale\030\001 \001(\01327.io.deephaven.proto.ba"
-  "ckplane.grpc.UpdateByEmaTimescale\022R\n\021for"
-  "ward_timescale\030\002 \001(\01327.io.deephaven.prot"
-  "o.backplane.grpc.UpdateByEmaTimescale\032\300\001"
-  "\n\026UpdateByRollingProduct\022R\n\021reverse_time"
-  "scale\030\001 \001(\01327.io.deephaven.proto.backpla"
-  "ne.grpc.UpdateByEmaTimescale\022R\n\021forward_"
-  "timescale\030\002 \001(\01327.io.deephaven.proto.bac"
-  "kplane.grpc.UpdateByEmaTimescaleB\006\n\004type"
-  "B\006\n\004type\"\261\001\n\025SelectDistinctRequest\022<\n\tre"
-  "sult_id\030\001 \001(\0132).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io"
-  ".deephaven.proto.backplane.grpc.TableRef"
-  "erence\022\024\n\014column_names\030\003 \003(\t\"\256\001\n\022DropCol"
-  "umnsRequest\022<\n\tresult_id\030\001 \001(\0132).io.deep"
-  "haven.proto.backplane.grpc.Ticket\022D\n\tsou"
-  "rce_id\030\002 \001(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.TableReference\022\024\n\014column_names\030"
-  "\003 \003(\t\"\265\001\n\036UnstructuredFilterTableRequest"
-  "\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto"
-  ".backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001("
-  "\01321.io.deephaven.proto.backplane.grpc.Ta"
-  "bleReference\022\017\n\007filters\030\003 \003(\t\"\255\001\n\021HeadOr"
-  "TailRequest\022<\n\tresult_id\030\001 \001(\0132).io.deep"
-  "haven.proto.backplane.grpc.Ticket\022D\n\tsou"
-  "rce_id\030\002 \001(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.TableReference\022\024\n\010num_rows\030\003 \001("
-  "\022B\0020\001\"\316\001\n\023HeadOrTailByRequest\022<\n\tresult_"
+  "le\032\274\001\n\022UpdateByRollingMax\022R\n\021reverse_tim"
+  "escale\030\001 \001(\01327.io.deephaven.proto.backpl"
+  "ane.grpc.UpdateByEmaTimescale\022R\n\021forward"
+  "_timescale\030\002 \001(\01327.io.deephaven.proto.ba"
+  "ckplane.grpc.UpdateByEmaTimescale\032\300\001\n\026Up"
+  "dateByRollingProduct\022R\n\021reverse_timescal"
+  "e\030\001 \001(\01327.io.deephaven.proto.backplane.g"
+  "rpc.UpdateByEmaTimescale\022R\n\021forward_time"
+  "scale\030\002 \001(\01327.io.deephaven.proto.backpla"
+  "ne.grpc.UpdateByEmaTimescaleB\006\n\004typeB\006\n\004"
+  "type\"\261\001\n\025SelectDistinctRequest\022<\n\tresult"
+  "_id\030\001 \001(\0132).io.deephaven.proto.backplane"
+  ".grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.dee"
+  "phaven.proto.backplane.grpc.TableReferen"
+  "ce\022\024\n\014column_names\030\003 \003(\t\"\256\001\n\022DropColumns"
+  "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
+  "n.proto.backplane.grpc.Ticket\022D\n\tsource_"
+  "id\030\002 \001(\01321.io.deephaven.proto.backplane."
+  "grpc.TableReference\022\024\n\014column_names\030\003 \003("
+  "\t\"\265\001\n\036UnstructuredFilterTableRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321."
+  "io.deephaven.proto.backplane.grpc.TableR"
+  "eference\022\017\n\007filters\030\003 \003(\t\"\255\001\n\021HeadOrTail"
+  "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
+  "n.proto.backplane.grpc.Ticket\022D\n\tsource_"
+  "id\030\002 \001(\01321.io.deephaven.proto.backplane."
+  "grpc.TableReference\022\024\n\010num_rows\030\003 \001(\022B\0020"
+  "\001\"\316\001\n\023HeadOrTailByRequest\022<\n\tresult_id\030\001"
+  " \001(\0132).io.deephaven.proto.backplane.grpc"
+  ".Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephave"
+  "n.proto.backplane.grpc.TableReference\022\024\n"
+  "\010num_rows\030\003 \001(\022B\0020\001\022\035\n\025group_by_column_s"
+  "pecs\030\004 \003(\t\"\303\001\n\016UngroupRequest\022<\n\tresult_"
   "id\030\001 \001(\0132).io.deephaven.proto.backplane."
   "grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deep"
   "haven.proto.backplane.grpc.TableReferenc"
-  "e\022\024\n\010num_rows\030\003 \001(\022B\0020\001\022\035\n\025group_by_colu"
-  "mn_specs\030\004 \003(\t\"\303\001\n\016UngroupRequest\022<\n\tres"
-  "ult_id\030\001 \001(\0132).io.deephaven.proto.backpl"
-  "ane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321.io."
-  "deephaven.proto.backplane.grpc.TableRefe"
-  "rence\022\021\n\tnull_fill\030\003 \001(\010\022\032\n\022columns_to_u"
-  "ngroup\030\004 \003(\t\"\255\001\n\022MergeTablesRequest\022<\n\tr"
-  "esult_id\030\001 \001(\0132).io.deephaven.proto.back"
-  "plane.grpc.Ticket\022E\n\nsource_ids\030\002 \003(\01321."
-  "io.deephaven.proto.backplane.grpc.TableR"
-  "eference\022\022\n\nkey_column\030\003 \001(\t\"\232\001\n\024Snapsho"
-  "tTableRequest\022<\n\tresult_id\030\001 \001(\0132).io.de"
-  "ephaven.proto.backplane.grpc.Ticket\022D\n\ts"
-  "ource_id\030\002 \001(\01321.io.deephaven.proto.back"
-  "plane.grpc.TableReference\"\261\002\n\030SnapshotWh"
-  "enTableRequest\022<\n\tresult_id\030\001 \001(\0132).io.d"
-  "eephaven.proto.backplane.grpc.Ticket\022B\n\007"
-  "base_id\030\002 \001(\01321.io.deephaven.proto.backp"
-  "lane.grpc.TableReference\022E\n\ntrigger_id\030\003"
-  " \001(\01321.io.deephaven.proto.backplane.grpc"
-  ".TableReference\022\017\n\007initial\030\004 \001(\010\022\023\n\013incr"
-  "emental\030\005 \001(\010\022\017\n\007history\030\006 \001(\010\022\025\n\rstamp_"
-  "columns\030\007 \003(\t\"\247\002\n\026CrossJoinTablesRequest"
-  "\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto"
-  ".backplane.grpc.Ticket\022B\n\007left_id\030\002 \001(\0132"
-  "1.io.deephaven.proto.backplane.grpc.Tabl"
-  "eReference\022C\n\010right_id\030\003 \001(\01321.io.deepha"
-  "ven.proto.backplane.grpc.TableReference\022"
-  "\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016columns_to_"
-  "add\030\005 \003(\t\022\024\n\014reserve_bits\030\006 \001(\005\"\223\002\n\030Natu"
-  "ralJoinTablesRequest\022<\n\tresult_id\030\001 \001(\0132"
-  ").io.deephaven.proto.backplane.grpc.Tick"
-  "et\022B\n\007left_id\030\002 \001(\01321.io.deephaven.proto"
-  ".backplane.grpc.TableReference\022C\n\010right_"
-  "id\030\003 \001(\01321.io.deephaven.proto.backplane."
-  "grpc.TableReference\022\030\n\020columns_to_match\030"
-  "\004 \003(\t\022\026\n\016columns_to_add\030\005 \003(\t\"\221\002\n\026ExactJ"
+  "e\022\021\n\tnull_fill\030\003 \001(\010\022\032\n\022columns_to_ungro"
+  "up\030\004 \003(\t\"\255\001\n\022MergeTablesRequest\022<\n\tresul"
+  "t_id\030\001 \001(\0132).io.deephaven.proto.backplan"
+  "e.grpc.Ticket\022E\n\nsource_ids\030\002 \003(\01321.io.d"
+  "eephaven.proto.backplane.grpc.TableRefer"
+  "ence\022\022\n\nkey_column\030\003 \001(\t\"\232\001\n\024SnapshotTab"
+  "leRequest\022<\n\tresult_id\030\001 \001(\0132).io.deepha"
+  "ven.proto.backplane.grpc.Ticket\022D\n\tsourc"
+  "e_id\030\002 \001(\01321.io.deephaven.proto.backplan"
+  "e.grpc.TableReference\"\261\002\n\030SnapshotWhenTa"
+  "bleRequest\022<\n\tresult_id\030\001 \001(\0132).io.deeph"
+  "aven.proto.backplane.grpc.Ticket\022B\n\007base"
+  "_id\030\002 \001(\01321.io.deephaven.proto.backplane"
+  ".grpc.TableReference\022E\n\ntrigger_id\030\003 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022\017\n\007initial\030\004 \001(\010\022\023\n\013incremen"
+  "tal\030\005 \001(\010\022\017\n\007history\030\006 \001(\010\022\025\n\rstamp_colu"
+  "mns\030\007 \003(\t\"\247\002\n\026CrossJoinTablesRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022B\n\007left_id\030\002 \001(\01321.io"
+  ".deephaven.proto.backplane.grpc.TableRef"
+  "erence\022C\n\010right_id\030\003 \001(\01321.io.deephaven."
+  "proto.backplane.grpc.TableReference\022\030\n\020c"
+  "olumns_to_match\030\004 \003(\t\022\026\n\016columns_to_add\030"
+  "\005 \003(\t\022\024\n\014reserve_bits\030\006 \001(\005\"\223\002\n\030NaturalJ"
   "oinTablesRequest\022<\n\tresult_id\030\001 \001(\0132).io"
   ".deephaven.proto.backplane.grpc.Ticket\022B"
   "\n\007left_id\030\002 \001(\01321.io.deephaven.proto.bac"
   "kplane.grpc.TableReference\022C\n\010right_id\030\003"
   " \001(\01321.io.deephaven.proto.backplane.grpc"
   ".TableReference\022\030\n\020columns_to_match\030\004 \003("
-  "\t\022\026\n\016columns_to_add\030\005 \003(\t\"\220\002\n\025LeftJoinTa"
-  "blesRequest\022<\n\tresult_id\030\001 \001(\0132).io.deep"
-  "haven.proto.backplane.grpc.Ticket\022B\n\007lef"
-  "t_id\030\002 \001(\01321.io.deephaven.proto.backplan"
-  "e.grpc.TableReference\022C\n\010right_id\030\003 \001(\0132"
-  "1.io.deephaven.proto.backplane.grpc.Tabl"
-  "eReference\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016"
-  "columns_to_add\030\005 \003(\t\"\311\003\n\025AsOfJoinTablesR"
-  "equest\022<\n\tresult_id\030\001 \001(\0132).io.deephaven"
-  ".proto.backplane.grpc.Ticket\022B\n\007left_id\030"
-  "\002 \001(\01321.io.deephaven.proto.backplane.grp"
-  "c.TableReference\022C\n\010right_id\030\003 \001(\01321.io."
-  "deephaven.proto.backplane.grpc.TableRefe"
-  "rence\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016colum"
-  "ns_to_add\030\005 \003(\t\022\\\n\020as_of_match_rule\030\007 \001("
-  "\0162B.io.deephaven.proto.backplane.grpc.As"
-  "OfJoinTablesRequest.MatchRule\"Y\n\tMatchRu"
-  "le\022\023\n\017LESS_THAN_EQUAL\020\000\022\r\n\tLESS_THAN\020\001\022\026"
-  "\n\022GREATER_THAN_EQUAL\020\002\022\020\n\014GREATER_THAN\020\003"
-  "\"\376\004\n\025ComboAggregateRequest\022<\n\tresult_id\030"
-  "\001 \001(\0132).io.deephaven.proto.backplane.grp"
-  "c.Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephav"
-  "en.proto.backplane.grpc.TableReference\022V"
-  "\n\naggregates\030\003 \003(\0132B.io.deephaven.proto."
-  "backplane.grpc.ComboAggregateRequest.Agg"
-  "regate\022\030\n\020group_by_columns\030\004 \003(\t\022\023\n\013forc"
-  "e_combo\030\005 \001(\010\032\255\001\n\tAggregate\022N\n\004type\030\001 \001("
-  "\0162@.io.deephaven.proto.backplane.grpc.Co"
-  "mboAggregateRequest.AggType\022\023\n\013match_pai"
-  "rs\030\002 \003(\t\022\023\n\013column_name\030\003 \001(\t\022\022\n\npercent"
-  "ile\030\004 \001(\001\022\022\n\navg_median\030\005 \001(\010\"\245\001\n\007AggTyp"
-  "e\022\007\n\003SUM\020\000\022\013\n\007ABS_SUM\020\001\022\t\n\005GROUP\020\002\022\007\n\003AV"
-  "G\020\003\022\t\n\005COUNT\020\004\022\t\n\005FIRST\020\005\022\010\n\004LAST\020\006\022\007\n\003M"
-  "IN\020\007\022\007\n\003MAX\020\010\022\n\n\006MEDIAN\020\t\022\016\n\nPERCENTILE\020"
-  "\n\022\007\n\003STD\020\013\022\007\n\003VAR\020\014\022\020\n\014WEIGHTED_AVG\020\r:\002\030"
-  "\001\"\355\001\n\023AggregateAllRequest\022<\n\tresult_id\030\001"
-  " \001(\0132).io.deephaven.proto.backplane.grpc"
-  ".Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephave"
-  "n.proto.backplane.grpc.TableReference\0228\n"
-  "\004spec\030\003 \001(\0132*.io.deephaven.proto.backpla"
-  "ne.grpc.AggSpec\022\030\n\020group_by_columns\030\004 \003("
-  "\t\"\327\027\n\007AggSpec\022K\n\007abs_sum\030\001 \001(\01328.io.deep"
-  "haven.proto.backplane.grpc.AggSpec.AggSp"
-  "ecAbsSumH\000\022i\n\026approximate_percentile\030\002 \001"
-  "(\0132G.io.deephaven.proto.backplane.grpc.A"
-  "ggSpec.AggSpecApproximatePercentileH\000\022D\n"
-  "\003avg\030\003 \001(\01325.io.deephaven.proto.backplan"
-  "e.grpc.AggSpec.AggSpecAvgH\000\022Y\n\016count_dis"
-  "tinct\030\004 \001(\0132\?.io.deephaven.proto.backpla"
-  "ne.grpc.AggSpec.AggSpecCountDistinctH\000\022N"
-  "\n\010distinct\030\005 \001(\0132:.io.deephaven.proto.ba"
-  "ckplane.grpc.AggSpec.AggSpecDistinctH\000\022H"
-  "\n\005first\030\006 \001(\01327.io.deephaven.proto.backp"
-  "lane.grpc.AggSpec.AggSpecFirstH\000\022L\n\007form"
-  "ula\030\007 \001(\01329.io.deephaven.proto.backplane"
-  ".grpc.AggSpec.AggSpecFormulaH\000\022J\n\006freeze"
-  "\030\010 \001(\01328.io.deephaven.proto.backplane.gr"
-  "pc.AggSpec.AggSpecFreezeH\000\022H\n\005group\030\t \001("
-  "\01327.io.deephaven.proto.backplane.grpc.Ag"
-  "gSpec.AggSpecGroupH\000\022F\n\004last\030\n \001(\01326.io."
-  "deephaven.proto.backplane.grpc.AggSpec.A"
-  "ggSpecLastH\000\022D\n\003max\030\013 \001(\01325.io.deephaven"
-  ".proto.backplane.grpc.AggSpec.AggSpecMax"
-  "H\000\022J\n\006median\030\014 \001(\01328.io.deephaven.proto."
-  "backplane.grpc.AggSpec.AggSpecMedianH\000\022D"
-  "\n\003min\030\r \001(\01325.io.deephaven.proto.backpla"
-  "ne.grpc.AggSpec.AggSpecMinH\000\022R\n\npercenti"
-  "le\030\016 \001(\0132<.io.deephaven.proto.backplane."
-  "grpc.AggSpec.AggSpecPercentileH\000\022P\n\014sort"
-  "ed_first\030\017 \001(\01328.io.deephaven.proto.back"
-  "plane.grpc.AggSpec.AggSpecSortedH\000\022O\n\013so"
-  "rted_last\030\020 \001(\01328.io.deephaven.proto.bac"
-  "kplane.grpc.AggSpec.AggSpecSortedH\000\022D\n\003s"
-  "td\030\021 \001(\01325.io.deephaven.proto.backplane."
-  "grpc.AggSpec.AggSpecStdH\000\022D\n\003sum\030\022 \001(\01325"
-  ".io.deephaven.proto.backplane.grpc.AggSp"
-  "ec.AggSpecSumH\000\022M\n\010t_digest\030\023 \001(\01329.io.d"
-  "eephaven.proto.backplane.grpc.AggSpec.Ag"
-  "gSpecTDigestH\000\022J\n\006unique\030\024 \001(\01328.io.deep"
-  "haven.proto.backplane.grpc.AggSpec.AggSp"
-  "ecUniqueH\000\022R\n\014weighted_avg\030\025 \001(\0132:.io.de"
-  "ephaven.proto.backplane.grpc.AggSpec.Agg"
-  "SpecWeightedH\000\022R\n\014weighted_sum\030\026 \001(\0132:.i"
-  "o.deephaven.proto.backplane.grpc.AggSpec"
-  ".AggSpecWeightedH\000\022D\n\003var\030\027 \001(\01325.io.dee"
-  "phaven.proto.backplane.grpc.AggSpec.AggS"
-  "pecVarH\000\032\\\n\034AggSpecApproximatePercentile"
-  "\022\022\n\npercentile\030\001 \001(\001\022\030\n\013compression\030\002 \001("
-  "\001H\000\210\001\001B\016\n\014_compression\032+\n\024AggSpecCountDi"
-  "stinct\022\023\n\013count_nulls\030\001 \001(\010\032(\n\017AggSpecDi"
-  "stinct\022\025\n\rinclude_nulls\030\001 \001(\010\0326\n\016AggSpec"
-  "Formula\022\017\n\007formula\030\001 \001(\t\022\023\n\013param_token\030"
-  "\002 \001(\t\032/\n\rAggSpecMedian\022\036\n\026average_evenly"
-  "_divided\030\001 \001(\010\032G\n\021AggSpecPercentile\022\022\n\np"
-  "ercentile\030\001 \001(\001\022\036\n\026average_evenly_divide"
-  "d\030\002 \001(\010\032`\n\rAggSpecSorted\022O\n\007columns\030\001 \003("
-  "\0132>.io.deephaven.proto.backplane.grpc.Ag"
-  "gSpec.AggSpecSortedColumn\032*\n\023AggSpecSort"
-  "edColumn\022\023\n\013column_name\030\001 \001(\t\032:\n\016AggSpec"
-  "TDigest\022\030\n\013compression\030\001 \001(\001H\000\210\001\001B\016\n\014_co"
-  "mpression\032\210\001\n\rAggSpecUnique\022\025\n\rinclude_n"
-  "ulls\030\001 \001(\010\022`\n\023non_unique_sentinel\030\002 \001(\0132"
-  "C.io.deephaven.proto.backplane.grpc.AggS"
-  "pec.AggSpecNonUniqueSentinel\032\265\002\n\030AggSpec"
-  "NonUniqueSentinel\022B\n\nnull_value\030\001 \001(\0162,."
-  "io.deephaven.proto.backplane.grpc.NullVa"
-  "lueH\000\022\026\n\014string_value\030\002 \001(\tH\000\022\023\n\tint_val"
-  "ue\030\003 \001(\021H\000\022\030\n\nlong_value\030\004 \001(\022B\0020\001H\000\022\025\n\013"
-  "float_value\030\005 \001(\002H\000\022\026\n\014double_value\030\006 \001("
-  "\001H\000\022\024\n\nbool_value\030\007 \001(\010H\000\022\024\n\nbyte_value\030"
-  "\010 \001(\021H\000\022\025\n\013short_value\030\t \001(\021H\000\022\024\n\nchar_v"
-  "alue\030\n \001(\021H\000B\006\n\004type\032(\n\017AggSpecWeighted\022"
-  "\025\n\rweight_column\030\001 \001(\t\032\017\n\rAggSpecAbsSum\032"
-  "\014\n\nAggSpecAvg\032\016\n\014AggSpecFirst\032\017\n\rAggSpec"
-  "Freeze\032\016\n\014AggSpecGroup\032\r\n\013AggSpecLast\032\014\n"
-  "\nAggSpecMax\032\014\n\nAggSpecMin\032\014\n\nAggSpecStd\032"
-  "\014\n\nAggSpecSum\032\014\n\nAggSpecVarB\006\n\004type\"\334\002\n\020"
-  "AggregateRequest\022<\n\tresult_id\030\001 \001(\0132).io"
-  ".deephaven.proto.backplane.grpc.Ticket\022D"
-  "\n\tsource_id\030\002 \001(\01321.io.deephaven.proto.b"
-  "ackplane.grpc.TableReference\022L\n\021initial_"
-  "groups_id\030\003 \001(\01321.io.deephaven.proto.bac"
-  "kplane.grpc.TableReference\022\026\n\016preserve_e"
-  "mpty\030\004 \001(\010\022D\n\014aggregations\030\005 \003(\0132..io.de"
-  "ephaven.proto.backplane.grpc.Aggregation"
-  "\022\030\n\020group_by_columns\030\006 \003(\t\"\323\005\n\013Aggregati"
-  "on\022T\n\007columns\030\001 \001(\0132A.io.deephaven.proto"
-  ".backplane.grpc.Aggregation.AggregationC"
-  "olumnsH\000\022P\n\005count\030\002 \001(\0132\?.io.deephaven.p"
-  "roto.backplane.grpc.Aggregation.Aggregat"
-  "ionCountH\000\022Y\n\rfirst_row_key\030\003 \001(\0132@.io.d"
-  "eephaven.proto.backplane.grpc.Aggregatio"
-  "n.AggregationRowKeyH\000\022X\n\014last_row_key\030\004 "
-  "\001(\0132@.io.deephaven.proto.backplane.grpc."
-  "Aggregation.AggregationRowKeyH\000\022X\n\tparti"
-  "tion\030\005 \001(\0132C.io.deephaven.proto.backplan"
-  "e.grpc.Aggregation.AggregationPartitionH"
-  "\000\032c\n\022AggregationColumns\0228\n\004spec\030\001 \001(\0132*."
-  "io.deephaven.proto.backplane.grpc.AggSpe"
-  "c\022\023\n\013match_pairs\030\002 \003(\t\032\'\n\020AggregationCou"
-  "nt\022\023\n\013column_name\030\001 \001(\t\032(\n\021AggregationRo"
-  "wKey\022\023\n\013column_name\030\001 \001(\t\032M\n\024Aggregation"
-  "Partition\022\023\n\013column_name\030\001 \001(\t\022 \n\030includ"
-  "e_group_by_columns\030\002 \001(\010B\006\n\004type\"\341\001\n\016Sor"
-  "tDescriptor\022\023\n\013column_name\030\001 \001(\t\022\023\n\013is_a"
-  "bsolute\030\002 \001(\010\022R\n\tdirection\030\003 \001(\0162\?.io.de"
-  "ephaven.proto.backplane.grpc.SortDescrip"
-  "tor.SortDirection\"Q\n\rSortDirection\022\013\n\007UN"
-  "KNOWN\020\000\022\027\n\nDESCENDING\020\377\377\377\377\377\377\377\377\377\001\022\r\n\tASCE"
-  "NDING\020\001\022\013\n\007REVERSE\020\002\"\330\001\n\020SortTableReques"
-  "t\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.prot"
-  "o.backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001"
-  "(\01321.io.deephaven.proto.backplane.grpc.T"
-  "ableReference\022@\n\005sorts\030\003 \003(\01321.io.deepha"
-  "ven.proto.backplane.grpc.SortDescriptor\""
-  "\327\001\n\022FilterTableRequest\022<\n\tresult_id\030\001 \001("
-  "\0132).io.deephaven.proto.backplane.grpc.Ti"
-  "cket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven.p"
-  "roto.backplane.grpc.TableReference\022=\n\007fi"
-  "lters\030\003 \003(\0132,.io.deephaven.proto.backpla"
-  "ne.grpc.Condition\"\371\001\n\016SeekRowRequest\022<\n\t"
-  "source_id\030\001 \001(\0132).io.deephaven.proto.bac"
-  "kplane.grpc.Ticket\022\030\n\014starting_row\030\002 \001(\022"
-  "B\0020\001\022\023\n\013column_name\030\003 \001(\t\022>\n\nseek_value\030"
-  "\004 \001(\0132*.io.deephaven.proto.backplane.grp"
-  "c.Literal\022\023\n\013insensitive\030\005 \001(\010\022\020\n\010contai"
-  "ns\030\006 \001(\010\022\023\n\013is_backward\030\007 \001(\010\")\n\017SeekRow"
-  "Response\022\026\n\nresult_row\030\001 \001(\022B\0020\001\" \n\tRefe"
-  "rence\022\023\n\013column_name\030\001 \001(\t\"\221\001\n\007Literal\022\026"
-  "\n\014string_value\030\001 \001(\tH\000\022\026\n\014double_value\030\002"
-  " \001(\001H\000\022\024\n\nbool_value\030\003 \001(\010H\000\022\030\n\nlong_val"
-  "ue\030\004 \001(\022B\0020\001H\000\022\035\n\017nano_time_value\030\005 \001(\022B"
-  "\0020\001H\000B\007\n\005value\"\221\001\n\005Value\022A\n\treference\030\001 "
-  "\001(\0132,.io.deephaven.proto.backplane.grpc."
-  "ReferenceH\000\022=\n\007literal\030\002 \001(\0132*.io.deepha"
-  "ven.proto.backplane.grpc.LiteralH\000B\006\n\004da"
-  "ta\"\274\005\n\tCondition\022>\n\003and\030\001 \001(\0132/.io.deeph"
-  "aven.proto.backplane.grpc.AndConditionH\000"
-  "\022<\n\002or\030\002 \001(\0132..io.deephaven.proto.backpl"
-  "ane.grpc.OrConditionH\000\022>\n\003not\030\003 \001(\0132/.io"
-  ".deephaven.proto.backplane.grpc.NotCondi"
-  "tionH\000\022F\n\007compare\030\004 \001(\01323.io.deephaven.p"
-  "roto.backplane.grpc.CompareConditionH\000\022<"
-  "\n\002in\030\005 \001(\0132..io.deephaven.proto.backplan"
-  "e.grpc.InConditionH\000\022D\n\006invoke\030\006 \001(\01322.i"
-  "o.deephaven.proto.backplane.grpc.InvokeC"
-  "onditionH\000\022E\n\007is_null\030\007 \001(\01322.io.deephav"
-  "en.proto.backplane.grpc.IsNullConditionH"
-  "\000\022F\n\007matches\030\010 \001(\01323.io.deephaven.proto."
-  "backplane.grpc.MatchesConditionH\000\022H\n\010con"
-  "tains\030\t \001(\01324.io.deephaven.proto.backpla"
-  "ne.grpc.ContainsConditionH\000\022D\n\006search\030\n "
-  "\001(\01322.io.deephaven.proto.backplane.grpc."
-  "SearchConditionH\000B\006\n\004data\"M\n\014AndConditio"
-  "n\022=\n\007filters\030\001 \003(\0132,.io.deephaven.proto."
-  "backplane.grpc.Condition\"L\n\013OrCondition\022"
-  "=\n\007filters\030\001 \003(\0132,.io.deephaven.proto.ba"
-  "ckplane.grpc.Condition\"L\n\014NotCondition\022<"
-  "\n\006filter\030\001 \001(\0132,.io.deephaven.proto.back"
-  "plane.grpc.Condition\"\254\003\n\020CompareConditio"
-  "n\022W\n\toperation\030\001 \001(\0162D.io.deephaven.prot"
-  "o.backplane.grpc.CompareCondition.Compar"
-  "eOperation\022L\n\020case_sensitivity\030\002 \001(\01622.i"
-  "o.deephaven.proto.backplane.grpc.CaseSen"
-  "sitivity\0225\n\003lhs\030\003 \001(\0132(.io.deephaven.pro"
-  "to.backplane.grpc.Value\0225\n\003rhs\030\004 \001(\0132(.i"
-  "o.deephaven.proto.backplane.grpc.Value\"\202"
-  "\001\n\020CompareOperation\022\r\n\tLESS_THAN\020\000\022\026\n\022LE"
-  "SS_THAN_OR_EQUAL\020\001\022\020\n\014GREATER_THAN\020\002\022\031\n\025"
-  "GREATER_THAN_OR_EQUAL\020\003\022\n\n\006EQUALS\020\004\022\016\n\nN"
-  "OT_EQUALS\020\005\"\225\002\n\013InCondition\0228\n\006target\030\001 "
-  "\001(\0132(.io.deephaven.proto.backplane.grpc."
-  "Value\022<\n\ncandidates\030\002 \003(\0132(.io.deephaven"
-  ".proto.backplane.grpc.Value\022L\n\020case_sens"
-  "itivity\030\003 \001(\01622.io.deephaven.proto.backp"
-  "lane.grpc.CaseSensitivity\022@\n\nmatch_type\030"
-  "\004 \001(\0162,.io.deephaven.proto.backplane.grp"
-  "c.MatchType\"\230\001\n\017InvokeCondition\022\016\n\006metho"
-  "d\030\001 \001(\t\0228\n\006target\030\002 \001(\0132(.io.deephaven.p"
-  "roto.backplane.grpc.Value\022;\n\targuments\030\003"
-  " \003(\0132(.io.deephaven.proto.backplane.grpc"
-  ".Value\"R\n\017IsNullCondition\022\?\n\treference\030\001"
-  " \001(\0132,.io.deephaven.proto.backplane.grpc"
-  ".Reference\"\362\001\n\020MatchesCondition\022\?\n\trefer"
-  "ence\030\001 \001(\0132,.io.deephaven.proto.backplan"
-  "e.grpc.Reference\022\r\n\005regex\030\002 \001(\t\022L\n\020case_"
-  "sensitivity\030\003 \001(\01622.io.deephaven.proto.b"
-  "ackplane.grpc.CaseSensitivity\022@\n\nmatch_t"
-  "ype\030\004 \001(\0162,.io.deephaven.proto.backplane"
-  ".grpc.MatchType\"\373\001\n\021ContainsCondition\022\?\n"
-  "\treference\030\001 \001(\0132,.io.deephaven.proto.ba"
-  "ckplane.grpc.Reference\022\025\n\rsearch_string\030"
-  "\002 \001(\t\022L\n\020case_sensitivity\030\003 \001(\01622.io.dee"
-  "phaven.proto.backplane.grpc.CaseSensitiv"
-  "ity\022@\n\nmatch_type\030\004 \001(\0162,.io.deephaven.p"
-  "roto.backplane.grpc.MatchType\"s\n\017SearchC"
-  "ondition\022\025\n\rsearch_string\030\001 \001(\t\022I\n\023optio"
-  "nal_references\030\002 \003(\0132,.io.deephaven.prot"
-  "o.backplane.grpc.Reference\"\224\001\n\016FlattenRe"
-  "quest\022<\n\tresult_id\030\001 \001(\0132).io.deephaven."
-  "proto.backplane.grpc.Ticket\022D\n\tsource_id"
+  "\t\022\026\n\016columns_to_add\030\005 \003(\t\"\221\002\n\026ExactJoinT"
+  "ablesRequest\022<\n\tresult_id\030\001 \001(\0132).io.dee"
+  "phaven.proto.backplane.grpc.Ticket\022B\n\007le"
+  "ft_id\030\002 \001(\01321.io.deephaven.proto.backpla"
+  "ne.grpc.TableReference\022C\n\010right_id\030\003 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n"
+  "\016columns_to_add\030\005 \003(\t\"\220\002\n\025LeftJoinTables"
+  "Request\022<\n\tresult_id\030\001 \001(\0132).io.deephave"
+  "n.proto.backplane.grpc.Ticket\022B\n\007left_id"
   "\030\002 \001(\01321.io.deephaven.proto.backplane.gr"
-  "pc.TableReference\"\226\001\n\020MetaTableRequest\022<"
+  "pc.TableReference\022C\n\010right_id\030\003 \001(\01321.io"
+  ".deephaven.proto.backplane.grpc.TableRef"
+  "erence\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016colu"
+  "mns_to_add\030\005 \003(\t\"\311\003\n\025AsOfJoinTablesReque"
+  "st\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pro"
+  "to.backplane.grpc.Ticket\022B\n\007left_id\030\002 \001("
+  "\01321.io.deephaven.proto.backplane.grpc.Ta"
+  "bleReference\022C\n\010right_id\030\003 \001(\01321.io.deep"
+  "haven.proto.backplane.grpc.TableReferenc"
+  "e\022\030\n\020columns_to_match\030\004 \003(\t\022\026\n\016columns_t"
+  "o_add\030\005 \003(\t\022\\\n\020as_of_match_rule\030\007 \001(\0162B."
+  "io.deephaven.proto.backplane.grpc.AsOfJo"
+  "inTablesRequest.MatchRule\"Y\n\tMatchRule\022\023"
+  "\n\017LESS_THAN_EQUAL\020\000\022\r\n\tLESS_THAN\020\001\022\026\n\022GR"
+  "EATER_THAN_EQUAL\020\002\022\020\n\014GREATER_THAN\020\003\"\237\006\n"
+  "\026RangeJoinTablesRequest\022<\n\tresult_id\030\001 \001"
+  "(\0132).io.deephaven.proto.backplane.grpc.T"
+  "icket\022B\n\007left_id\030\002 \001(\01321.io.deephaven.pr"
+  "oto.backplane.grpc.TableReference\022C\n\010rig"
+  "ht_id\030\003 \001(\01321.io.deephaven.proto.backpla"
+  "ne.grpc.TableReference\022\033\n\023exact_match_co"
+  "lumns\030\004 \003(\t\022\031\n\021left_start_column\030\005 \001(\t\022b"
+  "\n\020range_start_rule\030\006 \001(\0162H.io.deephaven."
+  "proto.backplane.grpc.RangeJoinTablesRequ"
+  "est.RangeStartRule\022\032\n\022right_range_column"
+  "\030\007 \001(\t\022^\n\016range_end_rule\030\010 \001(\0162F.io.deep"
+  "haven.proto.backplane.grpc.RangeJoinTabl"
+  "esRequest.RangeEndRule\022\027\n\017left_end_colum"
+  "n\030\t \001(\t\022D\n\014aggregations\030\n \003(\0132..io.deeph"
+  "aven.proto.backplane.grpc.Aggregation\"_\n"
+  "\016RangeStartRule\022\r\n\tLESS_THAN\020\000\022\026\n\022LESS_T"
+  "HAN_OR_EQUAL\020\001\022&\n\"LESS_THAN_OR_EQUAL_ALL"
+  "OW_PRECEDING\020\002\"f\n\014RangeEndRule\022\020\n\014GREATE"
+  "R_THAN\020\000\022\031\n\025GREATER_THAN_OR_EQUAL\020\001\022)\n%G"
+  "REATER_THAN_OR_EQUAL_ALLOW_FOLLOWING\020\002\"\376"
+  "\004\n\025ComboAggregateRequest\022<\n\tresult_id\030\001 "
+  "\001(\0132).io.deephaven.proto.backplane.grpc."
+  "Ticket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven"
+  ".proto.backplane.grpc.TableReference\022V\n\n"
+  "aggregates\030\003 \003(\0132B.io.deephaven.proto.ba"
+  "ckplane.grpc.ComboAggregateRequest.Aggre"
+  "gate\022\030\n\020group_by_columns\030\004 \003(\t\022\023\n\013force_"
+  "combo\030\005 \001(\010\032\255\001\n\tAggregate\022N\n\004type\030\001 \001(\0162"
+  "@.io.deephaven.proto.backplane.grpc.Comb"
+  "oAggregateRequest.AggType\022\023\n\013match_pairs"
+  "\030\002 \003(\t\022\023\n\013column_name\030\003 \001(\t\022\022\n\npercentil"
+  "e\030\004 \001(\001\022\022\n\navg_median\030\005 \001(\010\"\245\001\n\007AggType\022"
+  "\007\n\003SUM\020\000\022\013\n\007ABS_SUM\020\001\022\t\n\005GROUP\020\002\022\007\n\003AVG\020"
+  "\003\022\t\n\005COUNT\020\004\022\t\n\005FIRST\020\005\022\010\n\004LAST\020\006\022\007\n\003MIN"
+  "\020\007\022\007\n\003MAX\020\010\022\n\n\006MEDIAN\020\t\022\016\n\nPERCENTILE\020\n\022"
+  "\007\n\003STD\020\013\022\007\n\003VAR\020\014\022\020\n\014WEIGHTED_AVG\020\r:\002\030\001\""
+  "\355\001\n\023AggregateAllRequest\022<\n\tresult_id\030\001 \001"
+  "(\0132).io.deephaven.proto.backplane.grpc.T"
+  "icket\022D\n\tsource_id\030\002 \001(\01321.io.deephaven."
+  "proto.backplane.grpc.TableReference\0228\n\004s"
+  "pec\030\003 \001(\0132*.io.deephaven.proto.backplane"
+  ".grpc.AggSpec\022\030\n\020group_by_columns\030\004 \003(\t\""
+  "\327\027\n\007AggSpec\022K\n\007abs_sum\030\001 \001(\01328.io.deepha"
+  "ven.proto.backplane.grpc.AggSpec.AggSpec"
+  "AbsSumH\000\022i\n\026approximate_percentile\030\002 \001(\013"
+  "2G.io.deephaven.proto.backplane.grpc.Agg"
+  "Spec.AggSpecApproximatePercentileH\000\022D\n\003a"
+  "vg\030\003 \001(\01325.io.deephaven.proto.backplane."
+  "grpc.AggSpec.AggSpecAvgH\000\022Y\n\016count_disti"
+  "nct\030\004 \001(\0132\?.io.deephaven.proto.backplane"
+  ".grpc.AggSpec.AggSpecCountDistinctH\000\022N\n\010"
+  "distinct\030\005 \001(\0132:.io.deephaven.proto.back"
+  "plane.grpc.AggSpec.AggSpecDistinctH\000\022H\n\005"
+  "first\030\006 \001(\01327.io.deephaven.proto.backpla"
+  "ne.grpc.AggSpec.AggSpecFirstH\000\022L\n\007formul"
+  "a\030\007 \001(\01329.io.deephaven.proto.backplane.g"
+  "rpc.AggSpec.AggSpecFormulaH\000\022J\n\006freeze\030\010"
+  " \001(\01328.io.deephaven.proto.backplane.grpc"
+  ".AggSpec.AggSpecFreezeH\000\022H\n\005group\030\t \001(\0132"
+  "7.io.deephaven.proto.backplane.grpc.AggS"
+  "pec.AggSpecGroupH\000\022F\n\004last\030\n \001(\01326.io.de"
+  "ephaven.proto.backplane.grpc.AggSpec.Agg"
+  "SpecLastH\000\022D\n\003max\030\013 \001(\01325.io.deephaven.p"
+  "roto.backplane.grpc.AggSpec.AggSpecMaxH\000"
+  "\022J\n\006median\030\014 \001(\01328.io.deephaven.proto.ba"
+  "ckplane.grpc.AggSpec.AggSpecMedianH\000\022D\n\003"
+  "min\030\r \001(\01325.io.deephaven.proto.backplane"
+  ".grpc.AggSpec.AggSpecMinH\000\022R\n\npercentile"
+  "\030\016 \001(\0132<.io.deephaven.proto.backplane.gr"
+  "pc.AggSpec.AggSpecPercentileH\000\022P\n\014sorted"
+  "_first\030\017 \001(\01328.io.deephaven.proto.backpl"
+  "ane.grpc.AggSpec.AggSpecSortedH\000\022O\n\013sort"
+  "ed_last\030\020 \001(\01328.io.deephaven.proto.backp"
+  "lane.grpc.AggSpec.AggSpecSortedH\000\022D\n\003std"
+  "\030\021 \001(\01325.io.deephaven.proto.backplane.gr"
+  "pc.AggSpec.AggSpecStdH\000\022D\n\003sum\030\022 \001(\01325.i"
+  "o.deephaven.proto.backplane.grpc.AggSpec"
+  ".AggSpecSumH\000\022M\n\010t_digest\030\023 \001(\01329.io.dee"
+  "phaven.proto.backplane.grpc.AggSpec.AggS"
+  "pecTDigestH\000\022J\n\006unique\030\024 \001(\01328.io.deepha"
+  "ven.proto.backplane.grpc.AggSpec.AggSpec"
+  "UniqueH\000\022R\n\014weighted_avg\030\025 \001(\0132:.io.deep"
+  "haven.proto.backplane.grpc.AggSpec.AggSp"
+  "ecWeightedH\000\022R\n\014weighted_sum\030\026 \001(\0132:.io."
+  "deephaven.proto.backplane.grpc.AggSpec.A"
+  "ggSpecWeightedH\000\022D\n\003var\030\027 \001(\01325.io.deeph"
+  "aven.proto.backplane.grpc.AggSpec.AggSpe"
+  "cVarH\000\032\\\n\034AggSpecApproximatePercentile\022\022"
+  "\n\npercentile\030\001 \001(\001\022\030\n\013compression\030\002 \001(\001H"
+  "\000\210\001\001B\016\n\014_compression\032+\n\024AggSpecCountDist"
+  "inct\022\023\n\013count_nulls\030\001 \001(\010\032(\n\017AggSpecDist"
+  "inct\022\025\n\rinclude_nulls\030\001 \001(\010\0326\n\016AggSpecFo"
+  "rmula\022\017\n\007formula\030\001 \001(\t\022\023\n\013param_token\030\002 "
+  "\001(\t\032/\n\rAggSpecMedian\022\036\n\026average_evenly_d"
+  "ivided\030\001 \001(\010\032G\n\021AggSpecPercentile\022\022\n\nper"
+  "centile\030\001 \001(\001\022\036\n\026average_evenly_divided\030"
+  "\002 \001(\010\032`\n\rAggSpecSorted\022O\n\007columns\030\001 \003(\0132"
+  ">.io.deephaven.proto.backplane.grpc.AggS"
+  "pec.AggSpecSortedColumn\032*\n\023AggSpecSorted"
+  "Column\022\023\n\013column_name\030\001 \001(\t\032:\n\016AggSpecTD"
+  "igest\022\030\n\013compression\030\001 \001(\001H\000\210\001\001B\016\n\014_comp"
+  "ression\032\210\001\n\rAggSpecUnique\022\025\n\rinclude_nul"
+  "ls\030\001 \001(\010\022`\n\023non_unique_sentinel\030\002 \001(\0132C."
+  "io.deephaven.proto.backplane.grpc.AggSpe"
+  "c.AggSpecNonUniqueSentinel\032\265\002\n\030AggSpecNo"
+  "nUniqueSentinel\022B\n\nnull_value\030\001 \001(\0162,.io"
+  ".deephaven.proto.backplane.grpc.NullValu"
+  "eH\000\022\026\n\014string_value\030\002 \001(\tH\000\022\023\n\tint_value"
+  "\030\003 \001(\021H\000\022\030\n\nlong_value\030\004 \001(\022B\0020\001H\000\022\025\n\013fl"
+  "oat_value\030\005 \001(\002H\000\022\026\n\014double_value\030\006 \001(\001H"
+  "\000\022\024\n\nbool_value\030\007 \001(\010H\000\022\024\n\nbyte_value\030\010 "
+  "\001(\021H\000\022\025\n\013short_value\030\t \001(\021H\000\022\024\n\nchar_val"
+  "ue\030\n \001(\021H\000B\006\n\004type\032(\n\017AggSpecWeighted\022\025\n"
+  "\rweight_column\030\001 \001(\t\032\017\n\rAggSpecAbsSum\032\014\n"
+  "\nAggSpecAvg\032\016\n\014AggSpecFirst\032\017\n\rAggSpecFr"
+  "eeze\032\016\n\014AggSpecGroup\032\r\n\013AggSpecLast\032\014\n\nA"
+  "ggSpecMax\032\014\n\nAggSpecMin\032\014\n\nAggSpecStd\032\014\n"
+  "\nAggSpecSum\032\014\n\nAggSpecVarB\006\n\004type\"\334\002\n\020Ag"
+  "gregateRequest\022<\n\tresult_id\030\001 \001(\0132).io.d"
+  "eephaven.proto.backplane.grpc.Ticket\022D\n\t"
+  "source_id\030\002 \001(\01321.io.deephaven.proto.bac"
+  "kplane.grpc.TableReference\022L\n\021initial_gr"
+  "oups_id\030\003 \001(\01321.io.deephaven.proto.backp"
+  "lane.grpc.TableReference\022\026\n\016preserve_emp"
+  "ty\030\004 \001(\010\022D\n\014aggregations\030\005 \003(\0132..io.deep"
+  "haven.proto.backplane.grpc.Aggregation\022\030"
+  "\n\020group_by_columns\030\006 \003(\t\"\323\005\n\013Aggregation"
+  "\022T\n\007columns\030\001 \001(\0132A.io.deephaven.proto.b"
+  "ackplane.grpc.Aggregation.AggregationCol"
+  "umnsH\000\022P\n\005count\030\002 \001(\0132\?.io.deephaven.pro"
+  "to.backplane.grpc.Aggregation.Aggregatio"
+  "nCountH\000\022Y\n\rfirst_row_key\030\003 \001(\0132@.io.dee"
+  "phaven.proto.backplane.grpc.Aggregation."
+  "AggregationRowKeyH\000\022X\n\014last_row_key\030\004 \001("
+  "\0132@.io.deephaven.proto.backplane.grpc.Ag"
+  "gregation.AggregationRowKeyH\000\022X\n\tpartiti"
+  "on\030\005 \001(\0132C.io.deephaven.proto.backplane."
+  "grpc.Aggregation.AggregationPartitionH\000\032"
+  "c\n\022AggregationColumns\0228\n\004spec\030\001 \001(\0132*.io"
+  ".deephaven.proto.backplane.grpc.AggSpec\022"
+  "\023\n\013match_pairs\030\002 \003(\t\032\'\n\020AggregationCount"
+  "\022\023\n\013column_name\030\001 \001(\t\032(\n\021AggregationRowK"
+  "ey\022\023\n\013column_name\030\001 \001(\t\032M\n\024AggregationPa"
+  "rtition\022\023\n\013column_name\030\001 \001(\t\022 \n\030include_"
+  "group_by_columns\030\002 \001(\010B\006\n\004type\"\341\001\n\016SortD"
+  "escriptor\022\023\n\013column_name\030\001 \001(\t\022\023\n\013is_abs"
+  "olute\030\002 \001(\010\022R\n\tdirection\030\003 \001(\0162\?.io.deep"
+  "haven.proto.backplane.grpc.SortDescripto"
+  "r.SortDirection\"Q\n\rSortDirection\022\013\n\007UNKN"
+  "OWN\020\000\022\027\n\nDESCENDING\020\377\377\377\377\377\377\377\377\377\001\022\r\n\tASCEND"
+  "ING\020\001\022\013\n\007REVERSE\020\002\"\330\001\n\020SortTableRequest\022"
+  "<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto."
+  "backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\013"
+  "21.io.deephaven.proto.backplane.grpc.Tab"
+  "leReference\022@\n\005sorts\030\003 \003(\01321.io.deephave"
+  "n.proto.backplane.grpc.SortDescriptor\"\327\001"
+  "\n\022FilterTableRequest\022<\n\tresult_id\030\001 \001(\0132"
+  ").io.deephaven.proto.backplane.grpc.Tick"
+  "et\022D\n\tsource_id\030\002 \001(\01321.io.deephaven.pro"
+  "to.backplane.grpc.TableReference\022=\n\007filt"
+  "ers\030\003 \003(\0132,.io.deephaven.proto.backplane"
+  ".grpc.Condition\"\371\001\n\016SeekRowRequest\022<\n\tso"
+  "urce_id\030\001 \001(\0132).io.deephaven.proto.backp"
+  "lane.grpc.Ticket\022\030\n\014starting_row\030\002 \001(\022B\002"
+  "0\001\022\023\n\013column_name\030\003 \001(\t\022>\n\nseek_value\030\004 "
+  "\001(\0132*.io.deephaven.proto.backplane.grpc."
+  "Literal\022\023\n\013insensitive\030\005 \001(\010\022\020\n\010contains"
+  "\030\006 \001(\010\022\023\n\013is_backward\030\007 \001(\010\")\n\017SeekRowRe"
+  "sponse\022\026\n\nresult_row\030\001 \001(\022B\0020\001\" \n\tRefere"
+  "nce\022\023\n\013column_name\030\001 \001(\t\"\221\001\n\007Literal\022\026\n\014"
+  "string_value\030\001 \001(\tH\000\022\026\n\014double_value\030\002 \001"
+  "(\001H\000\022\024\n\nbool_value\030\003 \001(\010H\000\022\030\n\nlong_value"
+  "\030\004 \001(\022B\0020\001H\000\022\035\n\017nano_time_value\030\005 \001(\022B\0020"
+  "\001H\000B\007\n\005value\"\221\001\n\005Value\022A\n\treference\030\001 \001("
+  "\0132,.io.deephaven.proto.backplane.grpc.Re"
+  "ferenceH\000\022=\n\007literal\030\002 \001(\0132*.io.deephave"
+  "n.proto.backplane.grpc.LiteralH\000B\006\n\004data"
+  "\"\274\005\n\tCondition\022>\n\003and\030\001 \001(\0132/.io.deephav"
+  "en.proto.backplane.grpc.AndConditionH\000\022<"
+  "\n\002or\030\002 \001(\0132..io.deephaven.proto.backplan"
+  "e.grpc.OrConditionH\000\022>\n\003not\030\003 \001(\0132/.io.d"
+  "eephaven.proto.backplane.grpc.NotConditi"
+  "onH\000\022F\n\007compare\030\004 \001(\01323.io.deephaven.pro"
+  "to.backplane.grpc.CompareConditionH\000\022<\n\002"
+  "in\030\005 \001(\0132..io.deephaven.proto.backplane."
+  "grpc.InConditionH\000\022D\n\006invoke\030\006 \001(\01322.io."
+  "deephaven.proto.backplane.grpc.InvokeCon"
+  "ditionH\000\022E\n\007is_null\030\007 \001(\01322.io.deephaven"
+  ".proto.backplane.grpc.IsNullConditionH\000\022"
+  "F\n\007matches\030\010 \001(\01323.io.deephaven.proto.ba"
+  "ckplane.grpc.MatchesConditionH\000\022H\n\010conta"
+  "ins\030\t \001(\01324.io.deephaven.proto.backplane"
+  ".grpc.ContainsConditionH\000\022D\n\006search\030\n \001("
+  "\01322.io.deephaven.proto.backplane.grpc.Se"
+  "archConditionH\000B\006\n\004data\"M\n\014AndCondition\022"
+  "=\n\007filters\030\001 \003(\0132,.io.deephaven.proto.ba"
+  "ckplane.grpc.Condition\"L\n\013OrCondition\022=\n"
+  "\007filters\030\001 \003(\0132,.io.deephaven.proto.back"
+  "plane.grpc.Condition\"L\n\014NotCondition\022<\n\006"
+  "filter\030\001 \001(\0132,.io.deephaven.proto.backpl"
+  "ane.grpc.Condition\"\254\003\n\020CompareCondition\022"
+  "W\n\toperation\030\001 \001(\0162D.io.deephaven.proto."
+  "backplane.grpc.CompareCondition.CompareO"
+  "peration\022L\n\020case_sensitivity\030\002 \001(\01622.io."
+  "deephaven.proto.backplane.grpc.CaseSensi"
+  "tivity\0225\n\003lhs\030\003 \001(\0132(.io.deephaven.proto"
+  ".backplane.grpc.Value\0225\n\003rhs\030\004 \001(\0132(.io."
+  "deephaven.proto.backplane.grpc.Value\"\202\001\n"
+  "\020CompareOperation\022\r\n\tLESS_THAN\020\000\022\026\n\022LESS"
+  "_THAN_OR_EQUAL\020\001\022\020\n\014GREATER_THAN\020\002\022\031\n\025GR"
+  "EATER_THAN_OR_EQUAL\020\003\022\n\n\006EQUALS\020\004\022\016\n\nNOT"
+  "_EQUALS\020\005\"\225\002\n\013InCondition\0228\n\006target\030\001 \001("
+  "\0132(.io.deephaven.proto.backplane.grpc.Va"
+  "lue\022<\n\ncandidates\030\002 \003(\0132(.io.deephaven.p"
+  "roto.backplane.grpc.Value\022L\n\020case_sensit"
+  "ivity\030\003 \001(\01622.io.deephaven.proto.backpla"
+  "ne.grpc.CaseSensitivity\022@\n\nmatch_type\030\004 "
+  "\001(\0162,.io.deephaven.proto.backplane.grpc."
+  "MatchType\"\230\001\n\017InvokeCondition\022\016\n\006method\030"
+  "\001 \001(\t\0228\n\006target\030\002 \001(\0132(.io.deephaven.pro"
+  "to.backplane.grpc.Value\022;\n\targuments\030\003 \003"
+  "(\0132(.io.deephaven.proto.backplane.grpc.V"
+  "alue\"R\n\017IsNullCondition\022\?\n\treference\030\001 \001"
+  "(\0132,.io.deephaven.proto.backplane.grpc.R"
+  "eference\"\362\001\n\020MatchesCondition\022\?\n\treferen"
+  "ce\030\001 \001(\0132,.io.deephaven.proto.backplane."
+  "grpc.Reference\022\r\n\005regex\030\002 \001(\t\022L\n\020case_se"
+  "nsitivity\030\003 \001(\01622.io.deephaven.proto.bac"
+  "kplane.grpc.CaseSensitivity\022@\n\nmatch_typ"
+  "e\030\004 \001(\0162,.io.deephaven.proto.backplane.g"
+  "rpc.MatchType\"\373\001\n\021ContainsCondition\022\?\n\tr"
+  "eference\030\001 \001(\0132,.io.deephaven.proto.back"
+  "plane.grpc.Reference\022\025\n\rsearch_string\030\002 "
+  "\001(\t\022L\n\020case_sensitivity\030\003 \001(\01622.io.deeph"
+  "aven.proto.backplane.grpc.CaseSensitivit"
+  "y\022@\n\nmatch_type\030\004 \001(\0162,.io.deephaven.pro"
+  "to.backplane.grpc.MatchType\"s\n\017SearchCon"
+  "dition\022\025\n\rsearch_string\030\001 \001(\t\022I\n\023optiona"
+  "l_references\030\002 \003(\0132,.io.deephaven.proto."
+  "backplane.grpc.Reference\"\224\001\n\016FlattenRequ"
+  "est\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.pr"
+  "oto.backplane.grpc.Ticket\022D\n\tsource_id\030\002"
+  " \001(\01321.io.deephaven.proto.backplane.grpc"
+  ".TableReference\"\226\001\n\020MetaTableRequest\022<\n\t"
+  "result_id\030\001 \001(\0132).io.deephaven.proto.bac"
+  "kplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\01321."
+  "io.deephaven.proto.backplane.grpc.TableR"
+  "eference\"\264\003\n\031RunChartDownsampleRequest\022<"
   "\n\tresult_id\030\001 \001(\0132).io.deephaven.proto.b"
   "ackplane.grpc.Ticket\022D\n\tsource_id\030\002 \001(\0132"
   "1.io.deephaven.proto.backplane.grpc.Tabl"
-  "eReference\"\264\003\n\031RunChartDownsampleRequest"
-  "\022<\n\tresult_id\030\001 \001(\0132).io.deephaven.proto"
-  ".backplane.grpc.Ticket\022D\n\tsource_id\030\002 \001("
-  "\01321.io.deephaven.proto.backplane.grpc.Ta"
-  "bleReference\022\023\n\013pixel_count\030\003 \001(\005\022Z\n\nzoo"
-  "m_range\030\004 \001(\0132F.io.deephaven.proto.backp"
-  "lane.grpc.RunChartDownsampleRequest.Zoom"
-  "Range\022\025\n\rx_column_name\030\005 \001(\t\022\026\n\016y_column"
-  "_names\030\006 \003(\t\032s\n\tZoomRange\022\037\n\016min_date_na"
-  "nos\030\001 \001(\003B\0020\001H\000\210\001\001\022\037\n\016max_date_nanos\030\002 \001"
-  "(\003B\0020\001H\001\210\001\001B\021\n\017_min_date_nanosB\021\n\017_max_d"
-  "ate_nanos\"\365\004\n\027CreateInputTableRequest\022<\n"
-  "\tresult_id\030\001 \001(\0132).io.deephaven.proto.ba"
-  "ckplane.grpc.Ticket\022L\n\017source_table_id\030\002"
-  " \001(\01321.io.deephaven.proto.backplane.grpc"
-  ".TableReferenceH\000\022\020\n\006schema\030\003 \001(\014H\000\022W\n\004k"
-  "ind\030\004 \001(\0132I.io.deephaven.proto.backplane"
-  ".grpc.CreateInputTableRequest.InputTable"
-  "Kind\032\324\002\n\016InputTableKind\022}\n\025in_memory_app"
-  "end_only\030\001 \001(\0132\\.io.deephaven.proto.back"
-  "plane.grpc.CreateInputTableRequest.Input"
-  "TableKind.InMemoryAppendOnlyH\000\022{\n\024in_mem"
-  "ory_key_backed\030\002 \001(\0132[.io.deephaven.prot"
-  "o.backplane.grpc.CreateInputTableRequest"
-  ".InputTableKind.InMemoryKeyBackedH\000\032\024\n\022I"
-  "nMemoryAppendOnly\032(\n\021InMemoryKeyBacked\022\023"
-  "\n\013key_columns\030\001 \003(\tB\006\n\004kindB\014\n\ndefinitio"
-  "n\"\203\002\n\016WhereInRequest\022<\n\tresult_id\030\001 \001(\0132"
-  ").io.deephaven.proto.backplane.grpc.Tick"
-  "et\022B\n\007left_id\030\002 \001(\01321.io.deephaven.proto"
-  ".backplane.grpc.TableReference\022C\n\010right_"
-  "id\030\003 \001(\01321.io.deephaven.proto.backplane."
-  "grpc.TableReference\022\020\n\010inverted\030\004 \001(\010\022\030\n"
-  "\020columns_to_match\030\005 \003(\t\"\217\027\n\021BatchTableRe"
-  "quest\022K\n\003ops\030\001 \003(\0132>.io.deephaven.proto."
-  "backplane.grpc.BatchTableRequest.Operati"
-  "on\032\254\026\n\tOperation\022K\n\013empty_table\030\001 \001(\01324."
-  "io.deephaven.proto.backplane.grpc.EmptyT"
-  "ableRequestH\000\022I\n\ntime_table\030\002 \001(\01323.io.d"
-  "eephaven.proto.backplane.grpc.TimeTableR"
-  "equestH\000\022M\n\014drop_columns\030\003 \001(\01325.io.deep"
-  "haven.proto.backplane.grpc.DropColumnsRe"
-  "questH\000\022J\n\006update\030\004 \001(\01328.io.deephaven.p"
-  "roto.backplane.grpc.SelectOrUpdateReques"
-  "tH\000\022O\n\013lazy_update\030\005 \001(\01328.io.deephaven."
-  "proto.backplane.grpc.SelectOrUpdateReque"
-  "stH\000\022H\n\004view\030\006 \001(\01328.io.deephaven.proto."
-  "backplane.grpc.SelectOrUpdateRequestH\000\022O"
-  "\n\013update_view\030\007 \001(\01328.io.deephaven.proto"
-  ".backplane.grpc.SelectOrUpdateRequestH\000\022"
-  "J\n\006select\030\010 \001(\01328.io.deephaven.proto.bac"
-  "kplane.grpc.SelectOrUpdateRequestH\000\022S\n\017s"
-  "elect_distinct\030\t \001(\01328.io.deephaven.prot"
-  "o.backplane.grpc.SelectDistinctRequestH\000"
-  "\022G\n\006filter\030\n \001(\01325.io.deephaven.proto.ba"
-  "ckplane.grpc.FilterTableRequestH\000\022`\n\023uns"
-  "tructured_filter\030\013 \001(\0132A.io.deephaven.pr"
-  "oto.backplane.grpc.UnstructuredFilterTab"
-  "leRequestH\000\022C\n\004sort\030\014 \001(\01323.io.deephaven"
-  ".proto.backplane.grpc.SortTableRequestH\000"
-  "\022D\n\004head\030\r \001(\01324.io.deephaven.proto.back"
-  "plane.grpc.HeadOrTailRequestH\000\022D\n\004tail\030\016"
-  " \001(\01324.io.deephaven.proto.backplane.grpc"
-  ".HeadOrTailRequestH\000\022I\n\007head_by\030\017 \001(\01326."
-  "io.deephaven.proto.backplane.grpc.HeadOr"
-  "TailByRequestH\000\022I\n\007tail_by\030\020 \001(\01326.io.de"
-  "ephaven.proto.backplane.grpc.HeadOrTailB"
-  "yRequestH\000\022D\n\007ungroup\030\021 \001(\01321.io.deephav"
-  "en.proto.backplane.grpc.UngroupRequestH\000"
-  "\022F\n\005merge\030\022 \001(\01325.io.deephaven.proto.bac"
-  "kplane.grpc.MergeTablesRequestH\000\022S\n\017comb"
-  "o_aggregate\030\023 \001(\01328.io.deephaven.proto.b"
-  "ackplane.grpc.ComboAggregateRequestH\000\022D\n"
-  "\007flatten\030\025 \001(\01321.io.deephaven.proto.back"
-  "plane.grpc.FlattenRequestH\000\022\\\n\024run_chart"
-  "_downsample\030\026 \001(\0132<.io.deephaven.proto.b"
-  "ackplane.grpc.RunChartDownsampleRequestH"
-  "\000\022O\n\ncross_join\030\027 \001(\01329.io.deephaven.pro"
-  "to.backplane.grpc.CrossJoinTablesRequest"
-  "H\000\022S\n\014natural_join\030\030 \001(\0132;.io.deephaven."
-  "proto.backplane.grpc.NaturalJoinTablesRe"
-  "questH\000\022O\n\nexact_join\030\031 \001(\01329.io.deephav"
-  "en.proto.backplane.grpc.ExactJoinTablesR"
-  "equestH\000\022M\n\tleft_join\030\032 \001(\01328.io.deephav"
-  "en.proto.backplane.grpc.LeftJoinTablesRe"
-  "questH\000\022N\n\nas_of_join\030\033 \001(\01328.io.deephav"
-  "en.proto.backplane.grpc.AsOfJoinTablesRe"
-  "questH\000\022K\n\013fetch_table\030\034 \001(\01324.io.deepha"
-  "ven.proto.backplane.grpc.FetchTableReque"
-  "stH\000\022^\n\025apply_preview_columns\030\036 \001(\0132=.io"
-  ".deephaven.proto.backplane.grpc.ApplyPre"
-  "viewColumnsRequestH\000\022X\n\022create_input_tab"
-  "le\030\037 \001(\0132:.io.deephaven.proto.backplane."
-  "grpc.CreateInputTableRequestH\000\022G\n\tupdate"
-  "_by\030  \001(\01322.io.deephaven.proto.backplane"
-  ".grpc.UpdateByRequestH\000\022E\n\010where_in\030! \001("
-  "\01321.io.deephaven.proto.backplane.grpc.Wh"
-  "ereInRequestH\000\022O\n\raggregate_all\030\" \001(\01326."
-  "io.deephaven.proto.backplane.grpc.Aggreg"
-  "ateAllRequestH\000\022H\n\taggregate\030# \001(\01323.io."
-  "deephaven.proto.backplane.grpc.Aggregate"
-  "RequestH\000\022K\n\010snapshot\030$ \001(\01327.io.deephav"
-  "en.proto.backplane.grpc.SnapshotTableReq"
-  "uestH\000\022T\n\rsnapshot_when\030% \001(\0132;.io.deeph"
-  "aven.proto.backplane.grpc.SnapshotWhenTa"
-  "bleRequestH\000\022I\n\nmeta_table\030& \001(\01323.io.de"
-  "ephaven.proto.backplane.grpc.MetaTableRe"
-  "questH\000B\004\n\002opJ\004\010\024\020\025J\004\010\035\020\036*=\n\017BadDataBeha"
-  "vior\022\t\n\005THROW\020\000\022\t\n\005RESET\020\001\022\010\n\004SKIP\020\002\022\n\n\006"
-  "POISON\020\003*\033\n\tNullValue\022\016\n\nNULL_VALUE\020\000*2\n"
-  "\017CaseSensitivity\022\016\n\nMATCH_CASE\020\000\022\017\n\013IGNO"
-  "RE_CASE\020\001*&\n\tMatchType\022\013\n\007REGULAR\020\000\022\014\n\010I"
-  "NVERTED\020\0012\345+\n\014TableService\022\221\001\n GetExport"
-  "edTableCreationResponse\022).io.deephaven.p"
-  "roto.backplane.grpc.Ticket\032@.io.deephave"
-  "n.proto.backplane.grpc.ExportedTableCrea"
-  "tionResponse\"\000\022\206\001\n\nFetchTable\0224.io.deeph"
-  "aven.proto.backplane.grpc.FetchTableRequ"
-  "est\032@.io.deephaven.proto.backplane.grpc."
-  "ExportedTableCreationResponse\"\000\022\230\001\n\023Appl"
-  "yPreviewColumns\022=.io.deephaven.proto.bac"
-  "kplane.grpc.ApplyPreviewColumnsRequest\032@"
-  ".io.deephaven.proto.backplane.grpc.Expor"
-  "tedTableCreationResponse\"\000\022\206\001\n\nEmptyTabl"
-  "e\0224.io.deephaven.proto.backplane.grpc.Em"
-  "ptyTableRequest\032@.io.deephaven.proto.bac"
-  "kplane.grpc.ExportedTableCreationRespons"
-  "e\"\000\022\204\001\n\tTimeTable\0223.io.deephaven.proto.b"
-  "ackplane.grpc.TimeTableRequest\032@.io.deep"
-  "haven.proto.backplane.grpc.ExportedTable"
-  "CreationResponse\"\000\022\210\001\n\013DropColumns\0225.io."
-  "deephaven.proto.backplane.grpc.DropColum"
-  "nsRequest\032@.io.deephaven.proto.backplane"
-  ".grpc.ExportedTableCreationResponse\"\000\022\206\001"
-  "\n\006Update\0228.io.deephaven.proto.backplane."
-  "grpc.SelectOrUpdateRequest\032@.io.deephave"
-  "n.proto.backplane.grpc.ExportedTableCrea"
-  "tionResponse\"\000\022\212\001\n\nLazyUpdate\0228.io.deeph"
-  "aven.proto.backplane.grpc.SelectOrUpdate"
-  "Request\032@.io.deephaven.proto.backplane.g"
-  "rpc.ExportedTableCreationResponse\"\000\022\204\001\n\004"
-  "View\0228.io.deephaven.proto.backplane.grpc"
-  ".SelectOrUpdateRequest\032@.io.deephaven.pr"
-  "oto.backplane.grpc.ExportedTableCreation"
-  "Response\"\000\022\212\001\n\nUpdateView\0228.io.deephaven"
-  ".proto.backplane.grpc.SelectOrUpdateRequ"
-  "est\032@.io.deephaven.proto.backplane.grpc."
-  "ExportedTableCreationResponse\"\000\022\206\001\n\006Sele"
-  "ct\0228.io.deephaven.proto.backplane.grpc.S"
-  "electOrUpdateRequest\032@.io.deephaven.prot"
-  "o.backplane.grpc.ExportedTableCreationRe"
-  "sponse\"\000\022\202\001\n\010UpdateBy\0222.io.deephaven.pro"
-  "to.backplane.grpc.UpdateByRequest\032@.io.d"
-  "eephaven.proto.backplane.grpc.ExportedTa"
-  "bleCreationResponse\"\000\022\216\001\n\016SelectDistinct"
-  "\0228.io.deephaven.proto.backplane.grpc.Sel"
-  "ectDistinctRequest\032@.io.deephaven.proto."
-  "backplane.grpc.ExportedTableCreationResp"
-  "onse\"\000\022\203\001\n\006Filter\0225.io.deephaven.proto.b"
-  "ackplane.grpc.FilterTableRequest\032@.io.de"
-  "ephaven.proto.backplane.grpc.ExportedTab"
-  "leCreationResponse\"\000\022\233\001\n\022UnstructuredFil"
-  "ter\022A.io.deephaven.proto.backplane.grpc."
-  "UnstructuredFilterTableRequest\032@.io.deep"
-  "haven.proto.backplane.grpc.ExportedTable"
-  "CreationResponse\"\000\022\177\n\004Sort\0223.io.deephave"
-  "n.proto.backplane.grpc.SortTableRequest\032"
-  "@.io.deephaven.proto.backplane.grpc.Expo"
-  "rtedTableCreationResponse\"\000\022\200\001\n\004Head\0224.i"
-  "o.deephaven.proto.backplane.grpc.HeadOrT"
-  "ailRequest\032@.io.deephaven.proto.backplan"
-  "e.grpc.ExportedTableCreationResponse\"\000\022\200"
-  "\001\n\004Tail\0224.io.deephaven.proto.backplane.g"
-  "rpc.HeadOrTailRequest\032@.io.deephaven.pro"
-  "to.backplane.grpc.ExportedTableCreationR"
-  "esponse\"\000\022\204\001\n\006HeadBy\0226.io.deephaven.prot"
-  "o.backplane.grpc.HeadOrTailByRequest\032@.i"
-  "o.deephaven.proto.backplane.grpc.Exporte"
-  "dTableCreationResponse\"\000\022\204\001\n\006TailBy\0226.io"
+  "eReference\022\023\n\013pixel_count\030\003 \001(\005\022Z\n\nzoom_"
+  "range\030\004 \001(\0132F.io.deephaven.proto.backpla"
+  "ne.grpc.RunChartDownsampleRequest.ZoomRa"
+  "nge\022\025\n\rx_column_name\030\005 \001(\t\022\026\n\016y_column_n"
+  "ames\030\006 \003(\t\032s\n\tZoomRange\022\037\n\016min_date_nano"
+  "s\030\001 \001(\003B\0020\001H\000\210\001\001\022\037\n\016max_date_nanos\030\002 \001(\003"
+  "B\0020\001H\001\210\001\001B\021\n\017_min_date_nanosB\021\n\017_max_dat"
+  "e_nanos\"\365\004\n\027CreateInputTableRequest\022<\n\tr"
+  "esult_id\030\001 \001(\0132).io.deephaven.proto.back"
+  "plane.grpc.Ticket\022L\n\017source_table_id\030\002 \001"
+  "(\01321.io.deephaven.proto.backplane.grpc.T"
+  "ableReferenceH\000\022\020\n\006schema\030\003 \001(\014H\000\022W\n\004kin"
+  "d\030\004 \001(\0132I.io.deephaven.proto.backplane.g"
+  "rpc.CreateInputTableRequest.InputTableKi"
+  "nd\032\324\002\n\016InputTableKind\022}\n\025in_memory_appen"
+  "d_only\030\001 \001(\0132\\.io.deephaven.proto.backpl"
+  "ane.grpc.CreateInputTableRequest.InputTa"
+  "bleKind.InMemoryAppendOnlyH\000\022{\n\024in_memor"
+  "y_key_backed\030\002 \001(\0132[.io.deephaven.proto."
+  "backplane.grpc.CreateInputTableRequest.I"
+  "nputTableKind.InMemoryKeyBackedH\000\032\024\n\022InM"
+  "emoryAppendOnly\032(\n\021InMemoryKeyBacked\022\023\n\013"
+  "key_columns\030\001 \003(\tB\006\n\004kindB\014\n\ndefinition\""
+  "\203\002\n\016WhereInRequest\022<\n\tresult_id\030\001 \001(\0132)."
+  "io.deephaven.proto.backplane.grpc.Ticket"
+  "\022B\n\007left_id\030\002 \001(\01321.io.deephaven.proto.b"
+  "ackplane.grpc.TableReference\022C\n\010right_id"
+  "\030\003 \001(\01321.io.deephaven.proto.backplane.gr"
+  "pc.TableReference\022\020\n\010inverted\030\004 \001(\010\022\030\n\020c"
+  "olumns_to_match\030\005 \003(\t\"\340\027\n\021BatchTableRequ"
+  "est\022K\n\003ops\030\001 \003(\0132>.io.deephaven.proto.ba"
+  "ckplane.grpc.BatchTableRequest.Operation"
+  "\032\375\026\n\tOperation\022K\n\013empty_table\030\001 \001(\01324.io"
+  ".deephaven.proto.backplane.grpc.EmptyTab"
+  "leRequestH\000\022I\n\ntime_table\030\002 \001(\01323.io.dee"
+  "phaven.proto.backplane.grpc.TimeTableReq"
+  "uestH\000\022M\n\014drop_columns\030\003 \001(\01325.io.deepha"
+  "ven.proto.backplane.grpc.DropColumnsRequ"
+  "estH\000\022J\n\006update\030\004 \001(\01328.io.deephaven.pro"
+  "to.backplane.grpc.SelectOrUpdateRequestH"
+  "\000\022O\n\013lazy_update\030\005 \001(\01328.io.deephaven.pr"
+  "oto.backplane.grpc.SelectOrUpdateRequest"
+  "H\000\022H\n\004view\030\006 \001(\01328.io.deephaven.proto.ba"
+  "ckplane.grpc.SelectOrUpdateRequestH\000\022O\n\013"
+  "update_view\030\007 \001(\01328.io.deephaven.proto.b"
+  "ackplane.grpc.SelectOrUpdateRequestH\000\022J\n"
+  "\006select\030\010 \001(\01328.io.deephaven.proto.backp"
+  "lane.grpc.SelectOrUpdateRequestH\000\022S\n\017sel"
+  "ect_distinct\030\t \001(\01328.io.deephaven.proto."
+  "backplane.grpc.SelectDistinctRequestH\000\022G"
+  "\n\006filter\030\n \001(\01325.io.deephaven.proto.back"
+  "plane.grpc.FilterTableRequestH\000\022`\n\023unstr"
+  "uctured_filter\030\013 \001(\0132A.io.deephaven.prot"
+  "o.backplane.grpc.UnstructuredFilterTable"
+  "RequestH\000\022C\n\004sort\030\014 \001(\01323.io.deephaven.p"
+  "roto.backplane.grpc.SortTableRequestH\000\022D"
+  "\n\004head\030\r \001(\01324.io.deephaven.proto.backpl"
+  "ane.grpc.HeadOrTailRequestH\000\022D\n\004tail\030\016 \001"
+  "(\01324.io.deephaven.proto.backplane.grpc.H"
+  "eadOrTailRequestH\000\022I\n\007head_by\030\017 \001(\01326.io"
   ".deephaven.proto.backplane.grpc.HeadOrTa"
-  "ilByRequest\032@.io.deephaven.proto.backpla"
-  "ne.grpc.ExportedTableCreationResponse\"\000\022"
-  "\200\001\n\007Ungroup\0221.io.deephaven.proto.backpla"
-  "ne.grpc.UngroupRequest\032@.io.deephaven.pr"
-  "oto.backplane.grpc.ExportedTableCreation"
-  "Response\"\000\022\210\001\n\013MergeTables\0225.io.deephave"
-  "n.proto.backplane.grpc.MergeTablesReques"
-  "t\032@.io.deephaven.proto.backplane.grpc.Ex"
-  "portedTableCreationResponse\"\000\022\220\001\n\017CrossJ"
-  "oinTables\0229.io.deephaven.proto.backplane"
-  ".grpc.CrossJoinTablesRequest\032@.io.deepha"
-  "ven.proto.backplane.grpc.ExportedTableCr"
-  "eationResponse\"\000\022\224\001\n\021NaturalJoinTables\022;"
-  ".io.deephaven.proto.backplane.grpc.Natur"
-  "alJoinTablesRequest\032@.io.deephaven.proto"
-  ".backplane.grpc.ExportedTableCreationRes"
-  "ponse\"\000\022\220\001\n\017ExactJoinTables\0229.io.deephav"
-  "en.proto.backplane.grpc.ExactJoinTablesR"
-  "equest\032@.io.deephaven.proto.backplane.gr"
-  "pc.ExportedTableCreationResponse\"\000\022\216\001\n\016L"
-  "eftJoinTables\0228.io.deephaven.proto.backp"
-  "lane.grpc.LeftJoinTablesRequest\032@.io.dee"
-  "phaven.proto.backplane.grpc.ExportedTabl"
-  "eCreationResponse\"\000\022\216\001\n\016AsOfJoinTables\0228"
-  ".io.deephaven.proto.backplane.grpc.AsOfJ"
-  "oinTablesRequest\032@.io.deephaven.proto.ba"
-  "ckplane.grpc.ExportedTableCreationRespon"
-  "se\"\000\022\221\001\n\016ComboAggregate\0228.io.deephaven.p"
-  "roto.backplane.grpc.ComboAggregateReques"
-  "t\032@.io.deephaven.proto.backplane.grpc.Ex"
-  "portedTableCreationResponse\"\003\210\002\001\022\212\001\n\014Agg"
-  "regateAll\0226.io.deephaven.proto.backplane"
-  ".grpc.AggregateAllRequest\032@.io.deephaven"
+  "ilByRequestH\000\022I\n\007tail_by\030\020 \001(\01326.io.deep"
+  "haven.proto.backplane.grpc.HeadOrTailByR"
+  "equestH\000\022D\n\007ungroup\030\021 \001(\01321.io.deephaven"
+  ".proto.backplane.grpc.UngroupRequestH\000\022F"
+  "\n\005merge\030\022 \001(\01325.io.deephaven.proto.backp"
+  "lane.grpc.MergeTablesRequestH\000\022S\n\017combo_"
+  "aggregate\030\023 \001(\01328.io.deephaven.proto.bac"
+  "kplane.grpc.ComboAggregateRequestH\000\022D\n\007f"
+  "latten\030\025 \001(\01321.io.deephaven.proto.backpl"
+  "ane.grpc.FlattenRequestH\000\022\\\n\024run_chart_d"
+  "ownsample\030\026 \001(\0132<.io.deephaven.proto.bac"
+  "kplane.grpc.RunChartDownsampleRequestH\000\022"
+  "O\n\ncross_join\030\027 \001(\01329.io.deephaven.proto"
+  ".backplane.grpc.CrossJoinTablesRequestH\000"
+  "\022S\n\014natural_join\030\030 \001(\0132;.io.deephaven.pr"
+  "oto.backplane.grpc.NaturalJoinTablesRequ"
+  "estH\000\022O\n\nexact_join\030\031 \001(\01329.io.deephaven"
+  ".proto.backplane.grpc.ExactJoinTablesReq"
+  "uestH\000\022M\n\tleft_join\030\032 \001(\01328.io.deephaven"
+  ".proto.backplane.grpc.LeftJoinTablesRequ"
+  "estH\000\022N\n\nas_of_join\030\033 \001(\01328.io.deephaven"
+  ".proto.backplane.grpc.AsOfJoinTablesRequ"
+  "estH\000\022K\n\013fetch_table\030\034 \001(\01324.io.deephave"
+  "n.proto.backplane.grpc.FetchTableRequest"
+  "H\000\022^\n\025apply_preview_columns\030\036 \001(\0132=.io.d"
+  "eephaven.proto.backplane.grpc.ApplyPrevi"
+  "ewColumnsRequestH\000\022X\n\022create_input_table"
+  "\030\037 \001(\0132:.io.deephaven.proto.backplane.gr"
+  "pc.CreateInputTableRequestH\000\022G\n\tupdate_b"
+  "y\030  \001(\01322.io.deephaven.proto.backplane.g"
+  "rpc.UpdateByRequestH\000\022E\n\010where_in\030! \001(\0132"
+  "1.io.deephaven.proto.backplane.grpc.Wher"
+  "eInRequestH\000\022O\n\raggregate_all\030\" \001(\01326.io"
+  ".deephaven.proto.backplane.grpc.Aggregat"
+  "eAllRequestH\000\022H\n\taggregate\030# \001(\01323.io.de"
+  "ephaven.proto.backplane.grpc.AggregateRe"
+  "questH\000\022K\n\010snapshot\030$ \001(\01327.io.deephaven"
+  ".proto.backplane.grpc.SnapshotTableReque"
+  "stH\000\022T\n\rsnapshot_when\030% \001(\0132;.io.deephav"
+  "en.proto.backplane.grpc.SnapshotWhenTabl"
+  "eRequestH\000\022I\n\nmeta_table\030& \001(\01323.io.deep"
+  "haven.proto.backplane.grpc.MetaTableRequ"
+  "estH\000\022O\n\nrange_join\030\' \001(\01329.io.deephaven"
+  ".proto.backplane.grpc.RangeJoinTablesReq"
+  "uestH\000B\004\n\002opJ\004\010\024\020\025J\004\010\035\020\036*=\n\017BadDataBehav"
+  "ior\022\t\n\005THROW\020\000\022\t\n\005RESET\020\001\022\010\n\004SKIP\020\002\022\n\n\006P"
+  "OISON\020\003*\033\n\tNullValue\022\016\n\nNULL_VALUE\020\000*2\n\017"
+  "CaseSensitivity\022\016\n\nMATCH_CASE\020\000\022\017\n\013IGNOR"
+  "E_CASE\020\001*&\n\tMatchType\022\013\n\007REGULAR\020\000\022\014\n\010IN"
+  "VERTED\020\0012\370,\n\014TableService\022\221\001\n GetExporte"
+  "dTableCreationResponse\022).io.deephaven.pr"
+  "oto.backplane.grpc.Ticket\032@.io.deephaven"
   ".proto.backplane.grpc.ExportedTableCreat"
-  "ionResponse\"\000\022\204\001\n\tAggregate\0223.io.deephav"
-  "en.proto.backplane.grpc.AggregateRequest"
-  "\032@.io.deephaven.proto.backplane.grpc.Exp"
-  "ortedTableCreationResponse\"\000\022\207\001\n\010Snapsho"
-  "t\0227.io.deephaven.proto.backplane.grpc.Sn"
-  "apshotTableRequest\032@.io.deephaven.proto."
-  "backplane.grpc.ExportedTableCreationResp"
-  "onse\"\000\022\217\001\n\014SnapshotWhen\022;.io.deephaven.p"
-  "roto.backplane.grpc.SnapshotWhenTableReq"
-  "uest\032@.io.deephaven.proto.backplane.grpc"
-  ".ExportedTableCreationResponse\"\000\022\200\001\n\007Fla"
-  "tten\0221.io.deephaven.proto.backplane.grpc"
-  ".FlattenRequest\032@.io.deephaven.proto.bac"
-  "kplane.grpc.ExportedTableCreationRespons"
-  "e\"\000\022\226\001\n\022RunChartDownsample\022<.io.deephave"
-  "n.proto.backplane.grpc.RunChartDownsampl"
-  "eRequest\032@.io.deephaven.proto.backplane."
-  "grpc.ExportedTableCreationResponse\"\000\022\222\001\n"
-  "\020CreateInputTable\022:.io.deephaven.proto.b"
-  "ackplane.grpc.CreateInputTableRequest\032@."
+  "ionResponse\"\000\022\206\001\n\nFetchTable\0224.io.deepha"
+  "ven.proto.backplane.grpc.FetchTableReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\230\001\n\023Apply"
+  "PreviewColumns\022=.io.deephaven.proto.back"
+  "plane.grpc.ApplyPreviewColumnsRequest\032@."
   "io.deephaven.proto.backplane.grpc.Export"
-  "edTableCreationResponse\"\000\022\200\001\n\007WhereIn\0221."
-  "io.deephaven.proto.backplane.grpc.WhereI"
-  "nRequest\032@.io.deephaven.proto.backplane."
-  "grpc.ExportedTableCreationResponse\"\000\022\203\001\n"
-  "\005Batch\0224.io.deephaven.proto.backplane.gr"
-  "pc.BatchTableRequest\032@.io.deephaven.prot"
-  "o.backplane.grpc.ExportedTableCreationRe"
-  "sponse\"\0000\001\022\231\001\n\024ExportedTableUpdates\022>.io"
-  ".deephaven.proto.backplane.grpc.Exported"
-  "TableUpdatesRequest\032=.io.deephaven.proto"
-  ".backplane.grpc.ExportedTableUpdateMessa"
-  "ge\"\0000\001\022r\n\007SeekRow\0221.io.deephaven.proto.b"
-  "ackplane.grpc.SeekRowRequest\0322.io.deepha"
-  "ven.proto.backplane.grpc.SeekRowResponse"
-  "\"\000\022\204\001\n\tMetaTable\0223.io.deephaven.proto.ba"
-  "ckplane.grpc.MetaTableRequest\032@.io.deeph"
+  "edTableCreationResponse\"\000\022\206\001\n\nEmptyTable"
+  "\0224.io.deephaven.proto.backplane.grpc.Emp"
+  "tyTableRequest\032@.io.deephaven.proto.back"
+  "plane.grpc.ExportedTableCreationResponse"
+  "\"\000\022\204\001\n\tTimeTable\0223.io.deephaven.proto.ba"
+  "ckplane.grpc.TimeTableRequest\032@.io.deeph"
   "aven.proto.backplane.grpc.ExportedTableC"
-  "reationResponse\"\000BAH\001P\001Z;github.com/deep"
-  "haven/deephaven-core/go/internal/proto/t"
-  "ableb\006proto3"
+  "reationResponse\"\000\022\210\001\n\013DropColumns\0225.io.d"
+  "eephaven.proto.backplane.grpc.DropColumn"
+  "sRequest\032@.io.deephaven.proto.backplane."
+  "grpc.ExportedTableCreationResponse\"\000\022\206\001\n"
+  "\006Update\0228.io.deephaven.proto.backplane.g"
+  "rpc.SelectOrUpdateRequest\032@.io.deephaven"
+  ".proto.backplane.grpc.ExportedTableCreat"
+  "ionResponse\"\000\022\212\001\n\nLazyUpdate\0228.io.deepha"
+  "ven.proto.backplane.grpc.SelectOrUpdateR"
+  "equest\032@.io.deephaven.proto.backplane.gr"
+  "pc.ExportedTableCreationResponse\"\000\022\204\001\n\004V"
+  "iew\0228.io.deephaven.proto.backplane.grpc."
+  "SelectOrUpdateRequest\032@.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableCreationR"
+  "esponse\"\000\022\212\001\n\nUpdateView\0228.io.deephaven."
+  "proto.backplane.grpc.SelectOrUpdateReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\206\001\n\006Selec"
+  "t\0228.io.deephaven.proto.backplane.grpc.Se"
+  "lectOrUpdateRequest\032@.io.deephaven.proto"
+  ".backplane.grpc.ExportedTableCreationRes"
+  "ponse\"\000\022\202\001\n\010UpdateBy\0222.io.deephaven.prot"
+  "o.backplane.grpc.UpdateByRequest\032@.io.de"
+  "ephaven.proto.backplane.grpc.ExportedTab"
+  "leCreationResponse\"\000\022\216\001\n\016SelectDistinct\022"
+  "8.io.deephaven.proto.backplane.grpc.Sele"
+  "ctDistinctRequest\032@.io.deephaven.proto.b"
+  "ackplane.grpc.ExportedTableCreationRespo"
+  "nse\"\000\022\203\001\n\006Filter\0225.io.deephaven.proto.ba"
+  "ckplane.grpc.FilterTableRequest\032@.io.dee"
+  "phaven.proto.backplane.grpc.ExportedTabl"
+  "eCreationResponse\"\000\022\233\001\n\022UnstructuredFilt"
+  "er\022A.io.deephaven.proto.backplane.grpc.U"
+  "nstructuredFilterTableRequest\032@.io.deeph"
+  "aven.proto.backplane.grpc.ExportedTableC"
+  "reationResponse\"\000\022\177\n\004Sort\0223.io.deephaven"
+  ".proto.backplane.grpc.SortTableRequest\032@"
+  ".io.deephaven.proto.backplane.grpc.Expor"
+  "tedTableCreationResponse\"\000\022\200\001\n\004Head\0224.io"
+  ".deephaven.proto.backplane.grpc.HeadOrTa"
+  "ilRequest\032@.io.deephaven.proto.backplane"
+  ".grpc.ExportedTableCreationResponse\"\000\022\200\001"
+  "\n\004Tail\0224.io.deephaven.proto.backplane.gr"
+  "pc.HeadOrTailRequest\032@.io.deephaven.prot"
+  "o.backplane.grpc.ExportedTableCreationRe"
+  "sponse\"\000\022\204\001\n\006HeadBy\0226.io.deephaven.proto"
+  ".backplane.grpc.HeadOrTailByRequest\032@.io"
+  ".deephaven.proto.backplane.grpc.Exported"
+  "TableCreationResponse\"\000\022\204\001\n\006TailBy\0226.io."
+  "deephaven.proto.backplane.grpc.HeadOrTai"
+  "lByRequest\032@.io.deephaven.proto.backplan"
+  "e.grpc.ExportedTableCreationResponse\"\000\022\200"
+  "\001\n\007Ungroup\0221.io.deephaven.proto.backplan"
+  "e.grpc.UngroupRequest\032@.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableCreationR"
+  "esponse\"\000\022\210\001\n\013MergeTables\0225.io.deephaven"
+  ".proto.backplane.grpc.MergeTablesRequest"
+  "\032@.io.deephaven.proto.backplane.grpc.Exp"
+  "ortedTableCreationResponse\"\000\022\220\001\n\017CrossJo"
+  "inTables\0229.io.deephaven.proto.backplane."
+  "grpc.CrossJoinTablesRequest\032@.io.deephav"
+  "en.proto.backplane.grpc.ExportedTableCre"
+  "ationResponse\"\000\022\224\001\n\021NaturalJoinTables\022;."
+  "io.deephaven.proto.backplane.grpc.Natura"
+  "lJoinTablesRequest\032@.io.deephaven.proto."
+  "backplane.grpc.ExportedTableCreationResp"
+  "onse\"\000\022\220\001\n\017ExactJoinTables\0229.io.deephave"
+  "n.proto.backplane.grpc.ExactJoinTablesRe"
+  "quest\032@.io.deephaven.proto.backplane.grp"
+  "c.ExportedTableCreationResponse\"\000\022\216\001\n\016Le"
+  "ftJoinTables\0228.io.deephaven.proto.backpl"
+  "ane.grpc.LeftJoinTablesRequest\032@.io.deep"
+  "haven.proto.backplane.grpc.ExportedTable"
+  "CreationResponse\"\000\022\216\001\n\016AsOfJoinTables\0228."
+  "io.deephaven.proto.backplane.grpc.AsOfJo"
+  "inTablesRequest\032@.io.deephaven.proto.bac"
+  "kplane.grpc.ExportedTableCreationRespons"
+  "e\"\000\022\220\001\n\017RangeJoinTables\0229.io.deephaven.p"
+  "roto.backplane.grpc.RangeJoinTablesReque"
+  "st\032@.io.deephaven.proto.backplane.grpc.E"
+  "xportedTableCreationResponse\"\000\022\221\001\n\016Combo"
+  "Aggregate\0228.io.deephaven.proto.backplane"
+  ".grpc.ComboAggregateRequest\032@.io.deephav"
+  "en.proto.backplane.grpc.ExportedTableCre"
+  "ationResponse\"\003\210\002\001\022\212\001\n\014AggregateAll\0226.io"
+  ".deephaven.proto.backplane.grpc.Aggregat"
+  "eAllRequest\032@.io.deephaven.proto.backpla"
+  "ne.grpc.ExportedTableCreationResponse\"\000\022"
+  "\204\001\n\tAggregate\0223.io.deephaven.proto.backp"
+  "lane.grpc.AggregateRequest\032@.io.deephave"
+  "n.proto.backplane.grpc.ExportedTableCrea"
+  "tionResponse\"\000\022\207\001\n\010Snapshot\0227.io.deephav"
+  "en.proto.backplane.grpc.SnapshotTableReq"
+  "uest\032@.io.deephaven.proto.backplane.grpc"
+  ".ExportedTableCreationResponse\"\000\022\217\001\n\014Sna"
+  "pshotWhen\022;.io.deephaven.proto.backplane"
+  ".grpc.SnapshotWhenTableRequest\032@.io.deep"
+  "haven.proto.backplane.grpc.ExportedTable"
+  "CreationResponse\"\000\022\200\001\n\007Flatten\0221.io.deep"
+  "haven.proto.backplane.grpc.FlattenReques"
+  "t\032@.io.deephaven.proto.backplane.grpc.Ex"
+  "portedTableCreationResponse\"\000\022\226\001\n\022RunCha"
+  "rtDownsample\022<.io.deephaven.proto.backpl"
+  "ane.grpc.RunChartDownsampleRequest\032@.io."
+  "deephaven.proto.backplane.grpc.ExportedT"
+  "ableCreationResponse\"\000\022\222\001\n\020CreateInputTa"
+  "ble\022:.io.deephaven.proto.backplane.grpc."
+  "CreateInputTableRequest\032@.io.deephaven.p"
+  "roto.backplane.grpc.ExportedTableCreatio"
+  "nResponse\"\000\022\200\001\n\007WhereIn\0221.io.deephaven.p"
+  "roto.backplane.grpc.WhereInRequest\032@.io."
+  "deephaven.proto.backplane.grpc.ExportedT"
+  "ableCreationResponse\"\000\022\203\001\n\005Batch\0224.io.de"
+  "ephaven.proto.backplane.grpc.BatchTableR"
+  "equest\032@.io.deephaven.proto.backplane.gr"
+  "pc.ExportedTableCreationResponse\"\0000\001\022\231\001\n"
+  "\024ExportedTableUpdates\022>.io.deephaven.pro"
+  "to.backplane.grpc.ExportedTableUpdatesRe"
+  "quest\032=.io.deephaven.proto.backplane.grp"
+  "c.ExportedTableUpdateMessage\"\0000\001\022r\n\007Seek"
+  "Row\0221.io.deephaven.proto.backplane.grpc."
+  "SeekRowRequest\0322.io.deephaven.proto.back"
+  "plane.grpc.SeekRowResponse\"\000\022\204\001\n\tMetaTab"
+  "le\0223.io.deephaven.proto.backplane.grpc.M"
+  "etaTableRequest\032@.io.deephaven.proto.bac"
+  "kplane.grpc.ExportedTableCreationRespons"
+  "e\"\000BAH\001P\001Z;github.com/deephaven/deephave"
+  "n-core/go/internal/proto/tableb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2ftable_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2ftable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2ftable_2eproto = {
-    false, false, 29372, descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto,
+    false, false, 30398, descriptor_table_protodef_deephaven_2fproto_2ftable_2eproto,
     "deephaven/proto/table.proto",
-    &descriptor_table_deephaven_2fproto_2ftable_2eproto_once, descriptor_table_deephaven_2fproto_2ftable_2eproto_deps, 1, 108,
+    &descriptor_table_deephaven_2fproto_2ftable_2eproto_once, descriptor_table_deephaven_2fproto_2ftable_2eproto_deps, 1, 109,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2ftable_2eproto::offsets,
     file_level_metadata_deephaven_2fproto_2ftable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2ftable_2eproto,
@@ -3533,9 +3600,55 @@ constexpr AsOfJoinTablesRequest_MatchRule AsOfJoinTablesRequest::MatchRule_MIN;
 constexpr AsOfJoinTablesRequest_MatchRule AsOfJoinTablesRequest::MatchRule_MAX;
 constexpr int AsOfJoinTablesRequest::MatchRule_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
-const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ComboAggregateRequest_AggType_descriptor() {
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RangeJoinTablesRequest_RangeStartRule_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
   return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[2];
+}
+bool RangeJoinTablesRequest_RangeStartRule_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN_OR_EQUAL;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::RangeStartRule_MIN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest::RangeStartRule_MAX;
+constexpr int RangeJoinTablesRequest::RangeStartRule_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* RangeJoinTablesRequest_RangeEndRule_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[3];
+}
+bool RangeJoinTablesRequest_RangeEndRule_IsValid(int value) {
+  switch (value) {
+    case 0:
+    case 1:
+    case 2:
+      return true;
+    default:
+      return false;
+  }
+}
+
+#if (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN_OR_EQUAL;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::RangeEndRule_MIN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest::RangeEndRule_MAX;
+constexpr int RangeJoinTablesRequest::RangeEndRule_ARRAYSIZE;
+#endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ComboAggregateRequest_AggType_descriptor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[4];
 }
 bool ComboAggregateRequest_AggType_IsValid(int value) {
   switch (value) {
@@ -3580,7 +3693,7 @@ constexpr int ComboAggregateRequest::AggType_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* SortDescriptor_SortDirection_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[3];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[5];
 }
 bool SortDescriptor_SortDirection_IsValid(int value) {
   switch (value) {
@@ -3605,7 +3718,7 @@ constexpr int SortDescriptor::SortDirection_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CompareCondition_CompareOperation_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[4];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[6];
 }
 bool CompareCondition_CompareOperation_IsValid(int value) {
   switch (value) {
@@ -3634,7 +3747,7 @@ constexpr int CompareCondition::CompareOperation_ARRAYSIZE;
 #endif  // (__cplusplus < 201703) && (!defined(_MSC_VER) || (_MSC_VER >= 1900 && _MSC_VER < 1912))
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* BadDataBehavior_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[5];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[7];
 }
 bool BadDataBehavior_IsValid(int value) {
   switch (value) {
@@ -3650,7 +3763,7 @@ bool BadDataBehavior_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* NullValue_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[6];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[8];
 }
 bool NullValue_IsValid(int value) {
   switch (value) {
@@ -3663,7 +3776,7 @@ bool NullValue_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* CaseSensitivity_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[7];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[9];
 }
 bool CaseSensitivity_IsValid(int value) {
   switch (value) {
@@ -3677,7 +3790,7 @@ bool CaseSensitivity_IsValid(int value) {
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* MatchType_descriptor() {
   ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&descriptor_table_deephaven_2fproto_2ftable_2eproto);
-  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[8];
+  return file_level_enum_descriptors_deephaven_2fproto_2ftable_2eproto[10];
 }
 bool MatchType_IsValid(int value) {
   switch (value) {
@@ -6104,7 +6217,7 @@ UpdateByEmaTimescale_UpdateByEmaTicks::UpdateByEmaTimescale_UpdateByEmaTicks(con
 }
 
 inline void UpdateByEmaTimescale_UpdateByEmaTicks::SharedCtor() {
-ticks_ = int64_t{0};
+ticks_ = 0;
 }
 
 UpdateByEmaTimescale_UpdateByEmaTicks::~UpdateByEmaTimescale_UpdateByEmaTicks() {
@@ -6130,7 +6243,7 @@ void UpdateByEmaTimescale_UpdateByEmaTicks::Clear() {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  ticks_ = int64_t{0};
+  ticks_ = 0;
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -6140,11 +6253,11 @@ const char* UpdateByEmaTimescale_UpdateByEmaTicks::_InternalParse(const char* pt
     uint32_t tag;
     ptr = ::_pbi::ReadTag(ptr, &tag);
     switch (tag >> 3) {
-      // sint64 ticks = 1 [jstype = JS_STRING];
+      // double ticks = 1;
       case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          ticks_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarintZigZag64(&ptr);
-          CHK_(ptr);
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 9)) {
+          ticks_ = ::PROTOBUF_NAMESPACE_ID::internal::UnalignedLoad<double>(ptr);
+          ptr += sizeof(double);
         } else
           goto handle_unusual;
         continue;
@@ -6177,10 +6290,14 @@ uint8_t* UpdateByEmaTimescale_UpdateByEmaTicks::_InternalSerialize(
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  // sint64 ticks = 1 [jstype = JS_STRING];
-  if (this->_internal_ticks() != 0) {
+  // double ticks = 1;
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = this->_internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteSInt64ToArray(1, this->_internal_ticks(), target);
+    target = ::_pbi::WireFormatLite::WriteDoubleToArray(1, this->_internal_ticks(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -6199,9 +6316,13 @@ size_t UpdateByEmaTimescale_UpdateByEmaTicks::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // sint64 ticks = 1 [jstype = JS_STRING];
-  if (this->_internal_ticks() != 0) {
-    total_size += ::_pbi::WireFormatLite::SInt64SizePlusOne(this->_internal_ticks());
+  // double ticks = 1;
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = this->_internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
+    total_size += 1 + 8;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
@@ -6226,7 +6347,11 @@ void UpdateByEmaTimescale_UpdateByEmaTicks::MergeFrom(const UpdateByEmaTimescale
   uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_ticks() != 0) {
+  static_assert(sizeof(uint64_t) == sizeof(double), "Code assumes uint64_t and double are the same size.");
+  double tmp_ticks = from._internal_ticks();
+  uint64_t raw_ticks;
+  memcpy(&raw_ticks, &tmp_ticks, sizeof(tmp_ticks));
+  if (raw_ticks != 0) {
     _internal_set_ticks(from._internal_ticks());
   }
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -15454,6 +15579,560 @@ void AsOfJoinTablesRequest::InternalSwap(AsOfJoinTablesRequest* other) {
 
 // ===================================================================
 
+class RangeJoinTablesRequest::_Internal {
+ public:
+  static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const RangeJoinTablesRequest* msg);
+  static const ::io::deephaven::proto::backplane::grpc::TableReference& left_id(const RangeJoinTablesRequest* msg);
+  static const ::io::deephaven::proto::backplane::grpc::TableReference& right_id(const RangeJoinTablesRequest* msg);
+};
+
+const ::io::deephaven::proto::backplane::grpc::Ticket&
+RangeJoinTablesRequest::_Internal::result_id(const RangeJoinTablesRequest* msg) {
+  return *msg->result_id_;
+}
+const ::io::deephaven::proto::backplane::grpc::TableReference&
+RangeJoinTablesRequest::_Internal::left_id(const RangeJoinTablesRequest* msg) {
+  return *msg->left_id_;
+}
+const ::io::deephaven::proto::backplane::grpc::TableReference&
+RangeJoinTablesRequest::_Internal::right_id(const RangeJoinTablesRequest* msg) {
+  return *msg->right_id_;
+}
+void RangeJoinTablesRequest::clear_result_id() {
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+}
+RangeJoinTablesRequest::RangeJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned),
+  exact_match_columns_(arena),
+  aggregations_(arena) {
+  SharedCtor();
+  // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+}
+RangeJoinTablesRequest::RangeJoinTablesRequest(const RangeJoinTablesRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message(),
+      exact_match_columns_(from.exact_match_columns_),
+      aggregations_(from.aggregations_) {
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  left_start_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    left_start_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_left_start_column().empty()) {
+    left_start_column_.Set(from._internal_left_start_column(), 
+      GetArenaForAllocation());
+  }
+  right_range_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    right_range_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_right_range_column().empty()) {
+    right_range_column_.Set(from._internal_right_range_column(), 
+      GetArenaForAllocation());
+  }
+  left_end_column_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    left_end_column_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_left_end_column().empty()) {
+    left_end_column_.Set(from._internal_left_end_column(), 
+      GetArenaForAllocation());
+  }
+  if (from._internal_has_result_id()) {
+    result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from.result_id_);
+  } else {
+    result_id_ = nullptr;
+  }
+  if (from._internal_has_left_id()) {
+    left_id_ = new ::io::deephaven::proto::backplane::grpc::TableReference(*from.left_id_);
+  } else {
+    left_id_ = nullptr;
+  }
+  if (from._internal_has_right_id()) {
+    right_id_ = new ::io::deephaven::proto::backplane::grpc::TableReference(*from.right_id_);
+  } else {
+    right_id_ = nullptr;
+  }
+  ::memcpy(&range_start_rule_, &from.range_start_rule_,
+    static_cast<size_t>(reinterpret_cast<char*>(&range_end_rule_) -
+    reinterpret_cast<char*>(&range_start_rule_)) + sizeof(range_end_rule_));
+  // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+}
+
+inline void RangeJoinTablesRequest::SharedCtor() {
+left_start_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  left_start_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+right_range_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  right_range_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+left_end_column_.InitDefault();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  left_end_column_.Set("", GetArenaForAllocation());
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+::memset(reinterpret_cast<char*>(this) + static_cast<size_t>(
+    reinterpret_cast<char*>(&result_id_) - reinterpret_cast<char*>(this)),
+    0, static_cast<size_t>(reinterpret_cast<char*>(&range_end_rule_) -
+    reinterpret_cast<char*>(&result_id_)) + sizeof(range_end_rule_));
+}
+
+RangeJoinTablesRequest::~RangeJoinTablesRequest() {
+  // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void RangeJoinTablesRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  left_start_column_.Destroy();
+  right_range_column_.Destroy();
+  left_end_column_.Destroy();
+  if (this != internal_default_instance()) delete result_id_;
+  if (this != internal_default_instance()) delete left_id_;
+  if (this != internal_default_instance()) delete right_id_;
+}
+
+void RangeJoinTablesRequest::SetCachedSize(int size) const {
+  _cached_size_.Set(size);
+}
+
+void RangeJoinTablesRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  exact_match_columns_.Clear();
+  aggregations_.Clear();
+  left_start_column_.ClearToEmpty();
+  right_range_column_.ClearToEmpty();
+  left_end_column_.ClearToEmpty();
+  if (GetArenaForAllocation() == nullptr && result_id_ != nullptr) {
+    delete result_id_;
+  }
+  result_id_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && left_id_ != nullptr) {
+    delete left_id_;
+  }
+  left_id_ = nullptr;
+  if (GetArenaForAllocation() == nullptr && right_id_ != nullptr) {
+    delete right_id_;
+  }
+  right_id_ = nullptr;
+  ::memset(&range_start_rule_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&range_end_rule_) -
+      reinterpret_cast<char*>(&range_start_rule_)) + sizeof(range_end_rule_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* RangeJoinTablesRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
+          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr = ctx->ParseMessage(_internal_mutable_left_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
+          ptr = ctx->ParseMessage(_internal_mutable_right_id(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated string exact_match_columns = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_exact_match_columns();
+            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+            CHK_(ptr);
+            CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.exact_match_columns"));
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // string left_start_column = 5;
+      case 5:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
+          auto str = _internal_mutable_left_start_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_start_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+      case 6:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 48)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_range_start_rule(static_cast<::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest_RangeStartRule>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // string right_range_column = 7;
+      case 7:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          auto str = _internal_mutable_right_range_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.right_range_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+      case 8:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 64)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_range_end_rule(static_cast<::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest_RangeEndRule>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // string left_end_column = 9;
+      case 9:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 74)) {
+          auto str = _internal_mutable_left_end_column();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_end_column"));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+      case 10:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 82)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_aggregations(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<82>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* RangeJoinTablesRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(1, _Internal::result_id(this),
+        _Internal::result_id(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  if (this->_internal_has_left_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(2, _Internal::left_id(this),
+        _Internal::left_id(this).GetCachedSize(), target, stream);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  if (this->_internal_has_right_id()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(3, _Internal::right_id(this),
+        _Internal::right_id(this).GetCachedSize(), target, stream);
+  }
+
+  // repeated string exact_match_columns = 4;
+  for (int i = 0, n = this->_internal_exact_match_columns_size(); i < n; i++) {
+    const auto& s = this->_internal_exact_match_columns(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.exact_match_columns");
+    target = stream->WriteString(4, s, target);
+  }
+
+  // string left_start_column = 5;
+  if (!this->_internal_left_start_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_left_start_column().data(), static_cast<int>(this->_internal_left_start_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_start_column");
+    target = stream->WriteStringMaybeAliased(
+        5, this->_internal_left_start_column(), target);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+  if (this->_internal_range_start_rule() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      6, this->_internal_range_start_rule(), target);
+  }
+
+  // string right_range_column = 7;
+  if (!this->_internal_right_range_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_right_range_column().data(), static_cast<int>(this->_internal_right_range_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.right_range_column");
+    target = stream->WriteStringMaybeAliased(
+        7, this->_internal_right_range_column(), target);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+  if (this->_internal_range_end_rule() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      8, this->_internal_range_end_rule(), target);
+  }
+
+  // string left_end_column = 9;
+  if (!this->_internal_left_end_column().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_left_end_column().data(), static_cast<int>(this->_internal_left_end_column().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.left_end_column");
+    target = stream->WriteStringMaybeAliased(
+        9, this->_internal_left_end_column(), target);
+  }
+
+  // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_aggregations_size()); i < n; i++) {
+    const auto& repfield = this->_internal_aggregations(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(10, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  return target;
+}
+
+size_t RangeJoinTablesRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated string exact_match_columns = 4;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(exact_match_columns_.size());
+  for (int i = 0, n = exact_match_columns_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      exact_match_columns_.Get(i));
+  }
+
+  // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 10;
+  total_size += 1UL * this->_internal_aggregations_size();
+  for (const auto& msg : this->aggregations_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // string left_start_column = 5;
+  if (!this->_internal_left_start_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_left_start_column());
+  }
+
+  // string right_range_column = 7;
+  if (!this->_internal_right_range_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_right_range_column());
+  }
+
+  // string left_end_column = 9;
+  if (!this->_internal_left_end_column().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_left_end_column());
+  }
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  if (this->_internal_has_result_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *result_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  if (this->_internal_has_left_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *left_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  if (this->_internal_has_right_id()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+        *right_id_);
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeStartRule range_start_rule = 6;
+  if (this->_internal_range_start_rule() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_range_start_rule());
+  }
+
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest.RangeEndRule range_end_rule = 8;
+  if (this->_internal_range_end_rule() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_range_end_rule());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RangeJoinTablesRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSizeCheck,
+    RangeJoinTablesRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RangeJoinTablesRequest::GetClassData() const { return &_class_data_; }
+
+void RangeJoinTablesRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to,
+                      const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+  static_cast<RangeJoinTablesRequest *>(to)->MergeFrom(
+      static_cast<const RangeJoinTablesRequest &>(from));
+}
+
+
+void RangeJoinTablesRequest::MergeFrom(const RangeJoinTablesRequest& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  GOOGLE_DCHECK_NE(&from, this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  exact_match_columns_.MergeFrom(from.exact_match_columns_);
+  aggregations_.MergeFrom(from.aggregations_);
+  if (!from._internal_left_start_column().empty()) {
+    _internal_set_left_start_column(from._internal_left_start_column());
+  }
+  if (!from._internal_right_range_column().empty()) {
+    _internal_set_right_range_column(from._internal_right_range_column());
+  }
+  if (!from._internal_left_end_column().empty()) {
+    _internal_set_left_end_column(from._internal_left_end_column());
+  }
+  if (from._internal_has_result_id()) {
+    _internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(from._internal_result_id());
+  }
+  if (from._internal_has_left_id()) {
+    _internal_mutable_left_id()->::io::deephaven::proto::backplane::grpc::TableReference::MergeFrom(from._internal_left_id());
+  }
+  if (from._internal_has_right_id()) {
+    _internal_mutable_right_id()->::io::deephaven::proto::backplane::grpc::TableReference::MergeFrom(from._internal_right_id());
+  }
+  if (from._internal_range_start_rule() != 0) {
+    _internal_set_range_start_rule(from._internal_range_start_rule());
+  }
+  if (from._internal_range_end_rule() != 0) {
+    _internal_set_range_end_rule(from._internal_range_end_rule());
+  }
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void RangeJoinTablesRequest::CopyFrom(const RangeJoinTablesRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool RangeJoinTablesRequest::IsInitialized() const {
+  return true;
+}
+
+void RangeJoinTablesRequest::InternalSwap(RangeJoinTablesRequest* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  exact_match_columns_.InternalSwap(&other->exact_match_columns_);
+  aggregations_.InternalSwap(&other->aggregations_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &left_start_column_, lhs_arena,
+      &other->left_start_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &right_range_column_, lhs_arena,
+      &other->right_range_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &left_end_column_, lhs_arena,
+      &other->left_end_column_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(RangeJoinTablesRequest, range_end_rule_)
+      + sizeof(RangeJoinTablesRequest::range_end_rule_)
+      - PROTOBUF_FIELD_OFFSET(RangeJoinTablesRequest, result_id_)>(
+          reinterpret_cast<char*>(&result_id_),
+          reinterpret_cast<char*>(&other->result_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata RangeJoinTablesRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[45]);
+}
+
+// ===================================================================
+
 class ComboAggregateRequest_Aggregate::_Internal {
  public:
 };
@@ -15779,7 +16458,7 @@ void ComboAggregateRequest_Aggregate::InternalSwap(ComboAggregateRequest_Aggrega
 ::PROTOBUF_NAMESPACE_ID::Metadata ComboAggregateRequest_Aggregate::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[45]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[46]);
 }
 
 // ===================================================================
@@ -16115,7 +16794,7 @@ void ComboAggregateRequest::InternalSwap(ComboAggregateRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ComboAggregateRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[46]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[47]);
 }
 
 // ===================================================================
@@ -16434,7 +17113,7 @@ void AggregateAllRequest::InternalSwap(AggregateAllRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggregateAllRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[47]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[48]);
 }
 
 // ===================================================================
@@ -16661,7 +17340,7 @@ void AggSpec_AggSpecApproximatePercentile::InternalSwap(AggSpec_AggSpecApproxima
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecApproximatePercentile::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[48]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[49]);
 }
 
 // ===================================================================
@@ -16832,7 +17511,7 @@ void AggSpec_AggSpecCountDistinct::InternalSwap(AggSpec_AggSpecCountDistinct* ot
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecCountDistinct::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[49]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[50]);
 }
 
 // ===================================================================
@@ -17003,7 +17682,7 @@ void AggSpec_AggSpecDistinct::InternalSwap(AggSpec_AggSpecDistinct* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecDistinct::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[50]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[51]);
 }
 
 // ===================================================================
@@ -17246,7 +17925,7 @@ void AggSpec_AggSpecFormula::InternalSwap(AggSpec_AggSpecFormula* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFormula::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[51]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[52]);
 }
 
 // ===================================================================
@@ -17417,7 +18096,7 @@ void AggSpec_AggSpecMedian::InternalSwap(AggSpec_AggSpecMedian* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMedian::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[52]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[53]);
 }
 
 // ===================================================================
@@ -17634,7 +18313,7 @@ void AggSpec_AggSpecPercentile::InternalSwap(AggSpec_AggSpecPercentile* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecPercentile::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[53]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[54]);
 }
 
 // ===================================================================
@@ -17812,7 +18491,7 @@ void AggSpec_AggSpecSorted::InternalSwap(AggSpec_AggSpecSorted* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSorted::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[54]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[55]);
 }
 
 // ===================================================================
@@ -18007,7 +18686,7 @@ void AggSpec_AggSpecSortedColumn::InternalSwap(AggSpec_AggSpecSortedColumn* othe
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSortedColumn::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[55]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[56]);
 }
 
 // ===================================================================
@@ -18189,7 +18868,7 @@ void AggSpec_AggSpecTDigest::InternalSwap(AggSpec_AggSpecTDigest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecTDigest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[56]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[57]);
 }
 
 // ===================================================================
@@ -18408,7 +19087,7 @@ void AggSpec_AggSpecUnique::InternalSwap(AggSpec_AggSpecUnique* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecUnique::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[57]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[58]);
 }
 
 // ===================================================================
@@ -18908,7 +19587,7 @@ void AggSpec_AggSpecNonUniqueSentinel::InternalSwap(AggSpec_AggSpecNonUniqueSent
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecNonUniqueSentinel::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[58]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[59]);
 }
 
 // ===================================================================
@@ -19103,7 +19782,7 @@ void AggSpec_AggSpecWeighted::InternalSwap(AggSpec_AggSpecWeighted* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecWeighted::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[59]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[60]);
 }
 
 // ===================================================================
@@ -19142,7 +19821,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecAbsSum::GetClas
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecAbsSum::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[60]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[61]);
 }
 
 // ===================================================================
@@ -19181,7 +19860,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecAvg::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecAvg::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[61]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[62]);
 }
 
 // ===================================================================
@@ -19220,7 +19899,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecFirst::GetClass
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFirst::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[62]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[63]);
 }
 
 // ===================================================================
@@ -19259,7 +19938,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecFreeze::GetClas
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecFreeze::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[63]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[64]);
 }
 
 // ===================================================================
@@ -19298,7 +19977,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecGroup::GetClass
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecGroup::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[64]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[65]);
 }
 
 // ===================================================================
@@ -19337,7 +20016,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecLast::GetClassD
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecLast::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[65]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[66]);
 }
 
 // ===================================================================
@@ -19376,7 +20055,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecMax::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMax::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[66]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[67]);
 }
 
 // ===================================================================
@@ -19415,7 +20094,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecMin::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecMin::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[67]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[68]);
 }
 
 // ===================================================================
@@ -19454,7 +20133,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecStd::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecStd::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[68]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[69]);
 }
 
 // ===================================================================
@@ -19493,7 +20172,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecSum::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecSum::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[69]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[70]);
 }
 
 // ===================================================================
@@ -19532,7 +20211,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AggSpec_AggSpecVar::GetClassDa
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec_AggSpecVar::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[70]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[71]);
 }
 
 // ===================================================================
@@ -20999,7 +21678,7 @@ void AggSpec::InternalSwap(AggSpec* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggSpec::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[71]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[72]);
 }
 
 // ===================================================================
@@ -21375,7 +22054,7 @@ void AggregateRequest::InternalSwap(AggregateRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AggregateRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[72]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[73]);
 }
 
 // ===================================================================
@@ -21600,7 +22279,7 @@ void Aggregation_AggregationColumns::InternalSwap(Aggregation_AggregationColumns
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationColumns::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[73]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[74]);
 }
 
 // ===================================================================
@@ -21795,7 +22474,7 @@ void Aggregation_AggregationCount::InternalSwap(Aggregation_AggregationCount* ot
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationCount::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[74]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[75]);
 }
 
 // ===================================================================
@@ -21990,7 +22669,7 @@ void Aggregation_AggregationRowKey::InternalSwap(Aggregation_AggregationRowKey* 
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationRowKey::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[75]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[76]);
 }
 
 // ===================================================================
@@ -22211,7 +22890,7 @@ void Aggregation_AggregationPartition::InternalSwap(Aggregation_AggregationParti
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation_AggregationPartition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[76]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[77]);
 }
 
 // ===================================================================
@@ -22670,7 +23349,7 @@ void Aggregation::InternalSwap(Aggregation* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Aggregation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[77]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[78]);
 }
 
 // ===================================================================
@@ -22928,7 +23607,7 @@ void SortDescriptor::InternalSwap(SortDescriptor* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SortDescriptor::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[78]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[79]);
 }
 
 // ===================================================================
@@ -23202,7 +23881,7 @@ void SortTableRequest::InternalSwap(SortTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SortTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[79]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[80]);
 }
 
 // ===================================================================
@@ -23476,7 +24155,7 @@ void FilterTableRequest::InternalSwap(FilterTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FilterTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[80]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[81]);
 }
 
 // ===================================================================
@@ -23861,7 +24540,7 @@ void SeekRowRequest::InternalSwap(SeekRowRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SeekRowRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[81]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[82]);
 }
 
 // ===================================================================
@@ -24032,7 +24711,7 @@ void SeekRowResponse::InternalSwap(SeekRowResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SeekRowResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[82]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[83]);
 }
 
 // ===================================================================
@@ -24227,7 +24906,7 @@ void Reference::InternalSwap(Reference* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Reference::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[83]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[84]);
 }
 
 // ===================================================================
@@ -24569,7 +25248,7 @@ void Literal::InternalSwap(Literal* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Literal::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[84]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[85]);
 }
 
 // ===================================================================
@@ -24860,7 +25539,7 @@ void Value::InternalSwap(Value* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Value::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[85]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[86]);
 }
 
 // ===================================================================
@@ -25599,7 +26278,7 @@ void Condition::InternalSwap(Condition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata Condition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[86]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[87]);
 }
 
 // ===================================================================
@@ -25777,7 +26456,7 @@ void AndCondition::InternalSwap(AndCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata AndCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[87]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[88]);
 }
 
 // ===================================================================
@@ -25955,7 +26634,7 @@ void OrCondition::InternalSwap(OrCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata OrCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[88]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[89]);
 }
 
 // ===================================================================
@@ -26142,7 +26821,7 @@ void NotCondition::InternalSwap(NotCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata NotCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[89]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[90]);
 }
 
 // ===================================================================
@@ -26433,7 +27112,7 @@ void CompareCondition::InternalSwap(CompareCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CompareCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[90]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[91]);
 }
 
 // ===================================================================
@@ -26717,7 +27396,7 @@ void InCondition::InternalSwap(InCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata InCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[91]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[92]);
 }
 
 // ===================================================================
@@ -26987,7 +27666,7 @@ void InvokeCondition::InternalSwap(InvokeCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata InvokeCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[92]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[93]);
 }
 
 // ===================================================================
@@ -27174,7 +27853,7 @@ void IsNullCondition::InternalSwap(IsNullCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata IsNullCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[93]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[94]);
 }
 
 // ===================================================================
@@ -27475,7 +28154,7 @@ void MatchesCondition::InternalSwap(MatchesCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata MatchesCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[94]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[95]);
 }
 
 // ===================================================================
@@ -27776,7 +28455,7 @@ void ContainsCondition::InternalSwap(ContainsCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata ContainsCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[95]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[96]);
 }
 
 // ===================================================================
@@ -28004,7 +28683,7 @@ void SearchCondition::InternalSwap(SearchCondition* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SearchCondition::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[96]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[97]);
 }
 
 // ===================================================================
@@ -28245,7 +28924,7 @@ void FlattenRequest::InternalSwap(FlattenRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FlattenRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[97]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[98]);
 }
 
 // ===================================================================
@@ -28486,7 +29165,7 @@ void MetaTableRequest::InternalSwap(MetaTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata MetaTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[98]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[99]);
 }
 
 // ===================================================================
@@ -28715,7 +29394,7 @@ void RunChartDownsampleRequest_ZoomRange::InternalSwap(RunChartDownsampleRequest
 ::PROTOBUF_NAMESPACE_ID::Metadata RunChartDownsampleRequest_ZoomRange::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[99]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[100]);
 }
 
 // ===================================================================
@@ -29108,7 +29787,7 @@ void RunChartDownsampleRequest::InternalSwap(RunChartDownsampleRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata RunChartDownsampleRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[100]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[101]);
 }
 
 // ===================================================================
@@ -29147,7 +29826,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*CreateInputTableRequest_InputT
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind_InMemoryAppendOnly::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[101]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[102]);
 }
 
 // ===================================================================
@@ -29330,7 +30009,7 @@ void CreateInputTableRequest_InputTableKind_InMemoryKeyBacked::InternalSwap(Crea
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind_InMemoryKeyBacked::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[102]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[103]);
 }
 
 // ===================================================================
@@ -29621,7 +30300,7 @@ void CreateInputTableRequest_InputTableKind::InternalSwap(CreateInputTableReques
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest_InputTableKind::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[103]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[104]);
 }
 
 // ===================================================================
@@ -29986,7 +30665,7 @@ void CreateInputTableRequest::InternalSwap(CreateInputTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata CreateInputTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[104]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[105]);
 }
 
 // ===================================================================
@@ -30329,7 +31008,7 @@ void WhereInRequest::InternalSwap(WhereInRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata WhereInRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[105]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[106]);
 }
 
 // ===================================================================
@@ -30372,6 +31051,7 @@ class BatchTableRequest_Operation::_Internal {
   static const ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest& snapshot(const BatchTableRequest_Operation* msg);
   static const ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest& snapshot_when(const BatchTableRequest_Operation* msg);
   static const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& meta_table(const BatchTableRequest_Operation* msg);
+  static const ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest& range_join(const BatchTableRequest_Operation* msg);
 };
 
 const ::io::deephaven::proto::backplane::grpc::EmptyTableRequest&
@@ -30517,6 +31197,10 @@ BatchTableRequest_Operation::_Internal::snapshot_when(const BatchTableRequest_Op
 const ::io::deephaven::proto::backplane::grpc::MetaTableRequest&
 BatchTableRequest_Operation::_Internal::meta_table(const BatchTableRequest_Operation* msg) {
   return *msg->op_.meta_table_;
+}
+const ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest&
+BatchTableRequest_Operation::_Internal::range_join(const BatchTableRequest_Operation* msg) {
+  return *msg->op_.range_join_;
 }
 void BatchTableRequest_Operation::set_allocated_empty_table(::io::deephaven::proto::backplane::grpc::EmptyTableRequest* empty_table) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -31058,6 +31742,21 @@ void BatchTableRequest_Operation::set_allocated_meta_table(::io::deephaven::prot
   }
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
 }
+void BatchTableRequest_Operation::set_allocated_range_join(::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_op();
+  if (range_join) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(range_join);
+    if (message_arena != submessage_arena) {
+      range_join = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, range_join, submessage_arena);
+    }
+    set_has_range_join();
+    op_.range_join_ = range_join;
+  }
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.range_join)
+}
 BatchTableRequest_Operation::BatchTableRequest_Operation(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -31211,6 +31910,10 @@ BatchTableRequest_Operation::BatchTableRequest_Operation(const BatchTableRequest
     }
     case kMetaTable: {
       _internal_mutable_meta_table()->::io::deephaven::proto::backplane::grpc::MetaTableRequest::MergeFrom(from._internal_meta_table());
+      break;
+    }
+    case kRangeJoin: {
+      _internal_mutable_range_join()->::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest::MergeFrom(from._internal_range_join());
       break;
     }
     case OP_NOT_SET: {
@@ -31460,6 +32163,12 @@ void BatchTableRequest_Operation::clear_op() {
     case kMetaTable: {
       if (GetArenaForAllocation() == nullptr) {
         delete op_.meta_table_;
+      }
+      break;
+    }
+    case kRangeJoin: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete op_.range_join_;
       }
       break;
     }
@@ -31775,6 +32484,14 @@ const char* BatchTableRequest_Operation::_InternalParse(const char* ptr, ::_pbi:
         } else
           goto handle_unusual;
         continue;
+      // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+      case 39:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 58)) {
+          ptr = ctx->ParseMessage(_internal_mutable_range_join(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -32056,6 +32773,13 @@ uint8_t* BatchTableRequest_Operation::_InternalSerialize(
         _Internal::meta_table(this).GetCachedSize(), target, stream);
   }
 
+  // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+  if (_internal_has_range_join()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(39, _Internal::range_join(this),
+        _Internal::range_join(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -32325,6 +33049,13 @@ size_t BatchTableRequest_Operation::ByteSizeLong() const {
           *op_.meta_table_);
       break;
     }
+    // .io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest range_join = 39;
+    case kRangeJoin: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *op_.range_join_);
+      break;
+    }
     case OP_NOT_SET: {
       break;
     }
@@ -32496,6 +33227,10 @@ void BatchTableRequest_Operation::MergeFrom(const BatchTableRequest_Operation& f
       _internal_mutable_meta_table()->::io::deephaven::proto::backplane::grpc::MetaTableRequest::MergeFrom(from._internal_meta_table());
       break;
     }
+    case kRangeJoin: {
+      _internal_mutable_range_join()->::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest::MergeFrom(from._internal_range_join());
+      break;
+    }
     case OP_NOT_SET: {
       break;
     }
@@ -32524,7 +33259,7 @@ void BatchTableRequest_Operation::InternalSwap(BatchTableRequest_Operation* othe
 ::PROTOBUF_NAMESPACE_ID::Metadata BatchTableRequest_Operation::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[106]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[107]);
 }
 
 // ===================================================================
@@ -32702,7 +33437,7 @@ void BatchTableRequest::InternalSwap(BatchTableRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata BatchTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2ftable_2eproto_getter, &descriptor_table_deephaven_2fproto_2ftable_2eproto_once,
-      file_level_metadata_deephaven_2fproto_2ftable_2eproto[107]);
+      file_level_metadata_deephaven_2fproto_2ftable_2eproto[108]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -32891,6 +33626,10 @@ Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::LeftJoinTabl
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest*
+Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest >(arena);
 }
 template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate*
 Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest_Aggregate >(Arena* arena) {

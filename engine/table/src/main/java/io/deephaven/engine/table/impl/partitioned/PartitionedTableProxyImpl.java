@@ -13,9 +13,8 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.PartitionedTable.Proxy;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -308,8 +307,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             @NotNull final MatchPair[] keyColumnNamePairs) {
         final String[] lhsKeyColumnNames = Arrays.stream(keyColumnNamePairs)
                 .map(MatchPair::leftColumn).toArray(String[]::new);
-        final SourceColumn[] rhsKeyColumnRenames = Arrays.stream(keyColumnNamePairs)
-                .map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())).toArray(SourceColumn[]::new);
+        final List<SourceColumn> rhsKeyColumnRenames = Arrays.stream(keyColumnNamePairs)
+                .map(mp -> new SourceColumn(mp.rightColumn(), mp.leftColumn())).collect(Collectors.toList());
         final Table lhsKeys = lhs.table().selectDistinct(lhsKeyColumnNames);
         final Table rhsKeys = rhs.table().updateView(rhsKeyColumnRenames).selectDistinct(lhsKeyColumnNames);
         final Table unionedKeys = TableTools.merge(lhsKeys, rhsKeys);
@@ -361,7 +360,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         final PartitionedTable stamped = input.transform(
                 null,
                 table -> table.updateView(
-                        new LongConstantColumn(ENCLOSING_CONSTITUENT.name(), sequenceCounter.getAndIncrement())),
+                        List.of(new LongConstantColumn(ENCLOSING_CONSTITUENT.name(),
+                                sequenceCounter.getAndIncrement()))),
                 input.table().isRefreshing());
         final Table merged = stamped.merge();
         final Table mergedWithUniqueAgg = merged.aggAllBy(AggSpec.unique(), joinKeyColumnNames);
@@ -434,13 +434,13 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy where(Collection<? extends Filter> filters) {
-        final WhereFilter[] whereFilters = WhereFilter.from(filters);
+    public PartitionedTable.Proxy where(Filter filter) {
+        final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
         final TableDefinition definition = target.constituentDefinition();
-        for (WhereFilter filter : whereFilters) {
-            filter.init(definition);
+        for (WhereFilter whereFilter : whereFilters) {
+            whereFilter.init(definition);
         }
-        return basicTransform(ct -> ct.where(WhereFilter.copyFrom(whereFilters)));
+        return basicTransform(ct -> ct.where(Filter.and(WhereFilter.copyFrom(whereFilters))));
     }
 
     @Override
@@ -456,40 +456,41 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @NotNull
-    private SelectColumn[] toSelectColumns(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(columns);
+    private Collection<SelectColumn> toSelectColumns(Collection<? extends Selectable> columns) {
+        final SelectColumn[] selectColumns =
+                SelectColumn.from(columns.isEmpty() ? target.constituentDefinition().getTypedColumnNames() : columns);
         SelectAndViewAnalyzer.initializeSelectColumns(
                 target.constituentDefinition().getColumnNameMap(), selectColumns);
-        return selectColumns;
+        return Arrays.asList(selectColumns);
     }
 
     @Override
     public PartitionedTable.Proxy view(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.view(SelectColumn.copyFrom(selectColumns)));
     }
 
     @Override
     public PartitionedTable.Proxy updateView(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.updateView(SelectColumn.copyFrom(selectColumns)));
     }
 
     @Override
     public PartitionedTable.Proxy update(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.update(SelectColumn.copyFrom(selectColumns)));
     }
 
     @Override
     public PartitionedTable.Proxy lazyUpdate(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.lazyUpdate(SelectColumn.copyFrom(selectColumns)));
     }
 
     @Override
     public PartitionedTable.Proxy select(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.select(SelectColumn.copyFrom(selectColumns)));
     }
 
@@ -535,6 +536,14 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
+    public PartitionedTable.Proxy rangeJoin(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> exactMatches,
+            RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
+        return complexTransform(rightTable, (ct, ot) -> ct.rangeJoin(ot, exactMatches, rangeMatch, aggregations),
+                exactMatches);
+    }
+
+    @Override
     public PartitionedTable.Proxy aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return basicTransform(true, ct -> ct.aggAllBy(spec, groupByColumns));
     }
@@ -563,7 +572,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy selectDistinct(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = toSelectColumns(columns);
+        final Collection<SelectColumn> selectColumns = toSelectColumns(columns);
         return basicTransform(ct -> ct.selectDistinct(SelectColumn.copyFrom(selectColumns)));
     }
 

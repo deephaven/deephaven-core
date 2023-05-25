@@ -3674,7 +3674,7 @@ public class RspBitmapTest {
         rb = rb.add(2 * BLOCK_SIZE + BLOCK_LAST);
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
-        rb.invert(b, new TrackingWritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
+        rb.invert(b, new WritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
         final OrderedLongSet timpl = b.getOrderedLongSet();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));
@@ -4380,7 +4380,7 @@ public class RspBitmapTest {
         final long v0 = 10;
         final long v1 = 10 + BLOCK_SIZE;
         final RspBitmap rsp = vs2rb(v0, v1);
-        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet r = new WritableRowSetImpl(rsp);
         final RowSet.SearchIterator sit = r.searchIterator();
         final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(v0, k), 1);
         assertEquals(v0, ans1);
@@ -4396,7 +4396,7 @@ public class RspBitmapTest {
         final long rangeStart1 = BLOCK_SIZE;
         final long rangeLast1 = BLOCK_SIZE + BLOCK_LAST;
         final RspBitmap rsp = vs2rb(value0, rangeStart1, -rangeLast1);
-        final RowSet r = new TrackingWritableRowSetImpl(rsp);
+        final RowSet r = new WritableRowSetImpl(rsp);
         final RowSet.SearchIterator sit = r.searchIterator();
         final long ans1 = sit.binarySearchValue((long k, int ignored) -> Long.compare(value0, k), 1);
         assertEquals(value0, ans1);

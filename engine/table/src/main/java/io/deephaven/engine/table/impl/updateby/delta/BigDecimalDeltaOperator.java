@@ -8,7 +8,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -45,15 +45,16 @@ public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecim
             // read the value from the values chunk
             final BigDecimal currentVal = objectValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == null) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? null
-                        : currentVal;
-            } else if (currentVal != null) {
-                curVal = currentVal.subtract(lastVal);
-            } else {
+            if (currentVal == null) {
                 curVal = null;
+            } else if (lastVal == null) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? null
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                                ? BigDecimal.ZERO
+                                : currentVal);
+            } else {
+                curVal = currentVal.subtract(lastVal);
             }
 
             lastVal = currentVal;

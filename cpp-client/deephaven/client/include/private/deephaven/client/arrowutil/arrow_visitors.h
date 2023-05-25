@@ -4,7 +4,7 @@
 #pragma once
 
 #include <arrow/type.h>
-#include "deephaven/client/types.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
 
@@ -55,7 +55,7 @@ public:
   }
 
   arrow::Status Visit(const arrow::TimestampType &) final {
-    inner_.template operator()<deephaven::client::DateTime>();
+    inner_.template operator()<deephaven::dhcore::DateTime>();
     return arrow::Status::OK();
   }
 
@@ -113,7 +113,7 @@ public:
   }
 
   arrow::Status Visit(const arrow::TimestampArray &) final {
-    inner_.template operator()<deephaven::client::DateTime>();
+    inner_.template operator()<deephaven::dhcore::DateTime>();
     return arrow::Status::OK();
   }
 

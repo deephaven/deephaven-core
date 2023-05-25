@@ -15,7 +15,8 @@ class ArrowFlightService:
         self.session = session
         self._flight_client = flight_client
 
-    def import_table(self, data: pa.Table):
+    def import_table(self, data: pa.Table) -> Table:
+        """Uploads a pyarrow table into Deephaven via. Flight do_put."""
         try:
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
@@ -36,7 +37,8 @@ class ArrowFlightService:
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 
-    def do_get_table(self, table: Table):
+    def do_get_table(self, table: Table) -> pa.Table:
+        """Gets a snapshot of a Table via. Flight do_get."""
         try:
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             flight_ticket = paflight.Ticket(table.ticket.ticket)

@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
@@ -162,7 +162,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSet asRowSet() {
         final RspBitmap newArr = new RspBitmap(arr, startIdx, startOffset, endIdx, endOffset);
-        return new TrackingWritableRowSetImpl(newArr);
+        return new WritableRowSetImpl(newArr);
     }
 
     @Override

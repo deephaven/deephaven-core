@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.aggregate.*;
@@ -89,7 +90,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(
+            SafeCloseable.closeAll(
                     groupRowSetSourceFillFromContext,
                     groupRowSetSourceOutputValues,
                     startSourceFillFromContext,

@@ -28,19 +28,17 @@ public abstract class RawString implements Expression, Filter, Serializable {
     public abstract String value();
 
     @Override
-    public final FilterNot not() {
-        return FilterNot.of(this);
+    public final FilterNot<RawString> invert() {
+        return Filter.not(this);
     }
 
     @Override
-    public final <V extends Expression.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Expression.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override
-    public final <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

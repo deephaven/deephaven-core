@@ -600,6 +600,9 @@ public class TestBooleanChunk {
         TestCase.assertEquals(value1, reverseActual2D1);
     }
 
+    // region testArray
+    // endregion testArray
+
     private static <ATTR extends Values> void verifyChunkEqualsArray(BooleanChunk<ATTR> chunk, boolean[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));

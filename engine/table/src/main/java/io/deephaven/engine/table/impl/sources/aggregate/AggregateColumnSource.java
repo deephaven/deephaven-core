@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources.aggregate;
 
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -18,12 +17,12 @@ import java.util.function.BiFunction;
 /**
  * {@link ColumnSource} and {@link UngroupableColumnSource} interface for aggregation result columns.
  */
-public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+public interface AggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, COMPONENT_TYPE>
         extends UngroupableColumnSource, MutableColumnSourceGetDefaults.ForObject<VECTOR_TYPE> {
 
     UngroupedColumnSource<COMPONENT_TYPE> ungrouped();
 
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> make(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> make(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         // noinspection unchecked
@@ -32,18 +31,18 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
     }
 
     /**
-     * Returns a sliced AggregateColumn source from the provided sources.
+     * Returns a sliced aggregate ColumnSource from the provided sources.
      *
      * @param aggregatedSource the value column source for the aggregation
      * @param groupRowSetSource the column source that maps rows to group row sets
      * @param startPosSource the column source that maps rows to starting position offsets
      * @param endPosSource the column source that maps rows to ending position offsets (exclusive)
      */
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-            @NotNull final WritableColumnSource<Long> startPosSource,
-            @NotNull final WritableColumnSource<Long> endPosSource) {
+            @NotNull final ColumnSource<Long> startPosSource,
+            @NotNull final ColumnSource<Long> endPosSource) {
         // noinspection unchecked
         return (AggregateColumnSource<VECTOR_TYPE, DATA_TYPE>) FactoryHelper.TYPE_TO_SLICED_CONSTRUCTOR
                 .get(aggregatedSource.getType())
@@ -51,14 +50,14 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
     }
 
     /**
-     * Returns a sliced AggregateColumn source from the provided sources.
+     * Returns a sliced aggregate ColumnSource from the provided sources.
      *
      * @param aggregatedSource the value column source for the aggregation
      * @param groupRowSetSource the column source that maps rows to group row sets
      * @param startPosOffset the fixed starting position offset for every row
      * @param endPosOffset the fixed ending position offset for every row (exclusive)
      */
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             final long startPosOffset,
@@ -67,6 +66,25 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
         return (AggregateColumnSource<VECTOR_TYPE, DATA_TYPE>) FactoryHelper.TYPE_TO_SLICED_CONSTRUCTOR_FIXED
                 .get(aggregatedSource.getType())
                 .apply(aggregatedSource, groupRowSetSource, startPosOffset, endPosOffset);
+    }
+
+    /**
+     * Returns a range aggregated ColumnSource from the provided sources.
+     *
+     * @param aggregatedSource The input value ColumnSource for the aggregation, in input row key space
+     * @param groupRowSetSource ColumnSource of grouped input row sets, in output row key space
+     * @param startPositionInclusiveSource ColumnSource of starting positions (inclusive), in output row key space
+     * @param endPositionExclusiveSource ColumnSource of ending positions (exclusive), in output row key space
+     */
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> forRangeJoin(
+            @NotNull final ColumnSource<?> aggregatedSource,
+            @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
+            @NotNull final ColumnSource<Integer> startPositionInclusiveSource,
+            @NotNull final ColumnSource<Integer> endPositionExclusiveSource) {
+        // noinspection unchecked
+        return (AggregateColumnSource<VECTOR_TYPE, DATA_TYPE>) FactoryHelper.TYPE_TO_RANGE_CONSTRUCTOR
+                .get(aggregatedSource.getType())
+                .apply(aggregatedSource, groupRowSetSource, startPositionInclusiveSource, endPositionExclusiveSource);
     }
 
     final class FactoryHelper {
@@ -93,10 +111,11 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
 
         @FunctionalInterface
         private interface SlicedConstructor {
-            AggregateColumnSource<?, ?> apply(ColumnSource<?> aggregatedSource,
-                    ColumnSource<? extends RowSet> groupRowSetSource,
-                    ColumnSource<Long> startPosSource,
-                    ColumnSource<Long> endPosSource);
+            AggregateColumnSource<?, ?> apply(
+                    @NotNull ColumnSource<?> aggregatedSource,
+                    @NotNull ColumnSource<? extends RowSet> groupRowSetSource,
+                    @NotNull ColumnSource<Long> startPosSource,
+                    @NotNull ColumnSource<Long> endPosSource);
         }
 
         @SuppressWarnings({"unchecked", "AutoUnboxing"})
@@ -119,8 +138,9 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
 
         @FunctionalInterface
         private interface SlicedConstructorFixedOffset {
-            AggregateColumnSource<?, ?> apply(ColumnSource<?> aggregatedSource,
-                    ColumnSource<? extends RowSet> groupRowSetSource,
+            AggregateColumnSource<?, ?> apply(
+                    @NotNull ColumnSource<?> aggregatedSource,
+                    @NotNull ColumnSource<? extends RowSet> groupRowSetSource,
                     long startPosOffset,
                     long endPosOffset);
         }
@@ -140,6 +160,33 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
                         (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource, final long startPosOffset, final long endPosOffset) -> new    SlicedFloatAggregateColumnSource((ColumnSource<Float>    ) aggregatedSource, groupRowSetSource, startPosOffset, endPosOffset),
                         (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource, final long startPosOffset, final long endPosOffset) -> new   SlicedDoubleAggregateColumnSource((ColumnSource<Double>   ) aggregatedSource, groupRowSetSource, startPosOffset, endPosOffset),
                         (final ColumnSource<?> aggregatedSource, final ColumnSource<? extends RowSet> groupRowSetSource, final long startPosOffset, final long endPosOffset) -> new SlicedObjectAggregateColumnSource<>((ColumnSource<?>        ) aggregatedSource, groupRowSetSource, startPosOffset, endPosOffset)
+                        // @formatter:on
+                );
+
+        @FunctionalInterface
+        private interface RangeAggregatedColumnSourceConstructor {
+            AggregateColumnSource<?, ?> apply(
+                    @NotNull ColumnSource<?> aggregatedSource,
+                    @NotNull ColumnSource<? extends RowSet> groupRowSetSource,
+                    @NotNull ColumnSource<Integer> startPositionInclusiveSource,
+                    @NotNull ColumnSource<Integer> endPositionExclusiveSource);
+        }
+
+        @SuppressWarnings({"unchecked", "AutoUnboxing"})
+        private static final SimpleTypeMap<RangeAggregatedColumnSourceConstructor> TYPE_TO_RANGE_CONSTRUCTOR =
+                SimpleTypeMap.create(
+                // @formatter:off
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> {
+                            throw new UnsupportedOperationException("Cannot create a primitive boolean ColumnSource");
+                        },
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new     RangeAggregateColumnSourceChar((ColumnSource<Character>) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new     RangeAggregateColumnSourceByte((ColumnSource<Byte>     ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new    RangeAggregateColumnSourceShort((ColumnSource<Short>    ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new      RangeAggregateColumnSourceInt((ColumnSource<Integer>  ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new     RangeAggregateColumnSourceLong((ColumnSource<Long>     ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new    RangeAggregateColumnSourceFloat((ColumnSource<Float>    ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new   RangeAggregateColumnSourceDouble((ColumnSource<Double>   ) as, grss, spis, epes),
+                        (final ColumnSource<?> as, final ColumnSource<? extends RowSet> grss, final ColumnSource<Integer> spis, final ColumnSource<Integer> epes) -> new RangeAggregateColumnSourceObject<>((ColumnSource<?>        ) as, grss, spis, epes)
                         // @formatter:on
                 );
     }

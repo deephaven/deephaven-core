@@ -979,6 +979,33 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(df.loc[0]['Col'], 1)
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
+    def test_await_update(self):
+        with self.assertRaises(DHError):
+            empty_table(10).await_update()
+
+        time_t = time_table("00:00:00.001")
+        updated = time_t.await_update()
+        self.assertTrue(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(1)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(-1)
+        self.assertFalse(updated)
+
+    def test_range_join(self):
+        aggs = [
+            group(cols=["GroupD=d"]),
+        ]
+        left_table = self.test_table.select_distinct()
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
+        result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
+        self.assertEqual(result_table.size, left_table.size)
+        self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
+
+        with self.assertRaises(DHError):
+            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+
 
 if __name__ == "__main__":
     unittest.main()

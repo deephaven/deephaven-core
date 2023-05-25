@@ -14,6 +14,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.sources.*;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -190,8 +191,8 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        nanoSource.prepareForParallelPopulation(rowSet);
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        nanoSource.prepareForParallelPopulation(rowSequence);
     }
 
     // region reinterpretation

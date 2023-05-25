@@ -149,6 +149,11 @@ service TableService {
   rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
+   * Returns the result of a range join operation.
+   */
+  rpc RangeJoinTables(RangeJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Returns the result of an aggregate table operation.
    *
    * Deprecated: Please use AggregateAll or Aggregate instead
@@ -261,7 +266,9 @@ message ExportedTableCreationResponse {
   // Whether or not this table might change.
   bool is_static = 5;
 
-  // The current number of rows for this table.
+  // The current number of rows for this table. If this is negative, the table isn't coalesced, meaning the
+  // size isn't known without scanning partitions. Typically, the client should filter the data by the
+  // partitioning columns first.
   sint64 size = 6 [jstype=JS_STRING];
 
   // TODO: attributes
@@ -337,7 +344,7 @@ enum BadDataBehavior {
 // Reusable timescale message for the UpdateBy rolling operations.
 message UpdateByEmaTimescale {
   message UpdateByEmaTicks {
-    sint64 ticks = 1 [jstype=JS_STRING];
+    double ticks = 1;
   }
   message UpdateByEmaTime {
     string column = 1;
@@ -619,6 +626,29 @@ message AsOfJoinTablesRequest {
   // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
   // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
   MatchRule as_of_match_rule = 7;
+}
+
+message RangeJoinTablesRequest {
+  enum RangeStartRule {
+    LESS_THAN = 0;
+    LESS_THAN_OR_EQUAL = 1;
+    LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 2;
+  }
+  enum RangeEndRule {
+    GREATER_THAN = 0;
+    GREATER_THAN_OR_EQUAL = 1;
+    GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 2;
+  }
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string exact_match_columns = 4;
+  string left_start_column = 5;
+  RangeStartRule range_start_rule = 6;
+  string right_range_column = 7;
+  RangeEndRule range_end_rule = 8;
+  string left_end_column = 9;
+  repeated Aggregation aggregations = 10;
 }
 
 message ComboAggregateRequest {
@@ -1137,6 +1167,7 @@ message BatchTableRequest {
       SnapshotTableRequest snapshot = 36;
       SnapshotWhenTableRequest snapshot_when = 37;
       MetaTableRequest meta_table = 38;
+      RangeJoinTablesRequest range_join = 39;
     }
   }
 }

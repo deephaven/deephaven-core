@@ -125,7 +125,7 @@ abstract class AbstractFilterExecution extends AbstractNotification {
     public void run() {
         try {
             basePerformanceEntry.onBaseEntryStart();
-            doFilter(x -> notifyParent());
+            doFilter(x -> parent.onChildCompleted());
         } finally {
             basePerformanceEntry.onBaseEntryEnd();
         }
@@ -155,6 +155,9 @@ abstract class AbstractFilterExecution extends AbstractNotification {
                     modifyResult = filters[filterIndex].filter(
                             processModifies, sourceTable.getRowSet(), sourceTable, usePrev);
                 }
+            }
+            if (Thread.interrupted()) {
+                throw new CancellationException("interrupted while filtering");
             }
             scheduleNextFilter(onCompletion);
         } catch (Exception e) {
@@ -244,16 +247,16 @@ abstract class AbstractFilterExecution extends AbstractNotification {
     }
 
     /**
-     * Tell our parent that we have completed, if we are the last child for the parent, call it's onNoChildren method.
+     * Cleanup one child reference, and if it is the last reference, invoke onNoChildren.
      */
-    private void notifyParent() {
-        final int parentRemaining = parent.remainingChildren.decrementAndGet();
-        if (parentRemaining < 0) {
+    protected void onChildCompleted() {
+        final int remaining = remainingChildren.decrementAndGet();
+        if (remaining < 0) {
             // noinspection ConstantConditions
             throw Assert.statementNeverExecuted();
         }
-        if (parentRemaining == 0) {
-            parent.onNoChildren();
+        if (remaining == 0) {
+            onNoChildren();
         }
     }
 

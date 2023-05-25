@@ -13,7 +13,7 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -49,15 +49,16 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
             // read the value from the values chunk
             final byte currentVal = byteValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_BYTE) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_BYTE
-                        : currentVal;
-            } else if (currentVal != NULL_BYTE) {
-                curVal = (byte)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_BYTE) {
                 curVal = NULL_BYTE;
+            } else if (lastVal == NULL_BYTE) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_BYTE
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (byte)0
+                            : currentVal);
+            } else {
+                curVal = (byte)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

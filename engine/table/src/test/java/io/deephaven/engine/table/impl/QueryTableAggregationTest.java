@@ -113,9 +113,9 @@ public class QueryTableAggregationTest {
                 final Set<String> retainedColumns =
                         new LinkedHashSet<>(adjustedInput.getDefinition().getColumnNameMap().keySet());
                 retainedColumns.removeAll(Arrays.stream(keyNames).collect(Collectors.toSet()));
-                final SelectColumn[] allSelectColumns =
+                final List<SelectColumn> allSelectColumns =
                         Stream.concat(Arrays.stream(keySelectColumns), retainedColumns.stream().map(SourceColumn::new))
-                                .toArray(SelectColumn[]::new);
+                                .collect(Collectors.toList());
                 final Table adjustedInputWithAllColumns = adjustedInput.view(allSelectColumns);
                 expectedKeys = adjustedInputWithAllColumns.selectDistinct(keyNames);
                 expected = adjustedInputWithAllColumns.sort(keyNames);

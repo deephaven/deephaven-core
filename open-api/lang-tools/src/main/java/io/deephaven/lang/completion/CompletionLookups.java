@@ -11,6 +11,7 @@ import io.deephaven.engine.util.ScriptSession;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
@@ -27,19 +28,22 @@ public class CompletionLookups {
 
     private final Lazy<Collection<Class<?>>> statics;
     private final Map<String, TableDefinition> referencedTables;
+    private final Lazy<CustomCompletion> customCompletions;
 
-    public CompletionLookups() {
+    public CompletionLookups(Set<CustomCompletion.Factory> customCompletionFactory) {
         final QueryLibrary ql = ExecutionContext.getContext().getQueryLibrary();
         statics = new Lazy<>(ql::getStaticImports);
         referencedTables = new ConcurrentHashMap<>();
+        customCompletions = new Lazy<>(() -> new DelegatingCustomCompletion(customCompletionFactory));
 
         // This can be slow, so lets start it on a background thread right away.
         final ForkJoinPool pool = ForkJoinPool.commonPool();
         pool.execute(statics::get);
     }
 
-    public static CompletionLookups preload(ScriptSession session) {
-        return lookups.computeIfAbsent(session, s -> new CompletionLookups());
+    public static CompletionLookups preload(ScriptSession session,
+            Set<CustomCompletion.Factory> customCompletionFactory) {
+        return lookups.computeIfAbsent(session, s -> new CompletionLookups(customCompletionFactory));
     }
 
     public Collection<Class<?>> getStatics() {
@@ -48,5 +52,9 @@ public class CompletionLookups {
 
     public Map<String, TableDefinition> getReferencedTables() {
         return referencedTables;
+    }
+
+    public CustomCompletion getCustomCompletions() {
+        return customCompletions.get();
     }
 }

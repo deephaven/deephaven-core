@@ -1,6 +1,6 @@
 package io.deephaven.api.updateby;
 
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.updateby.spec.*;
 
 import java.time.Duration;
@@ -99,7 +99,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ema(long tickDecay, String... pairs) {
+    static UpdateByOperation Ema(double tickDecay, String... pairs) {
         return EmaSpec.ofTicks(tickDecay).clause(pairs);
     }
 
@@ -121,7 +121,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ema(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation Ema(final OperationControl control, double tickDecay, String... pairs) {
         return EmaSpec.ofTicks(control, tickDecay).clause(pairs);
     }
 
@@ -230,7 +230,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ems(long tickDecay, String... pairs) {
+    static UpdateByOperation Ems(double tickDecay, String... pairs) {
         return EmsSpec.ofTicks(tickDecay).clause(pairs);
     }
 
@@ -252,7 +252,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ems(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation Ems(final OperationControl control, double tickDecay, String... pairs) {
         return EmsSpec.ofTicks(control, tickDecay).clause(pairs);
     }
 
@@ -361,7 +361,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMin(long tickDecay, String... pairs) {
+    static UpdateByOperation EmMin(double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(false, tickDecay).clause(pairs);
     }
 
@@ -383,7 +383,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMin(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation EmMin(final OperationControl control, double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(control, false, tickDecay).clause(pairs);
     }
 
@@ -492,7 +492,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMax(long tickDecay, String... pairs) {
+    static UpdateByOperation EmMax(double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(true, tickDecay).clause(pairs);
     }
 
@@ -514,7 +514,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMax(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation EmMax(final OperationControl control, double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(control, true, tickDecay).clause(pairs);
     }
 
@@ -608,6 +608,149 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using ticks
+     * as the decay unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-1 / tickDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param tickDecay the decay rate in ticks
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(long tickDecay, String... pairs) {
+        return EmStdSpec.ofTicks(tickDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using ticks
+     * as the decay unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-1 / tickDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param tickDecay the decay rate in ticks
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(final OperationControl control, long tickDecay, String... pairs) {
+        return EmStdSpec.ofTicks(control, tickDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using time
+     * as the decay unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / timeDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param timeDecay the decay rate in nanoseconds
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(String timestampColumn, long timeDecay, String... pairs) {
+        return EmStdSpec.ofTime(timestampColumn, timeDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using time
+     * as the decay unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / timeDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param timeDecay the decay rate in nanoseconds
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(OperationControl control, String timestampColumn, long timeDecay, String... pairs) {
+        return EmStdSpec.ofTime(control, timestampColumn, timeDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using time
+     * as the decay unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / durationDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param durationDecay the decay rate as {@link Duration duration}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(String timestampColumn, Duration durationDecay, String... pairs) {
+        return EmStdSpec.ofTime(timestampColumn, durationDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmStdSpec exponential moving standard deviation} for the supplied column name pairs, using time
+     * as the decay unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / durationDecay)
+     *     variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+     *     ema = a * prevEma + x
+     *     std = sqrt(variance)
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param durationDecay the decay rate as {@link Duration duration}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation EmStd(OperationControl control, String timestampColumn, Duration durationDecay,
+            String... pairs) {
+        return EmStdSpec.ofTime(control, timestampColumn, durationDecay).clause(pairs);
+    }
+
+    /**
      * Create a {@link DeltaSpec delta} for the supplied column name pairs.
      *
      * @param pairs The input/output column name pairs
@@ -624,7 +767,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation Delta(DeltaControl control, String... pairs) {
-        return DeltaSpec.of().clause(pairs);
+        return DeltaSpec.of(control).clause(pairs);
     }
 
     /**

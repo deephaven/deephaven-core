@@ -11,19 +11,35 @@ import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public class NullAwareCharReverseDupCompactKernel implements DupCompactKernel {
+
     static final NullAwareCharReverseDupCompactKernel INSTANCE = new NullAwareCharReverseDupCompactKernel();
 
-    private NullAwareCharReverseDupCompactKernel() {} // use through the instance
-
-    @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
-        return compactDuplicates(chunkToCompact.asWritableCharChunk(), keyIndices);
+    private NullAwareCharReverseDupCompactKernel() {
+        // Use the singleton INSTANCE
     }
 
-    private static int compactDuplicates(WritableCharChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    @Override
+    public int compactDuplicates(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> rowKeys) {
+        return compactDuplicates(chunkToCompact.asWritableCharChunk(), rowKeys);
+    }
+
+    @Override
+    public int compactDuplicatesPreferFirst(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableIntChunk<ChunkPositions> chunkPositions) {
+        return compactDuplicatesPreferFirst(chunkToCompact.asWritableCharChunk(), chunkPositions);
+    }
+
+    private static int compactDuplicates(
+            @NotNull final WritableCharChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> rowKeys) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;
@@ -45,12 +61,47 @@ public class NullAwareCharReverseDupCompactKernel implements DupCompactKernel {
                 rpos++;
             }
             chunkToCompact.set(wpos, current);
-            keyIndices.set(wpos, keyIndices.get(rpos));
+            rowKeys.set(wpos, rowKeys.get(rpos));
             rpos++;
             wpos++;
         }
         chunkToCompact.setSize(wpos);
-        keyIndices.setSize(wpos);
+        rowKeys.setSize(wpos);
+
+        return -1;
+    }
+
+    private static int compactDuplicatesPreferFirst(
+            @NotNull final WritableCharChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableIntChunk<ChunkPositions> chunkPositions) {
+        final int inputSize = chunkToCompact.size();
+        if (inputSize == 0) {
+            return -1;
+        }
+
+        int wpos = 0;
+        int rpos = 0;
+
+        char last = chunkToCompact.get(0);
+
+        while (rpos < inputSize) {
+            final char current = chunkToCompact.get(rpos);
+            if (!leq(last, current)) {
+                return rpos;
+            }
+            last = current;
+
+            chunkToCompact.set(wpos, current);
+            chunkPositions.set(wpos, chunkPositions.get(rpos));
+            rpos++;
+            wpos++;
+
+            while (rpos < inputSize && eq(current, chunkToCompact.get(rpos))) {
+                rpos++;
+            }
+        }
+        chunkToCompact.setSize(wpos);
+        chunkPositions.setSize(wpos);
 
         return -1;
     }

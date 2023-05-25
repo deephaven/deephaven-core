@@ -50,7 +50,7 @@ _ARROW_DH_DATA_TYPE_MAPPING = {
 }
 
 
-def map_arrow_type(arrow_type) -> Dict[str, str]:
+def map_arrow_type(arrow_type: pa.DataType) -> Dict[str, str]:
     """Maps an Arrow type to the corresponding Deephaven column data type."""
     dh_type = _ARROW_DH_DATA_TYPE_MAPPING.get(arrow_type)
     if not dh_type:

@@ -422,7 +422,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
     }
 
     @Override
-    public void prepareForParallelPopulation(final RowSet changedRows) {
+    public void prepareForParallelPopulation(final RowSequence changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
@@ -1287,8 +1287,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         }
 
         @Override
-        public void prepareForParallelPopulation(RowSet rowSet) {
-           wrapped.prepareForParallelPopulation(rowSet);
+        public void prepareForParallelPopulation(RowSequence rowSequence) {
+           wrapped.prepareForParallelPopulation(rowSequence);
         }
     }
     // endregion reinterpretation

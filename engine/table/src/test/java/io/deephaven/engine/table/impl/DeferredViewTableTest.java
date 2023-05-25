@@ -13,6 +13,8 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 public class DeferredViewTableTest {
     @Rule
     public final EngineCleanup cleanup = new EngineCleanup();
@@ -36,7 +38,7 @@ public class DeferredViewTableTest {
                 WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
 
         final Table resultTable = deferredTable.coalesce();
-        final Table expectedTable = sourceTable.update(viewColumns);
+        final Table expectedTable = sourceTable.update(Arrays.asList(viewColumns));
         TstUtils.assertTableEquals(expectedTable, resultTable);
     }
 }

@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 /**
  * Implementation for chunk-oriented joins that produce multiple RHS rows per-LHS row, including {@link Table#join}
@@ -136,8 +136,7 @@ public class CrossJoinHelper {
             int numRightBitsToReserve,
             final JoinControl control,
             final boolean leftOuterJoin) {
-        QueryTable.checkInitiateOperation(leftTable);
-        QueryTable.checkInitiateOperation(rightTable);
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
 
         try (final BucketingContext bucketingContext =
                 new BucketingContext("join", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {

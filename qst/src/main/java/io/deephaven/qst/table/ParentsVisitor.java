@@ -223,6 +223,11 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        out = Stream.of(rangeJoinTable.left(), rangeJoinTable.right());
+    }
+
+    @Override
     public void visit(ViewTable viewTable) {
         out = single(viewTable);
     }

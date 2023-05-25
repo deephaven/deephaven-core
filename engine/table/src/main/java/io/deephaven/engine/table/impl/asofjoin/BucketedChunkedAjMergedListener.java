@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
@@ -737,7 +737,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             downstream.shifted = leftRecorder.getShifted();
         }
 
-        SafeCloseable.closeArray(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
+        SafeCloseable.closeAll(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
                 rightSsaFactory);
 
         downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());

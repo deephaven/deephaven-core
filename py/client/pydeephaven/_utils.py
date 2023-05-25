@@ -7,6 +7,7 @@ T = TypeVar("T")
 
 
 def to_list(v: Union[T, List[T]]) -> List[T]:
+    """Converts the input value to a list of the same type, if it is not already a list."""
     if not v:
         return []
 

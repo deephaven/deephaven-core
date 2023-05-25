@@ -21,12 +21,27 @@ import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class ShortRangeFilter extends AbstractRangeFilter {
+    public static ShortRangeFilter lt(String columnName, short x) {
+        return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, false);
+    }
+
+    public static ShortRangeFilter leq(String columnName, short x) {
+        return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, true);
+    }
+
+    public static ShortRangeFilter gt(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, false, true);
+    }
+
+    public static ShortRangeFilter geq(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, true, true);
+    }
+
     final short upper;
     final short lower;
 
     public ShortRangeFilter(String columnName, short val1, short val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(ShortComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -39,13 +54,13 @@ public class ShortRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeShortRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.NULL_SHORT, true, false);
+                return lt(columnName, RangeConditionFilter.parseShortFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.NULL_SHORT, true, true);
+                return leq(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.MAX_SHORT, false, true);
+                return gt(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.MAX_SHORT, true, true);
+                return geq(columnName, RangeConditionFilter.parseShortFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

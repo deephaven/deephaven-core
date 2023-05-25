@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -34,6 +35,6 @@ public class UnstructuredFilterTableGrpcImpl extends GrpcTableOperation<Unstruct
         final Table parent = sourceTables.get(0).get();
         final String[] filters = request.getFiltersList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
         final WhereFilter[] whereFilters = ColumnExpressionValidator.validateSelectFilters(filters, parent);
-        return parent.where(whereFilters);
+        return parent.where(Filter.and(whereFilters));
     }
 }

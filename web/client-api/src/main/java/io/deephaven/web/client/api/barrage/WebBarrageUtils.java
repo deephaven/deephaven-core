@@ -100,10 +100,12 @@ public class WebBarrageUtils {
             cols[i].setStyleColumnName(fieldMetadata.get("styleColumn"));
 
             if (fieldMetadata.containsKey("inputtable.isKey")) {
-                cols[i].setInputTableKeyColumn(Boolean.parseBoolean(fieldMetadata.get("inputtable.isKey")));
+                cols[i].setInputTableKeyColumn("true".equals(fieldMetadata.get("inputtable.isKey")));
             }
 
             cols[i].setDescription(fieldMetadata.get("description"));
+
+            cols[i].setPartitionColumn("true".equals(fieldMetadata.get("isPartitioning")));
 
             cols[i].setHierarchicalExpandByColumn(
                     "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));

@@ -51,7 +51,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
@@ -1398,9 +1397,9 @@ public class WorkerConnection {
                             DeltaUpdates updates = nextDeltaUpdates.build();
                             nextDeltaUpdates = null;
 
-                            if (state.getTableDef().getAttributes().isStreamTable()) {
-                                // stream tables remove all rows from the previous step, if there are no adds this step
-                                // then defer removal until new data arrives -- this makes stream tables GUI friendly
+                            if (state.getTableDef().getAttributes().isBlinkTable()) {
+                                // blink tables remove all rows from the previous step, if there are no adds this step
+                                // then defer removal until new data arrives -- this makes blink tables GUI friendly
                                 if (updates.getAdded().isEmpty()) {
                                     if (deferredDeltaUpdates != null) {
                                         final RangeSet removed = deferredDeltaUpdates.getRemoved();
@@ -1411,7 +1410,7 @@ public class WorkerConnection {
                                     return;
                                 } else if (deferredDeltaUpdates != null) {
                                     assert updates.getRemoved().isEmpty()
-                                            : "Stream table received two consecutive remove rowsets";
+                                            : "Blink table received two consecutive remove rowsets";
                                     updates.setRemoved(deferredDeltaUpdates.getRemoved());
                                     deferredDeltaUpdates = null;
                                 }

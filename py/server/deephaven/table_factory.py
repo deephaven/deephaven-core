@@ -26,6 +26,7 @@ _JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.ut
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
+_JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 
 
 def empty_table(size: int) -> Table:
@@ -291,3 +292,27 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
         DHError
     """
     return InputTable(col_defs=col_defs, init_table=init_table, key_cols=key_cols)
+
+
+def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
+    """Creates a ring table that retains the latest 'capacity' number of rows from the parent table.
+    Latest rows are determined solely by the new rows added to the parent table, deleted rows are ignored,
+    and updated rows are not expected and will raise an exception.
+
+    Ring table is mostly used with blink tables which do not retain their own data for more than an update cycle.
+
+    Args:
+        parent (Table): the parent table
+        capacity (int): the capacity of the ring table
+        initialize (bool): whether to initialize the ring table with a snapshot of the parent table, default is True
+
+    Returns:
+        a Table
+
+    Raises:
+        DHError
+    """
+    try:
+        return Table(j_table=_JRingTableTools.of(parent.j_table, capacity, initialize))
+    except Exception as e:
+        raise DHError(e, "failed to create a ring table.") from e

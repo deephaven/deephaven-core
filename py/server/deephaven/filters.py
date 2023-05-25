@@ -16,12 +16,9 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JFilterAnd = jpy.get_type("io.deephaven.api.filter.FilterAnd")
-_JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
-_JPatternFilter = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter")
-_JPatternMode = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter$Mode")
+_JFilterPattern = jpy.get_type("io.deephaven.api.filter.FilterPattern")
+_JPatternMode = jpy.get_type("io.deephaven.api.filter.FilterPattern$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
@@ -36,6 +33,14 @@ class Filter(JObjectWrapper):
 
     def __init__(self, j_filter):
         self.j_filter = j_filter
+
+    def not_(self):
+        """Creates a new filter that evaluates to the opposite of what this filter evaluates to.
+
+        Returns:
+            a new not Filter
+        """
+        return Filter(j_filter=getattr(_JFilter, "not")(self.j_filter))
 
     @classmethod
     def from_(cls, conditions: Union[str, List[str]]) -> Union[Filter, List[Filter]]:
@@ -54,50 +59,84 @@ class Filter(JObjectWrapper):
         try:
             filters = [
                 cls(j_filter=j_filter)
-                for j_filter in _JFilter.from_(conditions).toArray()
+                for j_filter in getattr(_JFilter, "from")(conditions).toArray()
             ]
             return filters if len(filters) != 1 else filters[0]
         except Exception as e:
             raise DHError(e, "failed to create filters.") from e
 
 
-def or_(filters: List[Filter]) -> Filter:
+def or_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
     """Creates a new filter that evaluates to true when any of the given filters evaluates to true.
 
     Args:
-        filters (List[filter]): the component filters
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filter(s)
 
     Returns:
-        a new Filter
+        a new or Filter
     """
-    return Filter(j_filter=_JFilterOr.of(*[f.j_filter for f in filters]))
+    seq = [
+        Filter.from_(f).j_filter if isinstance(f, str) else f
+        for f in to_sequence(filters)
+    ]
+    return Filter(j_filter=getattr(_JFilter, "or")(*seq))
 
 
-def and_(filters: List[Filter]) -> Filter:
+def and_(filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> Filter:
     """Creates a new filter that evaluates to true when all of the given filters evaluates to true.
 
     Args:
-        filters (List[filter]): the component filters
+        filters (Union[str, Filter, Sequence[str], Sequence[Filter]]): the component filters
 
     Returns:
-        a new Filter
+        a new and Filter
     """
-    return Filter(j_filter=_JFilterAnd.of(*[f.j_filter for f in filters]))
+    seq = [
+        Filter.from_(f).j_filter if isinstance(f, str) else f
+        for f in to_sequence(filters)
+    ]
+    return Filter(j_filter=getattr(_JFilter, "and")(*seq))
 
 
 def not_(filter_: Filter) -> Filter:
-    """Creates a new filter that evaluates to true when the given filter evaluates to false.
+    """Creates a new filter that evaluates to the opposite of what filter_ evaluates to.
 
     Args:
         filter_ (Filter): the filter to negate with
 
     Returns:
-        a new Filter
+        a new not Filter
     """
-    return Filter(j_filter=_JFilterNot.of(filter_.j_filter))
+    return filter_.not_()
+
+
+def is_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNull(_JColumnName.of(col)))
+
+
+def is_not_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-not-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNotNull(_JColumnName.of(col)))
 
 
 class PatternMode(Enum):
+    """The regex mode to use"""
+
     MATCHES = _JPatternMode.MATCHES
     """Matches the entire input against the pattern"""
 
@@ -109,18 +148,20 @@ def pattern(
     mode: PatternMode,
     col: str,
     regex: str,
-    invert_pattern: bool = False,
+    invert_pattern: bool = False
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 
     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
     the regex pattern.
 
+    This filter will never match {@code null} values.
+
     Args:
         mode (PatternMode): the mode
         col (str): the column name
         regex (str): the regex pattern
-        invert_pattern (bool): if the pattern match should be inverted
+        invert_pattern (bool): if the pattern matching logic should be inverted
 
     Returns:
         a new pattern filter
@@ -128,10 +169,9 @@ def pattern(
     Raises:
         DHError
     """
-    # Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
     try:
         return Filter(
-            j_filter=_JPatternFilter(
+            j_filter=_JFilterPattern.of(
                 _JColumnName.of(col),
                 _JPattern.compile(regex),
                 mode.value,

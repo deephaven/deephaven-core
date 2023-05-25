@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 

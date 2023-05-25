@@ -499,7 +499,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String commandPrefix = "package " + PACKAGE + ";\n" +
                 "import static io.deephaven.engine.util.TableTools.*;\n" +
                 "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-                "import static io.deephaven.engine.table.impl.util.PerformanceQueries.*;\n" +
                 "import io.deephaven.api.*;\n" +
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
@@ -527,6 +526,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+                "import io.deephaven.api.updateby.UpdateByControl;\n" +
+                "import io.deephaven.api.updateby.OperationControl;\n" +
+                "import io.deephaven.api.updateby.DeltaControl;\n" +
+                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
@@ -821,19 +824,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         @Override
         public int priority() {
             return 0;
-        }
-    }
-
-    @AutoService(InitScript.class)
-    public static class PerformanceQueries implements InitScript {
-        @Override
-        public String getScriptPath() {
-            return "groovy/1-performance.groovy";
-        }
-
-        @Override
-        public int priority() {
-            return 1;
         }
     }
 

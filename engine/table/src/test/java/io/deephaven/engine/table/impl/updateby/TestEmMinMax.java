@@ -31,6 +31,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Random;
@@ -40,7 +41,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.MINUTE;
+import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
@@ -100,8 +101,8 @@ public class TestEmMinMax extends BaseUpdateByTest {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
                         new SortedInstantGenerator(
-                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final OperationControl skipControl = OperationControl.builder()
@@ -115,7 +116,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
         final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
-            timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
+            timestamps[i] = epochNanos(ts[i]);
         }
 
         // Test minimum
@@ -187,8 +188,8 @@ public class TestEmMinMax extends BaseUpdateByTest {
         final TableDefaults t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
                         new SortedInstantGenerator(
-                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final OperationControl skipControl = OperationControl.builder()
@@ -240,7 +241,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -256,7 +257,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -308,7 +309,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -324,7 +325,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -418,10 +419,10 @@ public class TestEmMinMax extends BaseUpdateByTest {
     @Test
     public void testTimeThrowBehaviors() {
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:29:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:32:00.000 NY"),
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:29:00.000 NY"),
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:32:00.000 NY"),
                 null);
 
         testThrowsInternal(
@@ -480,12 +481,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 .build();
 
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:31:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:32:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:33:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:34:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:35:00.000 NY"));
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:31:00.000 NY"),
+                parseInstant("2022-03-11T09:32:00.000 NY"),
+                parseInstant("2022-03-11T09:33:00.000 NY"),
+                parseInstant("2022-03-11T09:34:00.000 NY"),
+                parseInstant("2022-03-11T09:35:00.000 NY"));
 
         Table expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, NULL_DOUBLE, 2, NULL_DOUBLE, 4, NULL_DOUBLE));
@@ -576,11 +577,11 @@ public class TestEmMinMax extends BaseUpdateByTest {
         assertTableEquals(expected, input.updateBy(UpdateByOperation.EmMin(nanCtl, 10)));
 
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:31:00.000 NY"),
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:31:00.000 NY"),
                 null,
-                DateTimeUtils.parseInstant("2022-03-11T09:33:00.000 NY"),
-                DateTimeUtils.parseInstant("2022-03-11T09:34:00.000 NY"),
+                parseInstant("2022-03-11T09:33:00.000 NY"),
+                parseInstant("2022-03-11T09:34:00.000 NY"),
                 null);
 
         expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
@@ -630,8 +631,8 @@ public class TestEmMinMax extends BaseUpdateByTest {
     public void testNullTimestamps() {
         final CreateResult timeResult = createTestTable(100, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedIntGeneratorWithNulls(
-                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"),
+                        parseInstant("2022-03-09T09:00:00.000 NY"),
+                        parseInstant("2022-03-09T16:30:00.000 NY"),
                         0.25)});
 
         final OperationControl skipControl = OperationControl.builder()
@@ -689,8 +690,8 @@ public class TestEmMinMax extends BaseUpdateByTest {
         final CreateResult timeResult = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
                         new SortedInstantGenerator(
-                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
 
         if (appendOnly) {
@@ -812,6 +813,69 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 throw t;
             }
         }
+    }
+    // endregion
+
+    // region Special Tests
+    @Test
+    public void testInterfaces() {
+        // This test will verify that the interfaces exposed by the UpdateByOperation class are usable without errors.
+
+        final QueryTable t = createTestTable(100, false, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = epochNanos(ts[i]);
+        }
+
+        // Test minimum
+
+        Table actual = t.updateBy(UpdateByOperation.EmMin(100, columns));
+
+        Table actualSkip = t.updateBy(UpdateByOperation.EmMin(skipControl, 100, columns));
+        Table actualReset = t.updateBy(UpdateByOperation.EmMin(resetControl, 100, columns));
+
+        Table actualTime = t.updateBy(UpdateByOperation.EmMin("ts", 10 * MINUTE, columns));
+
+        Table actualSkipTime = t.updateBy(UpdateByOperation.EmMin(skipControl, "ts", 10 * MINUTE, columns));
+        Table actualResetTime = t.updateBy(UpdateByOperation.EmMin(resetControl, "ts", 10 * MINUTE, columns));
+
+        actualTime = t.updateBy(UpdateByOperation.EmMin("ts", Duration.ofMinutes(10), columns));
+
+        actualSkipTime = t.updateBy(UpdateByOperation.EmMin(skipControl, "ts", Duration.ofMinutes(10), columns));
+        actualResetTime = t.updateBy(UpdateByOperation.EmMin(resetControl, "ts", Duration.ofMinutes(10), columns));
+
+        // Test maximum
+
+        actual = t.updateBy(UpdateByOperation.EmMax(100, columns));
+
+        actualSkip = t.updateBy(UpdateByOperation.EmMax(skipControl, 100, columns));
+        actualReset = t.updateBy(UpdateByOperation.EmMax(resetControl, 100, columns));
+
+        actualTime = t.updateBy(UpdateByOperation.EmMax("ts", 10 * MINUTE, columns));
+
+        actualSkipTime = t.updateBy(UpdateByOperation.EmMax(skipControl, "ts", 10 * MINUTE, columns));
+        actualResetTime = t.updateBy(UpdateByOperation.EmMax(resetControl, "ts", 10 * MINUTE, columns));
+
+        actualTime = t.updateBy(UpdateByOperation.EmMax("ts", Duration.ofMinutes(10), columns));
+
+        actualSkipTime = t.updateBy(UpdateByOperation.EmMax(skipControl, "ts", Duration.ofMinutes(10), columns));
+        actualResetTime = t.updateBy(UpdateByOperation.EmMax(resetControl, "ts", Duration.ofMinutes(10), columns));
+
     }
     // endregion
 

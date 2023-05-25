@@ -19,6 +19,9 @@ import org.jetbrains.annotations.NotNull;
 // region BufferImports
 // endregion BufferImports
 
+// region BinarySearchImports
+// endregion BinarySearchImports
+
 /**
  * {@link Chunk} implementation for boolean data.
  */
@@ -137,4 +140,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return (BooleanChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
+
+    // region BinarySearch
+    // endregion BinarySearch
 }

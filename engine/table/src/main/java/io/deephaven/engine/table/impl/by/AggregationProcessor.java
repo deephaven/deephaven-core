@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -37,7 +38,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -151,7 +152,8 @@ public class AggregationProcessor implements AggregationContextFactory {
         ROLLUP_BASE(true),
         ROLLUP_REAGGREGATED(true),
         TREE_SOURCE_ROW_LOOKUP(false),
-        SELECT_DISTINCT(false);
+        SELECT_DISTINCT(false),
+        EXPOSE_GROUP_ROW_SETS(false);
         // @formatter:on
 
         private final boolean isRollup;
@@ -242,6 +244,18 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new AggregationProcessor(Collections.emptyList(), Type.SELECT_DISTINCT);
     }
 
+    public static final ColumnName EXPOSED_GROUP_ROW_SETS = ColumnName.of("__EXPOSED_GROUP_ROW_SETS__");
+
+    /**
+     * Create a trivial {@link AggregationContextFactory} to {@link Aggregation#AggGroup(String...) group} the input
+     * table and expose the group {@link io.deephaven.engine.rowset.RowSet row sets} as {@link #EXPOSED_GROUP_ROW_SETS}.
+     *
+     * @return The {@link AggregationContextFactory}
+     */
+    public static AggregationContextFactory forExposeGroupRowSets() {
+        return new AggregationProcessor(Collections.emptyList(), Type.EXPOSE_GROUP_ROW_SETS);
+    }
+
     private AggregationProcessor(
             @NotNull final Collection<? extends Aggregation> aggregations,
             @NotNull final Type type) {
@@ -285,6 +299,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 return makeSourceRowLookupAggregationContext();
             case SELECT_DISTINCT:
                 return makeEmptyAggregationContext(requireStateChangeRecorder);
+            case EXPOSE_GROUP_ROW_SETS:
+                return makeExposedGroupRowSetAggregationContext(table, requireStateChangeRecorder);
             default:
                 throw new UnsupportedOperationException("Unsupported type " + type);
         }
@@ -307,7 +323,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         final String[] groupByColumnNames;
 
         final boolean isAddOnly;
-        final boolean isStream;
+        final boolean isBlink;
 
         final List<IterativeChunkedAggregationOperator> operators = new ArrayList<>();
         final List<String[]> inputColumnNames = new ArrayList<>();
@@ -327,7 +343,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             this.requireStateChangeRecorder = requireStateChangeRecorder;
             this.groupByColumnNames = groupByColumnNames;
             isAddOnly = this.table.isAddOnly();
-            isStream = this.table.isStream();
+            isBlink = this.table.isBlink();
         }
 
         final AggregationContext build() {
@@ -355,12 +371,12 @@ public class AggregationProcessor implements AggregationContextFactory {
                     transformers.toArray(AggregationContextTransformer[]::new));
         }
 
-        final void streamUnsupported(@NotNull final String operationName) {
-            if (!isStream) {
+        final void unsupportedForBlinkTables(@NotNull final String operationName) {
+            if (!isBlink) {
                 return;
             }
             throw new UnsupportedOperationException(String.format(
-                    "Stream tables do not support Agg%s; use StreamTableTools.streamToAppendOnlyTable to accumulate full history",
+                    "Blink tables do not support Agg%s; use BlinkTableTools.blinkToAppendOnly to accumulate full history",
                     operationName));
         }
 
@@ -507,12 +523,12 @@ public class AggregationProcessor implements AggregationContextFactory {
                     return;
                 }
             }
-            addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isStream), inputSource, inputName);
+            addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isBlink), inputSource, inputName);
         }
 
         final void addFirstOrLastOperators(final boolean isFirst, final String exposeRedirectionAs) {
             if (exposeRedirectionAs != null) {
-                streamUnsupported((isFirst ? "First" : "Last") +
+                unsupportedForBlinkTables((isFirst ? "First" : "Last") +
                         " with exposed row redirections (e.g. for rollup(), AggFirstRowKey, or AggLastRowKey)");
             }
             final MatchPair[] resultMatchPairs = MatchPair.fromPairs(resultPairs);
@@ -521,10 +537,10 @@ public class AggregationProcessor implements AggregationContextFactory {
                 if (isAddOnly) {
                     operator = new AddOnlyFirstOrLastChunkedOperator(isFirst, resultMatchPairs, table,
                             exposeRedirectionAs);
-                } else if (isStream) {
+                } else if (isBlink) {
                     operator = isFirst
-                            ? new StreamFirstChunkedOperator(resultMatchPairs, table)
-                            : new StreamLastChunkedOperator(resultMatchPairs, table);
+                            ? new BlinkFirstChunkedOperator(resultMatchPairs, table)
+                            : new BlinkLastChunkedOperator(resultMatchPairs, table);
                 } else {
                     if (trackedFirstOrLastIndex >= 0) {
                         operator = ((FirstOrLastChunkedOperator) operators.get(trackedFirstOrLastIndex))
@@ -683,7 +699,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Partition partition) {
             multiplePartitionsUnsupported();
-            streamUnsupported("Partition");
+            unsupportedForBlinkTables("Partition");
             addNoInputOperator(new PartitionByChunkedOperator(
                     table,
                     partition.includeGroupByColumns() ? table : (QueryTable) table.dropColumns(groupByColumnNames),
@@ -729,8 +745,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecFormula formula) {
-            streamUnsupported("Formula");
-            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false,
+            unsupportedForBlinkTables("Formula");
+            final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator(table, false, null,
                     resultPairs.stream().map(pair -> MatchPair.of((Pair) pair.input())).toArray(MatchPair[]::new));
             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(groupByChunkedOperator,
                     true, formula.formula(), formula.paramToken(), MatchPair.fromPairs(resultPairs));
@@ -744,8 +760,8 @@ public class AggregationProcessor implements AggregationContextFactory {
 
         @Override
         public void visit(@NotNull final AggSpecGroup group) {
-            streamUnsupported("Group");
-            addNoInputOperator(new GroupByChunkedOperator(table, true, MatchPair.fromPairs(resultPairs)));
+            unsupportedForBlinkTables("Group");
+            addNoInputOperator(new GroupByChunkedOperator(table, true, null, MatchPair.fromPairs(resultPairs)));
         }
 
         @Override
@@ -901,7 +917,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         throw new UnsupportedOperationException(String.format("Agg%s is not supported for rollup()", operationName));
     }
 
-    private static void rollupUnsupported(@NotNull final String operationName, int ticket) {
+    private static void rollupUnsupported(@NotNull final String operationName, final int ticket) {
         throw new UnsupportedOperationException(String.format(
                 "Agg%s is not supported for rollup(), see https://github.com/deephaven/deephaven-core/issues/%d",
                 operationName, ticket));
@@ -944,7 +960,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final Partition partition) {
             multiplePartitionsUnsupported();
-            streamUnsupported("Partition for rollup with constituents included");
+            unsupportedForBlinkTables("Partition for rollup with constituents included");
             if (!partition.includeGroupByColumns()) {
                 throw new UnsupportedOperationException("Rollups never drop group-by columns when partitioning");
             }
@@ -1379,6 +1395,29 @@ public class AggregationProcessor implements AggregationContextFactory {
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
     }
 
+    private static AggregationContext makeExposedGroupRowSetAggregationContext(
+            @NotNull final Table inputTable,
+            final boolean requireStateChangeRecorder) {
+        final QueryTable inputQueryTable = (QueryTable) inputTable.coalesce();
+        if (requireStateChangeRecorder) {
+            // noinspection unchecked
+            return new AggregationContext(
+                    new IterativeChunkedAggregationOperator[] {
+                            new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name()),
+                            new CountAggregationOperator(null)
+                    },
+                    new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
+                    new ChunkSource.WithPrev[] {null, null});
+        }
+        // noinspection unchecked
+        return new AggregationContext(
+                new IterativeChunkedAggregationOperator[] {
+                        new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
+                },
+                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new ChunkSource.WithPrev[] {null});
+    }
+
     private static ColumnSource<?> maybeReinterpretInstantAsLong(@NotNull final ColumnSource<?> inputSource) {
         // noinspection unchecked
         return inputSource.getType() == Instant.class
@@ -1453,8 +1492,8 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final Class<?> type,
             @NotNull final String name,
             final boolean isMin,
-            final boolean isStreamOrAddOnly) {
-        if (!isStreamOrAddOnly) {
+            final boolean isBlinkOrAddOnly) {
+        if (!isBlinkOrAddOnly) {
             return new SsmChunkedMinMaxOperator(type, isMin, name);
         }
         if (type == Byte.class || type == byte.class) {
@@ -1889,18 +1928,18 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
             // @formatter:on
         }
-        if (sourceTable.isStream()) {
+        if (sourceTable.isBlink()) {
             // @formatter:off
             switch (chunkType) {
                 case Boolean: throw new UnsupportedOperationException("Columns never use boolean chunks");
-                case    Char: return new CharStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
-                case    Byte: return new ByteStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
-                case   Short: return new ShortStreamSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
-                case     Int: return new IntStreamSortedFirstOrLastChunkedOperator(   isFirst, multipleAggs, resultPairs, sourceTable);
-                case    Long: return new LongStreamSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
-                case   Float: return new FloatStreamSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
-                case  Double: return new DoubleStreamSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
-                case  Object: return new ObjectStreamSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
+                case    Char: return new CharBlinkSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case    Byte: return new ByteBlinkSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case   Short: return new ShortBlinkSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
+                case     Int: return new IntBlinkSortedFirstOrLastChunkedOperator(   isFirst, multipleAggs, resultPairs, sourceTable);
+                case    Long: return new LongBlinkSortedFirstOrLastChunkedOperator(  isFirst, multipleAggs, resultPairs, sourceTable);
+                case   Float: return new FloatBlinkSortedFirstOrLastChunkedOperator( isFirst, multipleAggs, resultPairs, sourceTable);
+                case  Double: return new DoubleBlinkSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
+                case  Object: return new ObjectBlinkSortedFirstOrLastChunkedOperator(isFirst, multipleAggs, resultPairs, sourceTable);
             }
             // @formatter:on
         }

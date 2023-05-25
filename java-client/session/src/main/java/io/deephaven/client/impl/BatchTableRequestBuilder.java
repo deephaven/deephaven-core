@@ -15,17 +15,21 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterCondition;
-import io.deephaven.api.filter.FilterCondition.Operator;
-import io.deephaven.api.filter.FilterIsNotNull;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterComparison.Operator;
+import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
@@ -47,13 +51,15 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
-import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
+import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
+import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -67,6 +73,7 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllTable;
@@ -86,6 +93,7 @@ import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.RangeJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
@@ -280,22 +288,33 @@ class BatchTableRequestBuilder {
             out = op(Builder::setSnapshotWhen, builder.build());
         }
 
+        private Operation createFilterTableRequest(WhereTable whereTable) {
+            FilterTableRequest request = FilterTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(whereTable.parent()))
+                    .addFilters(FilterAdapter.of(whereTable.filter()))
+                    .build();
+            return op(Builder::setFilter, request);
+        }
+
+        private Operation createUnstructuredFilterTableRequest(WhereTable whereTable) {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+            UnstructuredFilterTableRequest request = UnstructuredFilterTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(whereTable.parent()))
+                    .addFilters(Strings.of(whereTable.filter()))
+                    .build();
+            return op(Builder::setUnstructuredFilter, request);
+        }
+
         @Override
         public void visit(WhereTable whereTable) {
-            if (whereTable.hasRawFilter()) {
-                UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest
-                        .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
-                for (Filter filter : whereTable.filters()) {
-                    builder.addFilters(Strings.of(filter));
-                }
-                out = op(Builder::setUnstructuredFilter, builder.build());
-            } else {
-                FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
-                        .setResultId(ticket).setSourceId(ref(whereTable.parent()));
-                for (Filter filter : whereTable.filters()) {
-                    builder.addFilters(FilterAdapter.of(filter));
-                }
-                out = op(Builder::setFilter, builder.build());
+            try {
+                out = createFilterTableRequest(whereTable);
+            } catch (UnsupportedOperationException uoe) {
+                // gRPC structures unable to support stronger typed versions.
+                // Ignore exception, create unstructured version.
+                out = createUnstructuredFilterTableRequest(whereTable);
             }
         }
 
@@ -340,9 +359,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(JoinTable j) {
-            CrossJoinTablesRequest.Builder builder =
-                    CrossJoinTablesRequest.newBuilder().setResultId(ticket).setLeftId(ref(j.left()))
-                            .setRightId(ref(j.right())).setReserveBits(j.reserveBits());
+            CrossJoinTablesRequest.Builder builder = CrossJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(ref(j.left()))
+                    .setRightId(ref(j.right()));
+            j.reserveBits().ifPresent(builder::setReserveBits);
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
@@ -355,7 +376,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AsOfJoinTable aj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setLeftId(ref(aj.left())).setRightId(ref(aj.right()))
+                    .setResultId(ticket)
+                    .setLeftId(ref(aj.left()))
+                    .setRightId(ref(aj.right()))
                     .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
                             ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
                             : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
@@ -371,7 +394,9 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(ReverseAsOfJoinTable raj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setLeftId(ref(raj.left())).setRightId(ref(raj.right()))
+                    .setResultId(ticket)
+                    .setLeftId(ref(raj.left()))
+                    .setRightId(ref(raj.right()))
                     .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
                             ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
                             : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
@@ -382,6 +407,62 @@ class BatchTableRequestBuilder {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
             out = op(Builder::setAsOfJoin, builder.build());
+        }
+
+        @Override
+        public void visit(RangeJoinTable rangeJoinTable) {
+            RangeJoinTablesRequest.Builder builder = RangeJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(ref(rangeJoinTable.left()))
+                    .setRightId(ref(rangeJoinTable.right()));
+
+            for (JoinMatch exactMatch : rangeJoinTable.exactMatches()) {
+                builder.addExactMatchColumns(Strings.of(exactMatch));
+            }
+
+            builder.setLeftStartColumn(Strings.of(rangeJoinTable.rangeMatch().leftStartColumn()));
+            final RangeJoinTablesRequest.RangeStartRule rangeStartRule;
+            switch (rangeJoinTable.rangeMatch().rangeStartRule()) {
+                case LESS_THAN:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN;
+                    break;
+                case LESS_THAN_OR_EQUAL:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL;
+                    break;
+                case LESS_THAN_OR_EQUAL_ALLOW_PRECEDING:
+                    rangeStartRule = RangeJoinTablesRequest.RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("Unrecognized range start rule %s for range join",
+                            rangeJoinTable.rangeMatch().rangeStartRule()));
+            }
+            builder.setRangeStartRule(rangeStartRule);
+            builder.setRightRangeColumn(Strings.of(rangeJoinTable.rangeMatch().rightRangeColumn()));
+            final RangeJoinTablesRequest.RangeEndRule rangeEndRule;
+            switch (rangeJoinTable.rangeMatch().rangeEndRule()) {
+                case GREATER_THAN:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN;
+                    break;
+                case GREATER_THAN_OR_EQUAL:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL;
+                    break;
+                case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                    rangeEndRule = RangeJoinTablesRequest.RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+                    break;
+                default:
+                    throw new IllegalArgumentException(String.format("Unrecognized range end rule %s for range join",
+                            rangeJoinTable.rangeMatch().rangeEndRule()));
+            }
+            builder.setRangeEndRule(rangeEndRule);
+            builder.setLeftEndColumn(Strings.of(rangeJoinTable.rangeMatch().leftEndColumn()));
+
+            for (Aggregation aggregation : rangeJoinTable.aggregations()) {
+                for (io.deephaven.proto.backplane.grpc.Aggregation adapted : AggregationBuilder.adapt(aggregation)) {
+                    builder.addAggregations(adapted);
+                }
+            }
+
+            out = op(Builder::setRangeJoin, builder.build());
         }
 
         @Override
@@ -543,38 +624,177 @@ class BatchTableRequestBuilder {
         return Reference.newBuilder().setColumnName(columnName.name()).build();
     }
 
-    private static Literal literal(long x) {
-        return Literal.newBuilder().setLongValue(x).build();
+    private static io.deephaven.proto.backplane.grpc.Literal literal(long x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setLongValue(x).build();
     }
 
-    static class ValueAdapter implements Value.Visitor {
-        static io.deephaven.proto.backplane.grpc.Value adapt(Value value) {
-            return value.walk(new ValueAdapter()).out();
+    private static io.deephaven.proto.backplane.grpc.Literal literal(boolean x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
+    }
+
+    private static io.deephaven.proto.backplane.grpc.Literal literal(double x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setDoubleValue(x).build();
+    }
+
+    private static io.deephaven.proto.backplane.grpc.Literal literal(String x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setStringValue(x).build();
+    }
+
+    static class ExpressionAdapter implements Expression.Visitor<Value>, Literal.Visitor<Value> {
+        static Value adapt(Expression expression) {
+            return expression.walk(new ExpressionAdapter());
         }
 
-        private io.deephaven.proto.backplane.grpc.Value out;
-
-        public io.deephaven.proto.backplane.grpc.Value out() {
-            return Objects.requireNonNull(out);
+        static Value adapt(Literal literal) {
+            return literal.walk((Literal.Visitor<Value>) new ExpressionAdapter());
         }
 
         @Override
-        public void visit(ColumnName x) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x))
-                    .build();
+        public Value visit(ColumnName x) {
+            return Value.newBuilder().setReference(reference(x)).build();
         }
 
         @Override
-        public void visit(long x) {
-            out =
-                    io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        public Value visit(char literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal char");
+        }
+
+        @Override
+        public Value visit(byte literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal byte");
+        }
+
+        @Override
+        public Value visit(short literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal short");
+        }
+
+        @Override
+        public Value visit(int literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal int");
+        }
+
+        @Override
+        public Value visit(long literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(boolean literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(float literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal float");
+        }
+
+        @Override
+        public Value visit(double literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(String literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(Literal literal) {
+            return literal.walk((Literal.Visitor<Value>) this);
+        }
+
+        @Override
+        public Value visit(Filter filter) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Filter");
+        }
+
+        @Override
+        public Value visit(Function function) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Function");
+        }
+
+        @Override
+        public Value visit(Method method) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Method");
+        }
+
+        @Override
+        public Value visit(RawString rawString) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a raw string");
         }
     }
 
-    static class FilterAdapter implements Filter.Visitor {
+    enum LiteralAdapter implements Literal.Visitor<io.deephaven.proto.backplane.grpc.Literal> {
+        INSTANCE;
+
+        public static io.deephaven.proto.backplane.grpc.Literal of(Literal literal) {
+            return literal.walk(INSTANCE);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(boolean literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(char literal) {
+            throw new UnsupportedOperationException("Doesn't support char literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(byte literal) {
+            throw new UnsupportedOperationException("Doesn't support byte literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(short literal) {
+            throw new UnsupportedOperationException("Doesn't support short literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(int literal) {
+            throw new UnsupportedOperationException("Doesn't support int literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(long literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(float literal) {
+            throw new UnsupportedOperationException("Doesn't support float literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(double literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(String literal) {
+            return literal(literal);
+        }
+    }
+
+    static class FilterAdapter implements Filter.Visitor<Condition> {
 
         static Condition of(Filter filter) {
-            return filter.walk(new FilterAdapter()).out();
+            return filter.walk(new FilterAdapter());
         }
 
         private static CompareOperation adapt(Operator operator) {
@@ -596,62 +816,94 @@ class BatchTableRequestBuilder {
             }
         }
 
-        private Condition out;
-
-        public Condition out() {
-            return Objects.requireNonNull(out);
-        }
-
         @Override
-        public void visit(FilterIsNull isNull) {
-            out = Condition.newBuilder()
-                    .setIsNull(
-                            IsNullCondition.newBuilder().setReference(reference(isNull.column())).build())
+        public Condition visit(FilterIsNull isNull) {
+            if (!(isNull.expression() instanceof ColumnName)) {
+                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+                throw new UnsupportedOperationException("Only supports null checking a reference to a column");
+            }
+            return Condition.newBuilder()
+                    .setIsNull(IsNullCondition.newBuilder().setReference(reference((ColumnName) isNull.expression()))
+                            .build())
                     .build();
         }
 
         @Override
-        public void visit(FilterIsNotNull isNotNull) {
-            out = of(FilterIsNull.of(isNotNull.column()).not());
-        }
-
-        @Override
-        public void visit(FilterCondition condition) {
-            FilterCondition preferred = condition.maybeTranspose();
-            out = Condition.newBuilder()
-                    .setCompare(CompareCondition.newBuilder().setOperation(adapt(preferred.operator()))
-                            .setLhs(ValueAdapter.adapt(preferred.lhs()))
-                            .setRhs(ValueAdapter.adapt(preferred.rhs())).build())
+        public Condition visit(FilterComparison comparison) {
+            FilterComparison preferred = comparison.maybeTranspose();
+            return Condition.newBuilder()
+                    .setCompare(CompareCondition.newBuilder()
+                            .setOperation(adapt(preferred.operator()))
+                            .setLhs(ExpressionAdapter.adapt(preferred.lhs()))
+                            .setRhs(ExpressionAdapter.adapt(preferred.rhs()))
+                            .build())
                     .build();
         }
 
         @Override
-        public void visit(FilterNot not) {
-            out = Condition.newBuilder()
-                    .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+        public Condition visit(FilterIn in) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with FilterIn");
         }
 
         @Override
-        public void visit(FilterOr ors) {
+        public Condition visit(FilterNot<?> not) {
+            // This is a shallow simplification that removes the need for setNot when it is not needed.
+            final Filter invertedFilter = not.invertFilter();
+            if (not.equals(invertedFilter)) {
+                return Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
+                        .build();
+            } else {
+                return of(invertedFilter);
+            }
+        }
+
+        @Override
+        public Condition visit(FilterOr ors) {
             OrCondition.Builder builder = OrCondition.newBuilder();
             for (Filter filter : ors) {
                 builder.addFilters(of(filter));
             }
-            out = Condition.newBuilder().setOr(builder.build()).build();
+            return Condition.newBuilder().setOr(builder.build()).build();
         }
 
         @Override
-        public void visit(FilterAnd ands) {
+        public Condition visit(FilterAnd ands) {
             AndCondition.Builder builder = AndCondition.newBuilder();
             for (Filter filter : ands) {
                 builder.addFilters(of(filter));
             }
-            out = Condition.newBuilder().setAnd(builder.build()).build();
+            return Condition.newBuilder().setAnd(builder.build()).build();
         }
 
         @Override
-        public void visit(RawString rawString) {
-            throw new IllegalStateException("Can't build Condition with raw string");
+        public Condition visit(FilterPattern pattern) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with FilterPattern");
+        }
+
+        @Override
+        public Condition visit(Function function) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with Function");
+        }
+
+        @Override
+        public Condition visit(Method method) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with Method");
+        }
+
+        @Override
+        public Condition visit(boolean literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with literal");
+        }
+
+        @Override
+        public Condition visit(RawString rawString) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with raw string");
         }
     }
 }
