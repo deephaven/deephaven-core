@@ -107,6 +107,7 @@ class UpdateByBuilder {
                     nullBehavior = UpdateByNullBehavior.ZERO_DOMINATES;
                     break;
                 default:
+                    // NULL_DOMINATES is the default state
                     nullBehavior = UpdateByNullBehavior.NULL_DOMINATES;
                     break;
             }

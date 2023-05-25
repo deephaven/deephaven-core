@@ -343,14 +343,17 @@ enum BadDataBehavior {
 
 // Directives for how to handle {@code null} and {@code NaN} values
 enum UpdateByNullBehavior {
+  // When not specified will use the server default.
+  NOT_SPECIFIED = 0;
+
   // In the case of Current - null, the null dominates so Column[i] - null = null
-  NULL_DOMINATES = 0;
+  NULL_DOMINATES = 1;
 
   // In the case of Current - null, the current value dominates so Column[i] - null = Column[i]
-  VALUE_DOMINATES = 1;
+  VALUE_DOMINATES = 2;
 
   // In the case of Current - null, return zero so Column[i] - null = 0
-  ZERO_DOMINATES = 2;
+  ZERO_DOMINATES = 3;
 }
 
 // Reusable timescale message for the UpdateBy rolling operations.
@@ -371,28 +374,28 @@ message UpdateByEmaTimescale {
 // Reusable options for the UpdateBy exponential moving operations.
 message UpdateByEmaOptions {
   // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_null_value = 1;
+  BadDataBehavior on_null_value = 1;
 
   // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_nan_value = 2;
+  BadDataBehavior on_nan_value = 2;
 
   // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_null_time = 3;
+  BadDataBehavior on_null_time = 3;
 
   // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_negative_delta_time = 4;
+  BadDataBehavior on_negative_delta_time = 4;
 
   // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_zero_delta_time = 5;
+  BadDataBehavior on_zero_delta_time = 5;
 
   // If unset, defaults to server-provided defaults.
-  optional MathContext big_value_context = 6;
+  MathContext big_value_context = 6;
 }
 
 // Reusable options for the UpdateBy delta operation.
 message UpdateByDeltaOptions {
   // If unset, defaults to server-provided defaults.
-  optional UpdateByNullBehavior null_behavior = 1;
+  UpdateByNullBehavior null_behavior = 1;
 }
 
 // Create a table with the same rowset as its parent that will perform the specified set of row
@@ -404,33 +407,33 @@ message UpdateByRequest {
   message UpdateByOptions {
     // If redirections should be used for output sources instead of sparse array sources.
     // If unset, defaults to server-provided defaults.
-    optional bool use_redirection = 1;
+    bool use_redirection = 1;
 
     // The maximum chunk capacity.
     // If unset, defaults to server-provided defaults.
-    optional int32 chunk_capacity = 2;
+    int32 chunk_capacity = 2;
 
     // The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
     // overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
     // value of zero results in never using the sparse structure.
     // If unset, defaults to server-provided defaults.
-    optional double max_static_sparse_memory_overhead = 3;
+    double max_static_sparse_memory_overhead = 3;
 
     // The initial hash table size.
     // If unset, defaults to server-provided defaults.
-    optional int32 initial_hash_table_size = 4;
+    int32 initial_hash_table_size = 4;
 
     // The maximum load factor for the hash table.
     // If unset, defaults to server-provided defaults.
-    optional double maximum_load_factor = 5;
+    double maximum_load_factor = 5;
 
     // The target load factor for the hash table.
     // If unset, defaults to server-provided defaults.
-    optional double target_load_factor = 6;
+    double target_load_factor = 6;
 
     // The math context.
     // If unset, defaults to server-provided defaults.
-    optional MathContext math_context = 7;
+    MathContext math_context = 7;
   }
 
   message UpdateByOperation {
@@ -537,7 +540,6 @@ message UpdateByRequest {
           // Column name for the source of input weights.
           string weight_column = 3;
         }
-
 
         oneof type {
           UpdateByCumulativeSum sum = 1;

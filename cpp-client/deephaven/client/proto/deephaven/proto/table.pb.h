@@ -768,14 +768,15 @@ inline bool BadDataBehavior_Parse(
     BadDataBehavior_descriptor(), name, value);
 }
 enum UpdateByNullBehavior : int {
-  NULL_DOMINATES = 0,
-  VALUE_DOMINATES = 1,
-  ZERO_DOMINATES = 2,
+  NOT_SPECIFIED = 0,
+  NULL_DOMINATES = 1,
+  VALUE_DOMINATES = 2,
+  ZERO_DOMINATES = 3,
   UpdateByNullBehavior_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   UpdateByNullBehavior_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool UpdateByNullBehavior_IsValid(int value);
-constexpr UpdateByNullBehavior UpdateByNullBehavior_MIN = NULL_DOMINATES;
+constexpr UpdateByNullBehavior UpdateByNullBehavior_MIN = NOT_SPECIFIED;
 constexpr UpdateByNullBehavior UpdateByNullBehavior_MAX = ZERO_DOMINATES;
 constexpr int UpdateByNullBehavior_ARRAYSIZE = UpdateByNullBehavior_MAX + 1;
 
@@ -3264,7 +3265,7 @@ class UpdateByEmaOptions final :
     kOnNegativeDeltaTimeFieldNumber = 4,
     kOnZeroDeltaTimeFieldNumber = 5,
   };
-  // optional .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
+  // .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
   bool has_big_value_context() const;
   private:
   bool _internal_has_big_value_context() const;
@@ -3282,11 +3283,7 @@ class UpdateByEmaOptions final :
       ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context);
   ::io::deephaven::proto::backplane::grpc::MathContext* unsafe_arena_release_big_value_context();
 
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
-  bool has_on_null_value() const;
-  private:
-  bool _internal_has_on_null_value() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
   void clear_on_null_value();
   ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_value() const;
   void set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
@@ -3295,11 +3292,7 @@ class UpdateByEmaOptions final :
   void _internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
   public:
 
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
-  bool has_on_nan_value() const;
-  private:
-  bool _internal_has_on_nan_value() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
   void clear_on_nan_value();
   ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_nan_value() const;
   void set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
@@ -3308,11 +3301,7 @@ class UpdateByEmaOptions final :
   void _internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
   public:
 
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
-  bool has_on_null_time() const;
-  private:
-  bool _internal_has_on_null_time() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
   void clear_on_null_time();
   ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_null_time() const;
   void set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
@@ -3321,11 +3310,7 @@ class UpdateByEmaOptions final :
   void _internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
   public:
 
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
-  bool has_on_negative_delta_time() const;
-  private:
-  bool _internal_has_on_negative_delta_time() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
   void clear_on_negative_delta_time();
   ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_negative_delta_time() const;
   void set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
@@ -3334,11 +3319,7 @@ class UpdateByEmaOptions final :
   void _internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
   public:
 
-  // optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
-  bool has_on_zero_delta_time() const;
-  private:
-  bool _internal_has_on_zero_delta_time() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
   void clear_on_zero_delta_time();
   ::io::deephaven::proto::backplane::grpc::BadDataBehavior on_zero_delta_time() const;
   void set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value);
@@ -3354,14 +3335,13 @@ class UpdateByEmaOptions final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::io::deephaven::proto::backplane::grpc::MathContext* big_value_context_;
   int on_null_value_;
   int on_nan_value_;
   int on_null_time_;
   int on_negative_delta_time_;
   int on_zero_delta_time_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -3487,11 +3467,7 @@ class UpdateByDeltaOptions final :
   enum : int {
     kNullBehaviorFieldNumber = 1,
   };
-  // optional .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
-  bool has_null_behavior() const;
-  private:
-  bool _internal_has_null_behavior() const;
-  public:
+  // .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
   void clear_null_behavior();
   ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior null_behavior() const;
   void set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value);
@@ -3507,9 +3483,8 @@ class UpdateByDeltaOptions final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   int null_behavior_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -3641,7 +3616,7 @@ class UpdateByRequest_UpdateByOptions final :
     kTargetLoadFactorFieldNumber = 6,
     kInitialHashTableSizeFieldNumber = 4,
   };
-  // optional .io.deephaven.proto.backplane.grpc.MathContext math_context = 7;
+  // .io.deephaven.proto.backplane.grpc.MathContext math_context = 7;
   bool has_math_context() const;
   private:
   bool _internal_has_math_context() const;
@@ -3659,11 +3634,7 @@ class UpdateByRequest_UpdateByOptions final :
       ::io::deephaven::proto::backplane::grpc::MathContext* math_context);
   ::io::deephaven::proto::backplane::grpc::MathContext* unsafe_arena_release_math_context();
 
-  // optional bool use_redirection = 1;
-  bool has_use_redirection() const;
-  private:
-  bool _internal_has_use_redirection() const;
-  public:
+  // bool use_redirection = 1;
   void clear_use_redirection();
   bool use_redirection() const;
   void set_use_redirection(bool value);
@@ -3672,11 +3643,7 @@ class UpdateByRequest_UpdateByOptions final :
   void _internal_set_use_redirection(bool value);
   public:
 
-  // optional int32 chunk_capacity = 2;
-  bool has_chunk_capacity() const;
-  private:
-  bool _internal_has_chunk_capacity() const;
-  public:
+  // int32 chunk_capacity = 2;
   void clear_chunk_capacity();
   int32_t chunk_capacity() const;
   void set_chunk_capacity(int32_t value);
@@ -3685,11 +3652,7 @@ class UpdateByRequest_UpdateByOptions final :
   void _internal_set_chunk_capacity(int32_t value);
   public:
 
-  // optional double max_static_sparse_memory_overhead = 3;
-  bool has_max_static_sparse_memory_overhead() const;
-  private:
-  bool _internal_has_max_static_sparse_memory_overhead() const;
-  public:
+  // double max_static_sparse_memory_overhead = 3;
   void clear_max_static_sparse_memory_overhead();
   double max_static_sparse_memory_overhead() const;
   void set_max_static_sparse_memory_overhead(double value);
@@ -3698,11 +3661,7 @@ class UpdateByRequest_UpdateByOptions final :
   void _internal_set_max_static_sparse_memory_overhead(double value);
   public:
 
-  // optional double maximum_load_factor = 5;
-  bool has_maximum_load_factor() const;
-  private:
-  bool _internal_has_maximum_load_factor() const;
-  public:
+  // double maximum_load_factor = 5;
   void clear_maximum_load_factor();
   double maximum_load_factor() const;
   void set_maximum_load_factor(double value);
@@ -3711,11 +3670,7 @@ class UpdateByRequest_UpdateByOptions final :
   void _internal_set_maximum_load_factor(double value);
   public:
 
-  // optional double target_load_factor = 6;
-  bool has_target_load_factor() const;
-  private:
-  bool _internal_has_target_load_factor() const;
-  public:
+  // double target_load_factor = 6;
   void clear_target_load_factor();
   double target_load_factor() const;
   void set_target_load_factor(double value);
@@ -3724,11 +3679,7 @@ class UpdateByRequest_UpdateByOptions final :
   void _internal_set_target_load_factor(double value);
   public:
 
-  // optional int32 initial_hash_table_size = 4;
-  bool has_initial_hash_table_size() const;
-  private:
-  bool _internal_has_initial_hash_table_size() const;
-  public:
+  // int32 initial_hash_table_size = 4;
   void clear_initial_hash_table_size();
   int32_t initial_hash_table_size() const;
   void set_initial_hash_table_size(int32_t value);
@@ -3744,8 +3695,6 @@ class UpdateByRequest_UpdateByOptions final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
-  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
-  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::io::deephaven::proto::backplane::grpc::MathContext* math_context_;
   bool use_redirection_;
   int32_t chunk_capacity_;
@@ -3753,6 +3702,7 @@ class UpdateByRequest_UpdateByOptions final :
   double maximum_load_factor_;
   double target_load_factor_;
   int32_t initial_hash_table_size_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
 // -------------------------------------------------------------------
@@ -25538,17 +25488,9 @@ inline UpdateByEmaTimescale::TypeCase UpdateByEmaTimescale::type_case() const {
 
 // UpdateByEmaOptions
 
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
-inline bool UpdateByEmaOptions::_internal_has_on_null_value() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline bool UpdateByEmaOptions::has_on_null_value() const {
-  return _internal_has_on_null_value();
-}
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_value = 1;
 inline void UpdateByEmaOptions::clear_on_null_value() {
   on_null_value_ = 0;
-  _has_bits_[0] &= ~0x00000002u;
 }
 inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptions::_internal_on_null_value() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_value_);
@@ -25558,7 +25500,7 @@ inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptio
   return _internal_on_null_value();
 }
 inline void UpdateByEmaOptions::_internal_set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000002u;
+  
   on_null_value_ = value;
 }
 inline void UpdateByEmaOptions::set_on_null_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
@@ -25566,17 +25508,9 @@ inline void UpdateByEmaOptions::set_on_null_value(::io::deephaven::proto::backpl
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.on_null_value)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
-inline bool UpdateByEmaOptions::_internal_has_on_nan_value() const {
-  bool value = (_has_bits_[0] & 0x00000004u) != 0;
-  return value;
-}
-inline bool UpdateByEmaOptions::has_on_nan_value() const {
-  return _internal_has_on_nan_value();
-}
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_nan_value = 2;
 inline void UpdateByEmaOptions::clear_on_nan_value() {
   on_nan_value_ = 0;
-  _has_bits_[0] &= ~0x00000004u;
 }
 inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptions::_internal_on_nan_value() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_nan_value_);
@@ -25586,7 +25520,7 @@ inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptio
   return _internal_on_nan_value();
 }
 inline void UpdateByEmaOptions::_internal_set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000004u;
+  
   on_nan_value_ = value;
 }
 inline void UpdateByEmaOptions::set_on_nan_value(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
@@ -25594,17 +25528,9 @@ inline void UpdateByEmaOptions::set_on_nan_value(::io::deephaven::proto::backpla
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.on_nan_value)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
-inline bool UpdateByEmaOptions::_internal_has_on_null_time() const {
-  bool value = (_has_bits_[0] & 0x00000008u) != 0;
-  return value;
-}
-inline bool UpdateByEmaOptions::has_on_null_time() const {
-  return _internal_has_on_null_time();
-}
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_null_time = 3;
 inline void UpdateByEmaOptions::clear_on_null_time() {
   on_null_time_ = 0;
-  _has_bits_[0] &= ~0x00000008u;
 }
 inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptions::_internal_on_null_time() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_null_time_);
@@ -25614,7 +25540,7 @@ inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptio
   return _internal_on_null_time();
 }
 inline void UpdateByEmaOptions::_internal_set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000008u;
+  
   on_null_time_ = value;
 }
 inline void UpdateByEmaOptions::set_on_null_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
@@ -25622,17 +25548,9 @@ inline void UpdateByEmaOptions::set_on_null_time(::io::deephaven::proto::backpla
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.on_null_time)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
-inline bool UpdateByEmaOptions::_internal_has_on_negative_delta_time() const {
-  bool value = (_has_bits_[0] & 0x00000010u) != 0;
-  return value;
-}
-inline bool UpdateByEmaOptions::has_on_negative_delta_time() const {
-  return _internal_has_on_negative_delta_time();
-}
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_negative_delta_time = 4;
 inline void UpdateByEmaOptions::clear_on_negative_delta_time() {
   on_negative_delta_time_ = 0;
-  _has_bits_[0] &= ~0x00000010u;
 }
 inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptions::_internal_on_negative_delta_time() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_negative_delta_time_);
@@ -25642,7 +25560,7 @@ inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptio
   return _internal_on_negative_delta_time();
 }
 inline void UpdateByEmaOptions::_internal_set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000010u;
+  
   on_negative_delta_time_ = value;
 }
 inline void UpdateByEmaOptions::set_on_negative_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
@@ -25650,17 +25568,9 @@ inline void UpdateByEmaOptions::set_on_negative_delta_time(::io::deephaven::prot
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.on_negative_delta_time)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
-inline bool UpdateByEmaOptions::_internal_has_on_zero_delta_time() const {
-  bool value = (_has_bits_[0] & 0x00000020u) != 0;
-  return value;
-}
-inline bool UpdateByEmaOptions::has_on_zero_delta_time() const {
-  return _internal_has_on_zero_delta_time();
-}
+// .io.deephaven.proto.backplane.grpc.BadDataBehavior on_zero_delta_time = 5;
 inline void UpdateByEmaOptions::clear_on_zero_delta_time() {
   on_zero_delta_time_ = 0;
-  _has_bits_[0] &= ~0x00000020u;
 }
 inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptions::_internal_on_zero_delta_time() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::BadDataBehavior >(on_zero_delta_time_);
@@ -25670,7 +25580,7 @@ inline ::io::deephaven::proto::backplane::grpc::BadDataBehavior UpdateByEmaOptio
   return _internal_on_zero_delta_time();
 }
 inline void UpdateByEmaOptions::_internal_set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
-  _has_bits_[0] |= 0x00000020u;
+  
   on_zero_delta_time_ = value;
 }
 inline void UpdateByEmaOptions::set_on_zero_delta_time(::io::deephaven::proto::backplane::grpc::BadDataBehavior value) {
@@ -25678,18 +25588,18 @@ inline void UpdateByEmaOptions::set_on_zero_delta_time(::io::deephaven::proto::b
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.on_zero_delta_time)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
+// .io.deephaven.proto.backplane.grpc.MathContext big_value_context = 6;
 inline bool UpdateByEmaOptions::_internal_has_big_value_context() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || big_value_context_ != nullptr);
-  return value;
+  return this != internal_default_instance() && big_value_context_ != nullptr;
 }
 inline bool UpdateByEmaOptions::has_big_value_context() const {
   return _internal_has_big_value_context();
 }
 inline void UpdateByEmaOptions::clear_big_value_context() {
-  if (big_value_context_ != nullptr) big_value_context_->Clear();
-  _has_bits_[0] &= ~0x00000001u;
+  if (GetArenaForAllocation() == nullptr && big_value_context_ != nullptr) {
+    delete big_value_context_;
+  }
+  big_value_context_ = nullptr;
 }
 inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByEmaOptions::_internal_big_value_context() const {
   const ::io::deephaven::proto::backplane::grpc::MathContext* p = big_value_context_;
@@ -25707,14 +25617,14 @@ inline void UpdateByEmaOptions::unsafe_arena_set_allocated_big_value_context(
   }
   big_value_context_ = big_value_context;
   if (big_value_context) {
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.big_value_context)
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmaOptions::release_big_value_context() {
-  _has_bits_[0] &= ~0x00000001u;
+  
   ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
   big_value_context_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
@@ -25730,13 +25640,13 @@ inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmaOptions:
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmaOptions::unsafe_arena_release_big_value_context() {
   // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.big_value_context)
-  _has_bits_[0] &= ~0x00000001u;
+  
   ::io::deephaven::proto::backplane::grpc::MathContext* temp = big_value_context_;
   big_value_context_ = nullptr;
   return temp;
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByEmaOptions::_internal_mutable_big_value_context() {
-  _has_bits_[0] |= 0x00000001u;
+  
   if (big_value_context_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(GetArenaForAllocation());
     big_value_context_ = p;
@@ -25760,9 +25670,9 @@ inline void UpdateByEmaOptions::set_allocated_big_value_context(::io::deephaven:
       big_value_context = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, big_value_context, submessage_arena);
     }
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   big_value_context_ = big_value_context;
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaOptions.big_value_context)
@@ -25772,17 +25682,9 @@ inline void UpdateByEmaOptions::set_allocated_big_value_context(::io::deephaven:
 
 // UpdateByDeltaOptions
 
-// optional .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
-inline bool UpdateByDeltaOptions::_internal_has_null_behavior() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  return value;
-}
-inline bool UpdateByDeltaOptions::has_null_behavior() const {
-  return _internal_has_null_behavior();
-}
+// .io.deephaven.proto.backplane.grpc.UpdateByNullBehavior null_behavior = 1;
 inline void UpdateByDeltaOptions::clear_null_behavior() {
   null_behavior_ = 0;
-  _has_bits_[0] &= ~0x00000001u;
 }
 inline ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior UpdateByDeltaOptions::_internal_null_behavior() const {
   return static_cast< ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior >(null_behavior_);
@@ -25792,7 +25694,7 @@ inline ::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior UpdateByDel
   return _internal_null_behavior();
 }
 inline void UpdateByDeltaOptions::_internal_set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value) {
-  _has_bits_[0] |= 0x00000001u;
+  
   null_behavior_ = value;
 }
 inline void UpdateByDeltaOptions::set_null_behavior(::io::deephaven::proto::backplane::grpc::UpdateByNullBehavior value) {
@@ -25804,17 +25706,9 @@ inline void UpdateByDeltaOptions::set_null_behavior(::io::deephaven::proto::back
 
 // UpdateByRequest_UpdateByOptions
 
-// optional bool use_redirection = 1;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_use_redirection() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_use_redirection() const {
-  return _internal_has_use_redirection();
-}
+// bool use_redirection = 1;
 inline void UpdateByRequest_UpdateByOptions::clear_use_redirection() {
   use_redirection_ = false;
-  _has_bits_[0] &= ~0x00000002u;
 }
 inline bool UpdateByRequest_UpdateByOptions::_internal_use_redirection() const {
   return use_redirection_;
@@ -25824,7 +25718,7 @@ inline bool UpdateByRequest_UpdateByOptions::use_redirection() const {
   return _internal_use_redirection();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_use_redirection(bool value) {
-  _has_bits_[0] |= 0x00000002u;
+  
   use_redirection_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_use_redirection(bool value) {
@@ -25832,17 +25726,9 @@ inline void UpdateByRequest_UpdateByOptions::set_use_redirection(bool value) {
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.use_redirection)
 }
 
-// optional int32 chunk_capacity = 2;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_chunk_capacity() const {
-  bool value = (_has_bits_[0] & 0x00000004u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_chunk_capacity() const {
-  return _internal_has_chunk_capacity();
-}
+// int32 chunk_capacity = 2;
 inline void UpdateByRequest_UpdateByOptions::clear_chunk_capacity() {
   chunk_capacity_ = 0;
-  _has_bits_[0] &= ~0x00000004u;
 }
 inline int32_t UpdateByRequest_UpdateByOptions::_internal_chunk_capacity() const {
   return chunk_capacity_;
@@ -25852,7 +25738,7 @@ inline int32_t UpdateByRequest_UpdateByOptions::chunk_capacity() const {
   return _internal_chunk_capacity();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_chunk_capacity(int32_t value) {
-  _has_bits_[0] |= 0x00000004u;
+  
   chunk_capacity_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_chunk_capacity(int32_t value) {
@@ -25860,17 +25746,9 @@ inline void UpdateByRequest_UpdateByOptions::set_chunk_capacity(int32_t value) {
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.chunk_capacity)
 }
 
-// optional double max_static_sparse_memory_overhead = 3;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_max_static_sparse_memory_overhead() const {
-  bool value = (_has_bits_[0] & 0x00000008u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_max_static_sparse_memory_overhead() const {
-  return _internal_has_max_static_sparse_memory_overhead();
-}
+// double max_static_sparse_memory_overhead = 3;
 inline void UpdateByRequest_UpdateByOptions::clear_max_static_sparse_memory_overhead() {
   max_static_sparse_memory_overhead_ = 0;
-  _has_bits_[0] &= ~0x00000008u;
 }
 inline double UpdateByRequest_UpdateByOptions::_internal_max_static_sparse_memory_overhead() const {
   return max_static_sparse_memory_overhead_;
@@ -25880,7 +25758,7 @@ inline double UpdateByRequest_UpdateByOptions::max_static_sparse_memory_overhead
   return _internal_max_static_sparse_memory_overhead();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_max_static_sparse_memory_overhead(double value) {
-  _has_bits_[0] |= 0x00000008u;
+  
   max_static_sparse_memory_overhead_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_max_static_sparse_memory_overhead(double value) {
@@ -25888,17 +25766,9 @@ inline void UpdateByRequest_UpdateByOptions::set_max_static_sparse_memory_overhe
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.max_static_sparse_memory_overhead)
 }
 
-// optional int32 initial_hash_table_size = 4;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_initial_hash_table_size() const {
-  bool value = (_has_bits_[0] & 0x00000040u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_initial_hash_table_size() const {
-  return _internal_has_initial_hash_table_size();
-}
+// int32 initial_hash_table_size = 4;
 inline void UpdateByRequest_UpdateByOptions::clear_initial_hash_table_size() {
   initial_hash_table_size_ = 0;
-  _has_bits_[0] &= ~0x00000040u;
 }
 inline int32_t UpdateByRequest_UpdateByOptions::_internal_initial_hash_table_size() const {
   return initial_hash_table_size_;
@@ -25908,7 +25778,7 @@ inline int32_t UpdateByRequest_UpdateByOptions::initial_hash_table_size() const 
   return _internal_initial_hash_table_size();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_initial_hash_table_size(int32_t value) {
-  _has_bits_[0] |= 0x00000040u;
+  
   initial_hash_table_size_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_initial_hash_table_size(int32_t value) {
@@ -25916,17 +25786,9 @@ inline void UpdateByRequest_UpdateByOptions::set_initial_hash_table_size(int32_t
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.initial_hash_table_size)
 }
 
-// optional double maximum_load_factor = 5;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_maximum_load_factor() const {
-  bool value = (_has_bits_[0] & 0x00000010u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_maximum_load_factor() const {
-  return _internal_has_maximum_load_factor();
-}
+// double maximum_load_factor = 5;
 inline void UpdateByRequest_UpdateByOptions::clear_maximum_load_factor() {
   maximum_load_factor_ = 0;
-  _has_bits_[0] &= ~0x00000010u;
 }
 inline double UpdateByRequest_UpdateByOptions::_internal_maximum_load_factor() const {
   return maximum_load_factor_;
@@ -25936,7 +25798,7 @@ inline double UpdateByRequest_UpdateByOptions::maximum_load_factor() const {
   return _internal_maximum_load_factor();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_maximum_load_factor(double value) {
-  _has_bits_[0] |= 0x00000010u;
+  
   maximum_load_factor_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_maximum_load_factor(double value) {
@@ -25944,17 +25806,9 @@ inline void UpdateByRequest_UpdateByOptions::set_maximum_load_factor(double valu
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.maximum_load_factor)
 }
 
-// optional double target_load_factor = 6;
-inline bool UpdateByRequest_UpdateByOptions::_internal_has_target_load_factor() const {
-  bool value = (_has_bits_[0] & 0x00000020u) != 0;
-  return value;
-}
-inline bool UpdateByRequest_UpdateByOptions::has_target_load_factor() const {
-  return _internal_has_target_load_factor();
-}
+// double target_load_factor = 6;
 inline void UpdateByRequest_UpdateByOptions::clear_target_load_factor() {
   target_load_factor_ = 0;
-  _has_bits_[0] &= ~0x00000020u;
 }
 inline double UpdateByRequest_UpdateByOptions::_internal_target_load_factor() const {
   return target_load_factor_;
@@ -25964,7 +25818,7 @@ inline double UpdateByRequest_UpdateByOptions::target_load_factor() const {
   return _internal_target_load_factor();
 }
 inline void UpdateByRequest_UpdateByOptions::_internal_set_target_load_factor(double value) {
-  _has_bits_[0] |= 0x00000020u;
+  
   target_load_factor_ = value;
 }
 inline void UpdateByRequest_UpdateByOptions::set_target_load_factor(double value) {
@@ -25972,18 +25826,18 @@ inline void UpdateByRequest_UpdateByOptions::set_target_load_factor(double value
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.target_load_factor)
 }
 
-// optional .io.deephaven.proto.backplane.grpc.MathContext math_context = 7;
+// .io.deephaven.proto.backplane.grpc.MathContext math_context = 7;
 inline bool UpdateByRequest_UpdateByOptions::_internal_has_math_context() const {
-  bool value = (_has_bits_[0] & 0x00000001u) != 0;
-  PROTOBUF_ASSUME(!value || math_context_ != nullptr);
-  return value;
+  return this != internal_default_instance() && math_context_ != nullptr;
 }
 inline bool UpdateByRequest_UpdateByOptions::has_math_context() const {
   return _internal_has_math_context();
 }
 inline void UpdateByRequest_UpdateByOptions::clear_math_context() {
-  if (math_context_ != nullptr) math_context_->Clear();
-  _has_bits_[0] &= ~0x00000001u;
+  if (GetArenaForAllocation() == nullptr && math_context_ != nullptr) {
+    delete math_context_;
+  }
+  math_context_ = nullptr;
 }
 inline const ::io::deephaven::proto::backplane::grpc::MathContext& UpdateByRequest_UpdateByOptions::_internal_math_context() const {
   const ::io::deephaven::proto::backplane::grpc::MathContext* p = math_context_;
@@ -26001,14 +25855,14 @@ inline void UpdateByRequest_UpdateByOptions::unsafe_arena_set_allocated_math_con
   }
   math_context_ = math_context;
   if (math_context) {
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.math_context)
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOptions::release_math_context() {
-  _has_bits_[0] &= ~0x00000001u;
+  
   ::io::deephaven::proto::backplane::grpc::MathContext* temp = math_context_;
   math_context_ = nullptr;
 #ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
@@ -26024,13 +25878,13 @@ inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_Upd
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOptions::unsafe_arena_release_math_context() {
   // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.math_context)
-  _has_bits_[0] &= ~0x00000001u;
+  
   ::io::deephaven::proto::backplane::grpc::MathContext* temp = math_context_;
   math_context_ = nullptr;
   return temp;
 }
 inline ::io::deephaven::proto::backplane::grpc::MathContext* UpdateByRequest_UpdateByOptions::_internal_mutable_math_context() {
-  _has_bits_[0] |= 0x00000001u;
+  
   if (math_context_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(GetArenaForAllocation());
     math_context_ = p;
@@ -26054,9 +25908,9 @@ inline void UpdateByRequest_UpdateByOptions::set_allocated_math_context(::io::de
       math_context = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
           message_arena, math_context, submessage_arena);
     }
-    _has_bits_[0] |= 0x00000001u;
+    
   } else {
-    _has_bits_[0] &= ~0x00000001u;
+    
   }
   math_context_ = math_context;
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions.math_context)
