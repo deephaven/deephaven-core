@@ -1573,12 +1573,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @param printer The printer whose initial length should be captured
      */
     @NotNull
-    private Runnable getNothingPrintedAssertion(VisitArgs printer) {
+    private static Runnable getNothingPrintedAssertion(VisitArgs printer) {
         final int initialLen = !printer.hasStringBuilder() ? -1 : printer.builder.length();
         return () -> {
             if (printer.hasStringBuilder() && printer.builder.length() - initialLen != 0) {
                 throw new IllegalStateException(
-                        "printer.builder.length() - initialLen != 0 --> printer.builder.length() = "
+                        "printer.builder.length() != initialLen --> printer.builder.length() = "
                                 + printer.builder.length() + "; initialLen = " + initialLen);
             }
         };

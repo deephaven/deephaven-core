@@ -147,7 +147,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variableParameterizedTypes.put("myVector", new Class[] {Double.class});
 
         testOverrideClassLookups = new HashMap<>();
-        // This is here becasue in tests, QueryLanguageParser.findClass() fails trying to (re?)initialize this class
+        // This is here because in tests, QueryLanguageParser.findClass() fails trying to (re?)initialize this class
         testOverrideClassLookups.put("io.deephaven.engine.util.PyCallableWrapper", PyCallableWrapper.class);
     }
 
