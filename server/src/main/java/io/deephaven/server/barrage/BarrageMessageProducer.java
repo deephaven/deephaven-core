@@ -1409,6 +1409,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             for (final Delta delta : pendingDeltas) {
                 delta.close();
             }
+            blinkTableUpdateSize = 0;
             pendingDeltas.clear();
         }
 
