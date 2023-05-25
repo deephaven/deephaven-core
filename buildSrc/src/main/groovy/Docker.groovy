@@ -13,6 +13,7 @@ import com.github.dockerjava.api.command.InspectImageResponse
 import com.github.dockerjava.api.exception.DockerException
 import groovy.transform.CompileStatic
 import io.deephaven.tools.docker.Architecture
+import io.deephaven.tools.docker.CombinedDockerRunTask
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -167,8 +168,16 @@ class Docker {
         /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
+         * <p />
+         * Only intended for debugging, as this will often cause extra work during builds.
          */
         boolean showLogsOnSuccess;
+
+        /**
+         * How long in minutes to wait for the docker container's entrypoint to run. Defaults to
+         * 15 minutes.
+         */
+        int waitTimeMinutes = 15;
     }
     /**
      * Describes relationships between this set of tasks and other external tasks.
@@ -234,13 +243,14 @@ class Docker {
         }
 
         if (cfg.dockerfileAction) {
+            // Keep this task, it has explicit inputs and outputs
             dockerfileTask = project.tasks.register("${taskName}Dockerfile", Dockerfile) { dockerfile ->
                 cfg.dockerfileAction.execute(dockerfile)
                 dockerfile.destFile.set new File(dockerWorkspaceContents.path + 'file', 'Dockerfile')
             }
         }
 
-        // Copy the requested files into build/docker
+        // Copy the requested files into build/docker for use in the image creation/runner
         def prepareDocker = project.tasks.register("${taskName}PrepareDocker", Sync) { sync ->
             // First, apply the provided spec
             cfg.copyIn.execute(sync)
@@ -287,6 +297,60 @@ class Docker {
                 }
             }
         }
+
+        if (cfg.copyOut && !cfg.showLogsOnSuccess) {
+            // Single task with explicit inputs and outputs, to let gradle detect if it is up to date, and let docker
+            // cache what it can.
+
+            // Note that if "showLogsOnSuccess" is true, we don't run this way, since that would omit logs when cached.
+            def buildAndRun = project.tasks.register("${taskName}Run", CombinedDockerRunTask) { cacheableDockerTask ->
+                cacheableDockerTask.with {
+                    // mark inputs, depend on dockerfile task and input sync task
+                    inputs.files(makeImage.get().outputs.files)
+
+                    // mark internal output directory, Sync output will depend on this still
+                    outputs.dir(dockerCopyLocation)
+
+                    imageId.set(makeImage.get().getImageId())
+
+                    if (cfg.network) {
+                        hostConfig.network.set(cfg.network)
+                    }
+
+                    if (cfg.containerDependencies.dependsOn) {
+                        dependsOn(cfg.containerDependencies.dependsOn)
+                    }
+
+                    if (cfg.containerDependencies.finalizedBy) {
+                        finalizedBy(cfg.containerDependencies.finalizedBy)
+                    }
+
+                    if (cfg.entrypoint) {
+                        // if provided, set a run command that we'll use each time it starts
+                        entrypoint.set(cfg.entrypoint)
+                    }
+
+                    awaitStatusTimeoutSeconds.set cfg.waitTimeMinutes * 60
+
+                    remotePath.set(cfg.containerOutPath)
+                    outputDir.set(project.file(dockerCopyLocation))
+                }
+            }
+            // Sync outputs to the desired location
+            return project.tasks.register(taskName, Sync) { sync ->
+                sync.with {
+                    dependsOn buildAndRun
+
+                    // run the provided closure first
+                    cfg.copyOut.execute(sync)
+
+                    // then set the from location
+                    from dockerCopyLocation
+                }
+            }
+        }
+        // With no outputs, we can use the standard individual containers, and gradle will have to re-run each time
+        // the task is invoked, can never be marked as up to date.
 
         // Create a new container from the image above, as a workaround to extract the output from the dockerfile's
         // build steps
@@ -343,6 +407,7 @@ class Docker {
             waitContainer.with {
                 dependsOn startContainer
                 containerId.set(dockerContainerName)
+                awaitStatusTimeout.set cfg.waitTimeMinutes * 60
             }
         }
         TaskProvider<DockerLogsContainer> containerLogs = project.tasks.register("${taskName}LogsContainer", DockerLogsContainer) { logsContainer ->
