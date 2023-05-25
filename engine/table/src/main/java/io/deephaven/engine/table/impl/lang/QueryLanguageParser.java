@@ -151,6 +151,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private final HashSet<String> variablesUsed = new HashSet<>();
 
+    private final Map<String, Class<?>> nameLookupCache = new HashMap<>();
+
     private final Map<String, Class<?>> staticImportLookupCache = new HashMap<>();
 
     // We need some class to represent null. We know for certain that this one won't be used...
@@ -1327,9 +1329,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     @Override
     public Class<?> visit(NameExpr n, VisitArgs printer) {
-        // TODO: should we cache these results?
         final String nameStr = n.getNameAsString();
+        printer.append(nameStr);
 
+        return nameLookupCache.computeIfAbsent(nameStr, this::resolveName);
+    }
+
+    private Class<?> resolveName(final String nameStr) {
         /*
         @formatter:off
         JLS on how to resolve names: https://docs.oracle.com/javase/specs/jls/se11/html/jls-6.html#jls-6.5
@@ -1351,8 +1357,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         @formatter:on
          */
-        printer.append(nameStr);
-
         Class<?> ret;
         final boolean isSimpleName = nameStr.indexOf('.') < 0;
         if (isSimpleName) {
@@ -1374,7 +1378,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return ret;
         }
 
-        throw new ParserResolutionFailure("Cannot find variable or class " + n.getName());
+        throw new ParserResolutionFailure("Cannot find variable or class " + nameStr);
     }
 
     /**
