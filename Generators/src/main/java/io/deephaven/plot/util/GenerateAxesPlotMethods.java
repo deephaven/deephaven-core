@@ -171,7 +171,7 @@ public class GenerateAxesPlotMethods {
             }
         });
 
-        types.put("DateTime", new Type() {
+        types.put("Instant", new Type() {
             @Override
             public String getGenericSignature(int index) {
                 return null;
@@ -179,7 +179,7 @@ public class GenerateAxesPlotMethods {
 
             @Override
             public String getVariableType(int index) {
-                return "DateTime[]";
+                return "Instant[]";
             }
 
             @Override
@@ -568,7 +568,7 @@ public class GenerateAxesPlotMethods {
 
     private static final String[] timeTypes = {
             "Date",
-            "DateTime"
+            "Instant"
     };
 
     private static final String[] numberTypes = {
