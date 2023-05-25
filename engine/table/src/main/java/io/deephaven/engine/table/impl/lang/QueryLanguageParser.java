@@ -1591,14 +1591,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      */
     @NotNull
     private static Runnable getNothingPrintedAssertion(VisitArgs printer) {
-        final int initialLen = !printer.hasStringBuilder() ? -1 : printer.builder.length();
-        return () -> {
-            if (printer.hasStringBuilder() && printer.builder.length() - initialLen != 0) {
-                throw new IllegalStateException(
-                        "printer.builder.length() != initialLen --> printer.builder.length() = "
-                                + printer.builder.length() + "; initialLen = " + initialLen);
-            }
-        };
+        if (!printer.hasStringBuilder()) {
+            return () -> {
+            };
+        }
+        final int initialLen = printer.builder.length();
+        return () -> Assert.eq(printer.builder.length(), "printer.builder.length()", initialLen, "initialLen");
     }
 
 
