@@ -126,11 +126,11 @@ public class BooleanIntegerFloatColumnTupleSource extends AbstractTupleSource<By
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteIntFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Boolean, Values> chunk1 = chunks[0].asObjectChunk();
-        IntChunk<Values> chunk2 = chunks[1].asIntChunk();
-        FloatChunk<Values> chunk3 = chunks[2].asFloatChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk1 = chunks[0].asObjectChunk();
+        IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
+        FloatChunk<? extends Values> chunk3 = chunks[2].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteIntFloatTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }

@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 import com.google.gwt.i18n.client.NumberFormat;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.shared.data.LocalTime;
 import jsinterop.annotations.JsMethod;
 
@@ -12,6 +14,8 @@ import javax.annotation.Nonnull;
 /**
  * Wrap LocalTime values for use in JS. Provides text formatting for display and access to the underlying value.
  */
+@TsInterface
+@TsName(namespace = "dh")
 public class LocalTimeWrapper {
     private final static NumberFormat TWO_DIGIT_FORMAT = NumberFormat.getFormat("00");
     private final static NumberFormat NANOS_FORMAT = NumberFormat.getFormat("000000000");

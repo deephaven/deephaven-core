@@ -3,18 +3,18 @@
  */
 package io.deephaven.base.map;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.array.FastArrayTest;
 import io.deephaven.base.array.TrialClassA;
 import junit.framework.TestCase;
 
 import java.io.*;
 import java.util.Random;
+import java.util.function.Supplier;
 
 public class FastArrayMapLongToObjectTest extends TestCase {
 
     private FastArrayMapLongToObject<TrialClassA> constructTestMap() {
-        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
+        Supplier<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
         FastArrayMapLongToObject<TrialClassA> map = new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
         return map;
     }
@@ -613,11 +613,11 @@ public class FastArrayMapLongToObjectTest extends TestCase {
     }
 
     public void testCompareToBaseFastArrayMap() {
-        Function.Nullary<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
+        Supplier<KeyValuePairLongToObject<TrialClassA>> factoryLongToObject = new FactoryLongToObject();
         FastArrayMapLongToObject<TrialClassA> mapLongToObject =
                 new FastArrayMapLongToObject<TrialClassA>(factoryLongToObject);
 
-        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
+        Supplier<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
         FastArrayMap<LongWrapper, TrialClassA> mapObjectToObject =
                 new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
 
@@ -681,10 +681,10 @@ public class FastArrayMapLongToObjectTest extends TestCase {
 }
 
 
-class FactoryLongToObject implements Function.Nullary<KeyValuePairLongToObject<TrialClassA>> {
+class FactoryLongToObject implements Supplier<KeyValuePairLongToObject<TrialClassA>> {
 
     @Override
-    public KeyValuePairLongToObject<TrialClassA> call() {
+    public KeyValuePairLongToObject<TrialClassA> get() {
         long key = Long.MIN_VALUE;
         TrialClassA value = TrialClassA.makeNull();
         KeyValuePairLongToObject<TrialClassA> result = new KeyValuePairLongToObject<TrialClassA>(key, value);

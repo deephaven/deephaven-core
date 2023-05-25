@@ -3,26 +3,19 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
-import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * Simple source table with no partitioning support.
  */
-public class SimpleSourceTable extends SourceTable {
+public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     /**
      * @param tableDefinition A TableDefinition
@@ -49,6 +42,14 @@ public class SimpleSourceTable extends SourceTable {
     }
 
     @Override
+    protected SimpleSourceTable copy() {
+        final SimpleSourceTable result = newInstance(definition, description, componentFactory, locationProvider,
+                updateSourceRegistrar);
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
+    }
+
+    @Override
     protected final SourceTable redefine(TableDefinition newDefinition) {
         if (newDefinition.getColumnNames().equals(definition.getColumnNames())) {
             // Nothing changed - we have the same columns in the same order.
@@ -60,7 +61,7 @@ public class SimpleSourceTable extends SourceTable {
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());

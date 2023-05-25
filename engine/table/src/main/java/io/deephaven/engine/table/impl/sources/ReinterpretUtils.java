@@ -3,9 +3,15 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
+
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.util.function.Consumer;
 
 public class ReinterpretUtils {
 
@@ -16,12 +22,11 @@ public class ReinterpretUtils {
      *
      * @return the long source
      */
-    public static ColumnSource<Long> dateTimeToLongSource(ColumnSource<?> source) {
+    public static ColumnSource<Long> dateTimeToLongSource(ColumnSource<DateTime> source) {
         if (source.allowsReinterpret(long.class)) {
             return source.reinterpret(long.class);
         } else {
-            // noinspection unchecked
-            return new DateTimeAsLongColumnSource((ColumnSource<DateTime>) source);
+            return new DateTimeAsLongColumnSource(source);
         }
     }
 
@@ -32,12 +37,11 @@ public class ReinterpretUtils {
      *
      * @return the long source
      */
-    public static ColumnSource<DateTime> longToDateTimeSource(ColumnSource<?> source) {
+    public static ColumnSource<DateTime> longToDateTimeSource(ColumnSource<Long> source) {
         if (source.allowsReinterpret(DateTime.class)) {
             return source.reinterpret(DateTime.class);
         } else {
-            // noinspection unchecked
-            return new LongAsDateTimeColumnSource((ColumnSource<Long>) source);
+            return new LongAsDateTimeColumnSource(source);
         }
     }
 
@@ -48,13 +52,108 @@ public class ReinterpretUtils {
      *
      * @return the byte source
      */
-    public static ColumnSource<Byte> booleanToByteSource(ColumnSource<?> source) {
+    public static ColumnSource<Byte> booleanToByteSource(ColumnSource<Boolean> source) {
         if (source.allowsReinterpret(byte.class)) {
             return source.reinterpret(byte.class);
         } else {
-            // noinspection unchecked
-            return new BooleanAsByteColumnSource((ColumnSource<Boolean>) source);
+            return new BooleanAsByteColumnSource(source);
         }
+    }
+
+    /**
+     * Given an {@link Instant} column source turn it into a long column source, either via reinterpretation or
+     * wrapping.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source
+     */
+    @NotNull
+    public static ColumnSource<Long> instantToLongSource(final @NotNull ColumnSource<Instant> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return source.reinterpret(long.class);
+        } else {
+            return new InstantAsLongColumnSource(source);
+        }
+    }
+
+    /**
+     * Given a {@link ZonedDateTime} column source turn it into a long column source, either via reinterpretation or
+     * wrapping.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source
+     */
+    @NotNull
+    public static ColumnSource<Long> zonedDateTimeToLongSource(final @NotNull ColumnSource<ZonedDateTime> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return source.reinterpret(long.class);
+        } else {
+            return new ZonedDateTimeAsLongSource(source);
+        }
+    }
+
+    /**
+     * Given a writable DateTime column source turn it into a writable long column source via reinterpretation if
+     * possible.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Long> writableDateTimeToLongSource(WritableColumnSource<DateTime> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a writable Boolean column source turn it into a writable byte column source via reinterpretation if
+     * possible.
+     *
+     * @param source the source to turn into a byte source
+     *
+     * @return the byte source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Byte> writableBooleanToByteSource(WritableColumnSource<Boolean> source) {
+        if (source.allowsReinterpret(byte.class)) {
+            return (WritableColumnSource<Byte>) source.reinterpret(byte.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a writable {@link Instant} column source turn it into a writable long column source via reinterpretation if
+     * possible.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Long> writableInstantToLongSource(
+            final @NotNull WritableColumnSource<Instant> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a writable {@link ZonedDateTime} column source turn it into a writable long column source via
+     * reinterpretation if possible.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Long> writableZonedDateTimeToLongSource(
+            final @NotNull WritableColumnSource<ZonedDateTime> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
     }
 
     /**
@@ -63,14 +162,77 @@ public class ReinterpretUtils {
      * @param source The source to convert
      * @return If possible, the source converted to a primitive, otherwise the source
      */
+    @SuppressWarnings("unchecked")
     public static ColumnSource<?> maybeConvertToPrimitive(ColumnSource<?> source) {
         if (source.getType() == Boolean.class || source.getType() == boolean.class) {
-            return booleanToByteSource(source);
+            return booleanToByteSource((ColumnSource<Boolean>) source);
         }
         if (source.getType() == DateTime.class) {
-            return dateTimeToLongSource(source);
+            return dateTimeToLongSource((ColumnSource<DateTime>) source);
+        }
+        if (source.getType() == Instant.class) {
+            return instantToLongSource((ColumnSource<Instant>) source);
+        }
+        if (source.getType() == ZonedDateTime.class) {
+            return zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) source);
         }
         return source;
+    }
+
+
+    /**
+     * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
+     *
+     * @param source The source to convert
+     * @return If possible, the source converted to a writable primitive, otherwise the source
+     */
+    @SuppressWarnings("unchecked")
+    public static WritableColumnSource<?> maybeConvertToWritablePrimitive(WritableColumnSource<?> source) {
+        WritableColumnSource<?> result = null;
+        if (source.getType() == Boolean.class || source.getType() == boolean.class) {
+            result = writableBooleanToByteSource((WritableColumnSource<Boolean>) source);
+        } else if (source.getType() == DateTime.class) {
+            result = writableDateTimeToLongSource((WritableColumnSource<DateTime>) source);
+        } else if (source.getType() == Instant.class) {
+            result = writableInstantToLongSource((WritableColumnSource<Instant>) source);
+        } else if (source.getType() == ZonedDateTime.class) {
+            result = writableZonedDateTimeToLongSource((WritableColumnSource<ZonedDateTime>) source);
+        }
+        return result == null ? source : result;
+    }
+
+    /**
+     * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link ChunkType},
+     * else the normal ChunkType for the data type.
+     *
+     * @param dataType The data type to convert to a {@link ChunkType}
+     * @return The appropriate {@link ChunkType} to use when extracting primitives from the source
+     */
+    public static ChunkType maybeConvertToPrimitiveChunkType(@NotNull final Class<?> dataType) {
+        if (dataType == Boolean.class || dataType == boolean.class) {
+            return ChunkType.Byte;
+        }
+        if (dataType == DateTime.class || dataType == Instant.class || dataType == ZonedDateTime.class) {
+            return ChunkType.Long;
+        }
+        return ChunkType.fromElementType(dataType);
+    }
+
+    /**
+     * If {@code dataType} is something that we prefer to handle as a primitive, emit the appropriate {@link Class data
+     * type to use}, else return {@code dataType}.
+     *
+     * @param dataType The data type to examine
+     * @return The appropriate data type to use when extracting primitives from the source
+     */
+    public static Class<?> maybeConvertToPrimitiveDataType(@NotNull final Class<?> dataType) {
+        if (dataType == Boolean.class || dataType == boolean.class) {
+            return byte.class;
+        }
+        if (dataType == DateTime.class || dataType == Instant.class || dataType == ZonedDateTime.class) {
+            return long.class;
+        }
+        return dataType;
     }
 
     /**
@@ -80,25 +242,34 @@ public class ReinterpretUtils {
      * @param source The source to convert
      * @return Reinterpret or box source back to the original type if possible
      */
-    public static ColumnSource<?> convertToOriginal(@NotNull final Class<?> originalType,
+    public static ColumnSource<?> convertToOriginal(
+            @NotNull final Class<?> originalType,
             @NotNull final ColumnSource<?> source) {
-        if (originalType == Boolean.class) {
-            if (source.getType() != byte.class) {
+
+        final Consumer<Class<?>> validateSourceType = expectedType -> {
+            if (source.getType() != expectedType) {
                 throw new UnsupportedOperationException(
-                        "Cannot convert column of type " + source.getType() + " to Boolean");
+                        "Cannot convert column of type " + source.getType() + " to " + originalType);
             }
+        };
+
+        if (originalType == Boolean.class) {
+            validateSourceType.accept(byte.class);
             // noinspection unchecked
             return source.allowsReinterpret(Boolean.class) ? source.reinterpret(Boolean.class)
                     : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
         }
         if (originalType == DateTime.class) {
-            if (source.getType() != long.class) {
-                throw new UnsupportedOperationException(
-                        "Cannot convert column of type " + source.getType() + " to DateTime");
-            }
+            validateSourceType.accept(long.class);
             // noinspection unchecked
             return source.allowsReinterpret(DateTime.class) ? source.reinterpret(DateTime.class)
                     : new BoxedColumnSource.OfDateTime((ColumnSource<Long>) source);
+        }
+        if (originalType == Instant.class) {
+            validateSourceType.accept(long.class);
+            // noinspection unchecked
+            return source.allowsReinterpret(Instant.class) ? source.reinterpret(Instant.class)
+                    : new BoxedColumnSource.OfInstant((ColumnSource<Long>) source);
         }
         throw new UnsupportedOperationException("Unsupported original type " + originalType);
     }

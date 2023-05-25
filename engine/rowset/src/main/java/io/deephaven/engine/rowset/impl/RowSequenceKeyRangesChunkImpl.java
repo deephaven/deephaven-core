@@ -4,7 +4,6 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -372,7 +371,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         chunkToFill.setSize(0);
         perKeyIndex((v) -> {
             chunkToFill.add(v);

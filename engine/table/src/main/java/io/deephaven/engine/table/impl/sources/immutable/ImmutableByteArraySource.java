@@ -39,7 +39,10 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DByteArraySource}.
  */
-public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSource<Byte>
+        implements ImmutableColumnSourceGetDefaults.ForByte, WritableColumnSource<Byte>, FillUnordered<Values>,
+        InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
+        /* MIXIN_IMPLS */ {
     private byte[] data;
 
     // region constructor
@@ -74,13 +77,13 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         return getUnsafe(rowKey);
     }
 
-    public final byte getUnsafe(long index) {
-        return data[(int)index];
+    public final byte getUnsafe(long rowKey) {
+        return data[(int)rowKey];
     }
 
-    public final byte getAndSetUnsafe(long index, byte newValue) {
-        byte oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final byte getAndSetUnsafe(long rowKey, byte newValue) {
+        byte oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 
@@ -113,22 +116,42 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         }
     }
 
-    private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableByteChunk<? super Values> asByteChunk = destination.asWritableByteChunk();
+    // region fillChunkByRanges
+    /* TYPE_MIXIN */ void fillChunkByRanges(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableByteChunk<? super Values> chunk = destination.asWritableByteChunk();
+        // endregion chunkDecl
         final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = (int)(end - start + 1);
-            asByteChunk.copyFromTypedArray(data, (int)start, destPosition.getAndAdd(rangeLength), rangeLength);
+            final int length = (int)(end - start + 1);
+            // region copyFromTypedArrayImmutable
+            chunk.copyFromTypedArray(data, (int)start, destPosition.getAndAdd(length), length);
+            // endregion copyFromTypedArrayImmutable
         });
-        asByteChunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.intValue());
     }
+    // endregion fillChunkByRanges
 
-    private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableByteChunk<? super Values> asByteChunk = destination.asWritableByteChunk();
+    // region fillChunkByKeys
+    /* TYPE_MIXIN */ void fillChunkByKeys(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableByteChunk<? super Values> chunk = destination.asWritableByteChunk();
+        // endregion chunkDecl
         final MutableInt destPosition = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asByteChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
-        asByteChunk.setSize(destPosition.intValue());
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
+            // endregion conversion
+        });
+        chunk.setSize(destPosition.intValue());
     }
+    // endregion fillChunkByKeys
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
@@ -172,42 +195,82 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         }
     }
 
-    private void fillFromChunkByKeys(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final ByteChunk<? extends Values> asByteChunk = src.asByteChunk();
+    // region fillFromChunkByKeys
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final ByteChunk<? extends Values> chunk = src.asByteChunk();
+        // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> set(key, asByteChunk.get(srcPos.getAndIncrement())));
-    }
-
-    private void fillFromChunkByRanges(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final ByteChunk<? extends Values> asByteChunk = src.asByteChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = (int)(end - start + 1);
-            asByteChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, (int)start, rangeLength);
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            set(key, chunk.get(srcPos.getAndIncrement()));
+            // endregion conversion
         });
     }
+    // endregion fillFromChunkByKeys
 
+    // region fillFromChunkByRanges
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final ByteChunk<? extends Values> chunk = src.asByteChunk();
+        // endregion chunkDecl
+        final MutableInt srcPos = new MutableInt(0);
+        rowSequence.forAllRowKeyRanges((long start, long end) -> {
+            final int length = (int)(end - start + 1);
+            // region copyToTypedArrayImmutable
+            chunk.copyToTypedArray(srcPos.getAndAdd(length), data, (int)start, length);
+            // endregion copyToTypedArrayImmutable
+        });
+    }
+    // endregion fillFromChunkByRanges
+
+    // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
-        final ByteChunk<? extends Values> asByteChunk = src.asByteChunk();
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final ByteChunk<? extends Values> chunk = src.asByteChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
-            set(keys.get(ii), asByteChunk.get(ii));
+            // region conversion
+            set(keys.get(ii), chunk.get(ii));
+            // endregion conversion
         }
     }
+    // endregion fillFromChunkUnordered
 
+    // region fillChunkUnordered
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableByteChunk<? super Values> byteDest = dest.asWritableByteChunk();
+    public /* TYPE_MIXIN */ void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableByteChunk<? super Values> chunk = dest.asWritableByteChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
             final long longKey = keys.get(ii);
             if (longKey == RowSet.NULL_ROW_KEY) {
-                byteDest.set(ii, NULL_BYTE);
+                chunk.set(ii, NULL_BYTE);
             } else {
                 final int key = (int)longKey;
-                byteDest.set(ii, getUnsafe(key));
+                // region conversion
+                chunk.set(ii, getUnsafe(key));
+                // endregion conversion
             }
         }
     }
+    // endregion fillChunkUnordered
 
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
@@ -235,8 +298,9 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        // we don't track previous values, so we don't care to do any work
+    public void prepareForParallelPopulation(@NotNull final RowSequence rowSequence) {
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
     // region getArray
@@ -251,7 +315,7 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
     }
     // endregion setArray
 
-    // region reinterpret
+    // region reinterpretation
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
@@ -260,7 +324,8 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
 
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
                @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         //noinspection unchecked
          return (ColumnSource<ALTERNATE_DATA_TYPE>) new ByteAsBooleanColumnSource(this);
     }
-    // endregion reinterpret
+    // endregion reinterpretation
 }

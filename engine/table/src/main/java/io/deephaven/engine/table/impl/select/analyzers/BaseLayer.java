@@ -11,6 +11,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -76,9 +77,9 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse() {
+    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllSources) {
         final Map<String, Set<String>> result = new HashMap<>();
-        if (publishTheseSources) {
+        if (publishTheseSources || forcePublishAllSources) {
             for (final String col : sources.keySet()) {
                 result.computeIfAbsent(col, dummy -> new HashSet<>()).add(col);
             }

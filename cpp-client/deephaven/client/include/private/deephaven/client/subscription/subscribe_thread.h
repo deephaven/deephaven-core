@@ -4,17 +4,22 @@
 #pragma once
 
 #include <memory>
-#include "deephaven/client/ticking.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
-#include "deephaven/client/utility/misc.h"
+#include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/proto/ticket.pb.h"
 
 namespace deephaven::client::subscription {
-std::shared_ptr<SubscriptionHandle> startSubscribeThread(
-    std::shared_ptr<deephaven::client::server::Server> server,
-    deephaven::client::utility::Executor *flightExecutor,
-    std::shared_ptr<deephaven::client::utility::ColumnDefinitions> columnDefinitions,
-    const io::deephaven::proto::backplane::grpc::Ticket &ticket,
-    std::shared_ptr<TickingCallback> callback);
+class SubscriptionThread {
+  typedef deephaven::client::server::Server Server;
+  typedef deephaven::client::utility::Executor Executor;
+  typedef deephaven::dhcore::table::Schema Schema;
+  typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
+  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+
+public:
+  static std::shared_ptr<SubscriptionHandle> start(std::shared_ptr<Server> server,
+      Executor *flightExecutor, std::shared_ptr<Schema> schema,
+      const Ticket &ticket, std::shared_ptr<TickingCallback> callback);
+};
 }  // namespace deephaven::client::subscription

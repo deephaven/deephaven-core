@@ -26,6 +26,8 @@ import java.util.Map;
  */
 class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final ObjectArraySource resultColumn;
+    // region actualResult
+    // endregion actualResult
     private final boolean minimum;
     private final String name;
 
@@ -153,7 +155,9 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
+        // region getResultColumns
         return Collections.<String, ColumnSource<?>>singletonMap(name, resultColumn);
+        // endregion getResultColumns
     }
 
     @Override

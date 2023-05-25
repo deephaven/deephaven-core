@@ -9,32 +9,39 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional, Callable
+from enum import Enum
+from enum import auto
+from typing import Any, Optional, Callable, Dict
+from typing import Sequence, List, Union, Protocol
 
 import jpy
 import numpy as np
 
-from deephaven import DHError, dtypes
+from deephaven import DHError
+from deephaven import dtypes
 from deephaven._jpy import strict_cast
-from deephaven._wrapper import JObjectWrapper, unwrap
+from deephaven._wrapper import JObjectWrapper
+from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
-from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
+from deephaven.filters import Filter, and_, or_
+from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
+from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.ugp import auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
 # Table
+_J_Table = jpy.get_type("io.deephaven.engine.table.Table")
+_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
-_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
-_JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
+_JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+_JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
+_JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -52,9 +59,289 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
+# Rollup Table and Tree Table
+_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
+_JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
+_JRollupTableNodeOperationsRecorder = jpy.get_type(
+    "io.deephaven.engine.table.hierarchical.RollupTable$NodeOperationsRecorder")
+_JTreeTableNodeOperationsRecorder = jpy.get_type(
+    "io.deephaven.engine.table.hierarchical.TreeTable$NodeOperationsRecorder")
+_JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$NodeType")
+_JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
+_JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
+_JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+
 # For unittest vectorization
 _test_vectorization = False
 _vectorized_count = 0
+
+
+class NodeType(Enum):
+    """An enum of node types for RollupTable"""
+    AGGREGATED = _JNodeType.Aggregated
+    """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    of the RollupTable. """
+    CONSTITUENT = _JNodeType.Constituent
+    """Nodes at the leaf level when meth:`~deephaven.table.Table.rollup` method is called with 
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    and types from the source table of the RollupTable. """
+
+
+class SearchDisplayMode(Enum):
+    """An enum of search display modes for layout hints"""
+    DEFAULT = _JSearchDisplayMode.Default
+    """Use the system default. This may depend on your user and/or system settings."""
+    SHOW = _JSearchDisplayMode.Show
+    """Permit the search bar to be displayed, regardless of user or system settings."""
+    HIDE = _JSearchDisplayMode.Hide
+    """Hide the search bar, regardless of user or system settings."""
+
+
+class _FormatOperationsRecorder(Protocol):
+    """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
+
+    def format_column(self, formulas: Union[str, List[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_columns` operation applied to nodes."""
+        formulas = to_sequence(formulas)
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatColumns(formulas))
+
+    def format_row_where(self, cond: str, formula: str):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_row_where` operation applied to
+        nodes."""
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
+
+    def format_column_where(self, col: str, cond: str, formula: str):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_column_where` operation applied to
+        nodes."""
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatColumnWhere(col, cond, formula))
+
+
+class _SortOperationsRecorder(Protocol):
+    """A mixin for creating sort operations to be applied to individual nodes of either RollupTable or
+    TreeTable."""
+
+    def sort(self, order_by: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.sort` operation applied to nodes."""
+        order_by = to_sequence(order_by)
+        j_sort_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JSortOperationsRecorder)
+        return self.__class__(j_sort_ops_recorder.sort(order_by))
+
+    def sort_descending(self, order_by: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.sort_descending` applied to nodes."""
+        order_by = to_sequence(order_by)
+        j_sort_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JSortOperationsRecorder)
+        return self.__class__(j_sort_ops_recorder.sortDescending(order_by))
+
+
+class _FilterOperationsRecorder(Protocol):
+    """A mixin for creating filter operations to be applied to individual nodes of either RollupTable or
+    TreeTable."""
+
+    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
+        j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
+        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
+
+
+class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                   _SortOperationsRecorder):
+    """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
+    include column formatting and sorting.
+
+    Note: It should not be instantiated directly. User code must call :meth:`~RollupTable.node_operation_recorder` to
+    create an instance of the recorder.
+    """
+
+    j_object_type = _JRollupTableNodeOperationsRecorder
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_node_ops_recorder
+
+    def __init__(self, j_node_ops_recorder: jpy.JType):
+        self.j_node_ops_recorder = j_node_ops_recorder
+
+
+class RollupTable(JObjectWrapper):
+    """ A RollupTable is generated as a result of applying the :meth:`~deephaven.table.Table.rollup` operation on a
+    :class:`~deephaven.table.Table`.
+
+    A RollupTable aggregates by the grouping columns, and then creates a hierarchical table which re-aggregates
+    using one less grouping column on each level.
+
+    Note: RollupTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JRollupTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_rollup_table
+
+    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
+                 by: Sequence[str]):
+        self.j_rollup_table = j_rollup_table
+        self.aggs = aggs
+        self.include_constituents = include_constituents
+        self.by = by
+
+    def node_operation_recorder(self, node_type: NodeType) -> RollupNodeOperationsRecorder:
+        """Creates a RollupNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this RollupTable. The recorded node operations will be applied only to the node of the
+        provided NodeType. See :class:`NodeType` for details.
+
+        Args:
+            node_type (NodeType): the type of node tables that the recorded operations will be applied to; if it is
+                :attr:`NodeType.CONSTITUENT`, the RollupTable must be created with include_constituents=True.
+
+        Returns:
+            a RollupNodeOperationsRecorder
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupNodeOperationsRecorder(j_node_ops_recorder=self.j_rollup_table.makeNodeOperationsRecorder(
+                node_type.value))
+        except Exception as e:
+            raise DHError(e, "failed to create a RollupNodeOperationsRecorder.") from e
+
+    def with_node_operations(self, recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
+        """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
+        snapshots requested by the Deephaven UI.
+
+        Args:
+            recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
+                the node operations to be applied, they must be ones created by calling the 'node_operation_recorder'
+                method on the same table.
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(
+                j_rollup_table=self.j_rollup_table.withNodeOperations(
+                    [op.j_node_ops_recorder for op in recorders]),
+                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_node_operations on RollupTable failed.") from e
+
+    def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> RollupTable:
+        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s)
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
+                               include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_filters operation on RollupTable failed.") from e
+
+
+class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                 _SortOperationsRecorder, _FilterOperationsRecorder):
+    """Recorder for node-level operations to be applied when gathering snapshots of TreeTable. Supported operations
+    include column formatting, sorting, and filtering.
+
+    Note: It should not be instantiated directly. User code must call :meth:`~TreeTable.node_operation_recorder` to
+    create an instance of the recorder.
+    """
+
+    j_object_type = _JTreeTableNodeOperationsRecorder
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_node_ops_recorder
+
+    def __init__(self, j_node_ops_recorder: jpy.JType):
+        self.j_node_ops_recorder = j_node_ops_recorder
+
+
+class TreeTable(JObjectWrapper):
+    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a
+    :class:`~deephaven.table.Table`.
+
+    A TreeTable presents a hierarchically structured  "tree" view of a table where parent-child relationships are expressed
+    by an "id" and a "parent" column. The id column should represent a unique identifier for a given row, and the parent
+    column indicates which row is the parent for a given row.
+
+    Note: TreeTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JTreeTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_tree_table
+
+    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
+        self.j_tree_table = j_tree_table
+        self.id_col = id_col
+        self.parent_col = parent_col
+
+    def node_operation_recorder(self) -> TreeNodeOperationsRecorder:
+        """Creates a TreepNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this TreeTable.
+
+        Returns:
+            a TreeNodeOperationsRecorder
+        """
+        return TreeNodeOperationsRecorder(j_node_ops_recorder=self.j_tree_table.makeNodeOperationsRecorder())
+
+    def with_node_operations(self, recorder: TreeNodeOperationsRecorder) -> TreeTable:
+        """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots
+        requested by the Deephaven UI.
+
+        Args:
+            recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
+                applied, it must be created by calling the 'node_operation_recorder' method on the same table.
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+
+        try:
+            return TreeTable(
+                j_tree_table=self.j_tree_table.withNodeOperations(recorder.j_node_ops_recorder),
+                id_col=self.id_col, parent_col=self.parent_col)
+        except Exception as e:
+            raise DHError(e, "with_node_operations on TreeTable failed.") from e
+
+    def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> TreeTable:
+        """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s)
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+
+        try:
+            return TreeTable(j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter), id_col=self.id_col,
+                             parent_col=self.parent_col)
+        except Exception as e:
+            raise DHError(e, "with_filters operation on TreeTable failed.") from e
 
 
 def _j_py_script_session() -> _JPythonScriptSession:
@@ -185,15 +472,6 @@ class SortDirection(Enum):
     """"""
 
 
-class AsOfMatchRule(Enum):
-    """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
-    operation. """
-    LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
-    LESS_THAN = _JAsOfMatchRule.LESS_THAN
-    GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
-    GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
-
-
 def _sort_column(col, dir_):
     return (_JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
         _JColumnName.of(col)))
@@ -221,8 +499,7 @@ class Table(JObjectWrapper):
     data ingestion operations, queries, aggregations, joins, etc.
 
     """
-
-    j_object_type = jpy.get_type("io.deephaven.engine.table.Table")
+    j_object_type = _J_Table
 
     def __init__(self, j_table: jpy.JType):
         self.j_table = jpy.cast(j_table, self.j_object_type)
@@ -231,6 +508,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._is_flat = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -261,6 +539,13 @@ class Table(JObjectWrapper):
         return self._is_refreshing
 
     @property
+    def is_flat(self) -> bool:
+        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
+        if self._is_flat is None:
+            self._is_flat = self.j_table.isFlat()
+        return self._is_flat
+
+    @property
     def columns(self) -> List[Column]:
         """The column definitions of the table."""
         if self._schema:
@@ -277,6 +562,34 @@ class Table(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
+
+    def attributes(self) -> Dict[str, Any]:
+        """Returns all the attributes defined on the table."""
+        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        return j_map_to_dict(j_map)
+
+    def with_attributes(self, attrs: Dict[str, Any]) -> Table:
+        """Returns a new Table that has the provided attributes defined on it and shares the underlying data and schema
+        with this table.
+
+        Note, the table attributes are immutable once defined, and are mostly used internally by the Deephaven
+        engine. For advanced users, certain predefined plug-in attributes provide a way to extend Deephaven with
+        custom-built plug-ins.
+
+        Args:
+            attrs (Dict[str, Any]): a dict of table attribute names and their values
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_map = j_hashmap(attrs)
+            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+        except Exception as e:
+            raise DHError(e, "failed to create a table with attributes.") from e
 
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
@@ -301,16 +614,12 @@ class Table(JObjectWrapper):
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
 
-    def snapshot(self, source_table: Table, do_init: bool = False, cols: Union[str, List[str]] = None) -> Table:
-        """Produces an in-memory copy of a source table that refreshes when this table changes.
+    def flatten(self) -> Table:
+        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
+        return Table(j_table=self.j_table.flatten())
 
-        Note, this table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Table): the table to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of this table to be included in the snapshot, default is
-                None, meaning all the columns
+    def snapshot(self) -> Table:
+        """Returns a static snapshot table.
 
         Returns:
             a new table
@@ -319,26 +628,32 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init, *cols))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.snapshot())
         except Exception as e:
-            raise DHError(message="failed to create a snapshot table.") from e
+            raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_history(self, source_table: Table) -> Table:
-        """Produces an in-memory history of a source table that adds a new snapshot when this table (trigger table)
-        changes.
+    def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
+                      incremental: bool = False, history: bool = False) -> Table:
+        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
-        The trigger table is often a time table that adds new rows at a regular, user-defined interval.
-
-        Columns from the trigger table appear in the result table. If the trigger and source tables have columns with
-        the same name, an error will be raised. To avoid this problem, rename conflicting columns.
-
-        Because snapshot_history stores a copy of the source table for every trigger event, large source tables or
-        rapidly changing trigger tables can result in large memory usage.
+        When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
+        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
+        empty, the "stamp key" will be represented by NULL values.
 
         Args:
-            source_table (Table): the table to be snapshot
+            trigger_table (Table): the trigger table
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
 
         Returns:
             a new table
@@ -347,10 +662,11 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            with auto_locking_ctx(self, source_table):
-                return Table(j_table=self.j_table.snapshotHistory(source_table.j_table))
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
+            with auto_locking_ctx(self, trigger_table):
+                return Table(j_table=self.j_table.snapshotWhen(trigger_table.j_table, options))
         except Exception as e:
-            raise DHError(message="failed to create a snapshot history table.") from e
+            raise DHError(message="failed to create a snapshot_when table.") from e
 
     #
     # Table operation category: Select
@@ -550,7 +866,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table select operation failed.") from e
 
     def select_distinct(self, formulas: Union[str, Sequence[str]] = None) -> Table:
-        """The select_distinct method creates a new table containing all of the unique values for a set of key
+        """The select_distinct method creates a new table containing all the unique values for a set of key
         columns. When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in
         the selected columns.
 
@@ -594,7 +910,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(j_table=self.j_table.where(*filters))
+                return Table(j_table=self.j_table.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -640,12 +956,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
-    def where_one_of(self, filters: Union[str, Sequence[str]] = None) -> Table:
+    def where_one_of(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> Table:
         """The where_one_of method creates a new table containing rows from the source table, where the rows match at
         least one filter.
 
         Args:
-            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -656,9 +972,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(
-                    j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
-                )
+                return Table(j_table=self.j_table.where(or_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -737,18 +1051,22 @@ class Table(JObjectWrapper):
     #
     # region Sort
     def restrict_sort_to(self, cols: Union[str, Sequence[str]]):
-        """The restrict_sort_to method only allows sorting on specified table columns. This can be useful to prevent
-        users from accidentally performing expensive sort operations as they interact with tables in the UI.
+        """The restrict_sort_to method adjusts the input table to produce an output table that only allows sorting on
+        specified table columns. This can be useful to prevent users from accidentally performing expensive sort
+        operations as they interact with tables in the UI.
 
         Args:
             cols (Union[str, Sequence[str]]): the column name(s)
+
+        Returns:
+            a new table
 
         Raises:
             DHError
         """
         try:
             cols = to_sequence(cols)
-            return self.j_table.restrictSortTo(*cols)
+            return Table(self.j_table.restrictSortTo(*cols))
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
@@ -824,7 +1142,7 @@ class Table(JObjectWrapper):
 
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> Table:
-        """The natural_join method creates a new table containing all of the rows and columns of this table,
+        """The natural_join method creates a new table containing all the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal. If there is no matching key in the right table, appended row values are NULL.
@@ -860,7 +1178,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table natural_join operation failed.") from e
 
     def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
-        """The exact_join method creates a new table containing all of the rows and columns of this table plus
+        """The exact_join method creates a new table containing all the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal.
@@ -930,9 +1248,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
-        """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+        """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going over. If there is no matching key in the right table, appended row
@@ -940,12 +1257,12 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new table
 
@@ -953,20 +1270,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
+                return Table(j_table=table_op.aj(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
-        """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+        """The reverse-as-of join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going under. If there is no matching key in the right table, appended row
@@ -974,12 +1287,116 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            with auto_locking_ctx(self, table):
+                return Table(j_table=table_op.raj(table.j_table, on, joins))
+        except Exception as e:
+            raise DHError(e, "table reverse-as-of join operation failed.") from e
+
+    def range_join(self, table: Table, on: Union[str, List[str]], aggs: Union[Aggregation, List[Aggregation]]) -> Table:
+        """The range_join method creates a new table containing all the rows and columns of the left table,
+        plus additional columns containing aggregated data from the right table. For columns appended to the
+        left table (joins), cell values equal aggregations over vectors of values from the right table.
+        These vectors are formed from all values in the right table where the right table keys fall within the
+        ranges of keys defined by the left table (responsive ranges).
+
+        range_join is a join plus aggregation that (1) joins arrays of data from the right table onto the left table,
+        and then (2) aggregates over the joined data. Oftentimes this is used to join data for a particular time range
+        from the right table onto the left table.
+
+        Rows from the right table with null or NaN key values are discarded; that is, they are never included in the
+        vectors used for aggregation.  For all rows that are not discarded, the right table must be sorted according
+        to the right range column for all rows within a group.
+
+        Join key ranges, specified by the 'on' argument, are defined by zero-or-more exact join matches and a single
+        range join match. The range join match must be the last match in the list.
+
+        The exact match expressions are parsed as in other join operations. That is, they are either a column name
+        common to both tables or a column name from the left table followed by an equals sign followed by a column
+        name from the right table.
+        Examples:
+            Match on the same column name in both tables:
+                "common_column"
+            Match on different column names in each table:
+                "left_column = right_column"
+                or
+                "left_column == right_column"
+
+        The range match expression is expressed as a ternary logical expression, expressing the relationship between
+        the left start column, the right range column, and the left end column. Each column name pair is separated by
+        a logical operator, either < or <=. Additionally, the entire expression may be preceded by a left arrow <-
+        and/or followed by a right arrow ->.  The arrows indicate that range match can 'allow preceding' or 'allow
+        following' to match values outside the explicit range. 'Allow preceding' means that if no matching right
+        range column value is equal to the left start column value, the immediately preceding matching right row
+        should be included in the aggregation if such a row exists. 'Allow following' means that if no matching right
+        range column value is equal to the left end column value, the immediately following matching right row should
+        be included in the aggregation if such a row exists.
+        Examples:
+            For less than paired with greater than:
+               "left_start_column < right_range_column < left_end_column"
+            For less than or equal paired with greater than or equal:
+               "left_start_column <= right_range_column <= left_end_column"
+            For less than or equal (allow preceding) paired with greater than or equal (allow following):
+               "<- left_start_column <= right_range_column <= left_end_column ->"
+
+        Special Cases
+            In order to produce aggregated output, range match expressions must define a range of values to aggregate
+            over. There are a few noteworthy special cases of ranges.
+
+            Empty Range
+            An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right
+            rows were found using the exact join matches, or none were in range according to the range join match.
+
+            Single-value Ranges
+            A single-value range is a range where the left row's values for the left start column and left end
+            column are equal and both relative matches are inclusive (<= and >=, respectively). For a single-value
+            range, only rows within the bucket where the right range column matches the single value are included in
+            the output aggregations.
+
+            Invalid Ranges
+            An invalid range occurs in two scenarios:
+                (1) When the range is inverted, i.e., when the value of the left start column is greater than the value
+                    of the left end column.
+                (2) When either relative-match is exclusive (< or >) and the value in the left start column is equal to
+                    the value in the left end column.
+            For invalid ranges, the result row will be null for all aggregation output columns.
+
+            Undefined Ranges
+            An undefined range occurs when either the left start column or the left end column is NaN. For rows with an
+            undefined range, the corresponding output values will be null (as with invalid ranges).
+
+            Unbounded Ranges
+            A partially or fully unbounded range occurs when either the left start column or the left end column is
+            null. If the left start column value is null and the left end column value is non-null, the range is
+            unbounded at the beginning, and only the left end column subexpression will be used for the match. If the
+            left start column value is non-null and the left end column value is null, the range is unbounded at the
+            end, and only the left start column subexpression will be used for the match. If the left start column
+            and left end column values are null, the range is unbounded, and all rows will be included.
+
+        Note: At this time, implementations only support static tables. This operation remains under active development.
+
+        Args:
+            table (Table): the right table of the join
+            on (Union[str, List[str]]): the match expression(s) that must include zero-or-more exact match expression,
+                and exactly one range match expression as described above
+            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
+                the right table for each row from this Table
 
         Returns:
             a new table
@@ -989,17 +1406,11 @@ class Table(JObjectWrapper):
         """
         try:
             on = to_sequence(on)
-            joins = to_sequence(joins)
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
-            with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
+            aggs = to_sequence(aggs)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            return Table(j_table=self.j_table.rangeJoin(table.j_table, j_array_list(on), j_agg_list))
         except Exception as e:
-            raise DHError(e, "table reverse-as-of join operation failed.") from e
+            raise DHError(e, message="table range_join operation failed.") from e
 
     # endregion
 
@@ -1533,7 +1944,7 @@ class Table(JObjectWrapper):
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
-                     column_groups: List[dict] = None) -> Table:
+                     column_groups: List[dict] = None, search_display_mode: SearchDisplayMode = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
@@ -1542,12 +1953,16 @@ class Table(JObjectWrapper):
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Union[str, List[str]]): the columns to hide.
-            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI.
                 The dicts can specify the following:
 
-                name (str): The group name
-                children (List[str]): The
-                color (Optional[str]): The hex color string or Deephaven color name
+                * name (str): The group name
+                * children (List[str]): The column names in the group
+                * color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
+                or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
+                :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
+                use the default value configured by the user and system settings.
 
         Returns:
             a new table with the layout hints set
@@ -1574,6 +1989,10 @@ class Table(JObjectWrapper):
                 for group in column_groups:
                     _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
                                                        group.get("color", ""))
+
+            if search_display_mode is not None:
+                _j_layout_hint_builder.setSearchBarAccess(search_display_mode.value)
+
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
@@ -1605,7 +2024,7 @@ class Table(JObjectWrapper):
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
@@ -1621,7 +2040,8 @@ class Table(JObjectWrapper):
         try:
             ops = to_sequence(ops)
             by = to_sequence(by)
-            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 
@@ -1629,7 +2049,7 @@ class Table(JObjectWrapper):
         """Extracts a subset of a table by row positions into a new Table.
 
           If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head(N)`
+          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
           The start must be less than or equal to the stop.
 
           If the start is positive and the stop is negative, then the start is counted from the beginning of the
@@ -1637,7 +2057,7 @@ class Table(JObjectWrapper):
           rows but the first and last. If the stop is before the start, the result is an empty table.
 
           If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail(N)`.
+          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
           If the start is negative and the stop is negative, they are both counted from the end of the
           table. For example, slice(-2, -1) returns the second to last row of the table.
@@ -1656,6 +2076,102 @@ class Table(JObjectWrapper):
             return Table(j_table=self.j_table.slice(start, stop))
         except Exception as e:
             raise DHError(e, "table slice operation failed.") from e
+
+    def rollup(self, aggs: Union[Aggregation, Sequence[Aggregation]], by: Union[str, Sequence[str]] = None,
+               include_constituents: bool = False) -> RollupTable:
+        """Creates a rollup table.
+
+         A rollup table aggregates by the specified columns, and then creates a hierarchical table which re-aggregates
+         using one less by column on each level. The column that is no longer part of the aggregation key is
+         replaced with null on each level.
+
+         Note some aggregations can not be used in creating a rollup tables, these include: group, partition, median,
+         pct, weighted_avg
+
+        Args:
+            aggs (Union[Aggregation, Sequence[Aggregation]]): the aggregation(s)
+            by (Union[str, Sequence[str]]): the group-by column name(s), default is None
+            include_constituents (bool): whether to include the constituent rows at the leaf level, default is False
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            aggs = to_sequence(aggs)
+            by = to_sequence(by)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            if not by:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents), aggs=aggs,
+                                   include_constituents=include_constituents, by=by)
+            else:
+                return RollupTable(j_rollup_table=self.j_table.rollup(j_agg_list, include_constituents, by),
+                                   aggs=aggs, include_constituents=include_constituents, by=by)
+        except Exception as e:
+            raise DHError(e, "table rollup operation failed.") from e
+
+    def tree(self, id_col: str, parent_col: str, promote_orphans: bool = False) -> TreeTable:
+        """Creates a hierarchical tree table.
+
+        The structure of the table is encoded by an "id" and a "parent" column. The id column should represent a unique
+        identifier for a given row, and the parent column indicates which row is the parent for a given row. Rows that
+        have a None parent are part of the "root" table.
+
+        It is possible for rows to be "orphaned" if their parent is non-None and does not exist in the table. These
+        rows will not be present in the resulting tree. If this is not desirable, they could be promoted to become
+        children of the root table by setting 'promote_orphans' argument to True.
+
+        Args:
+            id_col (str): the name of a column containing a unique identifier for a particular row in the table
+            parent_col (str): the name of a column containing the parent's identifier, {@code null} for rows that are
+                part of the root table
+            promote_orphans (bool): whether to promote node tables whose parents don't exist to be children of the
+                root node, default is False
+
+        Returns:
+            a new TreeTable organized according to the parent-child relationships expressed by id_col and parent_col
+
+        Raises:
+            DHError
+        """
+        try:
+            if promote_orphans:
+                with auto_locking_ctx(self):
+                    j_table = _JTreeTable.promoteOrphans(self.j_table, id_col, parent_col)
+            else:
+                j_table = self.j_table
+
+            return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col, parent_col=parent_col)
+        except Exception as e:
+            raise DHError(e, "table tree operation failed.") from e
+
+    def await_update(self, timeout: int = None) -> bool:
+        """Waits until either this refreshing Table is updated or the timeout elapses if provided.
+
+        Args:
+            timeout (int): the maximum time to wait in milliseconds, default is None, meaning no timeout
+
+        Returns:
+            True when the table is updated or False when the timeout has been reached.
+
+        Raises:
+            DHError
+        """
+        if not self.is_refreshing:
+            raise DHError(message="await_update can only be called on refreshing tables.")
+
+        updated = True
+        try:
+            if timeout is not None:
+                updated = self.j_table.awaitUpdate(timeout)
+            else:
+                self.j_table.awaitUpdate()
+        except Exception as e:
+            raise DHError(e, "await_update was interrupted.") from e
+        else:
+            return updated
 
 
 class PartitionedTable(JObjectWrapper):
@@ -2102,22 +2618,10 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "reverse operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot(self, source_table: Union[Table, PartitionedTableProxy], do_init: bool = False,
-                 cols: Union[str, List[str]] = None) -> PartitionedTableProxy:
-        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying
-        partitioned table with the provided source table or PartitionedTableProxy, and produces a new
-        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
-
-        In the case of source table being another PartitionedTableProxy, the :meth:`~Table.snapshot` table operation
-        is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
-
-        Note, the constituent tables are often time tables that add new rows at a regular, user-defined interval.
-
-        Args:
-            source_table (Union[Table, PartitionedTableProxy]): the table or PartitionedTableProxy to be snapshot
-            do_init (bool): whether to snapshot when this method is initially called, default is False
-            cols (Union[str, List[str]]): names of the columns of the constituent table to be included in the snapshot,
-                default is None, meaning all the columns
+    def snapshot(self) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot` table operation to all constituent tables of the underlying partitioned
+        table, and produces a new PartitionedTableProxy with the result tables as the constituents of its underlying
+        partitioned table.
 
         Returns:
             a new PartitionedTableProxy
@@ -2126,12 +2630,46 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            cols = to_sequence(cols)
-            table_op = jpy.cast(source_table.j_object, _JTableOperations)
-            with auto_locking_ctx(self, source_table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot(table_op, do_init, *cols))
+            with auto_locking_ctx(self):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshot())
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
+
+    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy],
+                      stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False,
+                      history: bool = False) -> PartitionedTableProxy:
+        """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
+        partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
+        PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
+
+        In the case of the trigger table being another PartitionedTableProxy, the :meth:`~Table.snapshot_when` table
+        operation is applied to the matching pairs of the constituent tables from both underlying partitioned tables.
+
+        Args:
+            trigger_table (Union[Table, PartitionedTableProxy]): the trigger Table or PartitionedTableProxy
+            stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
+        Returns:
+            a new PartitionedTableProxy
+
+        Raises:
+            DHError
+        """
+        try:
+            options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
+            with auto_locking_ctx(self, trigger_table):
+                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.snapshotWhen(trigger_table.j_object, options))
+        except Exception as e:
+            raise DHError(e, "snapshot_when operation on the PartitionedTableProxy failed.") from e
 
     def sort(self, order_by: Union[str, Sequence[str]],
              order: Union[SortDirection, Sequence[SortDirection]] = None) -> PartitionedTableProxy:
@@ -2466,8 +3004,7 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "join operation on the PartitionedTableProxy failed.") from e
 
     def aj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-           joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
+           joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2477,12 +3014,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2490,31 +3027,18 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.LESS_THAN_EQUAL:
-                match_rule = _JAsOfJoinRule.LESS_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.LESS_THAN:
-                match_rule = _JAsOfJoinRule.LESS_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.aj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "as-of join operation on the PartitionedTableProxy failed.") from e
 
     def raj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-            joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
+            joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2524,12 +3048,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2537,25 +3061,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.GREATER_THAN_EQUAL:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.GREATER_THAN:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.raj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
 

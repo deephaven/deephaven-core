@@ -3,46 +3,65 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Check;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
+
+import java.util.OptionalDouble;
 
 /**
  * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest) with the specified
  * {@link #compression()}.
+ *
  * <p>
  * May be used to implement parallel percentile calculations by splitting inputs and accumulating results into a single
  * downstream TDigest.
+ *
  * <p>
  * May only be used on static or add-only tables.
  */
 @Immutable
-@BuildableStyle
+@SimpleStyle
 public abstract class AggSpecTDigest extends AggSpecBase {
 
+    /**
+     * Create a new AggSpecTDigest with {@code compression} chosen by the server.
+     *
+     * @return the agg spec
+     */
     public static AggSpecTDigest of() {
-        return ImmutableAggSpecTDigest.builder().build();
+        return ImmutableAggSpecTDigest.of(OptionalDouble.empty());
     }
 
+    /**
+     * Create a new AggSpecTDigest.
+     *
+     * @param compression the compression
+     * @return the agg spec
+     */
     public static AggSpecTDigest of(double compression) {
-        return ImmutableAggSpecTDigest.builder().compression(compression).build();
+        return ImmutableAggSpecTDigest.of(OptionalDouble.of(compression));
     }
 
     @Override
     public final String description() {
-        return String.format("TDigest with compression %.2f", compression());
+        if (compression().isPresent()) {
+            return String.format("TDigest with compression %.2f", compression().getAsDouble());
+        }
+        return "TDigest with default compression";
     }
 
     /**
-     * T-Digest compression factor. Must be greater than or equal to 1. Defaults to 100. 1000 is extremely large.
-     * 
-     * @return The T-Digest compression factor
+     * T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+     *
+     * <p>
+     * When not specified, the server will choose a compression value.
+     *
+     * @return The T-Digest compression factor if specified
      */
-    @Default
-    public double compression() {
-        return 100.0;
-    }
+    @Parameter
+    public abstract OptionalDouble compression();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -52,7 +71,7 @@ public abstract class AggSpecTDigest extends AggSpecBase {
 
     @Check
     final void checkCompression() {
-        if (compression() < 1.0) {
+        if (compression().isPresent() && compression().getAsDouble() < 1.0) {
             throw new IllegalArgumentException("Compression must be greater than or equal to 1.0");
         }
     }

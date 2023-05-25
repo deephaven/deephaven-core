@@ -3,6 +3,7 @@
  */
 package io.deephaven.parquet.base;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.parquet.base.util.Helpers;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesInput;
@@ -20,6 +21,9 @@ import java.nio.IntBuffer;
  * Plain encoding except for binary values
  */
 public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]> {
+
+    private static final int MAXIMUM_TOTAL_CAPACITY = ArrayUtil.MAX_ARRAY_SIZE;
+
     private final ByteBufferAllocator allocator;
 
     ByteBuffer innerBuffer;
@@ -126,13 +130,13 @@ public class PlainBinaryChunkedWriter extends AbstractBulkValuesWriter<Binary[]>
         final int currentCapacity = innerBuffer.capacity();
         final int currentPosition = innerBuffer.position();
         final long requiredCapacity = (long)currentPosition + v.length() + Integer.BYTES;
-        if(requiredCapacity > Integer.MAX_VALUE) {
-            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+        if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;
         while(newCapacity < requiredCapacity) {
-            newCapacity = Math.min(Integer.MAX_VALUE, newCapacity * 2);
+            newCapacity = (int) Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2L);
         }
 
         final ByteBuffer newBuf = allocator.allocate(newCapacity);

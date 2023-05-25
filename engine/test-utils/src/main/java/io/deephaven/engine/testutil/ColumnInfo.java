@@ -1,24 +1,24 @@
 package io.deephaven.engine.testutil;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.time.DateTime;
 
-import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Random;
-import java.util.TreeMap;
 
 public class ColumnInfo<T, U> {
     final Class<T> type;
     final Class<U> dataType;
-    final Generator<T, U> generator;
+    final Class<?> componentType;
+    final TestDataGenerator<T, U> generator;
     final String name;
-    final TreeMap<Long, U> data;
     final boolean immutable;
     final boolean grouped;
 
@@ -28,64 +28,48 @@ public class ColumnInfo<T, U> {
         None, Immutable, Grouped
     }
 
-    public ColumnInfo(Generator<T, U> generator, String name, ColAttributes... colAttributes) {
-        this(generator.getType(), generator.getColumnType(), generator, name,
-                Arrays.asList(colAttributes).contains(ColAttributes.Immutable),
-                Arrays.asList(colAttributes).contains(ColAttributes.Grouped), new TreeMap<>());
-    }
-
-    private ColumnInfo(Class<U> dataType, Class<T> type, Generator<T, U> generator, String name, boolean immutable,
-            boolean grouped, TreeMap<Long, U> data) {
-        this.dataType = dataType;
-        this.type = type;
+    public ColumnInfo(TestDataGenerator<T, U> generator, String name, ColAttributes... colAttributes) {
+        this.dataType = generator.getType();
+        this.type = generator.getColumnType();
+        this.componentType = type.getComponentType();
         this.generator = generator;
         this.name = name;
-        this.data = data;
-        this.immutable = immutable;
-        this.grouped = grouped;
+        this.immutable = Arrays.asList(colAttributes).contains(ColAttributes.Immutable);
+        this.grouped = Arrays.asList(colAttributes).contains(ColAttributes.Grouped);
     }
 
-    TreeMap<Long, U> populateMap(RowSet rowSet, Random random) {
-        return generator.populateMap(data, rowSet, random);
-    }
+    public ColumnHolder<?> generateInitialColumn(RowSet rowSet, Random random) {
+        final Chunk<Values> initialData = generator.populateChunk(rowSet, random);
 
-    @SuppressWarnings("unchecked")
-    public ColumnHolder c() {
-        if (dataType == Long.class && type == DateTime.class) {
+        if (dataType == Long.class && (type == DateTime.class || type == Instant.class)) {
             Require.eqFalse(immutable, "immutable");
             Require.eqFalse(grouped, "grouped");
-            final long[] dataArray = data.values().stream().map(x -> (Long) x).mapToLong(x -> x).toArray();
-            return ColumnHolder.getDateTimeColumnHolder(name, false, dataArray);
+            return ColumnHolder.getDateTimeColumnHolder(name, false, initialData);
         }
 
-        final U[] dataArray = data.values().toArray((U[]) Array.newInstance(dataType, data.size()));
         if (immutable) {
-            return new ImmutableColumnHolder<>(name, dataType, null, grouped, dataArray);
+            return new ImmutableColumnHolder<>(name, type, componentType, grouped, initialData);
         } else if (grouped) {
-            return TstUtils.cG(name, dataArray);
+            return TstUtils.groupedColumnHolderForChunk(name, type, componentType, initialData);
         } else {
-            return TstUtils.c(name, dataArray);
+            return TstUtils.columnHolderForChunk(name, type, componentType, initialData);
         }
     }
 
-    public void remove(long key) {
-        generator.onRemove(key, data.remove(key));
+    public void remove(RowSet rowKeys) {
+        generator.onRemove(rowKeys);
     }
 
-    public void move(long from, long to) {
-        final U movedValue = data.remove(from);
-        generator.onMove(from, to, movedValue);
-        data.put(to, movedValue);
+    public void shift(long start, long end, long delta) {
+        generator.shift(start, end, delta);
     }
 
-    public ColumnHolder populateMapAndC(RowSet keysToModify, Random random) {
-        final Collection<U> newValues = populateMap(keysToModify, random).values();
-        // noinspection unchecked
-        final U[] valueArray = newValues.toArray((U[]) Array.newInstance(dataType, newValues.size()));
+    public ColumnHolder<T> generateUpdateColumnHolder(RowSet keysToModify, Random random) {
+        final Chunk<Values> chunk = generator.populateChunk(keysToModify, random);
         if (grouped) {
-            return TstUtils.cG(name, valueArray);
+            return TstUtils.groupedColumnHolderForChunk(name, type, componentType, chunk);
         } else {
-            return TstUtils.c(name, valueArray);
+            return TstUtils.columnHolderForChunk(name, type, componentType, chunk);
         }
     }
 }

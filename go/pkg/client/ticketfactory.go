@@ -12,8 +12,8 @@ type ticketFactory struct {
 	id int32
 }
 
-func newTicketFactory() ticketFactory {
-	return ticketFactory{}
+func newTicketFactory() *ticketFactory {
+	return &ticketFactory{}
 }
 
 // newTicketNum returns a new ticket number that has not been used before.

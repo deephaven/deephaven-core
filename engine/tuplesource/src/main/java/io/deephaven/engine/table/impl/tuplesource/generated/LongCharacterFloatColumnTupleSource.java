@@ -125,11 +125,11 @@ public class LongCharacterFloatColumnTupleSource extends AbstractTupleSource<Lon
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<LongCharFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        LongChunk<Values> chunk1 = chunks[0].asLongChunk();
-        CharChunk<Values> chunk2 = chunks[1].asCharChunk();
-        FloatChunk<Values> chunk3 = chunks[2].asFloatChunk();
+        LongChunk<? extends Values> chunk1 = chunks[0].asLongChunk();
+        CharChunk<? extends Values> chunk2 = chunks[1].asCharChunk();
+        FloatChunk<? extends Values> chunk3 = chunks[2].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new LongCharFloatTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

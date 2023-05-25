@@ -8,6 +8,7 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Regioned column source implementation for columns of Booleans.
@@ -17,8 +18,11 @@ final class RegionedColumnSourceBoolean
         implements ColumnSourceGetDefaults.ForBoolean {
 
     public RegionedColumnSourceBoolean() {
-        super(ColumnRegionByte.createNull(PARAMETERS.regionMask), Boolean.class,
-                RegionedColumnSourceByte.NativeType.AsValues::new);
+        this(new RegionedColumnSourceByte.AsValues());
+    }
+
+    public RegionedColumnSourceBoolean(final @NotNull RegionedColumnSourceByte<Values> inner) {
+        super(ColumnRegionByte.createNull(PARAMETERS.regionMask), Boolean.class, inner);
     }
 
     @Override
@@ -39,6 +43,6 @@ final class RegionedColumnSourceBoolean
     @Override
     public Boolean get(long rowKey) {
         return rowKey == RowSequence.NULL_ROW_KEY ? null :
-                BooleanUtils.byteAsBoolean(lookupRegion(rowKey).getReferencedRegion().getByte(rowKey));
+                BooleanUtils.byteAsBoolean(getNativeSource().lookupRegion(rowKey).getByte(rowKey));
     }
 }

@@ -58,43 +58,43 @@ public final class MultiChunkPool {
     private MultiChunkPool() {}
 
     @SuppressWarnings("unused")
-    public final ChunkPool getChunkPool(@NotNull final ChunkType chunkType) {
+    public ChunkPool getChunkPool(@NotNull final ChunkType chunkType) {
         return pools.get(chunkType);
     }
 
-    public final BooleanChunkPool getBooleanChunkPool() {
+    public BooleanChunkPool getBooleanChunkPool() {
         return booleanChunkPool;
     }
 
-    public final CharChunkPool getCharChunkPool() {
+    public CharChunkPool getCharChunkPool() {
         return charChunkPool;
     }
 
-    public final ByteChunkPool getByteChunkPool() {
+    public ByteChunkPool getByteChunkPool() {
         return byteChunkPool;
     }
 
-    public final ShortChunkPool getShortChunkPool() {
+    public ShortChunkPool getShortChunkPool() {
         return shortChunkPool;
     }
 
-    public final IntChunkPool getIntChunkPool() {
+    public IntChunkPool getIntChunkPool() {
         return intChunkPool;
     }
 
-    public final LongChunkPool getLongChunkPool() {
+    public LongChunkPool getLongChunkPool() {
         return longChunkPool;
     }
 
-    public final FloatChunkPool getFloatChunkPool() {
+    public FloatChunkPool getFloatChunkPool() {
         return floatChunkPool;
     }
 
-    public final DoubleChunkPool getDoubleChunkPool() {
+    public DoubleChunkPool getDoubleChunkPool() {
         return doubleChunkPool;
     }
 
-    public final ObjectChunkPool getObjectChunkPool() {
+    public ObjectChunkPool getObjectChunkPool() {
         return objectChunkPool;
     }
 }

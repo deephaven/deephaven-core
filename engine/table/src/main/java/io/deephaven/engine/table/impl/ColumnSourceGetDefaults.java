@@ -5,6 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import org.jetbrains.annotations.Nullable;
+
+import java.time.Instant;
 
 import static io.deephaven.time.DateTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
@@ -381,7 +385,7 @@ public final class ColumnSourceGetDefaults {
      * Default interface for long {@link ColumnSource} implementations.
      */
     public interface ForLong extends LongBacked<Long> {
-
+        @Nullable
         @Override
         default Long get(final long rowKey) {
             return box(getLong(rowKey));
@@ -396,6 +400,17 @@ public final class ColumnSourceGetDefaults {
         @Override
         default DateTime get(final long rowKey) {
             return nanosToTime(getLong(rowKey));
+        }
+    }
+
+    /**
+     * Default interface for {@link Instant} {@link ColumnSource} implementations.
+     */
+    public interface ForLongAsInstant extends LongBacked<Instant> {
+        @Nullable
+        @Override
+        default Instant get(long rowKey) {
+            return DateTimeUtils.makeInstant(getLong(rowKey));
         }
     }
 

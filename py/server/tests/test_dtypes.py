@@ -92,20 +92,20 @@ class DTypesTestCase(BaseTestCase):
         self.assertTrue(np.array_equal(np_array, expected))
 
     def test_integer_array(self):
-        np_array = np.array([float('nan'), NULL_DOUBLE, 1.123, np.inf], dtype=np.float64)
+        np_array = np.array([float('nan'), NULL_DOUBLE, np.inf], dtype=np.float64)
 
         nulls = {dtypes.int64: NULL_LONG, dtypes.int32: NULL_INT, dtypes.short: NULL_SHORT, dtypes.byte: NULL_BYTE}
         for dt, nv in nulls.items():
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt}"):
-                expected = [nv, nv, 1, nv]
+                expected = [nv, nv, nv]
                 j_array = dtypes.array(dt, np_array, remap=map_fn)
                 py_array = [x for x in j_array]
                 self.assertEqual(expected, py_array)
 
         with self.subTest("int array from Python list"):
             expected = [1, 2, 3]
-            j_array = dtypes.array(dtypes.int32, [1.1, 2.2, 3.3])
+            j_array = dtypes.array(dtypes.int32, [1, 2, 3])
             self.assertIn("[I", str(type(j_array)))
             py_array = [x for x in j_array]
             self.assertEqual(expected, py_array)

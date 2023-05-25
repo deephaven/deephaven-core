@@ -64,42 +64,43 @@ public final class BooleanChunkPool implements ChunkPool {
     }
 
     @Override
-    public final <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
         return takeWritableBooleanChunk(capacity);
     }
 
     @Override
-    public final <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
         giveWritableBooleanChunk(writableChunk.asWritableBooleanChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
         return takeResettableBooleanChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
         giveResettableBooleanChunk(resettableChunk.asResettableBooleanChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
         return takeResettableWritableBooleanChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+    public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
         giveResettableWritableBooleanChunk(resettableWritableChunk.asResettableWritableBooleanChunk());
     }
 
-    public final <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(final int capacity) {
+    public <ATTR extends Any> WritableBooleanChunk<ATTR> takeWritableBooleanChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked
             return (WritableBooleanChunk<ATTR>) EMPTY;
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
+            //noinspection resource
             final WritableBooleanChunk result = writableBooleanChunks[poolIndexForTake].take();
             result.setSize(capacity);
             //noinspection unchecked
@@ -109,7 +110,7 @@ public final class BooleanChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableBooleanChunk.makeWritableChunkForPool(capacity));
     }
 
-    public final void giveWritableBooleanChunk(@NotNull final WritableBooleanChunk writableBooleanChunk) {
+    public void giveWritableBooleanChunk(@NotNull final WritableBooleanChunk<?> writableBooleanChunk) {
         if (writableBooleanChunk == EMPTY || writableBooleanChunk.isAlias(EMPTY)) {
             return;
         }
@@ -121,21 +122,21 @@ public final class BooleanChunkPool implements ChunkPool {
         }
     }
 
-    public final <ATTR extends Any> ResettableBooleanChunk<ATTR> takeResettableBooleanChunk() {
+    public <ATTR extends Any> ResettableBooleanChunk<ATTR> takeResettableBooleanChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableBooleanChunks.take());
     }
 
-    public final void giveResettableBooleanChunk(@NotNull final ResettableBooleanChunk resettableBooleanChunk) {
+    public void giveResettableBooleanChunk(@NotNull final ResettableBooleanChunk resettableBooleanChunk) {
         resettableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(resettableBooleanChunk));
     }
 
-    public final <ATTR extends Any> ResettableWritableBooleanChunk<ATTR> takeResettableWritableBooleanChunk() {
+    public <ATTR extends Any> ResettableWritableBooleanChunk<ATTR> takeResettableWritableBooleanChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableBooleanChunks.take());
     }
 
-    public final void giveResettableWritableBooleanChunk(@NotNull final ResettableWritableBooleanChunk resettableWritableBooleanChunk) {
+    public void giveResettableWritableBooleanChunk(@NotNull final ResettableWritableBooleanChunk resettableWritableBooleanChunk) {
         resettableWritableBooleanChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableBooleanChunk));
     }
 }

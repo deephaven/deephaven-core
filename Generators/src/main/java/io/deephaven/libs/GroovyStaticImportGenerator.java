@@ -305,7 +305,7 @@ public class GroovyStaticImportGenerator {
             String returnType = f.returnType.getTypeName();
             String s =
                     "    /** @see " + f.getClassName() + "#" + f.getMethodName() + "(" +
-                            Arrays.stream(f.parameterTypes).map(t -> t.getTypeName().replace("<T>", ""))
+                            Arrays.stream(f.parameterTypes).map(t -> t.getTypeName().replaceAll("<.*>", ""))
                                     .collect(Collectors.joining(","))
                             +
                             ") */\n" +

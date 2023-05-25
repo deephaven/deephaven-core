@@ -16,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+
 public class DeephavenCsvTest {
     @Test
     public void dateTimeCustomTimezone() throws CsvReaderException {
@@ -41,7 +43,6 @@ public class DeephavenCsvTest {
         final StringReader reader = new StringReader(input);
         final ReaderInputStream inputStream = new ReaderInputStream(reader, StandardCharsets.UTF_8);
         final Table actual = CsvTools.readCsv(inputStream, specs);
-        final String differences = TableTools.diff(actual, expected, 25);
-        Assertions.assertThat(differences).isEmpty();
+        assertTableEquals(expected, actual);
     }
 }

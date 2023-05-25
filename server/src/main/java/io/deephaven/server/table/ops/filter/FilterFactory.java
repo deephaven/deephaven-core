@@ -3,14 +3,15 @@
  */
 package io.deephaven.server.table.ops.filter;
 
-import io.deephaven.engine.table.Table;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeConditionFilter;
-import io.deephaven.engine.table.impl.select.RegexFilter;
-import io.deephaven.engine.table.impl.select.StringContainsFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereNoneFilter;
@@ -26,22 +27,23 @@ import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.TimeZone;
+import org.jetbrains.annotations.NotNull;
 
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class FilterFactory implements FilterVisitor<WhereFilter> {
-    private final Table table;
+    private final TableDefinition tableDefinition;
 
-    private FilterFactory(Table table) {
-        this.table = table;
+    private FilterFactory(@NotNull final TableDefinition tableDefinition) {
+        this.tableDefinition = tableDefinition;
     }
 
-    public static WhereFilter makeFilter(Table table, Condition condition) {
-        FilterFactory f = new FilterFactory(table);
+    public static WhereFilter makeFilter(TableDefinition tableDefinition, Condition condition) {
+        FilterFactory f = new FilterFactory(tableDefinition);
         return FilterVisitor.accept(condition, f);
     }
 
@@ -235,22 +237,31 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     @Override
     public WhereFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
             MatchType matchType) {
-        return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType),
-                reference.getColumnName(), searchString);
+        final int flags = caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0;
+        return WhereFilter.of(FilterPattern.of(
+                ColumnName.of(reference.getColumnName()),
+                Pattern.compile(Pattern.quote(searchString), flags),
+                Mode.FIND,
+                matchType == MatchType.INVERTED));
     }
 
     @Override
     public WhereFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
             MatchType matchType) {
-        return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
-                regex);
+        final int flags =
+                (caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0) | Pattern.DOTALL;
+        return WhereFilter.of(FilterPattern.of(
+                ColumnName.of(reference.getColumnName()),
+                Pattern.compile(regex, flags),
+                Mode.MATCHES,
+                matchType == MatchType.INVERTED));
     }
 
     @Override
     public WhereFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
         final Set<String> columnNames =
                 optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
-        WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(table, searchString, columnNames);
+        WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(tableDefinition, searchString, columnNames);
         if (whereFilters.length == 0) {
             return WhereNoneFilter.INSTANCE;
         }

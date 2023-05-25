@@ -35,8 +35,9 @@ public class PartitionedTableTypePlugin extends ObjectTypeBase {
         exporter.reference(partitionedTable.table(), false, true);
 
         // Send Schema wrapped in Message
-        ByteString schemaWrappedInMessage =
-                BarrageUtil.schemaBytesFromTable(partitionedTable.constituentDefinition(), Collections.emptyMap());
+        ByteString schemaWrappedInMessage = BarrageUtil.schemaBytesFromTableDefinition(
+                partitionedTable.constituentDefinition(),
+                Collections.emptyMap());
 
         PartitionedTableDescriptor result = PartitionedTableDescriptor.newBuilder()
                 .addAllKeyColumnNames(partitionedTable.keyColumnNames())

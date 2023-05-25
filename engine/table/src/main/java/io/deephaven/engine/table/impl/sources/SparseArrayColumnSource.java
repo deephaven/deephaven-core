@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -23,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -71,10 +73,8 @@ import java.util.Collection;
  */
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
-        WritableSourceWithPrepareForParallelPopulation {
-    public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
-            new SparseArrayColumnSource[0];
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
+        WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
 
@@ -190,16 +190,12 @@ public abstract class SparseArrayColumnSource<T>
         throw new UnsupportedOperationException();
     }
 
-    public void shift(RowSet keysToShift, long shiftDelta) {
-        throw new UnsupportedOperationException();
-    }
-
     public void remove(RowSet toRemove) {
-        throw new UnsupportedOperationException();
+        setNull(toRemove);
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
-        final SparseArrayColumnSource<T> result = getSparseMemoryColumnSource(data.size(), type);
+    public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
+        final WritableColumnSource<T> result = getSparseMemoryColumnSource(data.size(), type);
         long i = 0;
         for (T o : data) {
             result.set(i++, o);
@@ -207,8 +203,8 @@ public abstract class SparseArrayColumnSource<T>
         return result;
     }
 
-    private static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(T[] data, Class<T> type) {
-        final SparseArrayColumnSource<T> result = getSparseMemoryColumnSource(data.length, type);
+    private static <T> WritableColumnSource<T> getSparseMemoryColumnSource(T[] data, Class<T> type) {
+        final WritableColumnSource<T> result = getSparseMemoryColumnSource(data.length, type);
         long i = 0;
         for (T o : data) {
             result.set(i++, o);
@@ -276,8 +272,8 @@ public abstract class SparseArrayColumnSource<T>
         return result;
     }
 
-    public static SparseArrayColumnSource<DateTime> getDateTimeMemoryColumnSource(long[] data) {
-        final SparseArrayColumnSource<DateTime> result = new DateTimeSparseArraySource();
+    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(long[] data) {
+        final WritableColumnSource<DateTime> result = new DateTimeSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -296,21 +292,21 @@ public abstract class SparseArrayColumnSource<T>
         return result;
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Class<T> type) {
+    public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Class<T> type) {
         return getSparseMemoryColumnSource(0, type, null);
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Class<T> type, Class<?> componentType) {
+    public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(Class<T> type, Class<?> componentType) {
         return getSparseMemoryColumnSource(0, type, componentType);
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type) {
+    public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type) {
         return getSparseMemoryColumnSource(size, type, null);
     }
 
-    public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type,
+    public static <T> WritableColumnSource<T> getSparseMemoryColumnSource(long size, Class<T> type,
             @Nullable Class<?> componentType) {
-        final SparseArrayColumnSource<?> result;
+        final WritableColumnSource<?> result;
         if (type == byte.class || type == Byte.class) {
             result = new ByteSparseArraySource();
         } else if (type == char.class || type == Character.class) {
@@ -329,6 +325,8 @@ public abstract class SparseArrayColumnSource<T>
             result = new BooleanSparseArraySource();
         } else if (type == DateTime.class) {
             result = new DateTimeSparseArraySource();
+        } else if (type == Instant.class) {
+            result = new InstantSparseArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectSparseArraySource<>(type, componentType);
@@ -340,7 +338,7 @@ public abstract class SparseArrayColumnSource<T>
             result.ensureCapacity(size);
         }
         // noinspection unchecked
-        return (SparseArrayColumnSource<T>) result;
+        return (WritableColumnSource<T>) result;
     }
 
     public static ColumnSource<?> getSparseMemoryColumnSource(Object dataArray) {
@@ -404,6 +402,15 @@ public abstract class SparseArrayColumnSource<T>
     // endregion fillChunk
 
     @Override
+    public void setNull(RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nullByKeys(rowSequence);
+        } else {
+            nullByRanges(rowSequence);
+        }
+    }
+
+    @Override
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
@@ -429,11 +436,9 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keyIndices);
 
-    private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
-
     @Override
     public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return FILL_FROM_CONTEXT_INSTANCE;
+        return DEFAULT_FILL_FROM_INSTANCE;
     }
 
     @Override
@@ -449,6 +454,10 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
+
+    abstract void nullByRanges(@NotNull RowSequence rowSequence);
+
+    abstract void nullByKeys(@NotNull RowSequence rowSequence);
 
     @Override
     public boolean isImmutable() {

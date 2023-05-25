@@ -7,6 +7,7 @@ import com.google.rpc.Code;
 import io.deephaven.base.RAPriQueue;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.GrpcServiceOverrideBuilder;
 import io.deephaven.internal.log.LoggerFactory;
@@ -81,14 +82,10 @@ public class BrowserStream<T> implements Closeable {
             @Override
             public void onCancel() {
                 StatusRuntimeException canceled =
-                        GrpcUtil.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
-                GrpcUtil.safelyExecute(() -> {
-                    responseObserver.onError(canceled);
-                });
+                        Exceptions.statusRuntimeException(Code.CANCELLED, "Stream canceled on the server");
+                GrpcUtil.safelyError(responseObserver, canceled);
 
-                GrpcUtil.safelyExecute(() -> {
-                    requestObserver.onError(canceled);
-                });
+                GrpcUtil.safelyError(requestObserver, canceled);
             }
 
             @Override
@@ -134,13 +131,13 @@ public class BrowserStream<T> implements Closeable {
     public void onMessageReceived(T message, StreamData streamData) {
         synchronized (this) {
             if (halfClosedSeq != -1 && streamData.getSequence() > halfClosedSeq) {
-                throw GrpcUtil.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
+                throw Exceptions.statusRuntimeException(Code.ABORTED, "Sequence sent after half close: closed seq="
                         + halfClosedSeq + " recv seq=" + streamData.getSequence());
             }
 
             if (streamData.isHalfClose()) {
                 if (halfClosedSeq != -1) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq="
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Already half closed: closed seq="
                             + halfClosedSeq + " recv seq=" + streamData.getSequence());
                 }
                 halfClosedSeq = streamData.getSequence();
@@ -148,7 +145,7 @@ public class BrowserStream<T> implements Closeable {
 
             if (mode == Mode.IN_ORDER) {
                 if (streamData.getSequence() < nextSeq) {
-                    throw GrpcUtil.statusRuntimeException(Code.OUT_OF_RANGE,
+                    throw Exceptions.statusRuntimeException(Code.OUT_OF_RANGE,
                             "Duplicate sequence sent: next seq=" + nextSeq + " recv seq=" + streamData.getSequence());
                 }
                 boolean queueMsg = false;

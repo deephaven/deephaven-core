@@ -126,11 +126,11 @@ public class LongCharacterReinterpretedDateTimeColumnTupleSource extends Abstrac
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<LongCharLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        LongChunk<Values> chunk1 = chunks[0].asLongChunk();
-        CharChunk<Values> chunk2 = chunks[1].asCharChunk();
-        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
+        LongChunk<? extends Values> chunk1 = chunks[0].asLongChunk();
+        CharChunk<? extends Values> chunk2 = chunks[1].asCharChunk();
+        LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new LongCharLongTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

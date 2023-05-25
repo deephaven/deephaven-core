@@ -24,7 +24,7 @@ type flightStub struct {
 	stub flight.Client // The stub for performing Arrow Flight gRPC requests.
 }
 
-func newFlightStub(client *Client, host string, port string) (flightStub, error) {
+func newFlightStub(client *Client, host string, port string) (*flightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,
@@ -32,15 +32,21 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return flightStub{}, err
+		return nil, err
 	}
 
-	return flightStub{client: client, stub: stub}, nil
+	return &flightStub{client: client, stub: stub}, nil
+}
+
+// handshake creates a client for performing token handshakes with the Flight service.
+// The client can be used to obtain and refresh authentication tokens.
+func (fs *flightStub) handshake(ctx context.Context, opts ...grpc.CallOption) (flight.FlightService_HandshakeClient, error) {
+	return fs.stub.Handshake(ctx, opts...)
 }
 
 // snapshotRecord downloads the data currently in the provided table and returns it as an Arrow Record.
 func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
-	ctx, err := fs.client.withToken(ctx)
+	ctx, err := fs.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +84,7 @@ func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Tick
 // ImportTable uploads a table to the Deephaven server.
 // The table can then be manipulated and referenced using the returned TableHandle.
 func (fs *flightStub) ImportTable(ctx context.Context, rec arrow.Record) (*TableHandle, error) {
-	ctx, err := fs.client.withToken(ctx)
+	ctx, err := fs.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}

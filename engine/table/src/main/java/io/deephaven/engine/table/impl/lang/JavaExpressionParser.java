@@ -7,10 +7,15 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseResult;
 import com.github.javaparser.ParseStart;
 import com.github.javaparser.Providers;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.LiteralExpr;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.LinkedList;
 
 /**
  * Helpful class which parses expressions and performs extra "this is exactly one expression" validation
@@ -40,5 +45,30 @@ public class JavaExpressionParser {
         } catch (IOException ignored) {
         }
         return expr;
+    }
+
+    /**
+     * returns true if the expression evaluates to constant value.
+     *
+     * @param expression the expression to evaluate
+     * @return true if the expression evaluates to constant value
+     */
+    public static boolean isConstantValueExpression(Expression expression) {
+        LinkedList<Expression> expressionsQueue = new LinkedList<>();
+        expressionsQueue.add(expression);
+        while (!expressionsQueue.isEmpty()) {
+            Expression currExpr = expressionsQueue.poll();
+            if (currExpr instanceof EnclosedExpr) {
+                expressionsQueue.add(((EnclosedExpr) currExpr).getInner());
+            } else if (currExpr instanceof AssignExpr) {
+                expressionsQueue.add(((AssignExpr) currExpr).getValue());
+            } else if (currExpr instanceof BinaryExpr) {
+                expressionsQueue.add(((BinaryExpr) currExpr).getLeft());
+                expressionsQueue.add(((BinaryExpr) currExpr).getRight());
+            } else if (!(currExpr instanceof LiteralExpr)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

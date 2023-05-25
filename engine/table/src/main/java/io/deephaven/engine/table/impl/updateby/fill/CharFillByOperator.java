@@ -1,12 +1,11 @@
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +17,29 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
+    protected class Context extends BaseCharUpdateByOperator.Context {
+        public CharChunk<? extends Values> charValueChunk;
+
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            charValueChunk = valueChunks[0].asCharChunk();
+        }
+
+        @Override
+        public void push(int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
+            char val = charValueChunk.get(pos);
+            if(val != NULL_CHAR) {
+                curVal = val;
+            }
+        }
+    }
+
     public CharFillByOperator(@NotNull final MatchPair fillPair,
                               @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
@@ -28,54 +50,12 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         // endregion constructor
     }
 
+    @NotNull
+    @Override
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
+    }
+
     // region extra-methods
     // endregion extra-methods
-
-    @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final CharChunk<Values> asChars = values.asCharChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getChar(bucketPosition);
-            accumulate(asChars, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long bucketPosition) {
-        ctx.curVal = singletonGroup == bucketPosition ? singletonVal : NULL_CHAR;
-        accumulate(workingChunk.asCharChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = bucketPosition;
-        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final CharChunk<Values> asChars,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableCharChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final char currentVal = asChars.get(ii);
-            if(currentVal != NULL_CHAR) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
-    }
 }

@@ -10,12 +10,12 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.Generator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -40,7 +40,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -258,7 +258,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     private void doTestNoKeyIncremental(String context, int steps, int size, int seed) {
         final CreateResult result = createTestTable(size, true, false, true, seed,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)});
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)});
         final QueryTable queryTable = result.t;
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -288,7 +288,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         }
     }
 
-    void updateAndValidate(QueryTable src, Table result, FunctionalInterfaces.ThrowingRunnable<?> updateFunc)
+    void updateAndValidate(QueryTable src, Table result, ThrowingRunnable<?> updateFunc)
             throws Exception {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateFunc);
 
@@ -331,7 +331,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticBucketed() {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 
@@ -352,7 +352,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticGroupedBucketed() {
         final QueryTable t = createTestTable(100000, true, true, false, 0x507A70,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 

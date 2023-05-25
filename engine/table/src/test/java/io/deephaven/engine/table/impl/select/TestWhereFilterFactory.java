@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -38,7 +38,7 @@ public class TestWhereFilterFactory extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         table = TableTools.newTable(
                 TableTools.col(STRING_COLUMN, NORMAL_STRING, NEEDS_ESCAPE, NO_COMMAS_A, NO_COMMAS_B, WITH_COMMAS_A,
                         WITH_COMMAS_B),

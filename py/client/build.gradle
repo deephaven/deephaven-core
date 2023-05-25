@@ -74,6 +74,9 @@ tasks.register('updateProtobuf', Sync) {
 // Start up a docker container for the grpc server, then run pydeephaven test
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
+    envVars.set([
+        'START_OPTS':'-Xmx512m'
+    ])
     containerName.set "pydeephaven-test-container-${randomSuffix}"
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
@@ -86,19 +89,23 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
         from('tests') {
             into 'project/tests'
         }
+        from ('requirements-dev.txt') {
+            into 'project/'
+        }
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     dockerfile {
         from('deephaven/python:local-build')
-        runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.46.0 bitstring==3.1.9 pandas==1.2.5 timeout-decorator==0.5.0;\\
-                      mkdir -p /out/report'''
         copyFile('project', '/project')
         workingDir('/project')
+        runCommand '''set -eux; \\
+                      mkdir -p /out/report; \\
+                      pip3 install --upgrade pip; \\
+                      pip3 install -r requirements-dev.txt'''
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '8080'
+        environmentVariable 'DH_PORT', '10000'
     }
     parentContainers = [ Docker.registryTask(project, 'python') ]
     entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
@@ -106,3 +113,4 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
         into layout.buildDirectory.dir('test-results')
     }
 })
+deephavenDocker.shouldLogIfTaskFails tasks.named('testPyClientRun')

@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
@@ -179,7 +179,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             slots.ensureCapacity(leftRestampRemovals.size());
 
             if (leftRestampRemovals.isNonempty()) {
-                leftRestampRemovals.forAllRowKeys(rowRedirection::removeVoid);
+                rowRedirection.removeAll(leftRestampRemovals);
 
                 // We first do a probe pass, adding all of the removals to a builder in the as of join state manager
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
@@ -191,8 +191,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     final int slot = slots.getInt(slotIndex);
                     final RowSet leftRemoved = indexFromBuilder(slotIndex);
 
-                    leftRemoved.forAllRowKeys(rowRedirection::removeVoid);
-
+                    rowRedirection.removeAll(leftRemoved);
 
                     final SegmentedSortedArray leftSsa = asOfJoinStateManager.getLeftSsaOrIndex(slot, leftIndexOutput);
                     if (leftSsa == null) {
@@ -738,7 +737,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             downstream.shifted = leftRecorder.getShifted();
         }
 
-        SafeCloseable.closeArray(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
+        SafeCloseable.closeAll(sortKernel, leftStampKeys, leftStampValues, leftFillContext, leftSsaFactory,
                 rightSsaFactory);
 
         downstream.modified = leftRecorder.getModified().union(modifiedBuilder.build());
@@ -747,16 +746,37 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     }
 
     private RowSet getRelevantShifts(RowSetShiftData shifted, RowSet previousToShift) {
-        final RowSetBuilderRandom relevantShiftKeys = RowSetFactory.builderRandom();
-        final RowSetShiftData.Iterator sit = shifted.applyIterator();
-        while (sit.hasNext()) {
-            sit.next();
-            final RowSet rowSetToShift = previousToShift.subSetByKeyRange(sit.beginRange(), sit.endRange());
-            if (!rowSetToShift.isEmpty()) {
-                relevantShiftKeys.addRowSet(rowSetToShift);
+        final RowSetBuilderSequential relevantShiftKeys = RowSetFactory.builderSequential();
+
+        final RowSet.RangeIterator it = previousToShift.rangeIterator();
+
+        for (int ii = 0; ii < shifted.size(); ++ii) {
+            final long beginRange = shifted.getBeginRange(ii);
+            final long endRange = shifted.getEndRange(ii);
+            if (!it.advance(beginRange)) {
+                break;
             }
-            rowSetToShift.close();
+            if (it.currentRangeStart() > endRange) {
+                continue;
+            }
+
+            while (true) {
+                final long startOfNewRange = Math.max(it.currentRangeStart(), beginRange);
+                final long endOfNewRange = Math.min(it.currentRangeEnd(), endRange);
+                relevantShiftKeys.appendRange(startOfNewRange, endOfNewRange);
+                if (it.currentRangeEnd() < endRange) {
+                    if (!it.hasNext())
+                        break;
+                    it.next();
+                    if (it.currentRangeStart() > endRange) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
         }
+
         return relevantShiftKeys.build();
     }
 

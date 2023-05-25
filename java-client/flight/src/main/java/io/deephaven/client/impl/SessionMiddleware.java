@@ -18,6 +18,6 @@ public class SessionMiddleware implements Factory {
 
     @Override
     public final FlightClientMiddleware onCallStarted(CallInfo info) {
-        return new AuthenticationMiddleware(session.auth());
+        return new BearerMiddlewear(session._hackBearerHandler());
     }
 }

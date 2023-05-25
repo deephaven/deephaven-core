@@ -198,8 +198,10 @@ const char descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eprot
   "rtedTableCreationResponse\022\200\001\n\010GetTable\0222"
   ".io.deephaven.proto.backplane.grpc.GetTa"
   "bleRequest\032@.io.deephaven.proto.backplan"
-  "e.grpc.ExportedTableCreationResponseB\004H\001"
-  "P\001b\006proto3"
+  "e.grpc.ExportedTableCreationResponseBLH\001"
+  "P\001ZFgithub.com/deephaven/deephaven-core/"
+  "go/internal/proto/partitionedtableb\006prot"
+  "o3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps[2] = {
   &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
@@ -207,7 +209,7 @@ static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto = {
-    false, false, 1330, descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto,
+    false, false, 1402, descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto,
     "deephaven/proto/partitionedtable.proto",
     &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once, descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps, 2, 5,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fpartitionedtable_2eproto::offsets,

@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.SubscriptionAggregator;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.util.thread.NamingThreadFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Future;
@@ -31,8 +32,6 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     private final long tableLocationProviderRefreshIntervalMillis;
     private final long tableLocationRefreshIntervalMillis;
 
-    private final AtomicInteger threadCount = new AtomicInteger(0);
-
     private final ScheduledThreadPoolExecutor scheduler;
 
     private final Value providerSubscriptions;
@@ -50,8 +49,9 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         this.tableLocationRefreshIntervalMillis =
                 Require.gtZero(tableLocationRefreshIntervalMillis, "tableLocationRefreshIntervalMillis");
 
+        NamingThreadFactory threadFactory = new NamingThreadFactory(TableDataRefreshService.class, "refreshThread");
         scheduler =
-                new ScheduledThreadPoolExecutor(threadPoolSize, this::makeThread, new ThreadPoolExecutor.AbortPolicy());
+                new ScheduledThreadPoolExecutor(threadPoolSize, threadFactory, new ThreadPoolExecutor.AbortPolicy());
         scheduler.setRemoveOnCancelPolicy(true);
 
         providerSubscriptions = Stats.makeItem(NAME_PREFIX + name, "providerSubscriptions", Counter.FACTORY).getValue();
@@ -60,13 +60,6 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
         locationSubscriptions = Stats.makeItem(NAME_PREFIX + name, "locationSubscriptions", Counter.FACTORY).getValue();
         locationSubscriptionRefreshDurationNanos = Stats
                 .makeItem(NAME_PREFIX + name, "locationSubscriptionRefreshDurationNanos", State.FACTORY).getValue();
-    }
-
-    private Thread makeThread(final Runnable runnable) {
-        final Thread thread =
-                new Thread(runnable, NAME_PREFIX + name + "-refreshThread-" + threadCount.incrementAndGet());
-        thread.setDaemon(true);
-        return thread;
     }
 
     @Override
@@ -94,6 +87,8 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
                 refresh();
             } catch (TableDataException e) {
                 subscriptionAggregator.activationFailed(this, e);
+            } catch (Throwable t) {
+                subscriptionAggregator.activationFailed(this, new TableDataException("Unexpected error", t));
             }
             if (firstInvocation) {
                 firstInvocation = false;

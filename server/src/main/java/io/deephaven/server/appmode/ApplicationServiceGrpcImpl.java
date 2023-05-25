@@ -20,9 +20,9 @@ import io.deephaven.server.object.TypeLookup;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTimeUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -126,22 +126,21 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     }
 
     @Override
-    public synchronized void listFields(ListFieldsRequest request,
-            StreamObserver<FieldsChangeUpdate> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final Subscription subscription = new Subscription(session, responseObserver);
+    public synchronized void listFields(
+            @NotNull final ListFieldsRequest request,
+            @NotNull final StreamObserver<FieldsChangeUpdate> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        final Subscription subscription = new Subscription(session, responseObserver);
 
-            final FieldsChangeUpdate.Builder responseBuilder = FieldsChangeUpdate.newBuilder();
-            for (FieldInfo fieldInfo : known.values()) {
-                responseBuilder.addCreated(fieldInfo);
-            }
-            if (subscription.send(responseBuilder.build())) {
-                subscriptions.add(subscription);
-            } else {
-                subscription.onCancel();
-            }
-        });
+        final FieldsChangeUpdate.Builder responseBuilder = FieldsChangeUpdate.newBuilder();
+        for (FieldInfo fieldInfo : known.values()) {
+            responseBuilder.addCreated(fieldInfo);
+        }
+        if (subscription.send(responseBuilder.build())) {
+            subscriptions.add(subscription);
+        } else {
+            subscription.onCancel();
+        }
     }
 
     synchronized void remove(Subscription sub) {
@@ -252,8 +251,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
 
         // must be sync wrt parent
         private void notifyObserverAborted() {
-            GrpcUtil.safelyExecute(
-                    () -> observer.onError(GrpcUtil.statusRuntimeException(Code.ABORTED, "subscription cancelled")));
+            GrpcUtil.safelyError(observer, Code.ABORTED, "subscription cancelled");
         }
     }
 

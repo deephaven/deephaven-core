@@ -64,42 +64,43 @@ public final class DoubleChunkPool implements ChunkPool {
     }
 
     @Override
-    public final <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
         return takeWritableDoubleChunk(capacity);
     }
 
     @Override
-    public final <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
         giveWritableDoubleChunk(writableChunk.asWritableDoubleChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
         return takeResettableDoubleChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
         giveResettableDoubleChunk(resettableChunk.asResettableDoubleChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
         return takeResettableWritableDoubleChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+    public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
         giveResettableWritableDoubleChunk(resettableWritableChunk.asResettableWritableDoubleChunk());
     }
 
-    public final <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(final int capacity) {
+    public <ATTR extends Any> WritableDoubleChunk<ATTR> takeWritableDoubleChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked
             return (WritableDoubleChunk<ATTR>) EMPTY;
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
+            //noinspection resource
             final WritableDoubleChunk result = writableDoubleChunks[poolIndexForTake].take();
             result.setSize(capacity);
             //noinspection unchecked
@@ -109,7 +110,7 @@ public final class DoubleChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableDoubleChunk.makeWritableChunkForPool(capacity));
     }
 
-    public final void giveWritableDoubleChunk(@NotNull final WritableDoubleChunk writableDoubleChunk) {
+    public void giveWritableDoubleChunk(@NotNull final WritableDoubleChunk<?> writableDoubleChunk) {
         if (writableDoubleChunk == EMPTY || writableDoubleChunk.isAlias(EMPTY)) {
             return;
         }
@@ -121,21 +122,21 @@ public final class DoubleChunkPool implements ChunkPool {
         }
     }
 
-    public final <ATTR extends Any> ResettableDoubleChunk<ATTR> takeResettableDoubleChunk() {
+    public <ATTR extends Any> ResettableDoubleChunk<ATTR> takeResettableDoubleChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableDoubleChunks.take());
     }
 
-    public final void giveResettableDoubleChunk(@NotNull final ResettableDoubleChunk resettableDoubleChunk) {
+    public void giveResettableDoubleChunk(@NotNull final ResettableDoubleChunk resettableDoubleChunk) {
         resettableDoubleChunks.give(ChunkPoolReleaseTracking.onGive(resettableDoubleChunk));
     }
 
-    public final <ATTR extends Any> ResettableWritableDoubleChunk<ATTR> takeResettableWritableDoubleChunk() {
+    public <ATTR extends Any> ResettableWritableDoubleChunk<ATTR> takeResettableWritableDoubleChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableDoubleChunks.take());
     }
 
-    public final void giveResettableWritableDoubleChunk(@NotNull final ResettableWritableDoubleChunk resettableWritableDoubleChunk) {
+    public void giveResettableWritableDoubleChunk(@NotNull final ResettableWritableDoubleChunk resettableWritableDoubleChunk) {
         resettableWritableDoubleChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableDoubleChunk));
     }
 }

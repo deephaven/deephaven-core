@@ -1,4 +1,4 @@
-# test-oriented local docker compose file to run redpanda and apicurio for testing
+# test-oriented local docker compose file to run redpanda and postgres for testing
 
 version: "3.4"
 
@@ -10,3 +10,10 @@ services:
     expose:
       - 29092
       - 8081
+
+  postgres:
+    extends:
+      file: ../postgres/docker-compose.yml
+      service: postgres
+    expose:
+      - 5432

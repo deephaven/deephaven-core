@@ -28,6 +28,8 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -44,6 +46,10 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             case Char:
                 return new CharChunkInputStreamGenerator(chunk.asCharChunk(), Character.BYTES, rowOffset);
             case Byte:
+                if (type == Boolean.class || type == boolean.class) {
+                    // internally we represent booleans as bytes, but the wire format respects arrow's specification
+                    return new BooleanChunkInputStreamGenerator(chunk.asByteChunk(), rowOffset);
+                }
                 return new ByteChunkInputStreamGenerator(chunk.asByteChunk(), Byte.BYTES, rowOffset);
             case Short:
                 return new ShortChunkInputStreamGenerator(chunk.asShortChunk(), Short.BYTES, rowOffset);
@@ -96,6 +102,33 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                         ((PoolableChunk) chunk).close();
                     }
                     return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
+                }
+                if (type == Instant.class) {
+                    // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.
+                    ObjectChunk<Instant, Values> objChunk = chunk.asObjectChunk();
+                    WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
+                    for (int i = 0; i < objChunk.size(); ++i) {
+                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                    }
+                    if (chunk instanceof PoolableChunk) {
+                        ((PoolableChunk) chunk).close();
+                    }
+                    return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
+                }
+                if (type == ZonedDateTime.class) {
+                    // This code path is utilized for arrays and vectors of Instant, which cannot be reinterpreted.
+                    ObjectChunk<ZonedDateTime, Values> objChunk = chunk.asObjectChunk();
+                    WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
+                    for (int i = 0; i < objChunk.size(); ++i) {
+                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                    }
+                    if (chunk instanceof PoolableChunk) {
+                        ((PoolableChunk) chunk).close();
+                    }
+                    return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
+                }
+                if (type == Boolean.class) {
+                    return BooleanChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == Byte.class) {
                     return ByteChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
@@ -153,6 +186,10 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 return CharChunkInputStreamGenerator.extractChunkFromInputStream(
                         Character.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Byte:
+                if (type == Boolean.class || type == boolean.class) {
+                    return BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
+                            options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
                 return ByteChunkInputStreamGenerator.extractChunkFromInputStream(
                         Byte.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Short:
@@ -217,6 +254,18 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 if (type == DateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
                             Long.BYTES, options, io -> DateTimeUtils.nanosToTime(io.readLong()),
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
+                    );
+                }
+                if (type == Instant.class) {
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Long.BYTES, options, io -> DateTimeUtils.makeInstant(io.readLong()),
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
+                    );
+                }
+                if (type == ZonedDateTime.class) {
+                    return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
+                            Long.BYTES, options, io -> DateTimeUtils.makeZonedDateTime(io.readLong()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }

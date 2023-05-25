@@ -46,11 +46,10 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    // Note, when updated to 9.0.0+, fix deephaven-core#2923.
-    static final String ARROW_VERSION = '7.0.0'
+    static final String ARROW_VERSION = '11.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
-    static final String SLF4J_VERSION = '2.0.3'
+    static final String SLF4J_VERSION = '2.0.6'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
@@ -89,10 +88,10 @@ class Classpaths {
 
     static final String LOGBACK_GROUP = 'ch.qos.logback'
     static final String LOGBACK_NAME = 'logback-classic'
-    static final String LOGBACK_VERSION = '1.4.3'
+    static final String LOGBACK_VERSION = '1.4.5'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
-    static final String GROOVY_VERSION = '3.0.12'
+    static final String GROOVY_VERSION = '3.0.13'
 
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
@@ -115,11 +114,11 @@ class Classpaths {
     static final String JACKSON_VERSION = '2.14.1'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
-    static final String SSLCONTEXT_VERSION = '7.4.3'
+    static final String SSLCONTEXT_VERSION = '7.4.8'
 
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
-    static final String JETTY11_VERSION = '11.0.12'
+    static final String JETTY11_VERSION = '11.0.15'
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
@@ -180,12 +179,7 @@ class Classpaths {
 
     static void inheritCommonsText(Project p, String configName) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency config, COMMONS_GROUP, 'commons-text', "1.6", {
-            // commons-text depends on commons-lang3; sadly, our version of lang3 is so old,
-            // there is no version of commons-text which depends on it.  So, we just exclude it.
-            // we only want some small, self-contained classes in commons-text anyway.
-            dep -> dep.exclude(['module': 'commons-lang3'])
-        }
+        addDependency config, COMMONS_GROUP, 'commons-text', "1.10.0"
     }
 
     static void inheritArrow(Project p, String name, String configName) {

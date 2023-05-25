@@ -3,6 +3,9 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.impl.Constants;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -11,7 +14,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -23,9 +25,6 @@ import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -47,10 +46,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.LongFunction;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
+
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
@@ -190,8 +189,8 @@ public class ChunkedOperatorAggregationHelper {
 
         // Gather the result key columns
         final ColumnSource[] keyColumnsRaw = new ColumnSource[keyHashTableSources.length];
-        final ArrayBackedColumnSource[] keyColumnsCopied =
-                input.isRefreshing() ? new ArrayBackedColumnSource[keyHashTableSources.length] : null;
+        final WritableColumnSource[] keyColumnsCopied =
+                input.isRefreshing() ? new WritableColumnSource[keyHashTableSources.length] : null;
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
@@ -229,7 +228,7 @@ public class ChunkedOperatorAggregationHelper {
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
 
-            final boolean isStream = input.isStream();
+            final boolean isBlink = input.isBlink();
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
                         @ReferentialIntegrity
@@ -248,7 +247,7 @@ public class ChunkedOperatorAggregationHelper {
                         public void onUpdate(@NotNull final TableUpdate upstream) {
                             incrementalStateManager.beginUpdateCycle();
 
-                            final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
                             }
@@ -280,13 +279,6 @@ public class ChunkedOperatorAggregationHelper {
                     };
 
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            // In general, result listeners depend on the swap listener for continued liveness, but most
-            // operations handle this by having the result table depend on both (in both a reachability sense
-            // and a liveness sense). That said, it is arguably very natural for the result listener to manage
-            // the swap listener. We do so in this case because partitionBy requires it in order for the
-            // sub-tables to continue ticking if the result Table and TableMap are released.
-            listener.manage(swapListener);
         }
 
         return ac.transformResult(result);
@@ -323,61 +315,20 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        setReverseLookupFunction(keySources, ac, stateManager);
+        ac.supplyRowLookup(() -> stateManager::findPositionForKey);
         return stateManager;
     }
 
-    private static TableUpdate adjustForStreaming(@NotNull final TableUpdate upstream) {
-        // Streaming aggregations never have modifies or shifts from their parent:
+    private static TableUpdate adjustForBlinkTable(@NotNull final TableUpdate upstream) {
+        // Blink table aggregations never have modifies or shifts from their parent:
         Assert.assertion(upstream.modified().isEmpty() && upstream.shifted().empty(),
                 "upstream.modified.empty() && upstream.shifted.empty()");
-        // Streaming aggregations ignore removes:
+        // Blink table aggregations ignore removes:
         if (upstream.removed().isEmpty()) {
             return upstream;
         }
         return new TableUpdateImpl(upstream.added(), RowSetFactory.empty(), upstream.modified(), upstream.shifted(),
                 upstream.modifiedColumnSet());
-    }
-
-    private static void setReverseLookupFunction(ColumnSource<?>[] keySources, AggregationContext ac,
-            OperatorAggregationStateManager stateManager) {
-        if (keySources.length == 1) {
-            if (keySources[0].getType() == DateTime.class) {
-                ac.setReverseLookupFunction(key -> stateManager
-                        .findPositionForKey(key == null ? null : DateTimeUtils.nanos((DateTime) key)));
-            } else if (keySources[0].getType() == Boolean.class) {
-                ac.setReverseLookupFunction(
-                        key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
-            } else {
-                ac.setReverseLookupFunction(stateManager::findPositionForKey);
-            }
-        } else {
-            final List<Consumer<Object[]>> transformers = new ArrayList<>();
-            for (int ii = 0; ii < keySources.length; ++ii) {
-                if (keySources[ii].getType() == DateTime.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
-                } else if (keySources[ii].getType() == Boolean.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null
-                                    : BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
-                }
-            }
-            if (transformers.isEmpty()) {
-                ac.setReverseLookupFunction(sk -> stateManager.findPositionForKey(((SmartKey) sk).values_));
-            } else {
-                ac.setReverseLookupFunction(key -> {
-                    final SmartKey smartKey = (SmartKey) key;
-                    final Object[] reinterpreted = Arrays.copyOf(smartKey.values_, smartKey.values_.length);
-                    for (final Consumer<Object[]> transform : transformers) {
-                        transform.accept(reinterpreted);
-                    }
-                    return stateManager.findPositionForKey(reinterpreted);
-                });
-            }
-        }
     }
 
     private static class KeyedUpdateContext implements SafeCloseable {
@@ -1155,8 +1106,7 @@ public class ChunkedOperatorAggregationHelper {
 
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
-                final WritableLongChunk<OrderedRowKeys> removedKeyIndices =
-                        WritableLongChunk.downcast(postPermutedKeyIndices);
+                final WritableLongChunk<RowKeys> removedKeyIndices = postPermutedKeyIndices;
 
                 while (modifiedPreShiftIterator.hasMore()) {
                     final RowSequence modifiedPreShiftChunk =
@@ -1200,8 +1150,8 @@ public class ChunkedOperatorAggregationHelper {
                     if (numKeyChanges > 0) {
                         slots.setSize(numKeyChanges);
                         removedKeyIndices.setSize(numKeyChanges);
-                        try (final RowSequence keyIndicesToRemoveChunk =
-                                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(removedKeyIndices)) {
+                        try (final RowSequence keyIndicesToRemoveChunk = RowSequenceFactory
+                                .wrapRowKeysChunkAsRowSequence(LongChunk.downcast(removedKeyIndices))) {
                             propagateRemovesToOperators(keyIndicesToRemoveChunk, slots);
                         }
                     }
@@ -1579,7 +1529,7 @@ public class ChunkedOperatorAggregationHelper {
     @NotNull
     private static QueryTable staticGroupedAggregation(QueryTable withView, String keyName, ColumnSource<?> keySource,
             AggregationContext ac) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Pair<WritableColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final Map<Object, RowSet> grouping = RowSetIndexer.of(withView.getRowSet()).getGrouping(keySource);
         // noinspection unchecked
         groupKeyIndexTable = GroupingUtils.groupingToFlatSources((ColumnSource) keySource, grouping);
@@ -1595,8 +1545,13 @@ public class ChunkedOperatorAggregationHelper {
                 resultColumnSourceMap);
         ac.propagateInitialStateToOperators(result, responsiveGroups);
 
-        final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
-        ac.setReverseLookupFunction(k -> (int) rll.get(k));
+        ac.supplyRowLookup(() -> {
+            final TObjectIntMap<Object> keyToSlot = new TObjectIntHashMap<>(
+                    responsiveGroups, Constants.DEFAULT_LOAD_FACTOR, DEFAULT_UNKNOWN_ROW);
+            final MutableInt slotNumber = new MutableInt(0);
+            grouping.keySet().forEach(k -> keyToSlot.put(k, slotNumber.getAndIncrement()));
+            return keyToSlot::get;
+        });
 
         return ac.transformResult(result);
     }
@@ -1855,7 +1810,7 @@ public class ChunkedOperatorAggregationHelper {
             MutableInt outputPosition,
             RowSetBuilderRandom initialRowsBuilder,
             boolean usePrev) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Pair<WritableColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final RowSetIndexer indexer = RowSetIndexer.of(input.getRowSet());
         final Map<Object, RowSet> grouping = usePrev ? indexer.getPrevGrouping(reinterpretedKeySources[0])
                 : indexer.getGrouping(reinterpretedKeySources[0]);
@@ -1963,7 +1918,7 @@ public class ChunkedOperatorAggregationHelper {
         if (table.isRefreshing()) {
             ac.startTrackingPrevValues();
 
-            final boolean isStream = table.isStream();
+            final boolean isBlink = table.isBlink();
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("groupBy(" + aggregationContextFactory + ")", table, result) {
 
@@ -1976,7 +1931,7 @@ public class ChunkedOperatorAggregationHelper {
 
                         @Override
                         public void onUpdate(@NotNull final TableUpdate upstream) {
-                            final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
                             }
@@ -2069,7 +2024,7 @@ public class ChunkedOperatorAggregationHelper {
                                 }
 
                                 final int newResultSize =
-                                        preserveEmpty || (isStream && lastSize != 0) || table.size() != 0 ? 1 : 0;
+                                        preserveEmpty || (isBlink && lastSize != 0) || table.size() != 0 ? 1 : 0;
                                 final TableUpdateImpl downstream = new TableUpdateImpl();
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 if ((lastSize == 0 && newResultSize == 1)) {
@@ -2120,11 +2075,9 @@ public class ChunkedOperatorAggregationHelper {
                         }
                     };
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            listener.manage(swapListener); // See note on keyed version
         }
 
-        ac.setReverseLookupFunction(key -> SmartKey.EMPTY.equals(key) ? 0 : -1);
+        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
         return ac.transformResult(result);
     }

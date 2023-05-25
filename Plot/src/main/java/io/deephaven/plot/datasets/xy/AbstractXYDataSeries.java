@@ -101,8 +101,18 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
+    public String getPointLabel() {
+        return shapeLabels.getDefaultValue();
+    }
+
+    @Override
     public String getPointLabel(int i) {
         return shapeLabels.get(i);
+    }
+
+    @Override
+    public Shape getPointShape() {
+        return pointShapes.getDefaultValue();
     }
 
     @Override
@@ -111,8 +121,18 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
     }
 
     @Override
+    public Double getPointSize() {
+        return shapeSizes.getDefaultValue();
+    }
+
+    @Override
     public Double getPointSize(int i) {
         return shapeSizes.get(i);
+    }
+
+    @Override
+    public Paint getPointColor() {
+        return shapeColors.getDefaultValue();
     }
 
     @Override

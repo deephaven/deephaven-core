@@ -19,8 +19,8 @@
 #include <arrow/table.h>
 #include <arrow/util/key_value_metadata.h>
 #include "deephaven/client/client.h"
-#include "deephaven/client/utility/utility.h"
 #include "deephaven/client/utility/table_maker.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::tests {
 class ColumnNamesForTests {

@@ -106,10 +106,10 @@ public class LongIntegerColumnTupleSource extends AbstractTupleSource<LongIntTup
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<LongIntTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        LongChunk<Values> chunk1 = chunks[0].asLongChunk();
-        IntChunk<Values> chunk2 = chunks[1].asIntChunk();
+        LongChunk<? extends Values> chunk1 = chunks[0].asLongChunk();
+        IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new LongIntTuple(chunk1.get(ii), chunk2.get(ii)));
         }

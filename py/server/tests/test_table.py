@@ -1,45 +1,63 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-import random
-import time
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-import deephaven
-
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
+from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
+from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table
+from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase
+
+
+# for scoping dependent table operation tests
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
+
+
+class EmptyCls:
+    ...
+
+
+foo = EmptyCls()
+foo.name = "GOOG"
+foo.price = 1000
 
 
 class TableTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
-        self.aggs = [
-            group(["aggGroup=var"]),
+        self.aggs_for_rollup = [
             avg(["aggAvg=var"]),
             count_("aggCount"),
-            partition("aggPartition"),
             first(["aggFirst=var"]),
             last(["aggLast=var"]),
             max_(["aggMax=var"]),
-            median(["aggMed=var"]),
             min_(["aggMin=var"]),
-            pct(0.20, ["aggPct=var"]),
             std(["aggStd=var"]),
             sum_(["aggSum=var"]),
             abs_sum(["aggAbsSum=var"]),
             var(["aggVar=var"]),
-            weighted_avg("var", ["weights"]),
         ]
+        self.aggs_not_for_rollup = [group(["aggGroup=var"]),
+                                    partition("aggPartition"),
+                                    median(["aggMed=var"]),
+                                    pct(0.20, ["aggPct=var"]),
+                                    weighted_avg("var", ["weights"]),
+                                    ]
+        self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -72,6 +90,12 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.update_view(["A = a * b"])
         ct = t.coalesce()
         self.assertEqual(self.test_table.size, ct.size)
+
+    def test_flatten(self):
+        t = self.test_table.update_view(["A = a * b"])
+        self.assertFalse(t.is_flat)
+        ct = t.flatten()
+        self.assertTrue(ct.is_flat)
 
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
@@ -227,12 +251,12 @@ class TableTestCase(BaseTestCase):
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
-        self.test_table.restrict_sort_to(cols)
-        result_table = self.test_table.sort(order_by=cols)
-        self.test_table.restrict_sort_to("b")
-        result_table = self.test_table.sort(order_by="b")
+        restricted_table = self.test_table.restrict_sort_to(cols)
+        result_table = restricted_table.sort(order_by=cols)
+        restricted_table = self.test_table.restrict_sort_to("b")
+        result_table = restricted_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
-            self.test_table.sort(order_by=["a"])
+            restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def test_sort_descending(self):
@@ -303,11 +327,12 @@ class TableTestCase(BaseTestCase):
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(
             cols=["b", "c", "d"]
         )
+
         with self.subTest("as-of join"):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.LESS_THAN)
+            result_table = left_table.aj(right_table, on="a < a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -315,9 +340,13 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
+            result_table = left_table.raj(right_table, on="a > a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
+
+        with self.assertRaises(DHError) as cm:
+            left_table.aj(right_table, on=["a", "b", "c <= c", "d", "e"])
+        self.assertRegex(str(cm.exception), r"Invalid column name")
 
     #
     # Table operation category: Aggregation
@@ -489,30 +518,31 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt2.table.size, 2)
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
-    def test_snapshot(self):
-        with self.subTest("do_init is False"):
-            t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-            )
-            snapshot = t.snapshot(source_table=self.test_table)
-            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
-            self.assertEqual(0, snapshot.size)
-
-        with self.subTest("do_init is True"):
-            snapshot = t.snapshot(source_table=self.test_table, do_init=True)
+    def test_snapshot_when(self):
+        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
+        with self.subTest("with defaults"):
+            snapshot = self.test_table.snapshot_when(t)
+            self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
             self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
 
-        with self.subTest("with cols"):
-            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+        with self.subTest("initial=True"):
+            snapshot = self.test_table.snapshot_when(t, initial=True)
+            self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
+
+        with self.subTest("stamp_cols=\"X\""):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
-            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+
+        with self.subTest("stamp_cols=[\"X\", \"Y\"]"):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
-    def test_snapshot_history(self):
-        t = empty_table(1).update(
-            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
-        )
-        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+    def test_snapshot_when_with_history(self):
+        t = time_table("00:00:01")
+        snapshot_hist = self.test_table.snapshot_when(t, history=True)
+        self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 
@@ -589,6 +619,12 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
+        def verify_layout_hint(t: Table, layout_hint_str: str):
+            attrs = self.test_table.attributes()
+            attrs["LayoutHints"] = layout_hint_str
+            self.assertIsNotNone(t)
+            self.assertEquals(attrs, t.attributes())
+
         t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {
                 "name": "Group1",
@@ -605,19 +641,28 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
 
         t = self.test_table.layout_hints(front="e")
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
 
         t = self.test_table.layout_hints(front=["e"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.SHOW)
+        verify_layout_hint(t, "searchable=Show;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.HIDE)
+        verify_layout_hint(t, "searchable=Hide;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.DEFAULT)
+        verify_layout_hint(t, "")
 
         t = self.test_table.layout_hints()
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "")
 
         with self.assertRaises(DHError) as cm:
             t = self.test_table.layout_hints(front=["e"], back=True)
@@ -809,22 +854,158 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             rt = t.slice(3, 2)
 
+    def test_rollup(self):
+        test_table = empty_table(100)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+        for agg in self.aggs_not_for_rollup:
+            with self.assertRaises(DHError) as cm:
+                rollup_table = test_table.rollup(aggs=[agg])
+            self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
 
-def global_fn() -> str:
-    return "global str"
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
+        self.assertIsNotNone(rollup_table)
 
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, include_constituents=True)
+        self.assertIsNotNone(rollup_table)
 
-global_int = 1001
-a_number = 10001
+    def test_tree(self):
+        # column 'a' contains duplicate values
+        with self.assertRaises(DHError) as cm:
+            tree_table = self.test_table.tree(id_col='a', parent_col='c')
+        self.assertRegex(str(cm.exception), r".+IllegalStateException")
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c')
+        self.assertIsNotNone(tree_table)
+        self.assertEqual(tree_table.id_col, 'a')
+        self.assertEqual(tree_table.parent_col, 'c')
 
-class EmptyCls:
-    ...
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='a')
+        self.assertIsNotNone(tree_table)
 
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
+        self.assertIsNotNone(tree_table)
 
-foo = EmptyCls()
-foo.name = "GOOG"
-foo.price = 1000
+    def test_attributes(self):
+        attrs = self.test_table.attributes()
+        self.assertTrue(attrs == {})
+
+        attrs["PluginName"] = "@deephaven/js-plugin-table-example"
+        attrs["PluginType"] = "@deephaven/auth-plugin"
+        attrs["PluginPrivate"] = True
+        attrs["PluginAttrs"] = j_hashmap({1: 2, 3: 4})
+        rt = self.test_table.with_attributes(attrs)
+        rt_attrs = rt.attributes()
+        self.assertEqual(attrs, rt_attrs)
+        self.assertTrue(rt.j_table is not self.test_table.j_table)
+
+    def test_grouped_column_as_arg(self):
+        t1 = empty_table(100).update(
+            ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(
+            ["id", "Person"]).group_by("id")
+        t2 = empty_table(100).update(
+            ["id = i % 10", "Person = random() > 0.5 ? `A` : random() > 0.5 ? `B` : `C`"]).sort(
+            ["id", "Person"]).group_by("id")
+        t3 = empty_table(100).update(["id = i % 10", "Person = random() > 0.5 ? 1 : random() > 0.5 ? 2 : 3"]).sort(
+            ["id", "Person"]).group_by("id")
+        t4 = empty_table(10).update(["id= i", "Person = new Object[]{`abc`, `def`}"])
+        t5 = empty_table(10).update(["id= i", "Person = new String[]{`abc`, `def`}"])
+
+        def make_pairs_1(a):
+            return len(a)
+
+        def make_pairs_2(tid, a):
+            return len(a) + tid
+
+        def make_pairs_3(tid, a, b):
+            return tid + len(a) + len(a)
+
+        for t in [t1, t2, t3, t4, t5]:
+            x1 = t.update("Pair=make_pairs_1(Person)")
+            x2 = t.update("Pair=make_pairs_2(id, Person)")
+            x3 = t.update("Pair=make_pairs_3(id, Person, Person)")
+            self.assertEqual(x1.size, 10)
+            self.assertEqual(x2.size, 10)
+            self.assertEqual(x3.size, 10)
+
+    def test_callable_attrs_in_query(self):
+        input_cols = [
+            datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
+        ]
+        test_table = new_table(cols=input_cols)
+        from deephaven.time import year, TimeZone
+        rt = test_table.update("Year = (int)year(DTCol, TimeZone.NY)")
+        self.assertEqual(rt.size, test_table.size)
+
+        class Foo:
+            ATTR = 256
+
+            def __call__(self):
+                ...
+
+            def do_something_instance(self, p=None):
+                return p if p else 1
+
+            @classmethod
+            def do_something_cls(cls, p=None):
+                return p if p else 1
+
+            @staticmethod
+            def do_something_static(p=None):
+                return p if p else 1
+
+        def do_something(p=None):
+            return p if p else 1
+
+        rt = empty_table(1).update("Col = Foo.ATTR")
+        self.assertTrue(rt.columns[0].data_type == dtypes.PyObject)
+
+        rt = empty_table(1).update("Col = (int)Foo.ATTR")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        foo = Foo()
+        rt = empty_table(1).update("Col = (int)foo.do_something_instance()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)Foo.do_something_cls()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)foo.do_something_static()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)do_something((byte)Foo.ATTR)")
+        df = to_pandas(rt)
+        self.assertEqual(df.loc[0]['Col'], 1)
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+    def test_await_update(self):
+        with self.assertRaises(DHError):
+            empty_table(10).await_update()
+
+        time_t = time_table("00:00:00.001")
+        updated = time_t.await_update()
+        self.assertTrue(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(1)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(-1)
+        self.assertFalse(updated)
+
+    def test_range_join(self):
+        aggs = [
+            group(cols=["GroupD=d"]),
+        ]
+        left_table = self.test_table.select_distinct()
+        right_table = self.test_table.select_distinct().sort("b").drop_columns("e")
+        result_table = left_table.range_join(right_table, on=["a = a", "c < b < e"], aggs=aggs)
+        self.assertEqual(result_table.size, left_table.size)
+        self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
+
+        with self.assertRaises(DHError):
+            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+
 
 if __name__ == "__main__":
     unittest.main()

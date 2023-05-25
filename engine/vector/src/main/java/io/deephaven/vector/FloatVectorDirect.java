@@ -8,41 +8,46 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
+/**
+ * A {@link FloatVector} backed by an array.
+ */
 @ArrayType(type = float[].class)
-public class FloatVectorDirect implements FloatVector {
+public final class FloatVectorDirect implements FloatVector {
 
     private final static long serialVersionUID = 3636374971797603565L;
 
+    public static final FloatVector ZERO_LENGTH_VECTOR = new FloatVectorDirect();
+
     private final float[] data;
 
-    public FloatVectorDirect(float... data){
-        this.data = data;
+    public FloatVectorDirect(@NotNull final float... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
-    public static final FloatVector ZERO_LEN_VECTOR = new FloatVectorDirect();
-
     @Override
-    public float get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public float get(final long index) {
+        if (index < 0 || index >= data.length) {
             return NULL_FLOAT;
         }
-        return data[LongSizedDataStructure.intSize("FloatVectorDirect get",  i)];
+        return data[(int) index];
     }
 
     @Override
-    public FloatVector subVector(long fromIndex, long toIndex) {
-        return new FloatVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public FloatVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new FloatVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public FloatVector subVectorByPositions(long [] positions) {
+    public FloatVector subVectorByPositions(final long[] positions) {
         return new FloatSubVector(this, positions);
     }
 
@@ -50,6 +55,19 @@ public class FloatVectorDirect implements FloatVector {
     @ArrayTypeGetter
     public float[] toArray() {
         return data;
+    }
+
+    @Override
+    public float[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfFloat.of(data);
+        }
+        return FloatVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
 
     @Override
@@ -63,12 +81,12 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return FloatVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof FloatVectorDirect) {
             return Arrays.equals(data, ((FloatVectorDirect) obj).data);
         }
@@ -76,7 +94,7 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return FloatVector.hashCode(this);
     }
 }

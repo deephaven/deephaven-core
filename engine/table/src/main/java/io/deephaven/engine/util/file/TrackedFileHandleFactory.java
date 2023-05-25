@@ -4,7 +4,6 @@
 package io.deephaven.engine.util.file;
 
 import io.deephaven.net.CommBase;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
@@ -184,7 +183,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
     }
 
-    private class CloseRecorder implements Procedure.Nullary {
+    private class CloseRecorder implements Runnable {
 
         private final AtomicBoolean reclaimed = new AtomicBoolean(false);
 
@@ -193,7 +192,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
         }
 
         @Override
-        public void call() {
+        public void run() {
             if (reclaimed.compareAndSet(false, true)) {
                 size.decrementAndGet();
             }
@@ -220,7 +219,7 @@ public class TrackedFileHandleFactory implements FileHandleFactory {
                     // If close fails, there's really nothing to be done about it.
                 }
             }
-            closeRecorder.call();
+            closeRecorder.run();
         }
     }
 }

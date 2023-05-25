@@ -10,11 +10,6 @@ def targetArch = Architecture.targetArchitecture(project)
 
 def baseMapAmd64 = [
         'server-base': 'server-netty',
-        'nltk-base': 'server-nltk-netty',
-        'pytorch-base': 'server-pytorch-netty',
-        'sklearn-base': 'server-sklearn-netty',
-        'tensorflow-base': 'server-tensorflow-netty',
-        'all-ai-base': 'server-all-ai-netty'
 ]
 
 // Only the server image is supported on arm64

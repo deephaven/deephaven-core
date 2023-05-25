@@ -12,13 +12,20 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableWritableChunk} implementation for short data.
  */
-public final class ResettableWritableShortChunk<ATTR_BASE extends Any> extends WritableShortChunk implements ResettableWritableChunk<ATTR_BASE> {
+public final class ResettableWritableShortChunk<ATTR_BASE extends Any>
+        extends WritableShortChunk<ATTR_BASE>
+        implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableShortChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getShortChunkPool().takeResettableWritableShortChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getShortChunkPool().takeResettableWritableShortChunk();
+        }
+        return new ResettableWritableShortChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableShortChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -34,49 +41,51 @@ public final class ResettableWritableShortChunk<ATTR_BASE extends Any> extends W
     }
 
     @Override
-    public final ResettableWritableShortChunk slice(int offset, int capacity) {
+    public ResettableWritableShortChunk<ATTR_BASE> slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableWritableShortChunk<>(data, this.offset + offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
         return resetFromTypedChunk(other.asWritableShortChunk(), offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
         final short[] typedArray = (short[])array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array) {
         final short[] typedArray = (short[])array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> clear() {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> clear() {
         return resetFromArray(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedChunk(WritableShortChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedChunk(WritableShortChunk<ATTR> other, int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedArray(short[] data, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedArray(short[] data, int offset, int capacity) {
         ChunkHelpers.checkArrayArgs(data.length, offset, capacity);
         this.data = data;
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
         //noinspection unchecked
-        return this;
+        return (WritableShortChunk<ATTR>) this;
     }
 
     @Override
-    public final void close() {
-        MultiChunkPool.forThisThread().getShortChunkPool().giveResettableWritableShortChunk(this);
+    public void close() {
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getShortChunkPool().giveResettableWritableShortChunk(this);
+        }
     }
 }

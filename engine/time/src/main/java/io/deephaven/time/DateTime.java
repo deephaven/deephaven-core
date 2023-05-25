@@ -3,11 +3,11 @@
  */
 package io.deephaven.time;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Date;
@@ -27,8 +29,8 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
  * An object representing a timepoint in Deephaven.
  *
  * <p>
- * The DateTime object is a timepoint, that is a precise instance in time without respect to timezones. The timepoint is
- * stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT). This provides a range
+ * The DateTime represents a zone-less, precise timepoint without respect to timezones. The instant is stored as a
+ * signed 64-bit long, representing nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT). This provides a range
  * from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC. The minimum long value is reserved for
  * {@link QueryConstants#NULL_LONG} and therefore is not permitted as a valid DateTime.
  * </p>
@@ -38,11 +40,11 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     private static final long serialVersionUID = -9077991715632523353L;
+    private static final DateTimeFormatter JODA_DATE_TIME_FORMAT =
+            DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final DateTimeFormatter JODA_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     private long nanos;
-
-    private static final DateTimeFormatter dateTimeFormat = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
-    private static final DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     public static DateTime of(Instant instant) {
         return new DateTime(DateTimeUtils.nanos(instant));
@@ -78,13 +80,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
-     * Create a new DateTime initialized to the epoch.
-     */
-    public DateTime() {
-        // for Externalizable
-    }
-
-    /**
      * Create a new DateTime initialized to the current system time. Based on {@link Clock#system()}. Equivalent to
      * {@code of(Clock.system())}.
      *
@@ -117,6 +112,13 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     /**
+     * Create a new DateTime initialized to the epoch.
+     */
+    public DateTime() {
+        // for Externalizable
+    }
+
+    /**
      * Create a new DateTime initialized to the provided nanoseconds since the epoch.
      *
      * @param nanos the number of nanoseconds since the epoch
@@ -125,6 +127,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         this.nanos = nanos;
     }
 
+    // region Numeric representations
     /**
      * Get this time represented as nanoseconds since the epoch
      *
@@ -136,7 +139,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     /**
      * Get this time represented as microseconds since the epoch
-     * 
+     *
      * @return the number of microseconds since the epoch
      */
     public long getMicros() {
@@ -145,7 +148,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
 
     /**
      * Get this time represented as milliseconds since the epoch
-     * 
+     *
      * @return the number of milliseconds since the epoch
      */
     public long getMillis() {
@@ -160,25 +163,19 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     public long getNanosPartial() {
         return nanos % 1000000;
     }
+    // region Numeric representations
 
-    /**
-     * Convert this DateTime to a Java Date.
-     *
-     * This DateTime will be truncated to milliseconds.
-     *
-     * @return a Java Date representing this DateTime
-     */
-    public Date getDate() {
-        return new Date(getMillis());
-    }
-
+    // region Mutations to other DateTime types
+    // region Joda DateTime flavors
     /**
      * Convert this DateTime to a Joda DateTime.
      *
      * This DateTime will be truncated to milliseconds.
      *
      * @return a Joda DateTime representing this DateTime
+     * @deprecated use {@link #toZonedDateTime(ZoneId)} instead
      */
+    @Deprecated
     public org.joda.time.DateTime getJodaDateTime() {
         return new org.joda.time.DateTime(getMillis());
     }
@@ -191,9 +188,150 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @param timeZone the timezone for the created Joda DateTime
      *
      * @return a Joda DateTime representing this DateTime
+     * @deprecated use {@link #toZonedDateTime(ZoneId)} instead
      */
+    @Deprecated
     public org.joda.time.DateTime getJodaDateTime(TimeZone timeZone) {
         return new org.joda.time.DateTime(getMillis(), timeZone.getTimeZone());
+    }
+    // endregion
+
+    // region Java DateTime flavors
+    /**
+     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the {@link ZoneId#systemDefault() system default}
+     * time zone.
+     *
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime() {
+        return toZonedDateTime(ZoneId.systemDefault());
+    }
+
+    /**
+     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
+     *
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final String zone) {
+        return toZonedDateTime(ZoneId.of(zone));
+    }
+
+    /**
+     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
+     *
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final TimeZone zone) {
+        return toZonedDateTime(zone.getZoneId());
+    }
+
+    /**
+     * Get a {@link ZonedDateTime} version of this {@link DateTime} at the specified time zone.
+     *
+     * @return a {@link ZonedDateTime}
+     */
+    @NotNull
+    public ZonedDateTime toZonedDateTime(@NotNull final ZoneId zone) {
+        return ZonedDateTime.ofInstant(getInstant(), zone);
+    }
+
+    /**
+     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the {@link ZoneId#systemDefault()
+     * system default} time zone.
+     *
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate() {
+        return toLocalDate(ZoneId.systemDefault());
+    }
+
+    /**
+     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final String zone) {
+        return toLocalDate(ZoneId.of(zone));
+    }
+
+    /**
+     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final TimeZone zone) {
+        return toLocalDate(zone.getZoneId());
+    }
+
+    /**
+     * Get a {@link LocalDate} representing the date of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalDate}
+     */
+    @NotNull
+    public LocalDate toLocalDate(@NotNull final ZoneId zone) {
+        return toZonedDateTime(zone).toLocalDate();
+    }
+
+    /**
+     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the
+     * {@link ZoneId#systemDefault() system default} time zone.
+     *
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime() {
+        return toLocalTime(ZoneId.systemDefault());
+    }
+
+    /**
+     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final String zone) {
+        return toLocalTime(ZoneId.of(zone));
+    }
+
+    /**
+     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final TimeZone zone) {
+        return toLocalTime(zone.getZoneId());
+    }
+
+    /**
+     * Get a {@link LocalTime} representing the time of day of this {@link DateTime} at the specified time zone.
+     *
+     * @return the {@link LocalTime}
+     */
+    @NotNull
+    public LocalTime toLocalTime(@NotNull final ZoneId zone) {
+        return toZonedDateTime(zone).toLocalTime();
+    }
+
+    /**
+     * Convert this DateTime to a Java Date.
+     *
+     * This DateTime will be truncated to milliseconds.
+     *
+     * @return a Java Date representing this DateTime
+     * @deprecated use {@link #toZonedDateTime()} instead.
+     */
+    @Deprecated
+    @NotNull
+    public Date getDate() {
+        return new Date(getMillis());
     }
 
     /**
@@ -201,10 +339,14 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      *
      * @return a Java Instant representing this DateTime
      */
+    @NotNull
     public Instant getInstant() {
         return Instant.ofEpochSecond(0, nanos);
     }
+    // endregion
+    // endregion
 
+    // region Object hashing / Comparison
     @Override
     public boolean equals(final Object that) {
         if (this == that) {
@@ -226,7 +368,9 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     public int compareTo(DateTime dateTime) {
         return (nanos < dateTime.nanos ? -1 : (nanos == dateTime.nanos ? 0 : 1));
     }
+    // endregion
 
+    // region String formatting
     @Override
     public String toString() {
         return toString(TimeZone.TZ_DEFAULT);
@@ -243,9 +387,10 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @param timeZone the timezone for formatting the string
      * @return a String representation of this DateTime
      */
-    public String toString(TimeZone timeZone) {
-        return dateTimeFormat.withZone(timeZone.getTimeZone()).print(getMillis())
-                + StringUtils.pad(String.valueOf(getNanosPartial()), 6, '0') + " " + timeZone.toString().substring(3);
+    @NotNull
+    public String toString(@NotNull final TimeZone timeZone) {
+        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getTimeZone()).print(getMillis())
+                + DateTimeUtils.pad(String.valueOf(getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**
@@ -253,6 +398,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      *
      * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in the default {@link TimeZone}.
      */
+    @NotNull
     public String toDateString() {
         return toDateString(TimeZone.TZ_DEFAULT);
     }
@@ -263,47 +409,61 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      * @param timeZone a TimeZone
      * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in the given timeZone.
      */
-    public String toDateString(TimeZone timeZone) {
-        return dateFormat.withZone(timeZone.getTimeZone()).print(getMillis());
+    @NotNull
+    public String toDateString(@NotNull final TimeZone timeZone) {
+        // noinspection ConstantConditions
+        if (timeZone == null) {
+            throw new IllegalArgumentException("timeZone cannot be null");
+        }
+        return JODA_DATE_FORMAT.withZone(timeZone.getTimeZone()).print(getMillis());
     }
 
     /**
-     * Get the date represented by this DateTime in the given joda {@code DateTimeZone}.
+     * Get the date represented by this DateTime in the given Joda {@code DateTimeZone} in ISO date format yyyy-mm.
      *
      * @param timeZone A joda DateTimeZone
      * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in the given {@code timeZone}
      */
-    public String toDateString(DateTimeZone timeZone) {
+    @NotNull
+    public String toDateString(@NotNull final DateTimeZone timeZone) {
+        // noinspection ConstantConditions
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-        return dateFormat.withZone(timeZone).print(getMillis());
+        return JODA_DATE_FORMAT.withZone(timeZone).print(getMillis());
     }
 
     /**
-     * Get the date represented by this DateTime in the time zone specified by {@code zoneId}
+     * Get the date represented by this DateTime in the time zone specified by {@code zoneId} in
+     * {@link java.time.format.DateTimeFormatter#ISO_LOCAL_DATE ISO} date format.
      *
      * @param zoneId A java time zone ID string
      * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in time zone represented by the given
      *         {@code zoneId}
      */
-    public String toDateString(String zoneId) {
+    @NotNull
+    public String toDateString(@NotNull final String zoneId) {
         return toDateString(ZoneId.of(zoneId));
     }
 
     /**
-     * Get the date represented by this DateTime in the given java {@code ZoneId}.
+     * Get the date represented by this DateTime in the given java {@code ZoneId} in
+     * {@link java.time.format.DateTimeFormatter#ISO_LOCAL_DATE ISO} date format.
      *
      * @param timeZone A java {@link ZoneId time zone ID}.
      * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in the given {@code timeZone}
      */
-    public String toDateString(ZoneId timeZone) {
+    @NotNull
+    public String toDateString(@NotNull final ZoneId timeZone) {
+        // noinspection ConstantConditions
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
         return ISO_LOCAL_DATE.format(ZonedDateTime.ofInstant(getInstant(), timeZone));
     }
+    // endregion
 
+    // region Externalizable
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(nanos);
     }
@@ -311,4 +471,5 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     public void readExternal(ObjectInput in) throws IOException {
         nanos = in.readLong();
     }
+    // endregion
 }

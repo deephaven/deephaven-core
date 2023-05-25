@@ -26,7 +26,7 @@ class UgpTestCase(BaseTestCase):
         ugp.auto_locking = False
 
     def tearDown(self):
-        ugp.auto_locking = False
+        ugp.auto_locking = True
         super().tearDown()
 
     def test_ugp_context_manager(self):

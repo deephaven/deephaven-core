@@ -127,11 +127,11 @@ public class FloatDateTimeDoubleColumnTupleSource extends AbstractTupleSource<Fl
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatLongDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
-        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatLongDoubleTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
         }

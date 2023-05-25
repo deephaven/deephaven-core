@@ -125,6 +125,11 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
+    public Double getPointSize() {
+        return PlotUtils.numberToDouble(sizes.getDefault());
+    }
+
+    @Override
     public Double getPointSize(final Comparable category) {
         return PlotUtils.numberToDouble(sizes.get(category));
     }
@@ -135,8 +140,18 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     }
 
     @Override
+    public String getLabel() {
+        return labels.getDefault();
+    }
+
+    @Override
     public String getLabel(final Comparable category) {
         return labels.get(category);
+    }
+
+    @Override
+    public Shape getPointShape() {
+        return shapes.getDefault();
     }
 
     @Override

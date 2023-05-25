@@ -107,10 +107,10 @@ public class FloatReinterpretedBooleanColumnTupleSource extends AbstractTupleSou
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        ByteChunk<? extends Values> chunk2 = chunks[1].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatByteTuple(chunk1.get(ii), chunk2.get(ii)));
         }

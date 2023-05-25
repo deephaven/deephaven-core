@@ -36,7 +36,8 @@ public class ReplicateUpdateBy {
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
                 "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection\\);",
                 "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);",
-                " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>");
+                " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>",
+                "public ObjectChunk<Object,", "public ObjectChunk<T,");
 
         final String[] exemptions = new String[] {
                 "long singletonGroup = QueryConstants.NULL_LONG",
@@ -49,7 +50,7 @@ public class ReplicateUpdateBy {
                 "long getFirstReprocessKey"
         };
 
-        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java",
                 exemptions);
         for (final String f : files) {
@@ -63,23 +64,135 @@ public class ReplicateUpdateBy {
         }
         objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java");
-        fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseFloatUpdateByOperator.java",
-                exemptions);
+        fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true,
+                "this\\(pair, affectingColumns, rowRedirection, null, 0, 0, false\\);",
+                "this(pair, affectingColumns, rowRedirection, null, 0, 0, false, colType);");
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/ShortCumSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/FloatCumSumOperator.java");
-        replicateNumericOperator(
+
+        files = ReplicatePrimitiveCode.shortToAllNumericals(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/ShortCumMinMaxOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/minmax/FloatCumMinMaxOperator.java");
+                null);
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+
+            if (f.contains("Long")) {
+                augmentLongWithReinterps(f);
+            }
+        }
+
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/ShortCumProdOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
+
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
+
+        files = ReplicatePrimitiveCode.charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/CharRollingAvgOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingminmax/CharRollingMinMaxOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingcount/CharRollingCountOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingstd/CharRollingStdOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/CharRollingWAvgOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/CharEmStdOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
+                fixupInteger(f);
+            }
+
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emstd/FloatEmStdOperator.java");
+
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
@@ -89,7 +202,7 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
 
-            if (f.contains("Byte") && f.contains("CumSum")) {
+            if (f.contains("Byte")) {
                 fixupByte(f);
             }
 
@@ -104,6 +217,12 @@ public class ReplicateUpdateBy {
     private static void fixupByteBase(String byteResult) throws IOException {
         final File objectFile = new File(byteResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
+
+        lines = addImport(lines, "import io.deephaven.util.QueryConstants;",
+                "import io.deephaven.engine.table.impl.sources.ByteArraySource;",
+                "import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;",
+                "import io.deephaven.engine.table.WritableColumnSource;");
+
         lines = replaceRegion(lines, "extra-fields", Collections.singletonList("    final byte nullValue;"));
         lines = replaceRegion(lines, "constructor",
                 Collections.singletonList("        this.nullValue = getNullValue();"));
@@ -114,9 +233,8 @@ public class ReplicateUpdateBy {
         lines = replaceRegion(lines, "Shifts",
                 Collections.singletonList(
                         "    @Override\n" +
-                                "    public void applyOutputShift(@NotNull final UpdateContext context,\n" +
-                                "                                 @NotNull final RowSet subIndexToShift,\n" +
-                                "                                 final long delta) {\n" +
+                                "    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {\n"
+                                +
                                 "        if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {\n"
                                 +
                                 "            ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);\n"
@@ -144,8 +262,7 @@ public class ReplicateUpdateBy {
                 "            this.maybeInnerSource = makeDenseSource();"));
         lines = replaceRegion(lines, "create-sparse", Collections.singletonList(
                 "            this.outputSource = makeSparseSource();"));
-        lines = replaceRegion(lines, "create-bucket", Collections.singletonList(
-                "                this.bucketLastVal = makeDenseSource();"));
+
         FileUtils.writeLines(objectFile, lines);
     }
 
@@ -164,6 +281,7 @@ public class ReplicateUpdateBy {
                 "boolean singletonVal", "byte singletonVal",
                 "QueryConstants", "BooleanUtils",
                 "boolean curVal", "byte curVal",
+                "boolean val", "byte val",
                 "getBoolean", "getByte",
                 "boolean previousVal", "byte previousVal",
                 "boolean currentVal", "byte currentVal",
@@ -206,8 +324,8 @@ public class ReplicateUpdateBy {
                 Collections.singletonList("                               ,final byte nullValue"));
         lines = replaceRegion(lines, "constructor", Collections.singletonList("        this.nullValue = nullValue;"));
         lines = ReplicationUtils.globalReplacements(lines,
-                "isCurrentNull = BytePrimitives\\.isNull\\(currentVal\\)", "isCurrentNull = currentVal == nullValue",
-                "!BytePrimitives\\.isNull\\(currentVal\\)", "currentVal != nullValue");
+                "!= NULL_BYTE", "!= nullValue",
+                "== NULL_BYTE", "== nullValue");
         FileUtils.writeLines(objectFile, lines);
     }
 
@@ -216,11 +334,13 @@ public class ReplicateUpdateBy {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines,
                 "BaseIntegerUpdateByOperator", "BaseIntUpdateByOperator",
+                "BaseWindowedIntegerUpdateByOperator", "BaseWindowedIntUpdateByOperator",
                 "public class Integer", "public class Int",
                 "public Integer", "public Int",
                 "WritableIntegerChunk", "WritableIntChunk",
                 "IntegerChunk", "IntChunk",
                 "getInteger", "getInt",
+                "IntegerRingBuffer", "IntRingBuffer",
                 "SizedIntegerChunk", "SizedIntChunk");
         if (intResult.contains("Integer")) {
             FileUtils.writeLines(new File(intResult.replaceAll("Integer", "Int")), lines);
@@ -236,6 +356,7 @@ public class ReplicateUpdateBy {
         final File objectFile = new File(objectResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = fixupChunkAttributes(lines);
+        lines = ReplicationUtils.addImport(lines, "import io.deephaven.engine.table.impl.util.ChunkUtils;");
         try {
             lines = removeImport(lines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         } catch (Exception e) {
@@ -248,20 +369,34 @@ public class ReplicateUpdateBy {
                 " ObjectArraySource ", " ObjectArraySource<T> ",
                 "ObjectChunk<Object, Values>", "ObjectChunk<T, Values>",
                 "SizedObjectChunk<Object, >", "SizedObjectChunk<>",
-                "new ObjectArraySource\\(\\);", "new ObjectArraySource(colType);",
+                "new ObjectArraySource\\(\\);", "new ObjectArraySource<>(colType);",
                 "new ObjectSparseArraySource\\(\\);", "new ObjectSparseArraySource<>(colType);",
                 "(?:QueryConstants\\.)?NULL_OBJECT", "null",
                 "Object lastValidValue", "T lastValidValue",
-                "Object currentVal", "T currentVal",
+                "Object val", "T val",
                 "Object curVal", "T curVal",
                 "Object previousVal", "T previousVal",
                 "Object singletonVal", "T singletonVal",
-                "getObject", "get");
+                "getObject", "get",
+                "getPrevObject", "getPrev");
         if (extraReplacements != null && extraReplacements.length > 0) {
             lines = globalReplacements(lines, extraReplacements);
         }
         lines = ReplicationUtils.replaceRegion(lines, "extra-constructor-args",
                 Collections.singletonList("                                      , final Class<T> colType"));
+        lines = ReplicationUtils.replaceRegion(lines, "clear-output",
+                Collections.singletonList(
+                        "    @Override\n" +
+                                "    public void clearOutputRows(final RowSet toClear) {\n" +
+                                "        // if we are redirected, clear the inner source\n" +
+                                "        if (rowRedirection != null) {\n" +
+                                "            ChunkUtils.fillWithNullValue(maybeInnerSource, toClear);\n" +
+                                "        } else {\n" +
+                                "            ChunkUtils.fillWithNullValue(outputSource, toClear);\n" +
+                                "        }\n" +
+                                "    }"));
+
+
         if (augmentConstructorAndFields) {
             lines = ReplicationUtils.replaceRegion(lines, "extra-fields",
                     Collections.singletonList("    private final Class<T> colType;"));

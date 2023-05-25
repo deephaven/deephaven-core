@@ -125,11 +125,11 @@ public class IntegerLongDoubleColumnTupleSource extends AbstractTupleSource<IntL
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<IntLongDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        IntChunk<Values> chunk1 = chunks[0].asIntChunk();
-        LongChunk<Values> chunk2 = chunks[1].asLongChunk();
-        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
+        IntChunk<? extends Values> chunk1 = chunks[0].asIntChunk();
+        LongChunk<? extends Values> chunk2 = chunks[1].asLongChunk();
+        DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new IntLongDoubleTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

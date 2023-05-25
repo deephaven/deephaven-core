@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.IntComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,7 +26,7 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
     private final double percentile;
     private final IntegerArraySource resultColumn;
 
-    IntPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    IntPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (IntegerArraySource) resultColumn;

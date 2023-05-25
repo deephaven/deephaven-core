@@ -24,7 +24,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceShort<ATTR extends Values>
         extends RegionedColumnSourceArray<Short, ATTR, ColumnRegionShort<ATTR>>
-        implements ColumnSourceGetDefaults.ForShort {
+        implements ColumnSourceGetDefaults.ForShort /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceShort(@NotNull final ColumnRegionShort<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionShort<ATTR>> makeDeferred) {
@@ -48,35 +48,12 @@ abstract class RegionedColumnSourceShort<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceShort<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionShort.createNull(PARAMETERS.regionMask), DeferredColumnRegionShort::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native short type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Short, ColumnRegionShort<ATTR>>
-            implements ColumnSourceGetDefaults.ForShort {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionShort<ATTR>>> outerColumnSource) {
-            super(Short.class, outerColumnSource);
-        }
-
-        @Override
-        public short getShort(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getShort(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionShort<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 

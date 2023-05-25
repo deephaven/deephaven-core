@@ -3,8 +3,10 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.JoinAddition;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
@@ -13,11 +15,21 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 public class SourceColumn implements SelectColumn {
+
+    public static SourceColumn of(JoinAddition joinAddition) {
+        // We know ColumnName already does validation
+        return new SourceColumn(joinAddition.existingColumn().name(), joinAddition.newColumn().name(), true);
+    }
+
+    public static SourceColumn[] from(Collection<? extends JoinAddition> joinAdditions) {
+        return joinAdditions.stream().map(SourceColumn::of).toArray(SourceColumn[]::new);
+    }
 
     @NotNull
     private final String sourceName;
@@ -31,8 +43,12 @@ public class SourceColumn implements SelectColumn {
     }
 
     public SourceColumn(String sourceName, String destName) {
-        this.sourceName = NameValidator.validateColumnName(sourceName);
-        this.destName = NameValidator.validateColumnName(destName);
+        this(NameValidator.validateColumnName(sourceName), NameValidator.validateColumnName(destName), true);
+    }
+
+    private SourceColumn(String sourceName, String destName, boolean unused) {
+        this.sourceName = sourceName;
+        this.destName = destName;
     }
 
     @Override
@@ -150,12 +166,6 @@ public class SourceColumn implements SelectColumn {
         int result = sourceName.hashCode();
         result = 31 * result + destName.hashCode();
         return result;
-    }
-
-
-    @Override
-    public boolean disallowRefresh() {
-        return false;
     }
 
     @Override

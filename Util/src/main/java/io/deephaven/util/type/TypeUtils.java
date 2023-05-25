@@ -10,6 +10,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -512,14 +514,15 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is a DateTime or Date.
+     * Whether the class is a DateTime, ZonedDateTime, or Instant.
      *
      * @param type The class.
-     * @return true if the type is a DateTime or {@link Date}.
+     * @return true if the type is a DateTime, {@link java.time.ZonedDateTime} or {@link Instant}.
      */
     public static boolean isDateTime(Class<?> type) {
-        return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null
-                && type.getAnnotation(IsDateTime.class).value();
+        return Instant.class.isAssignableFrom(type)
+                || ZonedDateTime.class.isAssignableFrom(type)
+                || (type.getAnnotation(IsDateTime.class) != null && type.getAnnotation(IsDateTime.class).value());
     }
 
     /**
@@ -540,16 +543,6 @@ public class TypeUtils {
      */
     public static boolean isBigNumeric(Class<?> type) {
         return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
-    }
-
-    /**
-     * Checks if a type is primitive or {@link Serializable}.
-     *
-     * @param type the class
-     * @return true if the type is primitive or Serializable
-     */
-    public static boolean isPrimitiveOrSerializable(Class<?> type) {
-        return type.isPrimitive() || Serializable.class.isAssignableFrom(type);
     }
 
     /**

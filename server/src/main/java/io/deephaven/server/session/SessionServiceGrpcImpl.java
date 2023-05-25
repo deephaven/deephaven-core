@@ -7,6 +7,8 @@ import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
+import io.deephaven.csv.util.MutableObject;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -22,18 +24,23 @@ import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
+import io.deephaven.proto.util.Exceptions;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.Context;
-import io.grpc.Contexts;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
+import io.grpc.ForwardingServerCallListener;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.auth.AuthConstants;
 import org.apache.arrow.flight.auth2.Auth2Constants;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -43,10 +50,15 @@ import java.util.Map;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
+    /**
+     * Deprecated, use {@link Auth2Constants#AUTHORIZATION_HEADER} instead.
+     */
+    @Deprecated
     public static final String DEEPHAVEN_SESSION_ID = Auth2Constants.AUTHORIZATION_HEADER;
     public static final Metadata.Key<String> SESSION_HEADER_KEY =
-            Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
-    public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);
+            Metadata.Key.of(Auth2Constants.AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER);
+    public static final Context.Key<SessionState> SESSION_CONTEXT_KEY =
+            Context.key(Auth2Constants.AUTHORIZATION_HEADER);
 
     private static final String SERVER_CALL_ID = "SessionServiceGrpcImpl.ServerCall";
     private static final Context.Key<InterceptedCall<?, ?>> SESSION_CALL_KEY = Context.key(SERVER_CALL_ID);
@@ -56,151 +68,142 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     private final SessionService service;
     private final TicketRouter ticketRouter;
 
-    @Inject()
-    public SessionServiceGrpcImpl(final SessionService service, final TicketRouter ticketRouter) {
+    @Inject
+    public SessionServiceGrpcImpl(
+            final SessionService service,
+            final TicketRouter ticketRouter) {
         this.service = service;
         this.ticketRouter = ticketRouter;
     }
 
     @Override
-    public void newSession(final HandshakeRequest request, final StreamObserver<HandshakeResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
-            final AuthContext authContext = new AuthContext.SuperUser();
+    public void newSession(
+            @NotNull final HandshakeRequest request,
+            @NotNull final StreamObserver<HandshakeResponse> responseObserver) {
+        // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
+        final AuthContext authContext = new AuthContext.SuperUser();
 
-            final SessionState session = service.newSession(authContext);
-            responseObserver.onNext(HandshakeResponse.newBuilder()
-                    .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
-                    .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
-                    .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
-                    .build());
+        final SessionState session = service.newSession(authContext);
+        responseObserver.onNext(HandshakeResponse.newBuilder()
+                .setMetadataHeader(ByteString.copyFromUtf8(Auth2Constants.AUTHORIZATION_HEADER))
+                .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
+                .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
+                .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
+                .build());
 
-            responseObserver.onCompleted();
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void refreshSessionToken(
+            @NotNull final HandshakeRequest request,
+            @NotNull final StreamObserver<HandshakeResponse> responseObserver) {
+        // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
+        if (request.getAuthProtocol() != 0) {
+            responseObserver.onError(
+                    Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
+            return;
+        }
+
+        final SessionState session = service.getCurrentSession();
+        final SessionService.TokenExpiration expiration = service.refreshToken(session);
+
+        responseObserver.onNext(HandshakeResponse.newBuilder()
+                .setMetadataHeader(ByteString.copyFromUtf8(Auth2Constants.AUTHORIZATION_HEADER))
+                .setSessionToken(expiration.getBearerTokenAsByteString())
+                .setTokenDeadlineTimeMillis(expiration.deadlineMillis)
+                .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
+                .build());
+
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void closeSession(
+            @NotNull final HandshakeRequest request,
+            @NotNull final StreamObserver<CloseSessionResponse> responseObserver) {
+        if (request.getAuthProtocol() != 0) {
+            responseObserver.onError(
+                    Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
+            return;
+        }
+
+        final SessionState session = service.getCurrentSession();
+        service.closeSession(session);
+        responseObserver.onNext(CloseSessionResponse.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void release(
+            @NotNull final ReleaseRequest request,
+            @NotNull final StreamObserver<ReleaseResponse> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+
+        if (!request.hasId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
+            return;
+        }
+        final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId(), "id");
+        if (export == null) {
+            responseObserver.onError(Exceptions.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
+            return;
+        }
+
+        // If the export is already in a terminal state, the implementation quietly ignores the request as there
+        // are no additional resources to release.
+        export.cancel();
+        responseObserver.onNext(ReleaseResponse.getDefaultInstance());
+        responseObserver.onCompleted();
+    }
+
+    @Override
+    public void exportFromTicket(
+            @NotNull final ExportRequest request,
+            @NotNull final StreamObserver<ExportResponse> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+
+        if (!request.hasSourceId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
+            return;
+        }
+        if (!request.hasResultId()) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Result ticket not supplied"));
+            return;
+        }
+
+        final SessionState.ExportObject<Object> source = ticketRouter.resolve(
+                session, request.getSourceId(), "sourceId");
+        session.newExport(request.getResultId(), "resultId")
+                .require(source)
+                .onError(responseObserver)
+                .submit(() -> {
+                    GrpcUtil.safelyComplete(responseObserver, ExportResponse.getDefaultInstance());
+                    return source.get();
+                });
+    }
+
+    @Override
+    public void exportNotifications(
+            @NotNull final ExportNotificationRequest request,
+            @NotNull final StreamObserver<ExportNotification> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+
+        session.addExportListener(responseObserver);
+        ((ServerCallStreamObserver<ExportNotification>) responseObserver).setOnCancelHandler(() -> {
+            session.removeExportListener(responseObserver);
         });
     }
 
     @Override
-    public void refreshSessionToken(final HandshakeRequest request,
-            final StreamObserver<HandshakeResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO: once jsapi is updated to use flight auth, then newSession can be deprecated or removed
-            if (request.getAuthProtocol() != 0) {
-                responseObserver.onError(
-                        GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
-                return;
-            }
-
-            final SessionState session = service.getCurrentSession();
-            final SessionService.TokenExpiration expiration = service.refreshToken(session);
-
-            responseObserver.onNext(HandshakeResponse.newBuilder()
-                    .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
-                    .setSessionToken(expiration.getBearerTokenAsByteString())
-                    .setTokenDeadlineTimeMillis(expiration.deadlineMillis)
-                    .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
-                    .build());
-
-            responseObserver.onCompleted();
-        });
-    }
-
-    @Override
-    public void closeSession(final HandshakeRequest request,
-            final StreamObserver<CloseSessionResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            if (request.getAuthProtocol() != 0) {
-                responseObserver.onError(
-                        GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Protocol version not allowed."));
-                return;
-            }
-
-            final SessionState session = service.getCurrentSession();
-            service.closeSession(session);
-            responseObserver.onNext(CloseSessionResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
-    }
-
-    @Override
-    public void release(final ReleaseRequest request, final StreamObserver<ReleaseResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = service.getCurrentSession();
-            if (!request.hasId()) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Release ticket not supplied"));
-                return;
-            }
-            final SessionState.ExportObject<?> export = session.getExportIfExists(request.getId(), "id");
-            if (export == null) {
-                responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAVAILABLE, "Export not yet defined"));
-                return;
-            }
-
-            // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (export) {
-                final ExportNotification.State currState = export.getState();
-                if (SessionState.isExportStateTerminal(currState)) {
-                    responseObserver.onError(
-                            GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Ticket already in state: " + currState));
-                    return;
-                }
-            }
-
-            export.cancel();
-            responseObserver.onNext(ReleaseResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
-    }
-
-    @Override
-    public void exportFromTicket(ExportRequest request, StreamObserver<ExportResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = service.getCurrentSession();
-            if (!request.hasSourceId()) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Source ticket not supplied"));
-                return;
-            }
-            if (!request.hasResultId()) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result ticket not supplied"));
-                return;
-            }
-
-            final SessionState.ExportObject<Object> source = ticketRouter.resolve(
-                    session, request.getSourceId(), "sourceId");
-            session.newExport(request.getResultId(), "resultId")
-                    .require(source)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        GrpcUtil.safelyExecute(() -> responseObserver.onNext(ExportResponse.getDefaultInstance()));
-                        GrpcUtil.safelyExecute(responseObserver::onCompleted);
-                        return source.get();
-                    });
-        });
-    }
-
-    @Override
-    public void exportNotifications(final ExportNotificationRequest request,
-            final StreamObserver<ExportNotification> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = service.getCurrentSession();
-
-            session.addExportListener(responseObserver);
-            ((ServerCallStreamObserver<ExportNotification>) responseObserver).setOnCancelHandler(() -> {
-                session.removeExportListener(responseObserver);
-            });
-        });
-    }
-
-    @Override
-    public void terminationNotification(TerminationNotificationRequest request,
-            StreamObserver<TerminationNotificationResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = service.getCurrentSession();
-            service.addTerminationListener(session, responseObserver);
-        });
+    public void terminationNotification(
+            @NotNull final TerminationNotificationRequest request,
+            @NotNull final StreamObserver<TerminationNotificationResponse> responseObserver) {
+        final SessionState session = service.getCurrentSession();
+        service.addTerminationListener(session, responseObserver);
     }
 
     public static void insertCallHeader(String key, String value) {
@@ -269,11 +272,13 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     }
 
     @Singleton
-    public static class AuthServerInterceptor implements ServerInterceptor {
+    public static class SessionServiceInterceptor implements ServerInterceptor {
         private final SessionService service;
+        private static final Status authenticationDetailsInvalid =
+                Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
-        @Inject()
-        public AuthServerInterceptor(final SessionService service) {
+        @Inject
+        public SessionServiceInterceptor(final SessionService service) {
             this.service = service;
         }
 
@@ -282,6 +287,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final Metadata metadata,
                 final ServerCallHandler<ReqT, RespT> serverCallHandler) {
             SessionState session = null;
+
+            // Lookup the session using Flight Auth 1.0 token.
             final byte[] altToken = metadata.get(AuthConstants.TOKEN_KEY);
             if (altToken != null) {
                 try {
@@ -290,13 +297,14 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 }
             }
 
+            // Lookup the session using Flight Auth 2.0 token.
             final String token = metadata.get(SESSION_HEADER_KEY);
             if (session == null && token != null) {
                 try {
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
                     try {
-                        call.close(Status.UNAUTHENTICATED, new Metadata());
+                        call.close(authenticationDetailsInvalid, new Metadata());
                     } catch (IllegalStateException ignored) {
                         // could be thrown if the call was already closed. As an interceptor, we can't throw,
                         // so ignoring this and just returning the no-op listener.
@@ -304,10 +312,113 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     return new ServerCall.Listener<>() {};
                 }
             }
+
+            // On the outer half of the call we'll install the context that includes our session.
             final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);
-            final Context newContext = Context.current().withValues(
+            final Context context = Context.current().withValues(
                     SESSION_CONTEXT_KEY, session, SESSION_CALL_KEY, serverCall);
-            return Contexts.interceptCall(newContext, serverCall, metadata, serverCallHandler);
+
+            final SessionState finalSession = session;
+
+            final MutableObject<SessionServiceCallListener<ReqT, RespT>> listener = new MutableObject<>();
+            rpcWrapper(serverCall, context, finalSession, () -> listener.setValue(new SessionServiceCallListener<>(
+                    serverCallHandler.startCall(serverCall, metadata), serverCall, context, finalSession)));
+            if (listener.getValue() == null) {
+                return new ServerCall.Listener<>() {};
+            }
+            return listener.getValue();
+        }
+    }
+
+    private static class SessionServiceCallListener<ReqT, RespT> extends
+            ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+        private final ServerCall<ReqT, RespT> call;
+        private final Context context;
+        private final SessionState session;
+
+        public SessionServiceCallListener(
+                ServerCall.Listener<ReqT> delegate,
+                ServerCall<ReqT, RespT> call,
+                Context context,
+                SessionState session) {
+            super(delegate);
+            this.call = call;
+            this.context = context;
+            this.session = session;
+        }
+
+        @Override
+        public void onMessage(ReqT message) {
+            rpcWrapper(call, context, session, () -> super.onMessage(message));
+        }
+
+        @Override
+        public void onHalfClose() {
+            rpcWrapper(call, context, session, super::onHalfClose);
+        }
+
+        @Override
+        public void onCancel() {
+            rpcWrapper(call, context, session, super::onCancel);
+        }
+
+        @Override
+        public void onComplete() {
+            rpcWrapper(call, context, session, super::onComplete);
+        }
+
+        @Override
+        public void onReady() {
+            rpcWrapper(call, context, session, super::onReady);
+        }
+    }
+
+    /**
+     * Utility to avoid errors escaping to the stream, to make sure the server log and client both see the message if
+     * there is an error, and if the error was not meant to propagate to a gRPC client, obfuscates it.
+     *
+     * @param call the gRPC call
+     * @param context the gRPC context to attach
+     * @param session the session that this gRPC call is associated with
+     * @param lambda the code to safely execute
+     */
+    private static <ReqT, RespT> void rpcWrapper(
+            @NotNull final ServerCall<ReqT, RespT> call,
+            @NotNull final Context context,
+            @Nullable final SessionState session,
+            @NotNull final ThrowingRunnable<InterruptedException> lambda) {
+        Context previous = context.attach();
+        try (final SafeCloseable ignored1 = LivenessScopeStack.open();
+                final SafeCloseable ignored2 = session == null ? null : session.getExecutionContext().open()) {
+            lambda.run();
+        } catch (final StatusRuntimeException err) {
+            if (err.getStatus().equals(Status.UNAUTHENTICATED)) {
+                log.info().append("ignoring unauthenticated request").endl();
+            } else {
+                log.error().append(err).endl();
+            }
+            closeWithError(call, err);
+        } catch (final InterruptedException err) {
+            Thread.currentThread().interrupt();
+            closeWithError(call, GrpcUtil.securelyWrapError(log, err, Code.UNAVAILABLE));
+        } catch (final Throwable err) {
+            closeWithError(call, GrpcUtil.securelyWrapError(log, err));
+        } finally {
+            context.detach(previous);
+        }
+    }
+
+    private static <ReqT, RespT> void closeWithError(
+            @NotNull final ServerCall<ReqT, RespT> call,
+            @NotNull final StatusRuntimeException err) {
+        try {
+            Metadata metadata = Status.trailersFromThrowable(err);
+            if (metadata == null) {
+                metadata = new Metadata();
+            }
+            call.close(Status.fromThrowable(err), metadata);
+        } catch (final Exception unexpectedErr) {
+            log.debug().append("Unanticipated gRPC Error: ").append(unexpectedErr).endl();
         }
     }
 }

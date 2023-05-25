@@ -4,16 +4,17 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flatbuf.Schema;
@@ -34,28 +35,28 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
                     : Collections.emptyList();
 
     @Inject
-    public CreateInputTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getCreateInputTable, CreateInputTableRequest::getResultId,
-                optionalSourceTable);
+    public CreateInputTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionCreateInputTable, BatchTableRequest.Operation::getCreateInputTable,
+                CreateInputTableRequest::getResultId, optionalSourceTable);
     }
 
     @Override
     public void validateRequest(CreateInputTableRequest request) throws StatusRuntimeException {
         // ensure we have one of either schema or source table (protobuf will ensure we don't have both)
         if (!request.hasSchema() && !request.hasSourceTableId()) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Must specify one of schema and source_table_id");
         }
 
         if (request.getKind().getKindCase() == null ||
                 request.getKind().getKindCase() == KIND_NOT_SET) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                    "Unrecognized InputTableKind");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized InputTableKind");
         }
     }
 
     @Override
-    public Table create(CreateInputTableRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final CreateInputTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         TableDefinition tableDefinitionFromSchema;
 
         if (request.hasSchema()) {
@@ -67,6 +68,7 @@ public class CreateInputTableGrpcImpl extends GrpcTableOperation<CreateInputTabl
         } else {
             throw new IllegalStateException("missing schema and source_table_id");
         }
+
         switch (request.getKind().getKindCase()) {
             case IN_MEMORY_APPEND_ONLY:
                 return AppendOnlyArrayBackedMutableTable.make(tableDefinitionFromSchema);

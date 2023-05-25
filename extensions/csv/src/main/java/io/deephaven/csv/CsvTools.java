@@ -3,8 +3,8 @@
  */
 package io.deephaven.csv;
 
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.base.Procedure;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -36,14 +36,12 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
@@ -76,11 +74,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -270,31 +270,30 @@ public class CsvTools {
     }
 
     /**
-     * Convert an ordered collection of column names to use for a result table into a series of {@link MatchPair rename
-     * pairs} to pass to {@link Table#renameColumns(MatchPair...)}.
+     * Convert an ordered collection of column names to use for a result table into a series of {@link Pair rename
+     * pairs} to pass to {@link Table#renameColumns(Collection)}.
      *
      * @param columnNames The column names
-     * @return An array of {@link MatchPair rename columns}
+     * @return A collection of {@link Pair rename columns}
      */
-    public static MatchPair[] renamesForHeaderless(Collection<String> columnNames) {
-        final MatchPair[] renames = new MatchPair[columnNames.size()];
+    public static Collection<Pair> renamesForHeaderless(Collection<String> columnNames) {
         int ci = 0;
+        final List<Pair> out = new ArrayList<>(columnNames.size());
         for (String columnName : columnNames) {
-            // CsvSpecs.headerless() column names are 1-based index
-            renames[ci] = new MatchPair(columnName, String.format("Column%d", ci + 1));
+            out.add(Pair.of(ColumnName.of(columnName), ColumnName.of(String.format("Column%d", ci + 1))));
             ++ci;
         }
-        return renames;
+        return out;
     }
 
     /**
-     * Convert an array of column names to use for a result table into a series of {@link MatchPair rename pairs} to
-     * pass to {@link Table#renameColumns(MatchPair...)}.
+     * Convert an array of column names to use for a result table into a series of {@link Pair rename pairs} to pass to
+     * {@link Table#renameColumns(Collection)}.
      *
      * @param columnNames The column names
-     * @return An array of {@link MatchPair rename columns}
+     * @return A collection of {@link Pair rename columns}
      */
-    public static MatchPair[] renamesForHeaderless(String... columnNames) {
+    public static Collection<Pair> renamesForHeaderless(String... columnNames) {
         return renamesForHeaderless(Arrays.asList(columnNames));
     }
 
@@ -583,14 +582,14 @@ public class CsvTools {
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, String... columns) throws IOException {
+            @Nullable BiConsumer<Long, Long> progress, String... columns) throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, columns);
     }
 
@@ -601,15 +600,15 @@ public class CsvTools {
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, String... columns)
             throws IOException {
         writeCsv(source, destPath, compressed, timeZone, progress, nullsAsEmpty, ',', columns);
     }
@@ -621,8 +620,8 @@ public class CsvTools {
      * @param destPath path to the CSV file to be written
      * @param compressed whether to zip the file being written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param columns a list of columns to include in the export
@@ -630,7 +629,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
             throws IOException {
         final Writer out =
                 (compressed ? new BufferedWriter(new OutputStreamWriter(new BzipFileOutputStream(destPath + ".bz2")))
@@ -644,15 +643,15 @@ public class CsvTools {
      * @param source a Deephaven table object to be exported
      * @param out Writer used to write the CSV
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param columns a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
     public static void writeCsv(Table source, Writer out, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... columns)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, String... columns)
             throws IOException {
         writeCsv(source, out, timeZone, progress, nullsAsEmpty, ',', columns);
     }
@@ -663,8 +662,8 @@ public class CsvTools {
      * @param source a Deephaven table object to be exported
      * @param out Writer used to write the CSV
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param columns a list of columns to include in the export
@@ -672,7 +671,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static void writeCsv(Table source, Writer out, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, char separator, String... columns)
             throws IOException {
 
         if (columns == null || columns.length == 0) {
@@ -827,14 +826,14 @@ public class CsvTools {
      * @param source a Deephaven table object to be exported
      * @param out a Writer to which the header should be written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
     public static void writeCsvContents(Table source, Writer out, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, String... colNames) throws IOException {
+            @Nullable BiConsumer<Long, Long> progress, String... colNames) throws IOException {
         writeCsvContents(source, out, timeZone, progress, NULLS_AS_EMPTY_DEFAULT, colNames);
     }
 
@@ -844,15 +843,15 @@ public class CsvTools {
      * @param source a Deephaven table object to be exported
      * @param out a Writer to which the header should be written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param colNames a list of columns to include in the export
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
     public static void writeCsvContents(Table source, Writer out, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, String... colNames)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, String... colNames)
             throws IOException {
         writeCsvContents(source, out, timeZone, progress, nullsAsEmpty, ',', colNames);
     }
@@ -863,8 +862,8 @@ public class CsvTools {
      * @param source a Deephaven table object to be exported
      * @param out a Writer to which the header should be written
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param colNames a list of columns to include in the export
@@ -872,7 +871,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static void writeCsvContents(Table source, Writer out, TimeZone timeZone,
-            @Nullable Procedure.Binary<Long, Long> progress, boolean nullsAsEmpty, char separator, String... colNames)
+            @Nullable BiConsumer<Long, Long> progress, boolean nullsAsEmpty, char separator, String... colNames)
             throws IOException {
         if (colNames.length == 0) {
             return;
@@ -910,8 +909,8 @@ public class CsvTools {
      * @param size the size of the DataColumns
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
-     * @param progress a procedure that implements Procedure.Binary, and takes a progress Integer and a total size
-     *        Integer to update progress
+     * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
+     *        update progress
      * @throws IOException if the target file cannot be written
      */
     private static void writeCsvContentsSeq(
@@ -921,7 +920,7 @@ public class CsvTools {
             final long size,
             final boolean nullsAsEmpty,
             final char separator,
-            @Nullable Procedure.Binary<Long, Long> progress) throws IOException {
+            @Nullable BiConsumer<Long, Long> progress) throws IOException {
         QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()");
         try {
@@ -945,7 +944,7 @@ public class CsvTools {
                     }
                 }
                 if (progress != null) {
-                    progress.call(i, size);
+                    progress.accept(i, size);
                 }
             }
         } finally {
@@ -970,12 +969,12 @@ public class CsvTools {
     }
 
     private static abstract class MySinkBase<TYPE, TARRAY> implements Sink<TARRAY> {
-        protected final ArrayBackedColumnSource<TYPE> result;
+        protected final WritableColumnSource<TYPE> result;
         protected long resultSize;
         protected final WritableColumnSource<?> reinterpreted;
         protected final ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker;
 
-        public MySinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+        public MySinkBase(WritableColumnSource<TYPE> result, Class<?> interpClass,
                 ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker) {
             this.result = result;
             this.resultSize = 0;
@@ -1006,7 +1005,7 @@ public class CsvTools {
 
         protected abstract void nullFlagsToValues(final TARRAY values, final boolean[] isNull, final int size);
 
-        public ArrayBackedColumnSource<TYPE> result() {
+        public WritableColumnSource<TYPE> result() {
             return result;
         }
 
@@ -1028,7 +1027,7 @@ public class CsvTools {
             implements Source<TARRAY>, Sink<TARRAY> {
         private final ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writableChunkWrapInvoker;
 
-        public MySourceAndSinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+        public MySourceAndSinkBase(WritableColumnSource<TYPE> result, Class<?> interpClass,
                 ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker,
                 ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writeableChunkWrapInvoker) {
             super(result, interpClass, chunkWrapInvoker);

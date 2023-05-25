@@ -3,15 +3,15 @@
  */
 #include "test_util.h"
 #include "deephaven/client/utility/table_maker.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 #include <cstdlib>
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
-using deephaven::client::utility::valueOrThrow;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
+using deephaven::client::utility::valueOrThrow;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::tests {
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),

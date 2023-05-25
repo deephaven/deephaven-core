@@ -127,11 +127,11 @@ public class BooleanFloatDateTimeColumnTupleSource extends AbstractTupleSource<B
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteFloatLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Boolean, Values> chunk1 = chunks[0].asObjectChunk();
-        FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
-        ObjectChunk<DateTime, Values> chunk3 = chunks[2].asObjectChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk1 = chunks[0].asObjectChunk();
+        FloatChunk<? extends Values> chunk2 = chunks[1].asFloatChunk();
+        ObjectChunk<DateTime, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteFloatLongTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
         }

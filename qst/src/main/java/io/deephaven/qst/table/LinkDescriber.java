@@ -75,6 +75,12 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        consumer.link(rangeJoinTable.left(), "left");
+        consumer.link(rangeJoinTable.right(), "right");
+    }
+
+    @Override
     public void visit(WhereInTable whereInTable) {
         consumer.link(whereInTable.left(), "left");
         consumer.link(whereInTable.right(), "right");
@@ -83,7 +89,12 @@ public class LinkDescriber extends TableVisitorGeneric {
     @Override
     public void visit(SnapshotTable snapshotTable) {
         consumer.link(snapshotTable.base(), "base");
-        consumer.link(snapshotTable.trigger(), "trigger");
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        consumer.link(snapshotWhenTable.base(), "base");
+        consumer.link(snapshotWhenTable.trigger(), "trigger");
     }
 
     @Override

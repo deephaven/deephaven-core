@@ -37,7 +37,10 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DDoubleArraySource}.
  */
-public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSource<Double>
+        implements ImmutableColumnSourceGetDefaults.ForDouble, WritableColumnSource<Double>, FillUnordered<Values>,
+        InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
+        /* MIXIN_IMPLS */ {
     private double[] data;
 
     // region constructor
@@ -72,13 +75,13 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
         return getUnsafe(rowKey);
     }
 
-    public final double getUnsafe(long index) {
-        return data[(int)index];
+    public final double getUnsafe(long rowKey) {
+        return data[(int)rowKey];
     }
 
-    public final double getAndSetUnsafe(long index, double newValue) {
-        double oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final double getAndSetUnsafe(long rowKey, double newValue) {
+        double oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 
@@ -111,22 +114,42 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
         }
     }
 
-    private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableDoubleChunk<? super Values> asDoubleChunk = destination.asWritableDoubleChunk();
+    // region fillChunkByRanges
+    /* TYPE_MIXIN */ void fillChunkByRanges(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableDoubleChunk<? super Values> chunk = destination.asWritableDoubleChunk();
+        // endregion chunkDecl
         final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = (int)(end - start + 1);
-            asDoubleChunk.copyFromTypedArray(data, (int)start, destPosition.getAndAdd(rangeLength), rangeLength);
+            final int length = (int)(end - start + 1);
+            // region copyFromTypedArrayImmutable
+            chunk.copyFromTypedArray(data, (int)start, destPosition.getAndAdd(length), length);
+            // endregion copyFromTypedArrayImmutable
         });
-        asDoubleChunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.intValue());
     }
+    // endregion fillChunkByRanges
 
-    private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableDoubleChunk<? super Values> asDoubleChunk = destination.asWritableDoubleChunk();
+    // region fillChunkByKeys
+    /* TYPE_MIXIN */ void fillChunkByKeys(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableDoubleChunk<? super Values> chunk = destination.asWritableDoubleChunk();
+        // endregion chunkDecl
         final MutableInt destPosition = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asDoubleChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
-        asDoubleChunk.setSize(destPosition.intValue());
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
+            // endregion conversion
+        });
+        chunk.setSize(destPosition.intValue());
     }
+    // endregion fillChunkByKeys
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
@@ -170,42 +193,82 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
         }
     }
 
-    private void fillFromChunkByKeys(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final DoubleChunk<? extends Values> asDoubleChunk = src.asDoubleChunk();
+    // region fillFromChunkByKeys
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
+        // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> set(key, asDoubleChunk.get(srcPos.getAndIncrement())));
-    }
-
-    private void fillFromChunkByRanges(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final DoubleChunk<? extends Values> asDoubleChunk = src.asDoubleChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((long start, long end) -> {
-            final int rangeLength = (int)(end - start + 1);
-            asDoubleChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, (int)start, rangeLength);
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            set(key, chunk.get(srcPos.getAndIncrement()));
+            // endregion conversion
         });
     }
+    // endregion fillFromChunkByKeys
 
+    // region fillFromChunkByRanges
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
+        // endregion chunkDecl
+        final MutableInt srcPos = new MutableInt(0);
+        rowSequence.forAllRowKeyRanges((long start, long end) -> {
+            final int length = (int)(end - start + 1);
+            // region copyToTypedArrayImmutable
+            chunk.copyToTypedArray(srcPos.getAndAdd(length), data, (int)start, length);
+            // endregion copyToTypedArrayImmutable
+        });
+    }
+    // endregion fillFromChunkByRanges
+
+    // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
-        final DoubleChunk<? extends Values> asDoubleChunk = src.asDoubleChunk();
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
-            set(keys.get(ii), asDoubleChunk.get(ii));
+            // region conversion
+            set(keys.get(ii), chunk.get(ii));
+            // endregion conversion
         }
     }
+    // endregion fillFromChunkUnordered
 
+    // region fillChunkUnordered
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableDoubleChunk<? super Values> doubleDest = dest.asWritableDoubleChunk();
+    public /* TYPE_MIXIN */ void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableDoubleChunk<? super Values> chunk = dest.asWritableDoubleChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
             final long longKey = keys.get(ii);
             if (longKey == RowSet.NULL_ROW_KEY) {
-                doubleDest.set(ii, NULL_DOUBLE);
+                chunk.set(ii, NULL_DOUBLE);
             } else {
                 final int key = (int)longKey;
-                doubleDest.set(ii, getUnsafe(key));
+                // region conversion
+                chunk.set(ii, getUnsafe(key));
+                // endregion conversion
             }
         }
     }
+    // endregion fillChunkUnordered
 
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
@@ -233,8 +296,9 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        // we don't track previous values, so we don't care to do any work
+    public void prepareForParallelPopulation(@NotNull final RowSequence rowSequence) {
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
     // region getArray
@@ -249,6 +313,6 @@ public class ImmutableDoubleArraySource extends AbstractDeferredGroupingColumnSo
     }
     // endregion setArray
 
-    // region reinterpret
-    // endregion reinterpret
+    // region reinterpretation
+    // endregion reinterpretation
 }

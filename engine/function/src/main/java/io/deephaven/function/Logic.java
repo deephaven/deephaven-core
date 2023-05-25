@@ -3,7 +3,8 @@
  */
 package io.deephaven.function;
 
-import io.deephaven.vector.BooleanVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.engine.primitive.iterator.*;
 
 /**
  * Logic functions.
@@ -48,11 +49,13 @@ public class Logic {
      * @param values values.
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
-    static public Boolean and(BooleanVector values) {
-        for (int ii = 0; ii < values.size(); ++ii) {
-            Boolean b = values.get(ii);
-            if (!b) {
-                return false;
+    static public Boolean and(ObjectVector<Boolean> values) {
+        try (final CloseableIterator<Boolean> vi = values.iterator()) {
+            while (vi.hasNext()) {
+                final Boolean b = vi.next();
+                if (!b) {
+                    return false;
+                }
             }
         }
 
@@ -85,13 +88,15 @@ public class Logic {
      * @param nullValue value to use in place of null values.
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
-    static public Boolean and(BooleanVector values, Boolean nullValue) {
-        for (int ii = 0; ii < values.size(); ++ii) {
-            Boolean b = values.get(ii);
-            b = b == null ? nullValue : b;
+    static public Boolean and(ObjectVector<Boolean> values, Boolean nullValue) {
+        try (final CloseableIterator<Boolean> vi = values.iterator()) {
+            while (vi.hasNext()) {
+                final Boolean b = vi.next();
+                final Boolean b2 = b == null ? nullValue : b;
 
-            if (!b) {
-                return false;
+                if (!b2) {
+                    return false;
+                }
             }
         }
 

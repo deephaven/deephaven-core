@@ -57,7 +57,7 @@ func (fs *fieldStream) Close() {
 
 // getFields returns a list of all fields currently present on the server.
 func (client *Client) getFields(ctx context.Context) ([]*apppb2.FieldInfo, error) {
-	ctx, err := client.withToken(ctx)
+	ctx, err := client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return nil, err
 	}

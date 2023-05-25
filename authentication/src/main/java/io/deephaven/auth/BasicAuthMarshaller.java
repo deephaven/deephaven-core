@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.auth;
 
 import com.google.protobuf.CodedInputStream;
@@ -31,7 +34,21 @@ public class BasicAuthMarshaller implements AuthenticationRequestHandler {
 
     private final static Logger log = LoggerFactory.getLogger(AnonymousAuthenticationHandler.class);
 
+    /**
+     * Handler for "Basic" auth types. Note that only one can be configured at a time, unlike other handler types - to
+     * support more than one username/password strategy, the implementation of this interface will need to handle that
+     * behavior, perhaps by delegating to more than one sub-handler.
+     */
     public interface Handler {
+        /**
+         * Like {@link AuthenticationRequestHandler#login(long, ByteBuffer, HandshakeResponseListener)}, takes the
+         * client's identity assertion and tries to validate it. As with those methods, returns an auth context to
+         * signal success, and can return empty to signal failure as well as throwing an exception.
+         * 
+         * @param username the specified username to authenticate as
+         * @param password the password to verify the user's identity
+         * @return AuthContext for this user if applicable else Empty
+         */
         Optional<AuthContext> login(String username, String password) throws AuthenticationException;
     }
 
@@ -48,12 +65,10 @@ public class BasicAuthMarshaller implements AuthenticationRequestHandler {
 
     @Override
     public void initialize(String targetUrl) {
-        log.warn().endl().endl().endl().endl().endl();
-        log.warn().append("================================================================================").endl();
-        log.warn().append("Basic Authentication is enabled.").endl();
-        log.warn().append("       Listening on ").append(targetUrl).endl();
-        log.warn().append("================================================================================").endl();
-        log.warn().endl().endl().endl().endl().endl();
+        log.info().append("================================================================================").endl();
+        log.info().append("Basic Authentication is enabled.").endl();
+        log.info().append("       Listening on ").append(targetUrl).endl();
+        log.info().append("================================================================================").endl();
     }
 
     @Override

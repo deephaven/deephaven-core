@@ -16,7 +16,8 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * Test class for {@link RegionedColumnSourceInt}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceInt extends TstRegionedColumnSourcePrimitive<Integer, Values, ColumnRegionInt<Values>> {
+public class TestRegionedColumnSourceInt extends TstRegionedColumnSourcePrimitive<
+        Integer, Values, ColumnRegionInt<Values>, ColumnRegionInt<Values>> {
 
     public TestRegionedColumnSourceInt() {
         super(ColumnRegionInt.class);

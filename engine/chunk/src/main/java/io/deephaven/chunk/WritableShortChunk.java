@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.ShortBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.nio.ShortBuffer;
  */
 public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableShortChunk[] EMPTY_WRITABLE_SHORT_CHUNK_ARRAY = new WritableShortChunk[0];
 
     static <ATTR extends Any> WritableShortChunk<ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     }
 
     public static <ATTR extends Any> WritableShortChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
+        }
+        return new WritableShortChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableShortChunk makeWritableChunkForPool(int size) {
         return new WritableShortChunk(makeArray(size), 0, size) {
             @Override
@@ -61,7 +68,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return new WritableShortChunk<>(data, offset, size);
     }
 
-    WritableShortChunk(short[] data, int offset, int capacity) {
+    protected WritableShortChunk(short[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -76,6 +83,31 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableShortChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableShortChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableShortChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final short[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableShortChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

@@ -11,7 +11,7 @@ public final class RollupConstants {
     private RollupConstants() {}
 
     /**
-     * Marker suffiix for rollup-internal column names.
+     * Marker suffix for rollup-internal column names.
      */
     public static final String ROLLUP_COLUMN_SUFFIX = "__ROLLUP__";
 

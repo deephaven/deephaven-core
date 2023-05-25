@@ -3,13 +3,14 @@
  */
 package io.deephaven.util.pool;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Require;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * A pool that
@@ -28,12 +29,12 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
     private final static int SPIN_COUNT = 10000;
 
     protected final LockFreeArrayQueue<T> pool; // TODO: a stack would be nice here
-    private final Procedure.Unary<T> clearingProcedure;
+    private final Consumer<T> clearingProcedure;
     private final String logPfx;
     private final Logger log;
 
-    private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-            Procedure.Unary<T> clearingProcedure, Logger log, String logPfx) {
+    private ThreadSafeFixedSizePool(int size, @Nullable Supplier<T> factory,
+            Consumer<T> clearingProcedure, Logger log, String logPfx) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.requirement((log == null) == (logPfx == null),
                 "log and logPfx must either both be null, or both non-null");
@@ -46,14 +47,14 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
             return;
         }
         for (int i = 0; i < size; ++i) {
-            T element = factory.call();
+            T element = factory.get();
             while (!pool.enqueue(element)) {
                 // spin
             }
         }
     }
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory, Procedure.Unary<T> clearingProcedure) {
+    public ThreadSafeFixedSizePool(int size, Supplier<T> factory, Consumer<T> clearingProcedure) {
         this(size, factory, clearingProcedure, null, null);
     }
 
@@ -64,7 +65,7 @@ public class ThreadSafeFixedSizePool<T> implements PoolEx<T> {
             return;
         }
         if (null != clearingProcedure) {
-            clearingProcedure.call(item);
+            clearingProcedure.accept(item);
         }
         if (pool.enqueue(item)) {
             // happy path

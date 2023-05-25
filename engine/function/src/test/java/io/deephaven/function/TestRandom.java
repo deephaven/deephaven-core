@@ -117,7 +117,7 @@ public class TestRandom extends BaseArrayTestCase {
     public void testRandomGaussian() {
         final double m = (double) 4.5;
         final double s = (double) 2.6;
-        final double[] vals = randomGaussian(m, s, n);
+        final double[] vals = randomGaussian(m, s, n * 10);
 
         final double avg = Numeric.avg(vals);
         final double std = Numeric.std(vals);

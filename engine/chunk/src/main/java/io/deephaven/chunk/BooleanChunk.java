@@ -19,11 +19,15 @@ import org.jetbrains.annotations.NotNull;
 // region BufferImports
 // endregion BufferImports
 
+// region BinarySearchImports
+// endregion BinarySearchImports
+
 /**
  * {@link Chunk} implementation for boolean data.
  */
 public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final BooleanChunk EMPTY = new BooleanChunk<>(ArrayTypeUtils.EMPTY_BOOLEAN_ARRAY, 0, 0);
 
     public static <ATTR extends Any> BooleanChunk<ATTR> getEmptyChunk() {
@@ -31,6 +35,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final BooleanChunk[] EMPTY_BOOLEAN_CHUNK_ARRAY = new BooleanChunk[0];
 
     static <ATTR extends Any> BooleanChunk<ATTR>[] getEmptyChunkArray() {
@@ -113,7 +118,7 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -130,9 +135,12 @@ public class BooleanChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableBooleanChunk<ATTR_DERIV> downcast(WritableBooleanChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> BooleanChunk<ATTR_DERIV> downcast(BooleanChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableBooleanChunk<ATTR_DERIV>) self;
+        return (BooleanChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
+
+    // region BinarySearch
+    // endregion BinarySearch
 }

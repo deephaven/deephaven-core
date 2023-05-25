@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -44,7 +43,8 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         this.innerSet = Objects.requireNonNull(innerSet);
     }
 
-    protected final OrderedLongSet getInnerSet() {
+    @VisibleForTesting
+    public final OrderedLongSet getInnerSet() {
         return innerSet;
     }
 
@@ -78,7 +78,23 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     protected void postMutationHook() {}
 
-    private void assign(final OrderedLongSet maybeNewImpl) {
+    /**
+     * Reset this WritableRowSetImpl to match another RowSet by updating the {@code innerSet}. This will internally
+     * assign {@code this.innerSet} to a copy-on-write reference to {@code ((WritableRowSetImpl) other).innerSet}. The
+     * two sets will diverge when either is modified. To maintain continuity between the sets, this function should be
+     * called each UGP cycle.
+     *
+     * @param other The RowSet to reset to
+     */
+    @Override
+    public void resetTo(@NotNull final RowSet other) {
+        final OrderedLongSet otherInnerSet = getInnerSet(other);
+        preMutationHook();
+        assign(otherInnerSet.ixCowRef());
+        postMutationHook();
+    }
+
+    void assign(final OrderedLongSet maybeNewImpl) {
         invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == innerSet) {
             return;
@@ -295,22 +311,24 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void validate(final String failMsg) {
         innerSet.ixValidate(failMsg);
         long totalSize = 0;
-        final RangeIterator it = rangeIterator();
-        long lastEnd = Long.MIN_VALUE;
         final String m = failMsg == null ? "" : failMsg + " ";
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            final long end = it.currentRangeEnd();
-            Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
-            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
-            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
-                    "rowSet");
-            Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd", this,
-                    "rowSet");
-            lastEnd = end;
+        try (final RangeIterator it = rangeIterator()) {
+            long lastEnd = Long.MIN_VALUE;
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+                Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+                Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                        "rowSet");
+                Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd",
+                        this,
+                        "rowSet");
+                lastEnd = end;
 
-            totalSize += ((end - start) + 1);
+                totalSize += ((end - start) + 1);
+            }
         }
 
         Assert.eq(totalSize, m + "totalSize", size(), "size()");
@@ -461,7 +479,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
-    public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
+    public final void fillRowKeyChunk(final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         RowSetUtils.fillKeyIndicesChunk(this, chunkToFill);
     }
 

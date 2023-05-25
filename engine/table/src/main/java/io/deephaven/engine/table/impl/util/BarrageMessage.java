@@ -19,6 +19,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * This is a structured object that represents the barrage update record batch.
  */
 public class BarrageMessage implements SafeCloseable {
+    public static final ModColumnData[] ZERO_MOD_COLUMNS = new ModColumnData[0];
+
     public interface Listener {
         void handleBarrageMessage(BarrageMessage message);
 

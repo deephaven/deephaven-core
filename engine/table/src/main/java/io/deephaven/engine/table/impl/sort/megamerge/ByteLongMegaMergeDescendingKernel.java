@@ -8,10 +8,10 @@
  */
 package io.deephaven.engine.table.impl.sort.megamerge;
 
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.attributes.Any;
@@ -32,7 +32,7 @@ public class ByteLongMegaMergeDescendingKernel {
         private static final ByteLongMegaMergeDescendingKernelContext INSTANCE = new ByteLongMegaMergeDescendingKernelContext();
 
         @Override
-        public void merge(LongArraySource indexDestinationSource, ArrayBackedColumnSource<?> valuesDestinationSource,
+        public void merge(LongArraySource indexDestinationSource, WritableColumnSource<?> valuesDestinationSource,
                 long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys,
                 Chunk<ATTR> valuesToMerge) {
             ByteLongMegaMergeDescendingKernel.merge(indexDestinationSource, (ByteArraySource) valuesDestinationSource,

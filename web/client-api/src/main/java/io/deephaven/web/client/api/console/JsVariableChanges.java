@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.console;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
@@ -10,16 +12,10 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
 
+
+@TsInterface
+@TsName(namespace = "dh.ide", name = "VariableChanges")
 public class JsVariableChanges {
-    @JsProperty(namespace = "dh.VariableType")
-    public static final String TABLE = "Table",
-            TREETABLE = "TreeTable",
-            TABLEMAP = "TableMap",
-            PARTITIONEDTABLE = "PartitionedTable",
-            FIGURE = "Figure",
-            OTHERWIDGET = "OtherWidget",
-            PANDAS = "pandas.DataFrame",
-            TREEMAP = "Treemap";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;

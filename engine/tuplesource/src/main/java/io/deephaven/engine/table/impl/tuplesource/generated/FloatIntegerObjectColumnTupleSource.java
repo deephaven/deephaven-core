@@ -125,11 +125,11 @@ public class FloatIntegerObjectColumnTupleSource extends AbstractTupleSource<Flo
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatIntObjectTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        IntChunk<Values> chunk2 = chunks[1].asIntChunk();
-        ObjectChunk<Object, Values> chunk3 = chunks[2].asObjectChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
+        ObjectChunk<Object, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatIntObjectTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

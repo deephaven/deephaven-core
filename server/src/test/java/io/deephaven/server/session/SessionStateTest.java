@@ -5,14 +5,13 @@ package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -61,7 +60,7 @@ public class SessionStateTest {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
-        session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
+        session = new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session));
         nextExportId = 1;
@@ -221,9 +220,9 @@ public class SessionStateTest {
         exportObj.cancel();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
+        // We should be able to cancel prior to definition without error.
         final MutableBoolean submitted = new MutableBoolean();
-        expectException(StatusRuntimeException.class,
-                () -> session.newExport(nextExportId++).submit(submitted::setTrue));
+        session.newExport(nextExportId++).submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
@@ -637,7 +636,8 @@ public class SessionStateTest {
 
     @Test
     public void testVerifyExpirationSession() {
-        final SessionState session = new SessionState(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
+        final SessionState session =
+                new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
                 DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));

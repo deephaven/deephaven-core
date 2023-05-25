@@ -12,6 +12,7 @@ enum ProjectType {
     JAVA_LOCAL(false, 'io.deephaven.project.java-local'),
     JAVA_APPLICATION(false, 'io.deephaven.project.java-application'),
     JAVA_PUBLIC(true, 'io.deephaven.project.java-public'),
+    JAVA_PUBLIC_SHADOW(true, 'io.deephaven.project.java-public-shadow'),
     JAVA_PUBLIC_TESTING(true, 'io.deephaven.project.java-public-testing'),
     BOM_PUBLIC(true, 'io.deephaven.project.bom-public'),
     ROOT(false, 'io.deephaven.project.root');

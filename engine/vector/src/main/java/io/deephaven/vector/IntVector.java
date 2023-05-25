@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -17,7 +19,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface IntVector extends Vector<IntVector> {
+/**
+ * A {@link Vector} of primitive ints.
+ */
+public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
 
     long serialVersionUID = -1373264425081841175L;
 
@@ -25,23 +30,65 @@ public interface IntVector extends Vector<IntVector> {
         return PrimitiveVectorType.of(IntVector.class, IntType.instance());
     }
 
-    int get(long i);
+    /**
+     * Get the element of this IntVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_INT null int}.
+     *
+     * @param index An offset into this IntVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_INT null int}
+     */
+    int get(long index);
 
     @Override
-    IntVector subVector(long fromIndex, long toIndex);
+    IntVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    IntVector subVectorByPositions(long [] positions);
+    IntVector subVectorByPositions(long[] positions);
 
     @Override
     int[] toArray();
 
     @Override
-    long size();
+    int[] copyToArray();
+
+    @Override
+    IntVector getDirect();
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default CloseablePrimitiveIteratorOfInt iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfInt() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public int nextInt() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
+
+    @Override
+    @FinalDefault
+    default Class<?> getComponentType() {
         return int.class;
     }
 
@@ -51,12 +98,8 @@ public interface IntVector extends Vector<IntVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
-    @Override
-    IntVector getDirect();
-
     static String intValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer) val);
     }
 
     static String primitiveIntValToString(final int val) {
@@ -66,21 +109,22 @@ public interface IntVector extends Vector<IntVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The IntVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The IntVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final IntVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final IntVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveIntValToString(array.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveIntValToString(array.get(ei)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        try (final CloseablePrimitiveIteratorOfInt iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveIntValToString(iterator.nextInt()));
+            iterator.forEachRemaining(
+                    (final int value) -> builder.append(',').append(primitiveIntValToString(value)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,44 +135,55 @@ public interface IntVector extends Vector<IntVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a IntVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a IntVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final IntVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final IntVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof IntVector)) {
+        if (!(bObj instanceof IntVector)) {
             return false;
         }
-        final IntVector bArray = (IntVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final IntVector bVector = (IntVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfInt aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                // region ElementEquals
+                if (aIterator.nextInt() != bIterator.nextInt()) {
+                    return false;
+                }
+                // endregion ElementEquals
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(int[])}.
      *
-     * @param array The IntVector to hash
+     * @param vector The IntVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final IntVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final IntVector vector) {
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Integer.hashCode(array.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfInt iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Integer.hashCode(iterator.nextInt());
+            }
         }
         return result;
     }
@@ -138,7 +193,22 @@ public interface IntVector extends Vector<IntVector> {
      */
     abstract class Indirect implements IntVector {
 
-        private static final long serialVersionUID = 1L;
+        @Override
+        public int[] toArray() {
+            final int size = intSize("IntVector.toArray");
+            final int[] result = new int[size];
+            try (final CloseablePrimitiveIteratorOfInt iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextInt();
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public int[] copyToArray() {
+            return toArray();
+        }
 
         @Override
         public IntVector getDirect() {
@@ -162,7 +232,7 @@ public interface IntVector extends Vector<IntVector> {
         }
 
         protected final Object writeReplace() {
-            return new IntVectorDirect(toArray());
+            return getDirect();
         }
     }
 }

@@ -58,7 +58,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
     }
 
     public void testPreserveGrouping() {
-        final Table x = TstUtils.testTable(TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+        final Table x = TstUtils.testTable(TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6));
         final RowSetIndexer xIndexer = RowSetIndexer.of(x.getRowSet());
         assertTrue(xIndexer.hasGrouping(x.getColumnSource("Sym")));
@@ -73,19 +73,31 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("SentinelDoubled")));
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Foo")));
         assertFalse(xsIndexer.hasGrouping(xs.getColumnSource("Sentinel")));
+
+        final Table x2 = TstUtils.testTable(TstUtils.i(0, 1 << 16, 2 << 16, 3 << 16, 4 << 16, 5 << 16).toTracking(),
+                TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA"),
+                intCol("Sentinel", 1, 2, 3, 4, 5, 6));
+
+        final Table xu = x2.update("Sym2=Sym");
+        assertTableEquals(x2, xu.view("Sym=Sym2", "Sentinel"));
+
+        final RowSetIndexer xuIndexer = RowSetIndexer.of(xu.getRowSet());
+        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym")));
+        assertTrue(xuIndexer.hasGrouping(xu.getColumnSource("Sym2")));
+        assertFalse(xuIndexer.hasGrouping(xu.getColumnSource("Sentinel")));
     }
 
     public void testPreserveDeferredGrouping() throws IOException {
         final File testDirectory = Files.createTempDirectory("DeferredGroupingTest").toFile();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            final ColumnHolder symHolder = TstUtils.cG("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
-            final ColumnHolder sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
+            final ColumnHolder<?> symHolder = TstUtils.colGrouped("Sym", "AAPL", "AAPL", "BRK", "BRK", "TSLA", "TLSA");
+            final ColumnHolder<?> sentinelHolder = intCol("Sentinel", 1, 2, 3, 4, 5, 6);
 
             final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
             final TrackingRowSet rowSet = RowSetFactory.flat(6).toTracking();
-            columns.put("Sym", TstUtils.getTreeMapColumnSource(rowSet, symHolder));
-            columns.put("Sentinel", TstUtils.getTreeMapColumnSource(rowSet, sentinelHolder));
+            columns.put("Sym", TstUtils.getTestColumnSource(rowSet, symHolder));
+            columns.put("Sentinel", TstUtils.getTestColumnSource(rowSet, sentinelHolder));
             final TableDefinition definition = TableDefinition.of(
                     ColumnDefinition.ofString("Sym").withGrouping(),
                     ColumnDefinition.ofInt("Sentinel"));

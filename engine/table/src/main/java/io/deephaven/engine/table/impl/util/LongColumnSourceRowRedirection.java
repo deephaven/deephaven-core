@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -10,8 +11,10 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
  * {@link RowRedirection} implementation that wraps a {@link ColumnSource} of {@code longs}.
@@ -20,26 +23,26 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
 
     protected final CST columnSource;
 
-    public LongColumnSourceRowRedirection(CST columnSource) {
+    public LongColumnSourceRowRedirection(@NotNull final CST columnSource) {
         this.columnSource = columnSource;
     }
 
     @Override
     public final long get(final long outerRowKey) {
-        final long innerIndex = columnSource.getLong(outerRowKey);
-        if (innerIndex == QueryConstants.NULL_LONG) {
-            return RowSequence.NULL_ROW_KEY;
+        final long innerRowKey = columnSource.getLong(outerRowKey);
+        if (innerRowKey == NULL_LONG) {
+            return NULL_ROW_KEY;
         }
-        return innerIndex;
+        return innerRowKey;
     }
 
     @Override
     public final long getPrev(final long outerRowKey) {
-        final long innerIndex = columnSource.getPrevLong(outerRowKey);
-        if (innerIndex == QueryConstants.NULL_LONG) {
-            return RowSequence.NULL_ROW_KEY;
+        final long innerRowKey = columnSource.getPrevLong(outerRowKey);
+        if (innerRowKey == NULL_LONG) {
+            return NULL_ROW_KEY;
         }
-        return innerIndex;
+        return innerRowKey;
     }
 
     @Override
@@ -50,14 +53,16 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
     @Override
     public final void fillChunk(
             @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        final WritableLongChunk<Values> asValuesChunk = WritableLongChunk.upcast(innerRowKeys);
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        final WritableLongChunk<? super Values> asValuesChunk = WritableLongChunk.upcast(innerRowKeysTyped);
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);
-        for (int ii = 0; ii < innerRowKeys.size(); ++ii) {
-            if (innerRowKeys.get(ii) == QueryConstants.NULL_LONG) {
-                innerRowKeys.set(ii, RowSequence.NULL_ROW_KEY);
+        final int size = innerRowKeysTyped.size();
+        for (int ii = 0; ii < size; ++ii) {
+            if (innerRowKeysTyped.get(ii) == NULL_LONG) {
+                innerRowKeysTyped.set(ii, NULL_ROW_KEY);
             }
         }
     }
@@ -65,15 +70,16 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
     @Override
     public final void fillPrevChunk(
             @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        final WritableLongChunk<Values> asValuesChunk =
-                WritableLongChunk.downcast(WritableLongChunk.upcast(innerRowKeys));
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        final WritableLongChunk<? super Values> asValuesChunk = WritableLongChunk.upcast(innerRowKeysTyped);
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillPrevChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);
-        for (int ii = 0; ii < innerRowKeys.size(); ++ii) {
-            if (innerRowKeys.get(ii) == QueryConstants.NULL_LONG) {
-                innerRowKeys.set(ii, RowSequence.NULL_ROW_KEY);
+        final int size = innerRowKeysTyped.size();
+        for (int ii = 0; ii < size; ++ii) {
+            if (innerRowKeysTyped.get(ii) == NULL_LONG) {
+                innerRowKeysTyped.set(ii, NULL_ROW_KEY);
             }
         }
     }
@@ -82,12 +88,12 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
 
         private final ColumnSource.FillContext colSrcCtx;
 
-        private FillContext(@NotNull final LongColumnSourceRowRedirection csrc, final int chunkSize) {
+        private FillContext(@NotNull final LongColumnSourceRowRedirection<?> csrc, final int chunkSize) {
             colSrcCtx = csrc.columnSource.makeFillContext(chunkSize);
         }
 
         @Override
-        public final void close() {
+        public void close() {
             colSrcCtx.close();
         }
 

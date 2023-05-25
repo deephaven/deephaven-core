@@ -45,12 +45,9 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .apply((Function) args[0], (Table) proxy));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("setAttribute", String.class, Object.class),
-                    (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                            .setAttribute((String) args[0], args[1]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttribute", String.class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttribute((String) args[0]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeNames"),
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("getAttributeKeys"),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).getAttributeNames());
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasAttribute", String.class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasAttribute((String) args[0]));
@@ -60,6 +57,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
             throw new RuntimeException(e);
         }
     }
+
+    private static final Map<String, Object> ATTRIBUTES = Map.of(Table.NON_DISPLAY_TABLE, true);
 
     private static final Class[] PROXY_INTERFACES = new Class[] {Table.class};
 
@@ -94,11 +93,6 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
      * Once the user is done adding operations, the supplier should be marked as complete
      */
     private final boolean isComplete;
-
-    /**
-     * A map of table attributes. This is necessary for ACL support.
-     */
-    private final Map<String, Object> attributes = new HashMap<>();
 
     /**
      * Use to start the construction of a Table Supplier.
@@ -161,7 +155,6 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         // This is intended to be a copy
         this.tableOperations = new ArrayList<>(tableOperations);
         this.isComplete = isComplete;
-        setAttribute(Table.NON_DISPLAY_TABLE, true);
     }
 
     private Table complete() {
@@ -296,28 +289,20 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         return function.apply(table);
     }
 
-    private Void setAttribute(String key, Object object) {
-        // These are the only supported attributes for Table Supplier
-        if (Table.NON_DISPLAY_TABLE.equals(key)) {
-            attributes.put(key, object);
-        }
-        return null;
-    }
-
     private Object getAttribute(String key) {
-        return attributes.get(key);
+        return ATTRIBUTES.get(key);
     }
 
     private Set<String> getAttributeNames() {
-        return attributes.keySet();
+        return ATTRIBUTES.keySet();
     }
 
     private boolean hasAttribute(String name) {
-        return attributes.containsKey(name);
+        return ATTRIBUTES.containsKey(name);
     }
 
     private Map<String, Object> getAttributes() {
-        return Collections.unmodifiableMap(attributes);
+        return ATTRIBUTES;
     }
 
     // endregion Hijacked Operations

@@ -22,10 +22,10 @@ public class TestTableValidator extends RefreshingTableTestCase {
     public void testValidator() {
         ChunkPoolReleaseTracking.enableStrict();
 
-        try (final SafeCloseable sc = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
 
             final Random random = new Random(0);
-            final ColumnInfo[] columnInfo;
+            final ColumnInfo<?, ?>[] columnInfo;
             final int size = 50;
             final QueryTable queryTable = getTable(size, random,
                     columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},

@@ -79,7 +79,7 @@ public abstract class TimeTable extends TableBase {
         }
     }
 
-    interface Builder {
+    public interface Builder {
         Builder clock(Clock clock);
 
         Builder interval(Duration interval);

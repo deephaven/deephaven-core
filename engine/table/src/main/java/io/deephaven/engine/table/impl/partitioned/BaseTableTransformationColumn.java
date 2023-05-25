@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.partitioned;
 
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -63,11 +64,6 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
 
     @Override
     public final boolean isRetain() {
-        return false;
-    }
-
-    @Override
-    public final boolean disallowRefresh() {
         return false;
     }
 

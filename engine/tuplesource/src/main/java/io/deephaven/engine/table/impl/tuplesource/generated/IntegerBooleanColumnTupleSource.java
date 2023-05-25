@@ -107,10 +107,10 @@ public class IntegerBooleanColumnTupleSource extends AbstractTupleSource<IntByte
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<IntByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        IntChunk<Values> chunk1 = chunks[0].asIntChunk();
-        ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
+        IntChunk<? extends Values> chunk1 = chunks[0].asIntChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new IntByteTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii))));
         }

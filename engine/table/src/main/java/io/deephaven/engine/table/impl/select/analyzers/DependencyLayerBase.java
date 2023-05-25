@@ -56,8 +56,8 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse() {
-        final Map<String, Set<String>> result = inner.calcDependsOnRecurse();
+    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
+        final Map<String, Set<String>> result = inner.calcDependsOnRecurse(forcePublishAllResources);
         final Set<String> thisResult = new HashSet<>();
         for (final String dep : dependencies) {
             final Set<String> innerDependencies = result.get(dep);

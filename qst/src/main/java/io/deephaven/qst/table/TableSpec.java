@@ -4,6 +4,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreator.OperationsToTable;
@@ -33,7 +34,7 @@ import java.util.Collection;
  * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
-public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableSchema, Serializable {
+public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>, TableSchema, Serializable {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -118,6 +119,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SnapshotTable snapshotTable);
 
+        void visit(SnapshotWhenTable snapshotWhenTable);
+
         void visit(WhereTable whereTable);
 
         void visit(WhereInTable whereInTable);
@@ -132,6 +135,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(ReverseAsOfJoinTable raj);
 
+        void visit(RangeJoinTable rangeJoinTable);
+
         void visit(ViewTable viewTable);
 
         void visit(SelectTable selectTable);
@@ -142,9 +147,9 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(LazyUpdateTable lazyUpdateTable);
 
-        void visit(AggregationTable aggregationTable);
+        void visit(AggregateTable aggregateTable);
 
-        void visit(AggregateAllByTable aggAllByTable);
+        void visit(AggregateAllTable aggregateAllTable);
 
         void visit(TicketTable ticketTable);
 
@@ -152,10 +157,10 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SelectDistinctTable selectDistinctTable);
 
-        void visit(CountByTable countByTable);
-
         void visit(UpdateByTable updateByTable);
 
         void visit(UngroupTable ungroupTable);
+
+        void visit(DropColumnsTable dropColumnsTable);
     }
 }

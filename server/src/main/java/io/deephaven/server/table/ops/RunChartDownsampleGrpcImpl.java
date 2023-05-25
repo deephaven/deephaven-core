@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.plotdownsampling.RunChartDownsample;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -16,13 +17,14 @@ import java.util.List;
 
 public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDownsampleRequest> {
     @Inject
-    protected RunChartDownsampleGrpcImpl() {
-        super(BatchTableRequest.Operation::getRunChartDownsample, RunChartDownsampleRequest::getResultId,
-                RunChartDownsampleRequest::getSourceId);
+    protected RunChartDownsampleGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionRunChartDownsample, BatchTableRequest.Operation::getRunChartDownsample,
+                RunChartDownsampleRequest::getResultId, RunChartDownsampleRequest::getSourceId);
     }
 
     @Override
-    public Table create(RunChartDownsampleRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final RunChartDownsampleRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();

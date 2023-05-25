@@ -1,21 +1,33 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharGenerator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.testutil.generator;
 
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 
 import java.util.Random;
-import java.util.TreeMap;
 
+/**
+ * Generates columns of random longacters.
+ */
 public class LongGenerator extends AbstractGenerator<Long> {
 
     private final long to, from;
     private final double nullFraction;
 
     public LongGenerator() {
-        this(QueryConstants.NULL_LONG + 1, Long.MAX_VALUE);
+        this(PrimitiveGeneratorFunctions.minLong(), PrimitiveGeneratorFunctions.maxLong());
     }
 
     public LongGenerator(long from, long to) {
-        this(from, to, 0.0);
+        this.from = from;
+        this.to = to;
+        nullFraction = 0.0;
     }
 
     public LongGenerator(long from, long to, double nullFraction) {
@@ -25,24 +37,26 @@ public class LongGenerator extends AbstractGenerator<Long> {
     }
 
     @Override
-    public Long nextValue(TreeMap<Long, Long> values, long key, Random random) {
+    public Long nextValue(Random random) {
+        return nextLong(random);
+    }
+
+    private long nextLong(Random random) {
         if (nullFraction > 0) {
             if (random.nextDouble() < nullFraction) {
-                return null;
+                return QueryConstants.NULL_LONG;
             }
         }
-        final long distance = to - from;
-        if (distance > 0 && distance < Integer.MAX_VALUE) {
-            return from + random.nextInt((int) (to - from));
-        } else if (from == QueryConstants.NULL_LONG + 1 && to == Long.MAX_VALUE) {
-            long r;
-            do {
-                r = random.nextLong();
-            } while (r == QueryConstants.NULL_LONG);
-            return r;
-        } else {
-            return (long) (from + random.nextDouble() * (to - from));
+        return PrimitiveGeneratorFunctions.generateLong(random, from, to);
+    }
+
+    @Override
+    public WritableLongChunk<Values> populateChunk(RowSet toAdd, Random random) {
+        final long[] result = new long[toAdd.intSize()];
+        for (int ii = 0; ii < result.length; ++ii) {
+            result[ii] = nextLong(random);
         }
+        return WritableLongChunk.writableChunkWrap(result);
     }
 
     @Override

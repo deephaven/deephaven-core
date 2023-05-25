@@ -48,9 +48,11 @@ dependencies {
     implementation project(':Net')
     implementation project(':FishUtil')
 
-    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
+    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
     implementation 'com.tdunning:t-digest:3.2'
-    implementation 'com.squareup:javapoet:1.9.0'
+    implementation 'com.squareup:javapoet:1.13.0'
+    implementation 'io.github.classgraph:classgraph:4.8.154'
 
     implementation project(':plugin')
     implementation depCommonsLang3
@@ -71,7 +73,9 @@ dependencies {
 
     testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
+    testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
+    testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
     testImplementation project(':engine-test-utils')

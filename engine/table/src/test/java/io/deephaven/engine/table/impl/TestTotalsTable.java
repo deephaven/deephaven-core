@@ -16,7 +16,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -26,6 +25,8 @@ import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTotalsTable extends RefreshingTableTestCase {
+
+    private static final double EPSILON = 0.000000001;
 
     private long shortSum(short[] values) {
         long sum = 0;
@@ -60,7 +61,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         final TotalsTableBuilder builder = new TotalsTableBuilder();
         final Table totals = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(builder.applyToTable(queryTable)));
-        final Map<String, ? extends ColumnSource> resultColumns = totals.getColumnSourceMap();
+        final Map<String, ? extends ColumnSource<?>> resultColumns = totals.getColumnSourceMap();
         assertEquals(1, totals.size());
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                 "floatCol", "byteCol", "shortCol")), resultColumns.keySet());
@@ -105,35 +106,36 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
                     totals3.getColumnSourceMap().keySet());
-            assertEquals(Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
-                    totals3.getColumn("byteCol").get(0));
             assertEquals(
-                    Numeric
-                            .var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
-                    totals3.getColumn("doubleCol").get(0));
+                    Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
+                    totals3.getColumn("byteCol").getByte(0));
             assertEquals(
-                    Numeric
-                            .std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
-                    totals3.getColumn("doubleNullCol__Std").get(0));
-            assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").get(0));
+                    Numeric.var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
+                    totals3.getColumn("doubleCol").getDouble(0),
+                    EPSILON);
             assertEquals(
-                    Numeric
-                            .avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
-                    totals3.getColumn("doubleCol2").get(0));
+                    Numeric.std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
+                    totals3.getColumn("doubleNullCol__Std").getDouble(0),
+                    EPSILON);
+            assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").getLong(0));
+            assertEquals(
+                    Numeric.avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
+                    totals3.getColumn("doubleCol2").getDouble(0),
+                    EPSILON);
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
 
             final Table totals4 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
-            assertTrue(totals3 == totals4);
+            assertSame(totals3, totals4);
         } finally {
             QueryTable.setMemoizeResults(old);
         }
     }
 
-    public void testTotalsTableIncremental() throws IOException {
+    public void testTotalsTableIncremental() {
         final int size = 1000;
         final Random random = new Random(0);
-        final ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
 
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 new String[] {"Sym", "intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2", "shortCol"},
@@ -145,7 +147,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 new SetGenerator<>(10.1, 20.1, 30.1),
                 new ShortGenerator()));
 
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();

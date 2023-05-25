@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.liveness;
 
+import io.deephaven.base.reference.CleanupReference;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public class SingletonLivenessManager implements ReleasableLivenessManager {
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<SingletonLivenessManager, WeakReference> RETAINED_REFERENCE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(SingletonLivenessManager.class, WeakReference.class,
                     "retainedReference");
@@ -39,7 +41,7 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         return RETAINED_REFERENCE_UPDATER.compareAndSet(this, null, retainedReference);
     }
 
-    private WeakReference<? extends LivenessReferent> getRetainedReference() {
+    private WeakReference<? extends LivenessReferent> getAndClearRetainedReference() {
         // noinspection unchecked
         return (WeakReference<? extends LivenessReferent>) RETAINED_REFERENCE_UPDATER.getAndSet(this, null);
     }
@@ -64,10 +66,15 @@ public class SingletonLivenessManager implements ReleasableLivenessManager {
         if (Liveness.REFERENCE_TRACKING_DISABLED) {
             return;
         }
-        final WeakReference<? extends LivenessReferent> retainedReference = getRetainedReference();
+        final WeakReference<? extends LivenessReferent> localRetainedReference = getAndClearRetainedReference();
+        if (localRetainedReference == null) {
+            return;
+        }
         final LivenessReferent retained;
-        if (retainedReference != null && (retained = retainedReference.get()) != null) {
+        if ((retained = localRetainedReference.get()) != null) {
             retained.dropReference();
+        } else if (localRetainedReference instanceof CleanupReference) {
+            ((CleanupReference<?>) localRetainedReference).cleanup();
         }
     }
 }

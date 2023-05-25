@@ -6,7 +6,7 @@ package io.deephaven.server.table;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -340,7 +340,7 @@ public class ExportTableUpdateListenerTest {
 
     public class TestSessionState extends SessionState {
         public TestSessionState() {
-            super(scheduler, ExecutionContext::createForUnitTests, AUTH_CONTEXT);
+            super(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
                     DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), this));
         }

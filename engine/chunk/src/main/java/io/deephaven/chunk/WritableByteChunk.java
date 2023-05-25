@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.nio.ByteBuffer;
  */
 public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableByteChunk[] EMPTY_WRITABLE_BYTE_CHUNK_ARRAY = new WritableByteChunk[0];
 
     static <ATTR extends Any> WritableByteChunk<ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
     }
 
     public static <ATTR extends Any> WritableByteChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getByteChunkPool().takeWritableByteChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getByteChunkPool().takeWritableByteChunk(size);
+        }
+        return new WritableByteChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableByteChunk makeWritableChunkForPool(int size) {
         return new WritableByteChunk(makeArray(size), 0, size) {
             @Override
@@ -61,7 +68,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return new WritableByteChunk<>(data, offset, size);
     }
 
-    WritableByteChunk(byte[] data, int offset, int capacity) {
+    protected WritableByteChunk(byte[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -76,6 +83,31 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableByteChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableByteChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableByteChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final byte[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableByteChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

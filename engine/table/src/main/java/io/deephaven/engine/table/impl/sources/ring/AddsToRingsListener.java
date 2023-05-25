@@ -75,7 +75,6 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
             result.setRefreshing(false);
         } else {
             result.setRefreshing(true);
-            result.addParentReference(swapListener);
         }
         final AddsToRingsListener listener = new AddsToRingsListener(
                 "AddsToRingsListener", parent, result, sources, sourceHasUnboundedFillContexts, rings);

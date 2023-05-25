@@ -3,21 +3,22 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableCharChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.compare.CharComparisons;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -34,7 +35,8 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class CharacterArraySource extends ArraySourceHelper<Character, char[]> implements MutableColumnSourceGetDefaults.ForChar {
+public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
+        implements MutableColumnSourceGetDefaults.ForChar /* MIXIN_IMPLS */ {
     private static final SoftRecycler<char[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new char[BLOCK_SIZE], null);
 
@@ -56,6 +58,66 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
+    }
+
+    /**
+     * This version of `prepareForParallelPopulation` will internally call {@link #ensureCapacity(long, boolean)} to
+     * make sure there is room for the incoming values.
+     *
+     * @param changedRows row set in the dense table
+     */
+    @Override
+    public void prepareForParallelPopulation(RowSequence changedRows) {
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        if (ensurePreviousClockCycle == currentStep) {
+            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        }
+        ensurePreviousClockCycle = currentStep;
+
+        if (changedRows.isEmpty()) {
+            return;
+        }
+
+        // ensure that this source will have sufficient capacity to store these rows, does not need to be
+        // null-filled as the values will be immediately written
+        ensureCapacity(changedRows.lastRowKey() + 1, false);
+
+        if (prevFlusher != null) {
+            prevFlusher.maybeActivate();
+        } else {
+            // we are not tracking this source yet so we have nothing to do for the previous values
+            return;
+        }
+
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+            do {
+                final long firstKey = it.peekNextKey();
+
+                final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+
+                final long[] inUse;
+                if (prevBlocks[block] == null) {
+                    prevBlocks[block] = recycler.borrowItem();
+                    prevInUse[block] = inUse = inUseRecycler.borrowItem();
+                    if (prevAllocated == null) {
+                        prevAllocated = new TIntArrayList();
+                    }
+                    prevAllocated.add(block);
+                } else {
+                    inUse = prevInUse[block];
+                }
+
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+
+                it.getNextRowSequenceThrough(maxKeyInCurrentBlock).forAllRowKeys(key -> {
+                    final int nextIndexWithinBlock = (int) (key & INDEX_MASK);
+                    final int nextIndexWithinInUse = nextIndexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                    final long nextMaskWithinInUse = 1L << nextIndexWithinBlock;
+                    prevBlocks[block][nextIndexWithinBlock] = blocks[block][nextIndexWithinBlock];
+                    inUse[nextIndexWithinInUse] |= nextMaskWithinInUse;
+                });
+            } while (it.hasMore());
+        }
     }
 
     @Override
@@ -86,24 +148,27 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         return getUnsafe(rowKey);
     }
 
-    public final char getUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final char getUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 
-    public final char getAndSetUnsafe(long index, char newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final char getAndSetUnsafe(long rowKey, char newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final char oldValue = blocks[blockIndex][indexWithinBlock];
         if (!CharComparisons.eq(oldValue, newValue)) {
-            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+            if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;
         }
         return oldValue;
     }
+
+    // region getAndAddUnsafe
+    // endregion getAndAddUnsafe
 
     @Override
     public Character getPrev(long rowKey) {
@@ -145,7 +210,7 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             return;
         }
         if (((source - dest) & INDEX_MASK) == 0 && (source & INDEX_MASK) == 0) {
-            // TODO: we can move full blocks!
+            // TODO (#3359): we can move full blocks!
         }
         if (source < dest && source + length >= dest) {
             for (long ii = length - 1; ii >= 0; ) {
@@ -241,41 +306,170 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
         return capacity;
     }
 
+    // region fillChunk
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        if (indices.size() == 0) {
+    public /* TYPE_MIXIN */ void fillChunk(
+            @NotNull final ChunkSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparseChunk(destination, rowSequence /* CONVERTER_ARG */);
+            return;
+        }
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destination.asWritableCharChunk();
+        // endregion chunkDecl
+        MutableInt destOffset = new MutableInt(0);
+        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+            final int fromBlock = getBlockNo(from);
+            final int toBlock = getBlockNo(to);
+            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
+            if (fromBlock == toBlock) {
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                // region copyFromArray
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                // endregion copyFromArray
+                destOffset.add(sz);
+            } else {
+                final int sz = BLOCK_SIZE - fromOffsetInBlock;
+                // region copyFromArray
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                // endregion copyFromArray
+                destOffset.add(sz);
+                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
+                    // region copyFromArray
+                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
+                    // endregion copyFromArray
+                    destOffset.add(BLOCK_SIZE);
+                }
+                int restSz = (int) (to & INDEX_MASK) + 1;
+                // region copyFromArray
+                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
+                // endregion copyFromArray
+                destOffset.add(restSz);
+            }
+        });
+        destination.setSize(destOffset.intValue());
+    }
+    // endregion fillChunk
+
+    private interface CopyFromBlockFunctor {
+        void copy(int blockNo, int srcOffset, int length);
+    }
+
+    // region fillPrevChunk
+    @Override
+    public /* TYPE_MIXIN */ void fillPrevChunk(
+            @NotNull final ColumnSource.FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        if (prevFlusher == null) {
+            fillChunk(context, destination, rowSequence /* CONVERTER_ARG */);
+            return;
+        }
+
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            fillSparsePrevChunk(destination, rowSequence /* CONVERTER_ARG */);
+            return;
+        }
+
+        final ArraySourceHelper.FillContext effectiveContext = (ArraySourceHelper.FillContext) context;
+        final MutableInt destOffset = new MutableInt(0);
+
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destination.asWritableCharChunk();
+        // endregion chunkDecl
+
+        CopyFromBlockFunctor lambda = (blockNo, srcOffset, length) -> {
+            final long[] inUse = prevInUse[blockNo];
+            if (inUse != null) {
+                // region conditionalCopy
+                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
+                        inUse, srcOffset, destOffset.intValue(), length);
+                // endregion conditionalCopy
+            } else {
+                // region copyFromArray
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
+                // endregion copyFromArray
+            }
+            destOffset.add(length);
+        };
+
+        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
+            final int fromBlock = getBlockNo(from);
+            final int toBlock = getBlockNo(to);
+            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
+            if (fromBlock == toBlock) {
+                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
+                lambda.copy(fromBlock, fromOffsetInBlock, sz);
+            } else {
+                final int sz = BLOCK_SIZE - fromOffsetInBlock;
+                lambda.copy(fromBlock, fromOffsetInBlock, sz);
+
+                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
+                    lambda.copy(blockNo, 0, BLOCK_SIZE);
+                }
+
+                int restSz = (int) (to & INDEX_MASK) + 1;
+                lambda.copy(toBlock, 0, restSz);
+            }
+        });
+        destination.setSize(destOffset.intValue());
+    }
+    // endregion fillPrevChunk
+
+    // region fillSparseChunk
+    @Override
+    protected /* TYPE_MIXIN */ void fillSparseChunk(
+            @NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final RowSequence rows
+            /* CONVERTER */) {
+        if (rows.size() == 0) {
             destGeneric.setSize(0);
             return;
         }
-        final WritableCharChunk<? super Values> dest = destGeneric.asWritableCharChunk();
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
+        // endregion chunkDecl
         final FillSparseChunkContext<char[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
                 ctx.currentBlock = blocks[ctx.currentBlockNo];
             }
-            dest.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
+            // region conversion
+            chunk.set(ctx.offset++, ctx.currentBlock[(int) (v & INDEX_MASK)]);
+            // endregion conversion
         });
-        dest.setSize(ctx.offset);
+        chunk.setSize(ctx.offset);
     }
+    // endregion fillSparseChunk
 
+    // region fillSparsePrevChunk
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        final long sz = indices.size();
+    protected /* TYPE_MIXIN */ void fillSparsePrevChunk(
+            @NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final RowSequence rows
+            /* CONVERTER */) {
+        final long sz = rows.size();
         if (sz == 0) {
             destGeneric.setSize(0);
             return;
         }
 
         if (prevFlusher == null) {
-            fillSparseChunk(destGeneric, indices);
+            fillSparseChunk(destGeneric, rows /* CONVERTER_ARG */);
             return;
         }
 
-        final WritableCharChunk<? super Values> dest = destGeneric.asWritableCharChunk();
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
+        // endregion chunkDecl
         final FillSparseChunkContext<char[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -288,64 +482,91 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
             final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
             final boolean usePrev = ctx.prevInUseBlock != null && (ctx.prevInUseBlock[indexWithinInUse] & maskWithinInUse) != 0;
-            dest.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
+            // region conversion
+            chunk.set(ctx.offset++, usePrev ? ctx.currentPrevBlock[indexWithinBlock] : ctx.currentBlock[indexWithinBlock]);
+            // endregion conversion
         });
-        dest.setSize(ctx.offset);
+        chunk.setSize(ctx.offset);
     }
+    // endregion fillSparsePrevChunk
 
+    // region fillSparseChunkUnordered
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
-        final WritableCharChunk<? super Values> dest = destGeneric.asWritableCharChunk();
-        final int sz = indices.size();
+    protected /* TYPE_MIXIN */ void fillSparseChunkUnordered(
+            @NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final LongChunk<? extends RowKeys> rows
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
+        // endregion chunkDecl
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
-                dest.set(ii, NULL_CHAR);
+                chunk.set(ii, NULL_CHAR);
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
             if (blockNo >= blocks.length) {
-                dest.set(ii, NULL_CHAR);
+                chunk.set(ii, NULL_CHAR);
             } else {
                 final char[] currentBlock = blocks[blockNo];
-                dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
+                // region conversion
+                chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
+                // endregion conversion
             }
         }
-        dest.setSize(sz);
+        chunk.setSize(sz);
     }
+    // endregion fillSparseChunkUnordered
 
+    // region fillSparsePrevChunkUnordered
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
-        final WritableCharChunk<? super Values> dest = destGeneric.asWritableCharChunk();
-        final int sz = indices.size();
+    protected /* TYPE_MIXIN */ void fillSparsePrevChunkUnordered(
+            @NotNull final WritableChunk<? super Values> destGeneric,
+            @NotNull final LongChunk<? extends RowKeys> rows
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableCharChunk<? super Values> chunk = destGeneric.asWritableCharChunk();
+        // endregion chunkDecl
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
-                dest.set(ii, NULL_CHAR);
+                chunk.set(ii, NULL_CHAR);
                 continue;
             }
             final int blockNo = getBlockNo(fromIndex);
             if (blockNo >= blocks.length) {
-                dest.set(ii, NULL_CHAR);
+                chunk.set(ii, NULL_CHAR);
                 continue;
             }
             final char[] currentBlock = shouldUsePrevious(fromIndex) ? prevBlocks[blockNo] : blocks[blockNo];
-            dest.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
+            // region conversion
+            chunk.set(ii, currentBlock[(int) (fromIndex & INDEX_MASK)]);
+            // endregion conversion
         }
-        dest.setSize(sz);
+        chunk.setSize(sz);
     }
+    // endregion fillSparsePrevChunkUnordered
 
+    // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final RowSequence rowSequence,
+            final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.size() == 0) {
             return;
         }
+        // region chunkDecl
         final CharChunk<? extends Values> chunk = src.asCharChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -361,33 +582,36 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
                 final long lastKeyToUse = Math.min(maxKeyInCurrentBlock, lastKey);
                 final int length = (int) (lastKeyToUse - firstKey + 1);
 
-                final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+                final int block0 = (int) (firstKey >> LOG_BLOCK_SIZE);
                 final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
-                final char[] inner = blocks[block];
+                final char[] block = blocks[block0];
 
-                if (inner != knownUnaliasedBlock && chunk.isAlias(inner)) {
+                if (block != knownUnaliasedBlock && chunk.isAlias(block)) {
                     throw new UnsupportedOperationException("Source chunk is an alias for target data");
                 }
-                knownUnaliasedBlock = inner;
+                knownUnaliasedBlock = block;
 
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     // this should be vectorized
                     for (int jj = 0; jj < length; ++jj) {
                         if (shouldRecordPrevious(firstKey + jj, prevBlocks, recycler)) {
-                            prevBlocks[block][sIndexWithinBlock + jj] = inner[sIndexWithinBlock + jj];
+                            prevBlocks[block0][sIndexWithinBlock + jj] = block[sIndexWithinBlock + jj];
                         }
                     }
                 }
 
-                chunk.copyToTypedArray(offset, inner, sIndexWithinBlock, length);
+                // region copyToTypedArray
+                chunk.copyToTypedArray(offset, block, sIndexWithinBlock, length);
+                // endregion copyToTypedArray
                 firstKey += length;
                 offset += length;
             }
         }
     }
+    // endregion fillFromChunkByRanges
 
-    public void copyFromChunk(long firstKey, long totalLength, Chunk<? extends Values> src, int offset) {
+    public void copyFromChunk(long firstKey, final long totalLength, final Chunk<? extends Values> src, int offset) {
         if (totalLength == 0) {
             return;
         }
@@ -400,27 +624,33 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             final long lastKeyToUse = Math.min(maxKeyInCurrentBlock, lastKey);
             final int length = (int) (lastKeyToUse - firstKey + 1);
 
-            final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+            final int block0 = (int) (firstKey >> LOG_BLOCK_SIZE);
             final int sIndexWithinBlock = (int) (firstKey & INDEX_MASK);
-            final char[] inner = blocks[block];
+            final char[] block = blocks[block0];
 
-            chunk.copyToTypedArray(offset, inner, sIndexWithinBlock, length);
+            chunk.copyToTypedArray(offset, block, sIndexWithinBlock, length);
             firstKey += length;
             offset += length;
         }
     }
 
+    // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final RowSequence rowSequence,
+            final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.size() == 0) {
             return;
         }
+        // region chunkDecl
         final CharChunk<? extends Values> chunk = src.asCharChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -432,10 +662,10 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
                 ++lastII;
             }
 
-            final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
-            final char[] inner = blocks[block];
+            final int block0 = (int) (firstKey >> LOG_BLOCK_SIZE);
+            final char[] block = blocks[block0];
 
-            if (chunk.isAlias(inner)) {
+            if (chunk.isAlias(block)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
             }
 
@@ -443,27 +673,37 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
                 final long key = keys.get(ii);
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     if (shouldRecordPrevious(key, prevBlocks, recycler)) {
-                        prevBlocks[block][indexWithinBlock] = inner[indexWithinBlock];
+                        prevBlocks[block0][indexWithinBlock] = block[indexWithinBlock];
                     }
                 }
-                inner[indexWithinBlock] = chunk.get(ii);
+                // region conversion
+                block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             }
         }
     }
+    // endregion fillFromChunkByKeys
 
+    // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
         if (keys.size() == 0) {
             return;
         }
+        // region chunkDecl
         final CharChunk<? extends Values> chunk = src.asCharChunk();
+        // endregion chunkDecl
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -472,10 +712,10 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             final long minKeyInCurrentBlock = firstKey & ~INDEX_MASK;
             final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
 
-            final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
-            final char[] inner = blocks[block];
+            final int block0 = (int) (firstKey >> LOG_BLOCK_SIZE);
+            final char[] block = blocks[block0];
 
-            if (chunk.isAlias(inner)) {
+            if (chunk.isAlias(block)) {
                 throw new UnsupportedOperationException("Source chunk is an alias for target data");
             }
 
@@ -483,14 +723,20 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
             do {
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     if (shouldRecordPrevious(key, prevBlocks, recycler)) {
-                        prevBlocks[block][indexWithinBlock] = inner[indexWithinBlock];
+                        prevBlocks[block0][indexWithinBlock] = block[indexWithinBlock];
                     }
                 }
-                inner[indexWithinBlock] = chunk.get(ii);
+                // region conversion
+                block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             } while (ii < keys.size() && (key = keys.get(ii)) >= minKeyInCurrentBlock && key <= maxKeyInCurrentBlock);
         }
     }
+    // endregion fillFromChunkUnordered
+
+    // region reinterpretation
+    // endregion reinterpretation
 }

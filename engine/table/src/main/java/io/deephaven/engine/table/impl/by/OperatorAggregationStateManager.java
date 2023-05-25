@@ -20,5 +20,13 @@ interface OperatorAggregationStateManager {
 
     ColumnSource[] getKeyHashTableSources();
 
+    int UNKNOWN_ROW = AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
+
+    /**
+     * Implement a lookup in order to support {@link AggregationRowLookup#get(Object)}.
+     * 
+     * @param key The opaque group-by key to find the row position/key for
+     * @return The row position/key for {@code key} in the result table, or {@value #UNKNOWN_ROW} if not found
+     */
     int findPositionForKey(Object key);
 }

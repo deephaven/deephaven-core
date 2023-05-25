@@ -20,10 +20,10 @@ import (
 	"sync"
 
 	apppb2 "github.com/deephaven/deephaven-core/go/internal/proto/application"
+	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
 	consolepb2 "github.com/deephaven/deephaven-core/go/internal/proto/console"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 )
 
 // ErrClosedClient is returned as an error when trying to perform a network operation on a client that has been closed.
@@ -43,26 +43,46 @@ type Client struct {
 
 	suppressTableLeakWarning bool // When true, this disables the TableHandle finalizer warning.
 
-	sessionStub
-	consoleStub
-	flightStub
-	tableStub
-	inputTableStub
+	*sessionStub
+	*consoleStub
+	*flightStub
+	*tableStub
+	*inputTableStub
 
 	appServiceClient apppb2.ApplicationServiceClient
-	ticketFact       ticketFactory
+	ticketFact       *ticketFactory
+	tokenMgr         *tokenManager
 }
 
 // NewClient starts a connection to a Deephaven server.
 //
 // The client should be closed using Close() after it is done being used.
 //
-// Keepalive messages are sent automatically by the client to the server at a regular interval (~30 seconds)
+// Keepalive messages are sent automatically by the client to the server at a regular interval
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
+//
+// host, port, and auth are used to connect to the Deephaven server.  host and port are the Deephaven server host and port.
+//
+// authType is the type of authentication to use.  This can be 'Anonymous', 'Basic', or any custom-built
+// authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",  The default is 'Anonymous'.
+// To see what authentication methods are available on the Deephaven server, navigate to: http://<host>:<port>/jsapi/authentication/.
+//
+// authToken is the authentication token string. When authType is 'Basic', it must be
+// "user:password"; when auth_type is DefaultAuth, it will be ignored; when auth_type is a custom-built
+// authenticator, it must conform to the specific requirement of the authenticator.
 //
 // The option arguments can be used to specify other settings for the client.
 // See the With<XYZ> methods (e.g. WithConsole) for details on what options are available.
-func NewClient(ctx context.Context, host string, port string, options ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, host string, port string, authType string, authToken string, options ...ClientOption) (client *Client, err error) {
+	defer func() {
+		if err != nil && client != nil {
+			e := client.Close()
+			if e != nil {
+				log.Println("Error when closing failed client: ", e)
+			}
+		}
+	}()
+
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -70,27 +90,35 @@ func NewClient(ctx context.Context, host string, port string, options ...ClientO
 
 	opts := newClientOptions(options...)
 
-	client := &Client{grpcChannel: grpcChannel, isOpen: true}
+	client = &Client{grpcChannel: grpcChannel, isOpen: true}
 
 	client.suppressTableLeakWarning = opts.suppressTableLeakWarning
 
 	client.ticketFact = newTicketFactory()
 
-	client.sessionStub, err = newSessionStub(ctx, client)
+	client.flightStub, err = newFlightStub(client, host, port)
 	if err != nil {
-		client.Close()
+		return nil, err
+	}
+
+	cfgClient := configpb2.NewConfigServiceClient(grpcChannel)
+
+	if authType == "" {
+		authType = DefaultAuth
+	}
+
+	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, authType, authToken)
+	if err != nil {
+		return nil, err
+	}
+
+	client.sessionStub, err = newSessionStub(client)
+	if err != nil {
 		return nil, err
 	}
 
 	client.consoleStub, err = newConsoleStub(ctx, client, opts.scriptLanguage)
 	if err != nil {
-		client.Close()
-		return nil, err
-	}
-
-	client.flightStub, err = newFlightStub(client, host, port)
-	if err != nil {
-		client.Close()
 		return nil, err
 	}
 
@@ -170,32 +198,30 @@ func (client *Client) Close() error {
 
 	client.isOpen = false
 
-	client.sessionStub.Close()
+	if client.tokenMgr != nil {
+		err := client.tokenMgr.Close()
+		if err != nil {
+			log.Println("unable to close client:", err.Error())
+			return err
+		}
+	}
+
+	// This is logged because most of the time this method is used with defer,
+	// which will discard the error value.
+	if client.flightStub != nil {
+		err := client.flightStub.Close()
+		if err != nil {
+			log.Println("unable to close client:", err.Error())
+			return err
+		}
+	}
 
 	if client.grpcChannel != nil {
 		client.grpcChannel.Close()
 		client.grpcChannel = nil
 	}
 
-	// This is logged because most of the time this method is used with defer,
-	// which will discard the error value.
-	err := client.flightStub.Close()
-	if err != nil {
-		log.Println("unable to close client:", err.Error())
-	}
-
-	return err
-}
-
-// withToken attaches the current session token to a context as metadata.
-func (client *Client) withToken(ctx context.Context) (context.Context, error) {
-	tok, err := client.getToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", string(tok))), nil
+	return nil
 }
 
 // RunScript executes a script on the deephaven server.
@@ -207,7 +233,7 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 		return ErrNoConsole
 	}
 
-	ctx, err := client.consoleStub.client.withToken(ctx)
+	ctx, err := client.consoleStub.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return err
 	}

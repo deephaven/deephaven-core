@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.LongBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.nio.LongBuffer;
  */
 public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableLongChunk[] EMPTY_WRITABLE_LONG_CHUNK_ARRAY = new WritableLongChunk[0];
 
     static <ATTR extends Any> WritableLongChunk<ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
     }
 
     public static <ATTR extends Any> WritableLongChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getLongChunkPool().takeWritableLongChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getLongChunkPool().takeWritableLongChunk(size);
+        }
+        return new WritableLongChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableLongChunk makeWritableChunkForPool(int size) {
         return new WritableLongChunk(makeArray(size), 0, size) {
             @Override
@@ -61,7 +68,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return new WritableLongChunk<>(data, offset, size);
     }
 
-    WritableLongChunk(long[] data, int offset, int capacity) {
+    protected WritableLongChunk(long[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -76,6 +83,31 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableLongChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableLongChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableLongChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final long[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableLongChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

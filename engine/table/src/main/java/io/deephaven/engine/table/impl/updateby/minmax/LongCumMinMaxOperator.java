@@ -12,19 +12,18 @@ import io.deephaven.time.DateTime;
 import java.time.Instant;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 
 public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
     private final boolean isMax;
@@ -33,20 +32,48 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
     private final Class<?> type;
     // endregion extra-fields
 
-    public LongCumMinMaxOperator(@NotNull final MatchPair inputPair,
+    protected class Context extends BaseLongUpdateByOperator.Context {
+        public LongChunk<? extends Values> longValueChunk;
+
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longValueChunk = valueChunks[0].asLongChunk();
+        }
+
+        @Override
+        public void push(int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
+            final long val = longValueChunk.get(pos);
+
+            if (curVal == NULL_LONG) {
+                curVal = val;
+            } else if (val != NULL_LONG) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
+                }
+            }
+        }
+    }
+
+    public LongCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
-                                  // region extra-constructor-args
+                                // region extra-constructor-args
                               ,@NotNull final Class<?> type
-                                  // endregion extra-constructor-args
-                                  ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
+                                // endregion extra-constructor-args
+    ) {
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         this.type = type;
         // endregion constructor
     }
-
     // region extra-methods
     @NotNull
     @Override
@@ -61,57 +88,9 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
     }
     // endregion extra-methods
 
+    @NotNull
     @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final LongChunk<Values> asLongs = values.asLongChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getLong(bucketPosition);
-            accumulate(asLongs, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              long groupPosition) {
-        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_LONG;
-        accumulate(workingChunk.asLongChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = groupPosition;
-        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final LongChunk<Values> asLongs,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableLongChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final long currentVal = asLongs.get(ii);
-            if(ctx.curVal == NULL_LONG) {
-                ctx.curVal = currentVal;
-            } else if(currentVal != NULL_LONG) {
-                if((isMax && currentVal > ctx.curVal) ||
-                   (!isMax && currentVal < ctx.curVal)  ) {
-                    ctx.curVal = currentVal;
-                }
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

@@ -4,7 +4,7 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -24,7 +24,7 @@ public class TestParquetGrouping extends TestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override

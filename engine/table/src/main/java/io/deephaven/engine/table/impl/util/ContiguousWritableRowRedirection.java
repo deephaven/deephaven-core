@@ -6,10 +6,10 @@ package io.deephaven.engine.table.impl.util;
 import gnu.trove.map.hash.TLongLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,13 +82,14 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
 
     @Override
     public void fillChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        innerRowKeys.setSize(0);
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
         outerRowKeys.forAllRowKeyRanges((final long start, final long end) -> {
             for (long v = start; v <= end; ++v) {
-                innerRowKeys.add(redirections[(int) v]);
+                innerRowKeysTyped.add(redirections[(int) v]);
             }
         });
     }
@@ -108,23 +109,24 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
 
     @Override
     public void fillPrevChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
+            @NotNull final FillContext fillContext,
+            @NotNull final WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         if (checkpoint == null) {
             fillChunk(fillContext, innerRowKeys, outerRowKeys);
             return;
         }
 
+        final WritableLongChunk<? super RowKeys> innerRowKeysTyped = innerRowKeys.asWritableLongChunk();
+        innerRowKeysTyped.setSize(0);
         synchronized (this) {
-            innerRowKeys.setSize(0);
             outerRowKeys.forAllRowKeyRanges((final long start, final long end) -> {
                 for (long v = start; v <= end; ++v) {
                     long result = checkpoint.get(v);
                     if (result == UPDATES_KEY_NOT_FOUND) {
                         result = redirections[(int) v];
                     }
-                    innerRowKeys.add(result);
+                    innerRowKeysTyped.add(result);
                 }
             });
         }

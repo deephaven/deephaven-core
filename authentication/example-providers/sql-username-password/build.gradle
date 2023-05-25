@@ -1,0 +1,31 @@
+configurations {
+    // Add a configuration so that password generation has a working logger at runtime
+    pwGen
+}
+dependencies {
+    implementation('org.postgresql:postgresql:42.4.0') {
+        because 'Postgres driver to connect to a running DB to query for user information'
+    }
+    implementation('org.mindrot:jbcrypt:0.4') {
+        because 'bcrypt is used in this example to ensure passwords are never stored or queried in plain text'
+    }
+
+    pwGen project(':log-to-stream')
+    Classpaths.inheritLogbackClassic(project, 'pwGen')
+}
+
+shadowJar {
+    relocate 'org', 'io.deephaven.authentication.sql.rebased'
+    mergeServiceFiles()
+}
+
+// Usage:
+// ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args=newPasswordGoesHere
+tasks.register('generatePassword', JavaExec) {
+    classpath(configurations.shadow.files)
+    classpath(configurations.pwGen.files)
+    classpath(sourceSets.main.runtimeClasspath)
+    mainClass = 'io.deephaven.authentication.sql.BasicSqlAuthenticationHandler'
+    systemProperty 'Configuration.rootFile', 'lib-tests.prop'
+    systemProperty 'authentication.basic.sql.jdbc.connection', 'not used'
+}

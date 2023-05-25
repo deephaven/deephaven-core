@@ -2272,28 +2272,28 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region CharVector
     @Override
-    public char get(long i) {
-        if(i < 0 || i > size()) {
-            throw new IllegalArgumentException("Illegal index " + i + " current size: " + size());
+    public char get(long index) {
+        if(index < 0 || index > size()) {
+            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
         }
 
         if(leafCount == 1) {
-            return directoryValues[(int)i];
+            return directoryValues[(int) index];
         } else {
             for(int ii = 0; ii < leafCount; ii++) {
-                if(i < leafSizes[ii]) {
-                    return leafValues[ii][(int)(i)];
+                if(index < leafSizes[ii]) {
+                    return leafValues[ii][(int)(index)];
                 }
-                i -= leafSizes[ii];
+                index -= leafSizes[ii];
             }
         }
 
-        throw new IllegalStateException("Index " + i + " not found in this SSM");
+        throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
     @Override
-    public CharVector subVector(long fromIndex, long toIndex) {
-        return new CharVectorDirect(keyArray(fromIndex, toIndex));
+    public CharVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        return new CharVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
@@ -2310,6 +2310,11 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public char[] toArray() {
         return keyArray();
+    }
+
+    @Override
+    public char[] copyToArray() {
+        return toArray();
     }
 
     @Override

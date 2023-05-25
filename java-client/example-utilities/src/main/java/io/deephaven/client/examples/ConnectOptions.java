@@ -12,6 +12,8 @@ import io.deephaven.uri.DeephavenUri;
 import io.grpc.ManagedChannel;
 import picocli.CommandLine.Option;
 
+import java.util.Map;
+
 public class ConnectOptions {
 
     public static final String DEFAULT_HOST = "localhost";
@@ -39,6 +41,9 @@ public class ConnectOptions {
     @Option(names = {"-u", "--user-agent"}, description = "The user-agent.")
     String userAgent;
 
+    @Option(names = {"--override-authority"}, description = "The override authority.")
+    String overrideAuthority;
+
     @Option(names = {"--max-inbound-message-size"}, description = "The maximum inbound message size, " +
             "defaults to 100MB")
     Integer maxInboundMessageSize;
@@ -46,16 +51,25 @@ public class ConnectOptions {
     @Option(names = {"--ssl"}, description = "The optional ssl config file.", converter = SSLConverter.class)
     SSLConfig ssl;
 
+    @Option(names = {"--header"})
+    Map<String, String> headers;
+
     private ClientConfig config() {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
             builder.userAgent(userAgent);
+        }
+        if (overrideAuthority != null) {
+            builder.overrideAuthority(overrideAuthority);
         }
         if (maxInboundMessageSize != null) {
             builder.maxInboundMessageSize(maxInboundMessageSize);
         }
         if (ssl != null) {
             builder.ssl(ssl);
+        }
+        if (headers != null) {
+            builder.putAllExtraHeaders(headers);
         }
         return builder.build();
     }

@@ -16,7 +16,8 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * Test class for {@link RegionedColumnSourceFloat}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimitive<Float, Values, ColumnRegionFloat<Values>> {
+public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimitive<
+        Float, Values, ColumnRegionFloat<Values>, ColumnRegionFloat<Values>> {
 
     public TestRegionedColumnSourceFloat() {
         super(ColumnRegionFloat.class);

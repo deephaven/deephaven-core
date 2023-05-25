@@ -6,6 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
@@ -472,12 +473,14 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                         }
                         final int offset = offsets.get(ei);
                         final int length = offsets.get(ei + 1) - offset;
+                        Assert.geq(length, "length", 0);
                         if (offset + length > serializedData.length) {
                             throw new IllegalStateException("not enough data was serialized to parse this element: " +
                                     "elementIndex=" + ei + " offset=" + offset + " length=" + length +
                                     " serializedLen=" + serializedData.length);
                         }
-                        chunk.set(outOffset + ei++, mapper.constructFrom(serializedData, offset, length));                        validityWord >>= 1;
+                        chunk.set(outOffset + ei++, mapper.constructFrom(serializedData, offset, length));
+                        validityWord >>= 1;
                         bitsLeftInThisWord--;
                     } else {
                         final int skips = Math.min(Long.numberOfTrailingZeros(validityWord), bitsLeftInThisWord);

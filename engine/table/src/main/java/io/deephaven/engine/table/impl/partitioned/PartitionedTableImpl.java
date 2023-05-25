@@ -14,11 +14,13 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -26,12 +28,13 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
@@ -42,7 +45,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted;
-import static io.deephaven.engine.table.iterators.ColumnIterator.*;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 /**
  * {@link PartitionedTable} implementation.
@@ -58,7 +61,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private final TableDefinition constituentDefinition;
     private final boolean constituentChangesPermitted;
 
-    private volatile WeakReference<Table> memoizedMerge;
+    private volatile WeakReference<QueryTable> memoizedMerge;
 
     /**
      * @see PartitionedTableFactory#of(Table, Collection, boolean, String, TableDefinition, boolean) Factory method that
@@ -139,8 +142,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @Override
     public Table merge() {
-        Table merged;
-        WeakReference<Table> localMemoizedMerge;
+        QueryTable merged;
+        WeakReference<QueryTable> localMemoizedMerge;
         if ((localMemoizedMerge = memoizedMerge) != null
                 && Liveness.verifyCachedObjectForReuse(merged = localMemoizedMerge.get())) {
             return merged;
@@ -159,7 +162,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
             if (!constituentChangesPermitted) {
                 final Map<String, Object> sharedAttributes;
-                try (final ObjectColumnIterator<Table> constituents =
+                try (final CloseableIterator<Table> constituents =
                         table().objectColumnIterator(constituentColumnName)) {
                     sharedAttributes = computeSharedAttributes(constituents);
                 }
@@ -175,9 +178,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (!constituents.hasNext()) {
             return Collections.emptyMap();
         }
-        final Map<String, Object> candidates = new HashMap<>(constituents.next().getAttributes());
+
+        boolean anyPreviousTableIsRefreshing = false;
+
+        Table constituent = constituents.next();
+        boolean currentTableIsRefreshing = constituent.isRefreshing();
+        final Map<String, Object> candidates = new HashMap<>(constituent.getAttributes());
+
         while (constituents.hasNext()) {
-            final Table constituent = constituents.next();
+            anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
+            constituent = constituents.next();
+            currentTableIsRefreshing = constituent.isRefreshing();
             final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
             while (candidatesIter.hasNext()) {
                 final Map.Entry<String, Object> candidate = candidatesIter.next();
@@ -193,6 +204,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return Collections.emptyMap();
             }
         }
+
+        if (anyPreviousTableIsRefreshing) {
+            // if a previous table may grow and cause shifts, then the merged table cannot be add-only
+            candidates.remove(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE);
+            // if a previous table may change then this cannot be append-only
+            candidates.remove(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE);
+        } else {
+            // otherwise, last constituent influences whether the merged result is add-only and/or append-only
+            if (constituent.hasAttribute(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (constituent.hasAttribute(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+        }
+
         return candidates;
     }
 
@@ -209,7 +236,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     + " found in filters: " + filters);
         }
         return new PartitionedTableImpl(
-                table.where(whereFilters),
+                table.where(Filter.and(whereFilters)),
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,
@@ -240,17 +267,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
 
     @ConcurrentMethod
     @Override
-    public PartitionedTableImpl transform(final ExecutionContext executionContext,
-            @NotNull final UnaryOperator<Table> transformer) {
+    public PartitionedTableImpl transform(
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final UnaryOperator<Table> transformer,
+            final boolean expectRefreshingResults) {
         final Table resultTable;
         final TableDefinition resultConstituentDefinition;
         final LivenessManager enclosingScope = LivenessScopeStack.peek();
         try (final SafeCloseable ignored1 = executionContext == null ? null : executionContext.open();
                 final SafeCloseable ignored2 = LivenessScopeStack.open()) {
 
+            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
+
             // Perform the transformation
-            resultTable = table.update(new TableTransformationColumn(
-                    constituentColumnName, executionContext, transformer));
+            resultTable = asRefreshingIfNeeded.update(List.of(new TableTransformationColumn(
+                    constituentColumnName, executionContext,
+                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -273,8 +305,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @Override
     public PartitionedTableImpl partitionedTransform(
             @NotNull final PartitionedTable other,
-            final ExecutionContext executionContext,
-            @NotNull final BinaryOperator<Table> transformer) {
+            @Nullable final ExecutionContext executionContext,
+            @NotNull final BinaryOperator<Table> transformer,
+            final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
         if (table.isRefreshing() || other.table().isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
@@ -292,12 +325,16 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
             final Table joined = uniqueKeys
-                    ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
+                    ? table.naturalJoin(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions))
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
-                    : table.join(other.table(), joinPairs, joinAdditions);
-            resultTable = joined
-                    .update(new BiTableTransformationColumn(
-                            constituentColumnName, RHS_CONSTITUENT, executionContext, transformer))
+                    : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
+
+            final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
+
+            resultTable = asRefreshingIfNeeded
+                    .update(List.of(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT,
+                            executionContext,
+                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 
@@ -319,6 +356,37 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 true);
     }
 
+    private Table maybeCopyAsRefreshing(Table table, boolean expectRefreshingResults) {
+        if (!expectRefreshingResults || table.isRefreshing()) {
+            return table;
+        }
+        final Table copied = ((QueryTable) table.coalesce()).copy();
+        copied.setRefreshing(true);
+        return copied;
+    }
+
+    private static UnaryOperator<Table> assertResultsStatic(@NotNull final UnaryOperator<Table> wrapped) {
+        return (final Table table) -> {
+            final Table result = wrapped.apply(table);
+            if (result != null && result.isRefreshing()) {
+                throw new IllegalStateException("Static partitioned tables cannot contain refreshing constituents. "
+                        + "Did you mean to specify expectRefreshingResults=true for this transform?");
+            }
+            return result;
+        };
+    }
+
+    private static BinaryOperator<Table> assertResultsStatic(@NotNull final BinaryOperator<Table> wrapped) {
+        return (final Table table1, final Table table2) -> {
+            final Table result = wrapped.apply(table1, table2);
+            if (result != null && result.isRefreshing()) {
+                throw new IllegalStateException("Static partitioned tables cannot contain refreshing constituents. "
+                        + "Did you mean to specify expectRefreshingResults=true for this transform?");
+            }
+            return result;
+        };
+    }
+
     // TODO (https://github.com/deephaven/deephaven-core/issues/2368): Consider adding transformWithKeys support
 
     @ConcurrentMethod
@@ -335,38 +403,26 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         for (int kci = 0; kci < numKeys; ++kci) {
             filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
         }
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+        return LivenessScopeStack.computeEnclosed(() -> {
             final Table[] matchingConstituents = filter(filters).snapshotConstituents();
-            if (matchingConstituents.length > 1) {
+            final int matchingCount = matchingConstituents.length;
+            if (matchingCount > 1) {
                 throw new UnsupportedOperationException(
-                        "Result size mismatch: expected 0 or 1 results, instead found "
-                                + matchingConstituents.length);
+                        "Result size mismatch: expected 0 or 1 results, instead found " + matchingCount);
             }
-            if (matchingConstituents.length == 1) {
-                final Table constituent = matchingConstituents[0];
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-                return constituent;
-            }
-            return null;
-        }
+            return matchingCount == 1 ? matchingConstituents[0] : null;
+        },
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     @ConcurrentMethod
     @Override
     public Table[] constituents() {
-        final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
-        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Table[] constituents = snapshotConstituents();
-            Arrays.stream(constituents).forEach((final Table constituent) -> {
-                if (constituent.isRefreshing()) {
-                    enclosingLivenessManager.manage(constituent);
-                }
-            });
-            return constituents;
-        }
+        return LivenessScopeStack.computeArrayEnclosed(
+                this::snapshotConstituents,
+                table::isRefreshing,
+                constituent -> constituent != null && constituent.isRefreshing());
     }
 
     private Table[] snapshotConstituents() {
@@ -395,7 +451,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     ? constituentColumnSource.getPrevSource()
                     : constituentColumnSource;
             try (final Stream<Table> constituentStream =
-                    new ObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
+                    new ChunkedObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
                 return constituentStream.toArray(Table[]::new);
             }
         }

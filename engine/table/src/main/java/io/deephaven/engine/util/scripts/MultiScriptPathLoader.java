@@ -3,12 +3,12 @@
  */
 package io.deephaven.engine.util.scripts;
 
-import io.deephaven.base.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A {@link ScriptPathLoader} that will load paths from multiple underlying loaders.
@@ -28,8 +28,9 @@ public class MultiScriptPathLoader<LOADER_TYPE extends ScriptPathLoader> impleme
 
         @Override
         public String toAbbreviatedString() {
-            final String stateString = StringUtils.joinStrings(
-                    states.stream().map(state -> (state == null) ? "--" : state.toAbbreviatedString()), " , ");
+            final String stateString = states.stream()
+                    .map(state -> (state == null) ? "--" : state.toAbbreviatedString())
+                    .collect(Collectors.joining(" , "));
             return '[' + stateString + ']';
         }
 

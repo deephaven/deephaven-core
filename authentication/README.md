@@ -30,16 +30,16 @@ Flight's gRPC call for `Handshake()` takes a `HandshakeRequest`, which provides 
 protocol version int64. The protocol version value is never written by current FlightClient implementations, leaving
 servers to only recognize the authentication details by the payload bytes.
 
-As a result, our implementation tries to ignore protocol version. We felt that the API did not provided sufficient
-means for supporting multiple forms of authentication simulatenously. Aside from the `BasicAuth` support, we expect
+As a result, our implementation tries to ignore protocol version. We felt that the API did not provide sufficient
+means for supporting multiple forms of authentication simultaneously. Aside from the `BasicAuth` support, we expect
 the `Handshake` payload to be a `WrappedAuthenticationRequest`. This is a tuple of `type` and `payload`. The `type`
 is used to route the request to the instance of `io.deephaven.auth.AuthenticationRequestHandler` where `getAuthType`
 is an exact match.
 
 
-Flight Auth2 `Authentication` Header
+Flight Auth2 `Authorization` Header
 ------------------------------------
-Flight Auth was reenvisioned for the client to send an `Authentication` header to identify themselves. The header
+Flight Auth was re-envisioned for the client to send an `Authorization` header to identify themselves. The header
 contains a prefix such as `Basic` or `Bearer` followed by a text payload. This prefix is used to route the request
 to the instance of `io.deephaven.auth.AuthenticationRequestHandler` where `getAuthType` is an exact match.
 
@@ -48,5 +48,5 @@ Session Bearer Token
 
 Deephaven's server builds a Session around each authentication. An identification token is provided to the client
 in the form of a bearer token. This token needs to be supplied with all subsequent gRPC requests to match RPCs to
-a session and therefore an authorization context. As clients tend to be emphemeral, the server requires that the
-client rotates this bearer token and in return will ensure oustanding state continues to be available to that client.
+a session and therefore an authorization context. As clients tend to be ephemeral, the server requires that the
+client rotates this bearer token and in return will ensure outstanding state continues to be available to that client.

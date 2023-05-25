@@ -10,9 +10,6 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 public abstract class AuthContext implements LogOutputAppendable {
 
     @Override
-    public abstract LogOutput append(LogOutput logOutput);
-
-    @Override
     public final String toString() {
         return new LogOutputStringImpl().append(this).toString();
     }
@@ -33,4 +30,5 @@ public abstract class AuthContext implements LogOutputAppendable {
             return logOutput.append("Anonymous");
         }
     }
+
 }

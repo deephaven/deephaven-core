@@ -9,7 +9,8 @@ import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTyped
 import java.util.Arrays;
 
 /**
- * The TypedHashDispatcher returns a pre-generated and precompiled hasher instance suitable for the provided column sources, or null if there is not a precompiled hasher suitable for the specified sources. */
+ * The TypedHashDispatcher returns a pre-generated and precompiled hasher instance suitable for the provided column sources, or null if there is not a precompiled hasher suitable for the specified sources.
+ */
 public class TypedHashDispatcher {
     private TypedHashDispatcher() {
         // static use only

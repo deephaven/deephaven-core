@@ -6,7 +6,6 @@ package io.deephaven.web.client.api.barrage.stream;
 import elemental2.core.Function;
 import elemental2.core.JsArray;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
@@ -16,6 +15,8 @@ import jsinterop.base.Js;
 
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
+
+import static io.deephaven.web.client.api.barrage.WebGrpcUtils.USE_WEBSOCKETS;
 
 public abstract class BiDiStream<Req, Resp> {
     public interface BiDiStreamFactory {
@@ -39,12 +40,10 @@ public abstract class BiDiStream<Req, Resp> {
     public static class Factory<ReqT, RespT> {
         private final Supplier<BrowserHeaders> headers;
         private final IntSupplier nextIntTicket;
-        private final boolean useWebsocket;
 
-        public Factory(Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket, boolean useWebsocket) {
+        public Factory(Supplier<BrowserHeaders> headers, IntSupplier nextIntTicket) {
             this.headers = headers;
             this.nextIntTicket = nextIntTicket;
-            this.useWebsocket = useWebsocket;
         }
 
         public BiDiStream<ReqT, RespT> create(
@@ -52,7 +51,7 @@ public abstract class BiDiStream<Req, Resp> {
                 OpenStreamFactory<ReqT> openEmulatedStream,
                 NextStreamMessageFactory<ReqT> nextEmulatedStream,
                 ReqT emptyReq) {
-            if (useWebsocket) {
+            if (USE_WEBSOCKETS) {
                 return websocket(bidirectionalStream.openBiDiStream(headers.get()));
             } else {
                 return new EmulatedBiDiStream<>(
@@ -101,6 +100,8 @@ public abstract class BiDiStream<Req, Resp> {
 
     public abstract void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler);
 
+    public abstract void onHeaders(JsConsumer<Object> handler);
+
     static class WebsocketBiDiStream<T, U> extends BiDiStream<T, U> {
         @JsType(isNative = true, name = "Object", namespace = JsPackage.GLOBAL)
         private static class BidirectionalStreamWrapper<ReqT, ResT> {
@@ -147,6 +148,15 @@ public abstract class BiDiStream<Req, Resp> {
         @Override
         public void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler) {
             wrapped.on("end", Js.cast(handler));
+        }
+
+        @Override
+        public void onHeaders(JsConsumer<Object> handler) {
+            try {
+                wrapped.on("headers", Js.cast(handler));
+            } catch (Exception ignored) {
+                // most implementations don't offer this, we can ignore this error
+            }
         }
     }
 
@@ -238,6 +248,11 @@ public abstract class BiDiStream<Req, Resp> {
         @Override
         public void onEnd(JsConsumer<ResponseStreamWrapper.Status> handler) {
             waitForStream(s -> s.onEnd(handler));
+        }
+
+        @Override
+        public void onHeaders(JsConsumer<Object> handler) {
+            waitForStream(s -> s.onHeaders(handler));
         }
     }
 }

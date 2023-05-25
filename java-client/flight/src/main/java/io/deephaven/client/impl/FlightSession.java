@@ -20,6 +20,10 @@ public class FlightSession implements AutoCloseable {
 
     public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
             ManagedChannel channel) {
+        // Note: this pattern of FlightClient owning the ManagedChannel does not mesh well with the idea that some
+        // other entity may be managing the authentication lifecycle. We'd prefer to pass in the stubs or "intercepted"
+        // channel directly, but that's not supported. So, we need to create the specific middleware interfaces so
+        // flight can do its own shims.
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
                 incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
         return new FlightSession(session, client);

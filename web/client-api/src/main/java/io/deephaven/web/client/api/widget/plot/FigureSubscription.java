@@ -251,7 +251,8 @@ public final class FigureSubscription {
                 return (Promise<TableSubscription>) (Promise) Promise.reject("Already closed");
             }
 
-            TableSubscription sub = table.subscribe(table.getColumns());
+            TableSubscription sub = table.subscribe(
+                    table.getColumns().filter((c, index, all) -> this.requiredColumns.contains(c.getName())));
             // TODO, technically we can probably unsubscribe to the table at this point, since we're listening to the
             // subscription itself
 

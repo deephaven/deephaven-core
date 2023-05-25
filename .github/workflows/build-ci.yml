@@ -60,76 +60,6 @@ jobs:
             type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
-      - name: Docker meta server nltk
-        id: docker_meta_server_nltk
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-nltk-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server pytorch
-        id: docker_meta_server_pytorch
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-pytorch-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server sklearn
-        id: docker_meta_server_sklearn
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-sklearn-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server tensorflow
-        id: docker_meta_server_tensorflow
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-tensorflow-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server all-ai
-        id: docker_meta_server_all_ai
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-all-ai-netty
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
-            type=ref,event=branch
-
       - name: Docker meta server slim
         id: docker_meta_server_slim
         uses: docker/metadata-action@v3
@@ -186,66 +116,6 @@ jobs:
           context: ./docker/server/build/context/
           push: false
 
-      - name: Docker build server nltk
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/nltk-base:local-build
-            SERVER=server-nltk-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
-      - name: Docker build server pytorch
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/pytorch-base:local-build
-            SERVER=server-pytorch-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
-      - name: Docker build server sklearn
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/sklearn-base:local-build
-            SERVER=server-sklearn-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
-      - name: Docker build server tensorflow
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/tensorflow-base:local-build
-            SERVER=server-tensorflow-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
-      - name: Docker build server all-ai
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/all-ai-base:local-build
-            SERVER=server-all-ai-netty
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_all_ai.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: false
-
       # Note: server-slim does not need BASE/SERVER build-args like the other server images
       - name: Docker build server slim
         uses: docker/build-push-action@v2
@@ -263,11 +133,6 @@ jobs:
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
-          ./docker/registry/nltk-base/build/crane/retag.sh
-          ./docker/registry/pytorch-base/build/crane/retag.sh
-          ./docker/registry/sklearn-base/build/crane/retag.sh
-          ./docker/registry/tensorflow-base/build/crane/retag.sh
-          ./docker/registry/all-ai-base/build/crane/retag.sh
 
   grpc-proxy:
     runs-on: ubuntu-22.04

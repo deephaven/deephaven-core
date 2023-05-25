@@ -23,13 +23,17 @@ import static io.deephaven.replication.ReplicationUtils.*;
 public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
+        replicateLongToByte();
         doCharReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         doCharReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
+        doCharReplication(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharByteTimsortKernel.java");
 
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
+
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         final String objectRunPath = charToObject(
@@ -127,6 +131,15 @@ public class ReplicateSortKernel {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
+    private static void replicateLongToByte() throws IOException {
+        final String byteSortKernelPath = longToByte(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
+        fixupByteSortKernel(byteSortKernelPath);
+        longToByte("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        longToByte(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
+    }
+
     private static void fixupIntSortKernel(String intSortKernelPath) throws IOException {
         final List<String> longCase = Arrays.asList("case Long:",
                 "if (order == SortingOrder.Ascending) {",
@@ -138,28 +151,19 @@ public class ReplicateSortKernel {
         final File file = new File(intSortKernelPath);
         final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         FileUtils.writeLines(file, replaceRegion(lines, "lngcase", indent(longCase, 16)));
-
     }
 
-    private static void replicateLongInt() throws IOException {
-        // our special fancy LongInt sort kernel for use in a multicolumn sort
-        final String targetName = charLongToLongInt(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        fixupLongInt(targetName);
-        final File longIntDest = new File(targetName.replace("LongTimsortKernel", "LongIntTimsortKernel"));
-        // noinspection ResultOfMethodCallIgnored
-        longIntDest.delete();
-        FileUtils.moveFile(new File(targetName), longIntDest);
-    }
+    private static void fixupByteSortKernel(String byteSortKernelPath) throws IOException {
+        final List<String> longCase = Arrays.asList("case Long:",
+                "if (order == SortingOrder.Ascending) {",
+                "    return LongByteTimsortKernel.createContext(size);",
+                "} else {",
+                "    return LongByteTimsortDescendingKernel.createContext(size);",
+                "}");
 
-    private static void replicateIntInt() throws IOException {
-        final String targetName = charLongToIntInt(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        fixupIntInt(targetName);
-        final File intIntDest = new File(targetName.replace("IntTimsortKernel", "IntIntTimsortKernel"));
-        // noinspection ResultOfMethodCallIgnored
-        intIntDest.delete();
-        FileUtils.moveFile(new File(targetName), intIntDest);
+        final File file = new File(byteSortKernelPath);
+        final List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
+        FileUtils.writeLines(file, replaceRegion(lines, "lngcase", indent(longCase, 16)));
     }
 
     private static void invertSense(String path, String descendingPath) throws IOException {
@@ -242,9 +246,7 @@ public class ReplicateSortKernel {
     private static void fixupObjectRuns(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        lines = fixupNeq(addImport(lines, "import java.util.Objects;"));
-
+        lines = fixupChunkAttributes(lines);
         FileUtils.writeLines(objectFile, lines);
     }
 
@@ -368,7 +370,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return 1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)lhs).compareTo(rhs);",
                 "    }",
                 "");
@@ -384,7 +386,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return -1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)rhs).compareTo(lhs);",
                 "    }");
 
@@ -401,10 +403,4 @@ public class ReplicateSortKernel {
                         m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2))),
                 "comparison functions", descendingComment);
     }
-
-    private static List<String> fixupNeq(List<String> lines) {
-        return applyFixup(lines, "neq", "\\s+return next != last;",
-                m -> Collections.singletonList("        return !Objects.equals(next, last);"));
-    }
-
 }

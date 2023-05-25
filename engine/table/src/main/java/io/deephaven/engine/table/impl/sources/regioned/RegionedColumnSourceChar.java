@@ -19,7 +19,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceChar<ATTR extends Values>
         extends RegionedColumnSourceArray<Character, ATTR, ColumnRegionChar<ATTR>>
-        implements ColumnSourceGetDefaults.ForChar {
+        implements ColumnSourceGetDefaults.ForChar /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceChar(@NotNull final ColumnRegionChar<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionChar<ATTR>> makeDeferred) {
@@ -43,35 +43,12 @@ abstract class RegionedColumnSourceChar<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceChar<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionChar.createNull(PARAMETERS.regionMask), DeferredColumnRegionChar::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native char type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Character, ColumnRegionChar<ATTR>>
-            implements ColumnSourceGetDefaults.ForChar {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionChar<ATTR>>> outerColumnSource) {
-            super(Character.class, outerColumnSource);
-        }
-
-        @Override
-        public char getChar(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getChar(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionChar<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 

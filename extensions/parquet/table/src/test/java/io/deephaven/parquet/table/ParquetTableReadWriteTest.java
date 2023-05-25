@@ -6,7 +6,9 @@ package io.deephaven.parquet.table;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -26,6 +28,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +40,7 @@ import static org.junit.Assert.*;
 public class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
+    public static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
 
@@ -63,6 +67,7 @@ public class ParquetTableReadWriteTest {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
+                        "nullString = (String) null",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
                         "someLongColumn = ii",
@@ -76,7 +81,18 @@ public class ParquetTableReadWriteTest {
                         "someKey = `` + (int)(i /100)",
                         "nullKey = i < -1?`123`:null",
                         "bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
-                        "biColumn = java.math.BigInteger.valueOf(ii)"));
+                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "nullKey = i < -1?`123`:null",
+                        "nullIntColumn = (int)null",
+                        "nullLongColumn = (long)null",
+                        "nullDoubleColumn = (double)null",
+                        "nullFloatColumn = (float)null",
+                        "nullBoolColumn = (Boolean)null",
+                        "nullShortColumn = (short)null",
+                        "nullByteColumn = (byte)null",
+                        "nullCharColumn = (char)null",
+                        "nullTime = (DateTime)null",
+                        "nullString = (String)null"));
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
@@ -152,6 +168,8 @@ public class ParquetTableReadWriteTest {
         result = result.update(
                 "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
         result = result.update(
+                "nullStringSet = (StringSet)null");
+        result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
                 "nonNullPolyString = (String[])(((Object)nonNullPolyString) == null?null:nonNullPolyString.toArray())",
@@ -208,7 +226,7 @@ public class ParquetTableReadWriteTest {
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
-        flatTable("largeFlatParquet", 4000000, false);
+        flatTable("largeFlatParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test
@@ -216,9 +234,9 @@ public class ParquetTableReadWriteTest {
         testEmptyArrayStore("smallEmpty", 20);
         groupedOneColumnTable("smallAggOneColumn", 20);
         groupedTable("smallAggParquet", 20, true);
-        testEmptyArrayStore("largeEmpty", 4000000);
-        groupedOneColumnTable("largeAggOneColumn", 4000000);
-        groupedTable("largeAggParquet", 4000000, false);
+        testEmptyArrayStore("largeEmpty", LARGE_TABLE_SIZE);
+        groupedOneColumnTable("largeAggOneColumn", LARGE_TABLE_SIZE);
+        groupedTable("largeAggParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test
@@ -244,7 +262,7 @@ public class ParquetTableReadWriteTest {
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
                         .where("i % 2 == 0").groupBy("someString").ungroup("someInt"))
-                                .withDefinitionUnsafe(definition);
+                        .withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
@@ -314,6 +332,25 @@ public class ParquetTableReadWriteTest {
         // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
         // way as the other similar codec tests.
         compressionCodecTestHelper("SNAPPY");
+    }
+
+    @Test
+    public void testBigDecimalPrecisionScale() {
+        // https://github.com/deephaven/deephaven-core/issues/3650
+        final BigDecimal myBigDecimal = new BigDecimal(".0005");
+        assertEquals(1, myBigDecimal.precision());
+        assertEquals(4, myBigDecimal.scale());
+        final Table table = TableTools
+                .newTable(new ColumnHolder<>("MyBigDecimal", BigDecimal.class, null, false, myBigDecimal));
+        final File dest = new File(rootFile, "ParquetTest_testBigDecimalPrecisionScale.parquet");
+        ParquetTools.writeTable(table, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
+        try (final CloseableIterator<BigDecimal> it = fromDisk.objectColumnIterator("MyBigDecimal")) {
+            assertTrue(it.hasNext());
+            final BigDecimal item = it.next();
+            assertFalse(it.hasNext());
+            assertEquals(myBigDecimal, item);
+        }
     }
 
     /**

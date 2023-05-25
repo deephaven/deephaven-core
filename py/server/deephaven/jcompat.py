@@ -5,11 +5,11 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Iterable, Dict, Set, TypeVar, Callable, Union, Sequence
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union
 
 import jpy
 
-from deephaven._wrapper import unwrap
+from deephaven._wrapper import unwrap, wrap_j_object
 from deephaven.dtypes import DType
 
 
@@ -24,7 +24,7 @@ def j_array_list(values: Iterable = None) -> jpy.JType:
         return None
     r = jpy.get_type("java.util.ArrayList")(len(list(values)))
     for v in values:
-        r.add(v)
+        r.add(unwrap(v))
     return r
 
 
@@ -34,10 +34,10 @@ def j_hashmap(d: Dict = None) -> jpy.JType:
         return None
 
     r = jpy.get_type("java.util.HashMap")()
-    for key, value in d.items():
-        if value is None:
-            value = ""
-        r.put(key, value)
+    for k, v in d.items():
+        k = unwrap(k)
+        v = unwrap(v)
+        r.put(k, v)
     return r
 
 
@@ -48,7 +48,7 @@ def j_hashset(s: Set = None) -> jpy.JType:
 
     r = jpy.get_type("java.util.HashSet")()
     for v in s:
-        r.add(v)
+        r.add(unwrap(v))
     return r
 
 
@@ -57,26 +57,27 @@ def j_properties(d: Dict = None) -> jpy.JType:
     if d is None:
         return None
     r = jpy.get_type("java.util.Properties")()
-    for key, value in d.items():
-        if value is None:
-            value = ""
-        r.setProperty(key, value)
+    for k, v in d.items():
+        k = unwrap(k)
+        v = unwrap(v)
+        r.setProperty(k, v)
     return r
 
 
-def j_map_to_dict(m):
+def j_map_to_dict(m) -> Dict[Any, Any]:
     """Converts a java map to a python dictionary."""
     if not m:
-        return None
+        return {}
 
-    r = {}
-    for e in m.entrySet().toArray():
-        k = e.getKey()
-        v = e.getValue()
-        r[k] = v
+    return {e.getKey(): wrap_j_object(e.getValue()) for e in m.entrySet().toArray()}
 
-    return r
 
+def j_list_to_list(jlist) -> List[Any]:
+    """Converts a java list to a python list."""
+    if not jlist:
+        return []
+
+    return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -140,6 +141,6 @@ def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (unwrap(v),)
+        return (unwrap(v), )
     else:
         return tuple((unwrap(o) for o in v))

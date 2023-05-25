@@ -3,43 +3,69 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 
-public class ObjectVectorDirect<T> implements ObjectVector<T> {
+/**
+ * An {@link ObjectVector} backed by an array.
+ */
+public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
     private static final long serialVersionUID = 9111886364211462917L;
 
-    private final T[] data;
-    private final Class<T> componentType;
+    public static final ObjectVector<?> ZERO_LENGTH_VECTOR = new ObjectVectorDirect<>();
 
-    public ObjectVectorDirect(T... data) {
-        this.data = data;
-        componentType = (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
+    public static <COMPONENT_TYPE> ObjectVector<COMPONENT_TYPE> empty() {
+        // noinspection unchecked
+        return (ObjectVector<COMPONENT_TYPE>) ZERO_LENGTH_VECTOR;
     }
 
-    public static final ObjectVector<?> ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
+    private final COMPONENT_TYPE[] data;
+    private final Class<COMPONENT_TYPE> componentType;
+
+    @SuppressWarnings("unchecked")
+    public ObjectVectorDirect(@NotNull final COMPONENT_TYPE... data) {
+        this.data = Require.neqNull(data, "data");
+        componentType = (Class<COMPONENT_TYPE>) data.getClass().getComponentType();
+    }
 
     @Override
-    public T get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public COMPONENT_TYPE get(final long index) {
+        if (index < 0 || index >= data.length) {
             return null;
         }
-        return data[(int) i];
+        return data[(int) index];
     }
 
     @Override
-    public ObjectVector<T> subVector(long fromIndexInclusive, long toIndexExclusive) {
+    public ObjectVector<COMPONENT_TYPE> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
         return new ObjectVectorSlice<>(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
     @Override
-    public ObjectVector<T> subVectorByPositions(long[] positions) {
+    public ObjectVector<COMPONENT_TYPE> subVectorByPositions(final long[] positions) {
         return new ObjectSubVector<>(this, positions);
     }
 
     @Override
-    public T[] toArray() {
+    public COMPONENT_TYPE[] toArray() {
         return data;
+    }
+
+    @Override
+    public COMPONENT_TYPE[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseableIterator.of(data);
+        }
+        return ObjectVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
 
     @Override
@@ -48,30 +74,30 @@ public class ObjectVectorDirect<T> implements ObjectVector<T> {
     }
 
     @Override
-    public Class<T> getComponentType() {
+    public Class<COMPONENT_TYPE> getComponentType() {
         return componentType;
     }
 
     @Override
-    public ObjectVectorDirect<T> getDirect() {
+    public ObjectVectorDirect<COMPONENT_TYPE> getDirect() {
         return this;
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return ObjectVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof ObjectVectorDirect) {
-            return Arrays.equals(data, ((ObjectVectorDirect) obj).data);
+            return Arrays.equals(data, ((ObjectVectorDirect<?>) obj).data);
         }
         return ObjectVector.equals(this, obj);
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return ObjectVector.hashCode(this);
     }
 }

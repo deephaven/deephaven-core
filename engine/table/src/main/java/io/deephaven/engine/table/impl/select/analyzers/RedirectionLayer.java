@@ -155,8 +155,8 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public Map<String, Set<String>> calcDependsOnRecurse() {
-        return inner.calcDependsOnRecurse();
+    public Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
+        return inner.calcDependsOnRecurse(forcePublishAllResources);
     }
 
     @Override

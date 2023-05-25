@@ -457,7 +457,7 @@ public class SortHelpers {
             RowSet rowSet, boolean usePrev, long sortSize) {
         final LongArraySource resultIndices = new LongArraySource();
         resultIndices.ensureCapacity(sortSize, false);
-        final ArrayBackedColumnSource<?> valuesToMerge =
+        final WritableColumnSource<?> valuesToMerge =
                 ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType());
         valuesToMerge.ensureCapacity(sortSize, false);
 
@@ -594,9 +594,8 @@ public class SortHelpers {
                 sortContext.sort(rowKeys, values);
             }
 
-            try (final FindRunsKernel findRunsContext = FindRunsKernel.makeContext(chunkType)) {
-                findRunsContext.findRuns(values, offsetsOut, lengthsOut);
-            }
+            final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+            findRunsKernel.findRuns(values, offsetsOut, lengthsOut);
             values.close();
         }
         if (offsetsOut.size() == 0) {
@@ -632,11 +631,10 @@ public class SortHelpers {
             for (int columnIndex = 2; columnIndex < columnSources.length; ++columnIndex) {
                 columnSource = columnSources[columnIndex];
 
-                try (final FindRunsKernel findRunsContext = FindRunsKernel.makeContext(chunkType)) {
-                    findRunsContext.findRuns(values, offsetsIn, lengthsIn, offsetsOut, lengthsOut);
-                    if (offsetsOut.size() == 0) {
-                        break;
-                    }
+                final FindRunsKernel findRunsKernel = FindRunsKernel.getInstance(chunkType);
+                findRunsKernel.findRuns(values, offsetsIn, lengthsIn, offsetsOut, lengthsOut);
+                if (offsetsOut.size() == 0) {
+                    break;
                 }
 
                 chunkType = columnSource.getChunkType();

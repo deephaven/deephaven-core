@@ -266,6 +266,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "!false";
         check(expression, resultExpression, boolean.class, new String[] {});
 
+        expression = "!Boolean.FALSE";
+        resultExpression = "not(Boolean.FALSE)";
+        check(expression, resultExpression, Boolean.class, new String[] {});
+
         expression = "myInt * myLong + myOtherInt * myOtherLong + myLongVector[myInt - 1]";
         resultExpression =
                 "plus(plus(multiply(myInt, myLong), multiply(myOtherInt, myOtherLong)), myLongVector.get(longCast(minus(myInt, 1))))";
@@ -995,6 +999,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "!myBoolean";
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
 
+        expression = "!myBooleanObj";
+        resultExpression = "not(myBooleanObj)";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
+
         expression = "(String)myString==null";
         resultExpression = "isNull((String) myString)";
         check(expression, resultExpression, boolean.class, new String[] {"myString"});
@@ -1518,7 +1526,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     /**
      * Ensure that vectors are converted to Java arrays when they are provided as the sole varargs argument.
-     * 
+     *
      * @throws Exception
      */
     public void testImplicitConversionByType_vector() throws Exception {

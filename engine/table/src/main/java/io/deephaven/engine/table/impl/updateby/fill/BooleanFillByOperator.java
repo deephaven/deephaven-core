@@ -12,13 +12,12 @@ import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.BooleanSparseArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -30,6 +29,29 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
+    protected class Context extends BaseByteUpdateByOperator.Context {
+        public ByteChunk<? extends Values> booleanValueChunk;
+
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            booleanValueChunk = valueChunks[0].asByteChunk();
+        }
+
+        @Override
+        public void push(int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
+            byte val = booleanValueChunk.get(pos);
+            if(val != NULL_BOOLEAN_AS_BYTE) {
+                curVal = val;
+            }
+        }
+    }
+
     public BooleanFillByOperator(@NotNull final MatchPair fillPair,
                               @Nullable final RowRedirection rowRedirection
                               // region extra-constructor-args
@@ -38,6 +60,12 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
         super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
+    }
+
+    @NotNull
+    @Override
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     // region extra-methods
@@ -61,52 +89,4 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
         return Collections.singletonMap(pair.leftColumn, outputSource.reinterpret(Boolean.class));
     }
     // endregion extra-methods
-
-    @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final ByteChunk<Values> asBooleans = values.asByteChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getByte(bucketPosition);
-            accumulate(asBooleans, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long bucketPosition) {
-        ctx.curVal = singletonGroup == bucketPosition ? singletonVal : NULL_BOOLEAN_AS_BYTE;
-        accumulate(workingChunk.asByteChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = bucketPosition;
-        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final ByteChunk<Values> asBooleans,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableByteChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final byte currentVal = asBooleans.get(ii);
-            if(currentVal != NULL_BOOLEAN_AS_BYTE) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
-    }
 }

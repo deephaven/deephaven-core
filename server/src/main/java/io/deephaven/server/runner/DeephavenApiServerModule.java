@@ -13,8 +13,8 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
+import io.deephaven.server.hierarchicaltable.HierarchicalTableServiceModule;
 import io.deephaven.server.notebook.FilesystemStorageServiceModule;
-import io.deephaven.server.healthcheck.HealthCheckModule;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
@@ -29,9 +29,9 @@ import io.deephaven.server.uri.UriModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
-import io.grpc.protobuf.services.HealthStatusManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Named;
@@ -63,16 +63,16 @@ import java.util.concurrent.TimeUnit;
         ObjectServiceModule.class,
         PluginsModule.class,
         PartitionedTableServiceModule.class,
+        HierarchicalTableServiceModule.class,
         FilesystemStorageServiceModule.class,
-        HealthCheckModule.class,
         ConfigServiceModule.class,
 })
 public class DeephavenApiServerModule {
 
     @Provides
     @ElementsIntoSet
-    static Set<BindableService> primeServices(HealthStatusManager healthStatusManager) {
-        return Collections.singleton(healthStatusManager.getHealthService());
+    static Set<BindableService> primeServices() {
+        return Collections.emptySet();
     }
 
     @Provides
@@ -84,16 +84,10 @@ public class DeephavenApiServerModule {
     @Provides
     @Singleton
     public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
-        final String DEEPHAVEN_CONSOLE_TYPE = "deephaven.console.type";
-        boolean configuredConsole = Configuration.getInstance().hasProperty(DEEPHAVEN_CONSOLE_TYPE);
+        // Check which script language is configured
+        String scriptSessionType = Configuration.getInstance().getProperty("deephaven.console.type");
 
-        if (!configuredConsole && scriptTypes.size() == 1) {
-            // if there is only one; use it
-            return scriptTypes.values().iterator().next().get();
-        }
-
-        // otherwise, assume we want python...
-        String scriptSessionType = Configuration.getInstance().getStringWithDefault(DEEPHAVEN_CONSOLE_TYPE, "python");
+        // Emit an error if the selected language isn't provided
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
         }
@@ -137,6 +131,8 @@ public class DeephavenApiServerModule {
             report(executorType, error);
         } else if (task instanceof Future<?>) {
             try {
+                // Note: this paradigm is not compatible with
+                // TODO(deephaven-core#3396): Add io.deephaven.server.util.Scheduler fixed delay support
                 ((Future<?>) task).get();
             } catch (final InterruptedException ignored) {
                 // noinspection ResultOfMethodCallIgnored
@@ -156,15 +152,15 @@ public class DeephavenApiServerModule {
 
     private static class ThreadFactory extends NamingThreadFactory {
         public ThreadFactory(final String name) {
-            super(DeephavenApiServer.class, name, true);
+            super(DeephavenApiServer.class, name);
         }
 
         @Override
         public Thread newThread(final @NotNull Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
                 r.run();
-            });
+            }));
         }
     }
 }

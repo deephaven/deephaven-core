@@ -289,8 +289,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
             }
             return true;
         }
-
-        void close();
     }
 
     /**
@@ -326,13 +324,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     interface SearchIterator extends Iterator {
-        void close();
-
-        boolean hasNext();
-
         long currentValue();
-
-        long nextLong();
 
         /**
          * <p>

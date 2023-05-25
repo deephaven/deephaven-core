@@ -3,27 +3,35 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.iterators.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -31,7 +39,7 @@ import java.util.function.Function;
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
  * on.
  */
-public abstract class UncoalescedTable extends BaseTable {
+public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_TYPE>> extends BaseTable<IMPL_TYPE> {
 
     private final Object coalescingLock = new Object();
 
@@ -152,47 +160,47 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName) {
+    public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull String columnName) {
         return coalesce().columnIterator(columnName);
     }
 
     @Override
-    public CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName) {
         return coalesce().characterColumnIterator(columnName);
     }
 
     @Override
-    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName) {
         return coalesce().byteColumnIterator(columnName);
     }
 
     @Override
-    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName) {
         return coalesce().shortColumnIterator(columnName);
     }
 
     @Override
-    public IntegerColumnIterator integerColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName) {
         return coalesce().integerColumnIterator(columnName);
     }
 
     @Override
-    public LongColumnIterator longColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName) {
         return coalesce().longColumnIterator(columnName);
     }
 
     @Override
-    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName) {
         return coalesce().floatColumnIterator(columnName);
     }
 
     @Override
-    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName) {
         return coalesce().doubleColumnIterator(columnName);
     }
 
     @Override
-    public <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
         return coalesce().objectColumnIterator(columnName);
     }
 
@@ -203,8 +211,8 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table where(Collection<? extends Filter> filters) {
-        return coalesce().where(filters);
+    public Table where(Filter filter) {
+        return coalesce().where(filter);
     }
 
     @Override
@@ -263,14 +271,8 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<Pair> pairs) {
         return coalesce().renameColumns(pairs);
-    }
-
-    @Override
-    @ConcurrentMethod
-    public Table formatColumns(String... columnFormats) {
-        return coalesce().formatColumns(columnFormats);
     }
 
     @Override
@@ -316,31 +318,46 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfJoinRule);
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, reverseAsOfJoinRule);
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
-        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+    public Table join(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            int reserveBits) {
+        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, reserveBits);
+    }
+
+    @Override
+    public Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> exactMatches,
+            @NotNull RangeJoinMatch rangeMatch, @NotNull Collection<? extends Aggregation> aggregations) {
+        return coalesce().rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
     }
 
     @Override
@@ -386,19 +403,18 @@ public abstract class UncoalescedTable extends BaseTable {
 
     @Override
     @ConcurrentMethod
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns) {
+    public RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            Collection<? extends ColumnName> groupByColumns) {
         return coalesce().rollup(aggregations, includeConstituents, groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
-    public Table treeTable(String idColumn, String parentColumn) {
-        return coalesce().treeTable(idColumn, parentColumn);
+    public TreeTable tree(String idColumn, String parentColumn) {
+        return coalesce().tree(idColumn, parentColumn);
     }
 
     @Override
-    @ConcurrentMethod
     public Table updateBy(@NotNull final UpdateByControl control,
             @NotNull final Collection<? extends UpdateByOperation> ops,
             @NotNull final Collection<? extends ColumnName> byColumns) {
@@ -418,18 +434,13 @@ public abstract class UncoalescedTable extends BaseTable {
     }
 
     @Override
-    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshot(baseTable, doInitialSnapshot, stampColumns);
+    public Table snapshot() {
+        return coalesce().snapshot();
     }
 
     @Override
-    public Table snapshotIncremental(Table rightTable, boolean doInitialSnapshot, String... stampColumns) {
-        return coalesce().snapshotIncremental(rightTable, doInitialSnapshot, stampColumns);
-    }
-
-    @Override
-    public Table snapshotHistory(Table rightTable) {
-        return coalesce().snapshotHistory(rightTable);
+    public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        return coalesce().snapshotWhen(trigger, options);
     }
 
     @Override

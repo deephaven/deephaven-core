@@ -6,6 +6,8 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.util.ConcurrentMethod;
@@ -19,6 +21,7 @@ import java.util.Collection;
  * @param <TABLE> the table type
  */
 public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABLE> {
+    boolean AGG_BY_PRESERVE_EMPTY_DEFAULT = false;
 
     // -------------------------------------------------------------------------------------------
 
@@ -36,51 +39,53 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result. The returned
-     * table will include an initial snapshot.
+     * Creates a table with a single static snapshot of {@code this}.
      *
-     * <p>
-     * Delegates to {@link #snapshot(Object, boolean, Collection)}.
-     *
-     * @param baseTable The table to be snapshotted
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * @return the snapshot
      */
-    TOPS snapshot(TABLE baseTable, String... stampColumns);
+    TOPS snapshot();
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result.
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} updates.
      *
      * <p>
-     * Delegates to {@link #snapshot(Object, boolean, Collection)}.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features))}.
      *
-     * @param baseTable The table to be snapshotted
-     * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * @param trigger the trigger table
+     * @param features the snapshot features
+     * @return the snapshotting table
+     * @see #snapshotWhen(Object, SnapshotWhenOptions)
+     * @see SnapshotWhenOptions#of(Flag...)
      */
-    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, String... stampColumns);
+    TOPS snapshotWhen(TABLE trigger, Flag... features);
 
     /**
-     * Snapshot {@code baseTable}, triggered by {@code this} table, and return a new table as a result.
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} updates.
      *
      * <p>
-     * {@code this} table is the triggering table, i.e. the table whose change events cause a new snapshot to be taken.
-     * The result table includes a "snapshot key" which is a subset (possibly all) of {@code this} table's columns. The
-     * remaining columns in the result table come from {@code baseTable}, the table being snapshotted.
+     * Equivalent to {@code snapshotWhen(trigger, SnapshotWhenControl.of(features, stampColumns))}.
      *
-     * @param baseTable The table to be snapshotted
-     * @param doInitialSnapshot Take the first snapshot now (otherwise wait for a change event)
-     * @param stampColumns The columns forming the "snapshot key", i.e. some subset of this Table's columns to be
-     *        included in the result at snapshot time. As a special case, an empty stampColumns is taken to mean
-     *        "include all columns".
-     * @return The result table
+     * <p>
+     * See {@link SnapshotWhenOptions} for details on the {@code stampColumns}.
+     *
+     * @param trigger the trigger table
+     * @param features the snapshot features
+     * @param stampColumns the stamp columns
+     * @return the snapshotting table
+     * @see #snapshotWhen(Object, SnapshotWhenOptions)
+     * @see SnapshotWhenOptions#of(Iterable, String...)
      */
-    TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns);
+    TOPS snapshotWhen(TABLE trigger, Collection<Flag> features, String... stampColumns);
+
+    /**
+     * Creates a table that captures a snapshot of {@code this} whenever {@code trigger} updates.
+     *
+     * @param trigger the trigger table
+     * @param options the snapshot options
+     * @return the snapshotting table
+     * @see SnapshotWhenOptions
+     */
+    TOPS snapshotWhen(TABLE trigger, SnapshotWhenOptions options);
 
     // -------------------------------------------------------------------------------------------
 
@@ -99,7 +104,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS where(String... filters);
 
     @ConcurrentMethod
-    TOPS where(Collection<? extends Filter> filters);
+    TOPS where(Filter filter);
 
     // -------------------------------------------------------------------------------------------
 
@@ -212,6 +217,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS select();
+
     TOPS select(String... columns);
 
     TOPS select(Collection<? extends Selectable> columns);
@@ -308,6 +315,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
             Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
+     * Equivalent to {@code join(rightTable, emptyList(), emptyList())}.
+     *
+     * @param rightTable The right side table on the join.
+     * @return a new table joined according to the specification with zero key-columns and includes all right columns
+     * @see #join(Object, Collection, Collection)
+     */
+    TOPS join(TABLE rightTable);
 
     /**
      * Perform a cross join with the {@code rightTable}.
@@ -533,6 +552,162 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
+     * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
+     * zero-or-more <em>exact join matches</em> and one <em>range join match</em>.
+     * <p>
+     * <h4>Matching Rules</h4>
+     * <p>
+     * The <em>exact join matches</em> identify possibly-responsive rows according to exactly matching values between
+     * the <em>left exact match columns</em> and the <em>right exact match columns</em>, similar to other join
+     * operations. The <em>range join match</em> bounds the beginning of the responsive range for a given output row by
+     * the relationship between a <em>left start column</em> and a <em>right range column</em>, governed by the
+     * <em>rangeStartRule</em>, and bounds the end of the responsive range for a given output row by the relationship
+     * between a <em>left end column</em> and the <em><u>same</u> right range column</em>, governed by the
+     * <em>rangeEndRule</em>.
+     * <p>
+     * <h4>Right Table Row-Inclusion Criteria and Relative Ordering Requirements</h4>
+     * <p>
+     * Rows from {@code rightTable} with {@code null} or {@code NaN} values for the <em>right range column</em> are
+     * discarded; that is, they are never included in the responsive range for any output row. Within a group sharing
+     * the same values for the <em>right exact match columns</em>, {@code rightTable} <em><u>must</u></em> be relatively
+     * ordered (as if {@link #sort sorted}) according to the <em>right range column</em> for all rows that are not
+     * discarded.
+     * <p>
+     * <h4>Special Cases</h4>
+     * <p>
+     * In order to produce aggregated output, it is required that the two relative match expressions define a range of
+     * values to determine the responsive rows to aggregate. There are a few noteworthy special cases of ranges.
+     * <dl>
+     * <dt>empty range</dt>
+     * <dd>An <em>empty</em> range occurs for any left row with no responsive right rows. That is, no non-{@code null},
+     * non-{@code NaN} right rows were found using the exact join matches, or none were in range according to the range
+     * join match.</dd>
+     * <dt>single-value ranges</dt>
+     * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
+     * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
+     * single-value range, only rows within the bucket where the right range column matches the single value are
+     * included in the output aggregations.</dt>
+     * <dt>invalid ranges</dt>
+     * <dd>An <em>invalid</em> range occurs in two scenarios: First, when the range is inverted, i.e. when the value of
+     * the left start column is greater than the value of the left end column. Second, when either relative-match is
+     * exclusive ({@code <} or {@code >}) and the value in the left start column is equal to the value in the left end
+     * column (because {@code value < value == false}). Specifying "allow preceding" or "allow following" for either
+     * rule will not constitute an exception to either of these defined scenarios. For invalid ranges, the result row
+     * will be {@code null} for all aggregation output columns.</dd>
+     * <dt>undefined ranges</dt>
+     * <dd>An <em>undefined</em> range occurs when either the left start column or the left end column is {@code NaN}.
+     * For rows with an undefined range, the corresponding output values will be {@code null} (as with invalid
+     * ranges).</dd>
+     * <dt>Unbounded Ranges</dt>
+     * <dd>A partially or fully <em>unbounded</em> range occurs when either the left start column or the left end column
+     * is {@code null}. If the left start column value is {@code null} the range is unbounded at the beginning, and all
+     * matched right rows will be included if they respect the match rule for the left end column. If the left end
+     * column value is {@code null} the range is unbounded at the end, and all matched right rows will be included if
+     * they respect the match rule for the left start column. If both the left start column and left end column values
+     * are {@code null} the range is unbounded in both directions, and all matched right rows will be included.</dd>
+     * </dl>
+     *
+     * @param rightTable The Table to join with
+     * @param exactMatches Possibly-empty collection of {@link JoinMatch join matches} that dictate exact-match
+     *        criteria. That is, rows from {@code rightTable} that might be responsive to rows from {@code this} Table
+     *        will have identical values for the column pairs expressed by these matches.
+     * @param rangeMatch Specifies the range match criteria for determining the responsive rows from {@code rightTable}
+     *        for each row from {@code this} Table, within the buckets created by matching on the {@code exactMatches}
+     * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
+     *        {@code rightTable} for each row from {@code this} Table
+     * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
+     */
+    TOPS rangeJoin(
+            TABLE rightTable,
+            Collection<? extends JoinMatch> exactMatches,
+            RangeJoinMatch rangeMatch,
+            Collection<? extends Aggregation> aggregations);
+
+    /**
+     * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
+     * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
+     * zero-or-more <em>exact join matches</em> and one <em>range join match</em>. The operation is performed
+     * identically to {@link #rangeJoin(TABLE, Collection, RangeJoinMatch, Collection)}, after parsing is applied to the
+     * elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and {@link RangeJoinMatch
+     * range join match}.
+     * <p>
+     * <h4>{@code columnsToMatch} Parsing</h4>
+     * <p>
+     * The {@code columnsToMatch} argument is parsed as zero-or-more exact match expressions followed by a single range
+     * match expression.
+     * <p>
+     * The exact match expressions are parsed as in other join operations. That is, the pattern expects an
+     * equals-separated pairing of a left column name with a right column name.
+     * <p>
+     * For example:
+     *
+     * <pre>
+     * "LeftColumn = RightColumn"
+     * </pre>
+     * 
+     * or
+     *
+     * <pre>
+     * "LeftColumn == RightColumn"
+     * </pre>
+     * <p>
+     * The range match expression is expressed as a ternary logical expression, expressing the relationship between the
+     * <em>left start column</em>, the <em>right range column</em>, and the <em>left end column</em>. Each column name
+     * pair is separated by a logical operator, either {@code <} or {@code <=}. The entire expression may be preceded by
+     * a left arrow {@code <-} and/or followed by a right arrow {@code ->}, which when paired with the {@code <=}
+     * operator signify {@link RangeStartRule#LESS_THAN_OR_EQUAL_ALLOW_PRECEDING less than or equal (allow preceding)}
+     * or {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)},
+     * respectively.
+     * <p>
+     * Examples:
+     * <ul>
+     * <li>For {@link RangeStartRule#LESS_THAN less than} paired with {@link RangeEndRule#GREATER_THAN greater than}:
+     *
+     * <pre>
+     * "leftStartColumn < rightRangeColumn < leftEndColumn"
+     * </pre>
+     *
+     * </li>
+     * <li>For {@link RangeStartRule#LESS_THAN_OR_EQUAL less than or equal} paired with
+     * {@link RangeEndRule#GREATER_THAN_OR_EQUAL greater than or equal}:
+     *
+     * <pre>
+     * "leftStartColumn <= rightRangeColumn <= leftEndColumn"
+     * </pre>
+     *
+     * </li>
+     * <li>For {@link RangeStartRule#LESS_THAN_OR_EQUAL_ALLOW_PRECEDING less than or equal (allow preceding)} paired
+     * with {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)}:
+     *
+     * <pre>
+     * "<- leftStartColumn <= rightRangeColumn <= leftEndColumn ->"
+     * </pre>
+     *
+     * </li>
+     * </ul>
+     *
+     * @param rightTable The Table to join with
+     * @param columnsToMatch {@link String} expressions that will be parsed into {@link JoinMatch join matches}, a
+     *        {@link RangeStartRule} and a {@link RangeEndRule}
+     * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
+     *        {@code rightTable} for each row from {@code this} Table
+     * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
+     */
+    TOPS rangeJoin(
+            TABLE rightTable,
+            Collection<String> columnsToMatch,
+            Collection<? extends Aggregation> aggregations);
+
+    // -------------------------------------------------------------------------------------------
+
     @ConcurrentMethod
     TOPS groupBy();
 
@@ -678,8 +853,19 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operation the operation to apply to the table.
      * @return a table with the same rowset, with the specified operation applied to the entire table
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByOperation operation);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operation the operation to apply to the table.
+     * @return a table with the same rowset, with the specified operation applied to the entire table
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -690,7 +876,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations);
 
     /**
@@ -703,7 +888,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations);
 
     /**
@@ -717,8 +901,21 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operation applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByOperation operation, final String... byColumns);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operation the operation to apply to the table.
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operation applied to each group defined by the
+     *         {@code byColumns}
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation, final String... byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -731,7 +928,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations, final String... byColumns);
 
     /**
@@ -745,7 +941,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns);
 
     /**
@@ -760,7 +955,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns);
 
@@ -771,9 +965,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     @ConcurrentMethod
     TOPS selectDistinct(String... columns);
-
-    @ConcurrentMethod
-    TOPS selectDistinct(Selectable... columns);
 
     @ConcurrentMethod
     TOPS selectDistinct(Collection<? extends Selectable> columns);
@@ -1302,4 +1493,34 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Creates a new table without the {@code columnNames} from {@code this}.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    @ConcurrentMethod
+    TOPS dropColumns(String... columnNames);
+
+    /**
+     * Creates a new table without the {@code columnNames} from {@code this}.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    @ConcurrentMethod
+    TOPS dropColumns(Collection<String> columnNames);
+
+    /**
+     * Creates a new table without the {@code columnNames} from {@code this}.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    @ConcurrentMethod
+    TOPS dropColumns(ColumnName... columnNames);
+
+    // -------------------------------------------------------------------------------------------
+
 }

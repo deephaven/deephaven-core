@@ -6,10 +6,13 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedIntGenerator;
+import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeFormatter;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
@@ -22,7 +25,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -64,13 +67,13 @@ public class QueryTableJoinTest {
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
 
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
                         new SortedIntGenerator(1, 10000),
                         new SetGenerator<>("a", "b", "c", "d"),
                         new IntGenerator(10, 30)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
                         new SortedIntGenerator(1, 10000),
@@ -174,13 +177,13 @@ public class QueryTableJoinTest {
             long seed,
             @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
                         new SortedIntGenerator(1, 1000),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
                         new IntGenerator(1, 1000),
@@ -233,20 +236,24 @@ public class QueryTableJoinTest {
 
     private void testAjIncremental(int leftSize, int rightSize, QueryTableTestBase.JoinIncrement joinIncrement,
             long seed,
-            @SuppressWarnings("SameParameterValue") long maxSteps) throws ParseException {
+            @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
-        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+        QueryScope.addParam("f", new DateTimeFormatter("dd HH:mm:ss"));
 
-        final ColumnInfo[] leftColumnInfo;
+        final DateTime start = DateTimeUtils.toDateTime(
+                DateTimeUtils.convertDate("2011-02-02").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+        final DateTime end = DateTimeUtils.toDateTime(
+                DateTimeUtils.convertDate("2011-02-03").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new UnsortedDateTimeGenerator(start, end),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new UnsortedDateTimeGenerator(start, end),
                         new SetGenerator<>("a", "b", "c"),
                         new SetGenerator<>(20, 30, 40)));
 
@@ -331,8 +338,8 @@ public class QueryTableJoinTest {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            // System.out.println("Date Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ",
-            // seed = " + seed + ", step=" + joinIncrement);
+            // System.out.println("Date Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+            // + ", seed = " + seed + ", step=" + joinIncrement);
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
     }
@@ -340,28 +347,28 @@ public class QueryTableJoinTest {
     @Test
     public void testAj() {
         Table table = testRefreshingTable(
-                c("Ticker", "AAPL", "IBM", "AAPL"),
-                c("Timestamp", 1L, 10L, 50L));
+                col("Ticker", "AAPL", "IBM", "AAPL"),
+                col("Timestamp", 1L, 10L, 50L));
         Table lookUpValue1 = testRefreshingTable(
-                c("Timestamp", 1L, 5L, 10L, 25L, 50L),
-                c("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("Timestamp", 1L, 5L, 10L, 25L, 50L),
+                col("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
+                col("OptionBid", .1, .2, .3, .4, .5));
 
         Table result = table.aj(lookUpValue1, "Ticker,Timestamp", "OptionBid");
         assertEquals(Arrays.asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
 
         table = testRefreshingTable(
-                c("Timestamp", 1L, 10L, 50L));
+                col("Timestamp", 1L, 10L, 50L));
         lookUpValue1 = testRefreshingTable(
-                c("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
+                col("OptionBid", .1, .2, .3, .4, .5));
         result = table.aj(lookUpValue1, "Timestamp=OptionTimestamp", "OptionBid");
         assertEquals(long.class, result.getDefinition().getColumn("OptionTimestamp").getDataType());
 
         table = testRefreshingTable(
-                c("String", "c", "e", "g"),
-                c("Int", 2, 4, 6));
-        lookUpValue1 = testRefreshingTable(c("indx", "a", "b", "c"));
+                col("String", "c", "e", "g"),
+                col("Int", 2, 4, 6));
+        lookUpValue1 = testRefreshingTable(col("indx", "a", "b", "c"));
 
         result = lookUpValue1.aj(table, "indx=String", "String,Int");
 
@@ -372,7 +379,7 @@ public class QueryTableJoinTest {
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList(null, null, "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "b", "c"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(null, null, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(null, null, 2), asList(result.getColumn("Int").get(0, 3)));
 
         result = lookUpValue1.aj(table, "indx=String", "Int,String");
 
@@ -381,7 +388,7 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
 
-        lookUpValue1 = testRefreshingTable(c("indx", "c", "d", "e"));
+        lookUpValue1 = testRefreshingTable(col("indx", "c", "d", "e"));
         result = lookUpValue1.aj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
@@ -390,9 +397,9 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("c", "c", "e"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(2, 2, 4), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(2, 2, 4), asList(result.getColumn("Int").get(0, 3)));
 
-        lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
@@ -401,10 +408,10 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(6, 4, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(6, 4, null), asList(result.getColumn("Int").get(0, 3)));
 
 
-        lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx=String", "String");
         assertEquals(3, result.size());
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
@@ -413,7 +420,7 @@ public class QueryTableJoinTest {
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
 
-        lookUpValue1 = testRefreshingTable(c("String", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String", "xString=String,Int");
         assertEquals(3, result.size());
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
@@ -422,19 +429,19 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "e", null), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
-        assertEquals(asList(6, 4, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(6, 4, null), asList(result.getColumn("Int").get(0, 3)));
     }
 
 
     @Test
     public void testAjLt() {
         Table table = testRefreshingTable(
-                c("Ticker", "AAPL", "IBM", "AAPL"),
-                c("Timestamp", 1L, 10L, 50L));
+                col("Ticker", "AAPL", "IBM", "AAPL"),
+                col("Timestamp", 1L, 10L, 50L));
         Table lookUpValue1 = testRefreshingTable(
-                c("Timestamp", 1L, 5L, 10L, 25L, 50L),
-                c("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("Timestamp", 1L, 5L, 10L, 25L, 50L),
+                col("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
+                col("OptionBid", .1, .2, .3, .4, .5));
 
         Table result = table.aj(lookUpValue1.renameColumns("TS2=Timestamp"), "Ticker,Timestamp<TS2", "OptionBid");
         assertEquals(Arrays.asList("Ticker", "Timestamp", "TS2", "OptionBid"), result.getDefinition().getColumnNames());
@@ -445,10 +452,10 @@ public class QueryTableJoinTest {
                 result.getColumn("OptionBid").getDoubles(0, result.size()), 0.0);
 
         table = testRefreshingTable(
-                c("Timestamp", 1L, 10L, 50L));
+                col("Timestamp", 1L, 10L, 50L));
         lookUpValue1 = testRefreshingTable(
-                c("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
+                col("OptionBid", .1, .2, .3, .4, .5));
         result = table.aj(lookUpValue1, "Timestamp<OptionTimestamp", "OptionBid");
         assertEquals(long.class, result.getDefinition().getColumn("OptionTimestamp").getDataType());
         TableTools.show(result);
@@ -458,9 +465,9 @@ public class QueryTableJoinTest {
                 result.getColumn("OptionBid").getDoubles(0, result.size()), 0.0);
 
         table = testRefreshingTable(
-                c("String", "c", "e", "g"),
-                c("Int", 2, 4, 6));
-        lookUpValue1 = testRefreshingTable(c("indx", "a", "c", "d"));
+                col("String", "c", "e", "g"),
+                col("Int", 2, 4, 6));
+        lookUpValue1 = testRefreshingTable(col("indx", "a", "c", "d"));
 
         result = lookUpValue1.aj(table, "indx<String", "String,Int");
 
@@ -471,9 +478,9 @@ public class QueryTableJoinTest {
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList(null, null, "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "c", "d"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(null, null, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(null, null, 2), asList(result.getColumn("Int").get(0, 3)));
 
-        lookUpValue1 = testRefreshingTable(c("indx", "c", "d", "e"));
+        lookUpValue1 = testRefreshingTable(col("indx", "c", "d", "e"));
 
         result = lookUpValue1.aj(table, "indx<String", "String,Int");
         assertEquals(3, result.size());
@@ -483,9 +490,9 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "c", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(null, 2, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(null, 2, 2), asList(result.getColumn("Int").get(0, 3)));
 
-        lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx<String", "String,Int");
 
         assertEquals(3, result.size());
@@ -495,10 +502,10 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(6, 2, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(6, 2, null), asList(result.getColumn("Int").get(0, 3)));
 
 
-        lookUpValue1 = testRefreshingTable(c("indx", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx<String", "String");
         System.out.println("LV1");
         TableTools.show(lookUpValue1);
@@ -514,7 +521,7 @@ public class QueryTableJoinTest {
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
 
-        lookUpValue1 = testRefreshingTable(c("String", "h", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String<String", "xString=String,Int");
         assertEquals(3, result.size());
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
@@ -523,15 +530,15 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("g", "c", null), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("h", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
-        assertEquals(asList(6, 2, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(6, 2, null), asList(result.getColumn("Int").get(0, 3)));
     }
 
 
     @Test
     public void testSelfAj() {
         final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).toTracking(),
-                c("Primary", "A", "A", "A", "A", "A", "A", "A", "A"),
-                c("Secondary", "A", "C", "D", "D", "F", "G", "H", "H"));
+                col("Primary", "A", "A", "A", "A", "A", "A", "A", "A"),
+                col("Secondary", "A", "C", "D", "D", "F", "G", "H", "H"));
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -561,12 +568,12 @@ public class QueryTableJoinTest {
     @Test
     public void testAjNull() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
-                c("LInt", 2, 4, 6, 8),
-                c("LSentinel", "a", "b", "c", "d"));
+                col("LInt", 2, 4, 6, 8),
+                col("LSentinel", "a", "b", "c", "d"));
 
         final QueryTable right = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).toTracking(),
-                c("RInt", null, null, 3, 4, 5, 6, 7, 8),
-                c("RSentinel", "C1", "E2", "A3", "D4", "F5", "G6", "I7", "H8"));
+                col("RInt", null, null, 3, 4, 5, 6, 7, 8),
+                col("RSentinel", "C1", "E2", "A3", "D4", "F5", "G6", "I7", "H8"));
 
         System.out.println("Left:");
         TableTools.show(left);
@@ -591,14 +598,14 @@ public class QueryTableJoinTest {
     @Test
     public void testAjEmptyRight() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
-                c("Group", "g", "g", "g", "g"),
-                c("LInt", 2, 4, 6, 8),
-                c("LSentinel", "a", "b", "c", "d"));
+                col("Group", "g", "g", "g", "g"),
+                col("LInt", 2, 4, 6, 8),
+                col("LSentinel", "a", "b", "c", "d"));
 
         final QueryTable right = TstUtils.testRefreshingTable(i().toTracking(),
                 col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 intCol("RInt"),
-                c("RSentinel"));
+                col("RSentinel"));
 
         System.out.println("Left:");
         TableTools.show(left);
@@ -612,7 +619,7 @@ public class QueryTableJoinTest {
         assertEquals(asList(null, null, null, null), asList((Object[]) aj.getColumn("RSentinel").getDirect()));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(left, i(2), c("Group", "h"), c("LInt", 4), c("LSentinel", "b"));
+            addToTable(left, i(2), col("Group", "h"), col("LInt", 4), col("LSentinel", "b"));
             left.notifyListeners(i(), i(), i(2));
         });
 
@@ -624,12 +631,12 @@ public class QueryTableJoinTest {
     @Test
     public void testRaj() {
         Table table = testRefreshingTable(
-                c("Ticker", "AAPL", "IBM", "AAPL"),
-                c("Timestamp", 1L, 10L, 50L));
+                col("Ticker", "AAPL", "IBM", "AAPL"),
+                col("Timestamp", 1L, 10L, 50L));
         Table lookUpValue1 = testRefreshingTable(
-                c("Timestamp", 1L, 5L, 10L, 25L, 50L),
-                c("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("Timestamp", 1L, 5L, 10L, 25L, 50L),
+                col("Ticker", "AAPL", "IBM", "AAPL", "IBM", "AAPL"),
+                col("OptionBid", .1, .2, .3, .4, .5));
 
         Table result = table.raj(lookUpValue1, "Ticker,Timestamp", "OptionBid");
         show(result, 10);
@@ -639,21 +646,21 @@ public class QueryTableJoinTest {
         assertEquals("Timestamp", result.getDefinition().getColumns().get(1).getName());
         assertEquals("OptionBid", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("AAPL", "IBM", "AAPL"), asList((Object[]) result.getColumn("Ticker").getDirect()));
-        assertEquals(asList(1L, 10L, 50L), asList((Object[]) result.getColumn("Timestamp").get(0, 3)));
-        assertEquals(asList(.1, .4, .5), asList((Object[]) result.getColumn("OptionBid").get(0, 3)));
+        assertEquals(asList(1L, 10L, 50L), asList(result.getColumn("Timestamp").get(0, 3)));
+        assertEquals(asList(.1, .4, .5), asList(result.getColumn("OptionBid").get(0, 3)));
 
         table = testRefreshingTable(
-                c("Timestamp", 1L, 10L, 50L));
+                col("Timestamp", 1L, 10L, 50L));
         lookUpValue1 = testRefreshingTable(
-                c("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
-                c("OptionBid", .1, .2, .3, .4, .5));
+                col("OptionTimestamp", 1L, 5L, 10L, 25L, 50L),
+                col("OptionBid", .1, .2, .3, .4, .5));
         result = table.raj(lookUpValue1, "Timestamp=OptionTimestamp", "OptionBid");
         assertEquals(long.class, result.getDefinition().getColumn("OptionTimestamp").getDataType());
 
         table = testRefreshingTable(
-                c("String", "c", "e", "g"),
-                c("Int", 2, 4, 6));
-        lookUpValue1 = testRefreshingTable(c("indx", "a", "b", "c"));
+                col("String", "c", "e", "g"),
+                col("Int", 2, 4, 6));
+        lookUpValue1 = testRefreshingTable(col("indx", "a", "b", "c"));
 
         result = lookUpValue1.raj(table, "indx=String", "String,Int");
 
@@ -664,9 +671,9 @@ public class QueryTableJoinTest {
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("c", "c", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("a", "b", "c"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(2, 2, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(2, 2, 2), asList(result.getColumn("Int").get(0, 3)));
 
-        lookUpValue1 = testRefreshingTable(c("indx", "f", "g", "h"));
+        lookUpValue1 = testRefreshingTable(col("indx", "f", "g", "h"));
 
         result = lookUpValue1.raj(table, "indx=String", "String,Int");
 
@@ -677,7 +684,7 @@ public class QueryTableJoinTest {
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(asList("g", "g", null), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("f", "g", "h"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(6, 6, null), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(6, 6, null), asList(result.getColumn("Int").get(0, 3)));
 
         result = lookUpValue1.raj(table, "indx=String", "Int,String");
 
@@ -686,7 +693,7 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
 
-        lookUpValue1 = testRefreshingTable(c("indx", "c", "d", "e"));
+        lookUpValue1 = testRefreshingTable(col("indx", "c", "d", "e"));
 
         show(lookUpValue1);
         show(table);
@@ -701,9 +708,9 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList("c", "e", "e"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("c", "d", "e"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(2, 4, 4), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(2, 4, 4), asList(result.getColumn("Int").get(0, 3)));
 
-        lookUpValue1 = testRefreshingTable(c("indx", "j", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "j", "e", "a"));
         result = lookUpValue1.raj(table, "indx=String", "String,Int");
         assertEquals(3, result.size());
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
@@ -712,10 +719,10 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
-        assertEquals(asList(null, 4, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(null, 4, 2), asList(result.getColumn("Int").get(0, 3)));
 
 
-        lookUpValue1 = testRefreshingTable(c("indx", "j", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("indx", "j", "e", "a"));
         result = lookUpValue1.raj(table, "indx=String", "String");
         assertEquals(3, result.size());
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
@@ -724,7 +731,7 @@ public class QueryTableJoinTest {
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("String").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("indx").getDirect()));
 
-        lookUpValue1 = testRefreshingTable(c("String", "j", "e", "a"));
+        lookUpValue1 = testRefreshingTable(col("String", "j", "e", "a"));
         result = lookUpValue1.raj(table, "String", "xString=String,Int");
         assertEquals(3, result.size());
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
@@ -733,7 +740,7 @@ public class QueryTableJoinTest {
         assertEquals(3, result.numColumns());
         assertEquals(asList(null, "e", "c"), asList((Object[]) result.getColumn("xString").getDirect()));
         assertEquals(asList("j", "e", "a"), asList((Object[]) result.getColumn("String").getDirect()));
-        assertEquals(asList(null, 4, 2), asList((Object[]) result.getColumn("Int").get(0, 3)));
+        assertEquals(asList(null, 4, 2), asList(result.getColumn("Int").get(0, 3)));
     }
 
     static final JoinControl SMALL_LEFT_CONTROL = new JoinControl() {
@@ -798,14 +805,14 @@ public class QueryTableJoinTest {
     public void testAjRegression0() {
         final QueryTable rightQueryTable = TstUtils.testRefreshingTable(
                 i(28, 36, 39, 42, 46, 49, 50, 51, 55, 56, 58, 64, 65, 66, 92, 96).toTracking(),
-                c("C1", "a", "a", "c", "a", "b", "a", "c", "b", "c", "a", "a", "c", "c", "a", "c", "c"),
-                c("I1", 168, 851, 255, 142, 884, 841, 877, 248, 191, 207, 163, 250, 982, 432, 466, 139),
-                c("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160));
+                col("C1", "a", "a", "c", "a", "b", "a", "c", "b", "c", "a", "a", "c", "c", "a", "c", "c"),
+                col("I1", 168, 851, 255, 142, 884, 841, 877, 248, 191, 207, 163, 250, 982, 432, 466, 139),
+                col("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160));
 
 
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).toTracking(),
-                c("C1", "b", "a", "a", "a", "a", "b"),
-                c("I1", 78, 85, 96, 263, 474, 876));
+                col("C1", "b", "a", "a", "a", "a", "b"),
+                col("I1", 78, 85, 96, 263, 474, 876));
 
         showWithRowSet(leftQueryTable);
         showWithRowSet(rightQueryTable);
@@ -824,14 +831,14 @@ public class QueryTableJoinTest {
     public void testAjRegression1() {
         final QueryTable rightQueryTable =
                 TstUtils.testRefreshingTable(i(1, 27, 28, 35, 41, 46, 49, 50, 51, 55, 56, 65).toTracking(),
-                        c("C1", "b", "c", "b", "b", "c", "b", "a", "b", "c", "c", "c", "b"),
-                        c("I1", 591, 5, 952, 43, 102, 18, 475, 821, 676, 191, 657, 982),
-                        c("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120));
+                        col("C1", "b", "c", "b", "b", "c", "b", "a", "b", "c", "c", "c", "b"),
+                        col("I1", 591, 5, 952, 43, 102, 18, 475, 821, 676, 191, 657, 982),
+                        col("Sentinel", 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120));
 
 
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(10, 11, 12, 14, 16, 22).toTracking(),
-                c("C1", "b", "a", "a", "a", "a", "b"),
-                c("I1", 78, 85, 96, 263, 474, 876));
+                col("C1", "b", "a", "a", "a", "a", "b"),
+                col("I1", 78, 85, 96, 263, 474, 876));
 
         showWithRowSet(leftQueryTable);
         showWithRowSet(rightQueryTable);
@@ -847,8 +854,8 @@ public class QueryTableJoinTest {
 
     @Test
     public void testJoin() {
-        Table lTable = testRefreshingTable(c("X", "a", "b", "c"));
-        Table rTable = testRefreshingTable(c("Y", "x", "y"));
+        Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        Table rTable = testRefreshingTable(col("Y", "x", "y"));
         Table result = lTable.join(rTable, "");
         showWithRowSet(result);
         assertEquals(6, result.size());
@@ -858,8 +865,8 @@ public class QueryTableJoinTest {
         assertEquals(Arrays.asList("a", "a", "b", "b", "c", "c"), Arrays.asList(result.getColumn("X").get(0, 6)));
         assertEquals(Arrays.asList("x", "y", "x", "y", "x", "y"), Arrays.asList(result.getColumn("Y").get(0, 6)));
 
-        lTable = testRefreshingTable(c("X", "a", "b", "c"));
-        rTable = testRefreshingTable(c("Y", "a", "b", "b"), c("Z", 1, 2, 3));
+        lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        rTable = testRefreshingTable(col("Y", "a", "b", "b"), col("Z", 1, 2, 3));
         result = lTable.join(rTable, "X=Y");
         assertEquals(3, result.size());
         assertEquals(3, result.numColumns());
@@ -870,8 +877,8 @@ public class QueryTableJoinTest {
         assertEquals(Arrays.asList("a", "b", "b"), Arrays.asList(result.getColumn("Y").get(0, 3)));
         assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Z").get(0, 3)));
 
-        lTable = testRefreshingTable(c("X", "a", "b", "c"));
-        rTable = testRefreshingTable(c("Y", "a", "b"));
+        lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        rTable = testRefreshingTable(col("Y", "a", "b"));
         result = lTable.join(rTable, "X=Y");
         show(result);
         assertEquals(2, result.size());
@@ -881,8 +888,8 @@ public class QueryTableJoinTest {
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("X").get(0, 2)));
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("Y").get(0, 2)));
 
-        lTable = testRefreshingTable(c("X", "a", "b", "c"));
-        rTable = testRefreshingTable(c("X", "a", "b", "d"));
+        lTable = testRefreshingTable(col("X", "a", "b", "c"));
+        rTable = testRefreshingTable(col("X", "a", "b", "d"));
         result = lTable.join(rTable, "X");
         show(result);
         assertEquals(2, result.size());
@@ -894,8 +901,8 @@ public class QueryTableJoinTest {
     @Test
     public void testNaturalJoinWithGroupBy() {
         Table table1 = newTable(
-                c("String", "c", "e", "g"));
-        Table table2 = newTable(c("String", "c", "e"), c("v", 1, 2), c("u", 3.0d, 4.0d));
+                col("String", "c", "e", "g"));
+        Table table2 = newTable(col("String", "c", "e"), col("v", 1, 2), col("u", 3.0d, 4.0d));
 
         showWithRowSet(table1);
         showWithRowSet(table2);
@@ -980,10 +987,10 @@ public class QueryTableJoinTest {
         assertNull(vValues[2]);
 
         table1 = TableTools.newTable(
-                c("String1", "c", "e", "g"));
+                col("String1", "c", "e", "g"));
 
         table2 = TableTools.newTable(
-                c("String2", "c", "e"), c("v", 1, 2));
+                col("String2", "c", "e"), col("v", 1, 2));
 
         final Table noPairMatch = table1.naturalJoin(table2.groupBy(), "");
         assertEquals(3, noPairMatch.size());

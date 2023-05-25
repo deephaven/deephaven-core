@@ -127,11 +127,11 @@ public class ReinterpretedDateTimeDateTimeByteColumnTupleSource extends Abstract
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<LongLongByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        LongChunk<Values> chunk1 = chunks[0].asLongChunk();
-        ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
-        ByteChunk<Values> chunk3 = chunks[2].asByteChunk();
+        LongChunk<? extends Values> chunk1 = chunks[0].asLongChunk();
+        ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        ByteChunk<? extends Values> chunk3 = chunks[2].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new LongLongByteTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
         }

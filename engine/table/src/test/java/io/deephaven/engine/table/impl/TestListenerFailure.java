@@ -16,17 +16,18 @@ import java.util.List;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
+import static io.deephaven.engine.util.TableTools.col;
 
 public class TestListenerFailure extends RefreshingTableTestCase {
     public void testListenerFailure() {
-        final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
+        final QueryTable source = TstUtils.testRefreshingTable(col("Str", "A", "B"));
         final Table updated =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
 
         TableTools.showWithRowSet(updated);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));
+            TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
 
@@ -34,7 +35,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         allowingError(() -> {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(source, i(4, 5), TstUtils.c("Str", "E", null));
+                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
             return null;
@@ -43,19 +44,18 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertTrue(updated.isFailed());
 
         try {
-            updated.addUpdateListener(new ErrorListener((QueryTable) updated));
+            updated.addUpdateListener(new ErrorListener(updated));
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
         }
 
         try {
-            updated
-                    .addUpdateListener(
-                            new ShiftObliviousInstrumentedListenerAdapter("Dummy", (QueryTable) updated, false) {
-                                @Override
-                                public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
-                            }, false);
+            updated.addUpdateListener(
+                    new ShiftObliviousInstrumentedListenerAdapter("Dummy", updated, false) {
+                        @Override
+                        public void onUpdate(RowSet added, RowSet removed, RowSet modified) {}
+                    }, false);
             TestCase.fail("Should not be allowed to listen to failed table");
         } catch (IllegalStateException ise) {
             assertEquals("Can not listen to failed table QueryTable", ise.getMessage());
@@ -78,26 +78,25 @@ public class TestListenerFailure extends RefreshingTableTestCase {
     public void testMemoCheck() {
         QueryTable.setMemoizeResults(true);
 
-        final QueryTable source = TstUtils.testRefreshingTable(TstUtils.c("Str", "A", "B"));
+        final QueryTable source = TstUtils.testRefreshingTable(col("Str", "A", "B"));
         final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
-        final Table filtered = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filtered = viewed.where("UC=`A`");
 
         TableTools.showWithRowSet(filtered);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));
+            TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
 
         assertFalse(filtered.isFailed());
 
-        final Table filteredAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredAgain = viewed.where("UC=`A`");
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(source, i(4, 5), TstUtils.c("Str", "E", null));
+                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
             return null;
@@ -111,11 +110,10 @@ public class TestListenerFailure extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(5), i());
         });
 
-        final Table filteredYetAgain =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
+        final Table filteredYetAgain = viewed.where("UC=`A`");
         assertNotSame(filtered, filteredYetAgain);
         assertFalse(filteredYetAgain.isFailed());
-        assertTableEquals(TableTools.newTable(TableTools.col("Str", "A"), TableTools.col("UC", "A")), filteredYetAgain);
+        assertTableEquals(TableTools.newTable(col("Str", "A"), col("UC", "A")), filteredYetAgain);
     }
 
     private static boolean isFilterNpe(List<Throwable> throwables) {

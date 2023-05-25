@@ -2,36 +2,25 @@ package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.Pair;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.api.updateby.spec.CumMinMaxSpec;
-import io.deephaven.api.updateby.spec.CumProdSpec;
-import io.deephaven.api.updateby.spec.CumSumSpec;
-import io.deephaven.api.updateby.spec.EmaSpec;
-import io.deephaven.api.updateby.spec.FillBySpec;
-import io.deephaven.api.updateby.spec.TimeScale;
-import io.deephaven.api.updateby.spec.UpdateBySpec;
+import io.deephaven.api.updateby.spec.*;
+import io.deephaven.api.updateby.spec.WindowScale;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
-import io.deephaven.qst.TableCreator;
-import io.deephaven.qst.table.UpdateByTable;
-import io.deephaven.qst.table.UpdateByTable.Builder;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -46,8 +35,9 @@ import java.util.stream.Collectors;
 public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> {
 
     @Inject
-    public UpdateByGrpcImpl() {
-        super(BatchTableRequest.Operation::getUpdateBy, UpdateByRequest::getResultId, UpdateByRequest::getSourceId);
+    public UpdateByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionUpdateBy, BatchTableRequest.Operation::getUpdateBy,
+                UpdateByRequest::getResultId, UpdateByRequest::getSourceId);
     }
 
     public void validateRequest(final UpdateByRequest request) throws StatusRuntimeException {
@@ -66,19 +56,29 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 ColumnName.of(columnName);
             }
         } catch (IllegalArgumentException e) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
         }
 
     }
 
     @Override
-    public Table create(UpdateByRequest request, List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final UpdateByRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
+        Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
+
         final Table parent = sourceTables.get(0).get();
         final UpdateByControl control = request.hasOptions() ? adaptOptions(request.getOptions()) : null;
         final List<UpdateByOperation> operations =
                 request.getOperationsList().stream().map(UpdateByGrpcImpl::adaptOperation).collect(Collectors.toList());
         final List<ColumnName> groupByColumns =
                 request.getGroupByColumnsList().stream().map(ColumnName::of).collect(Collectors.toList());
+
+        if (parent.isRefreshing()) {
+            return UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> control == null
+                    ? parent.updateBy(operations, groupByColumns)
+                    : parent.updateBy(control, operations, groupByColumns));
+        }
+
         return control == null ? parent.updateBy(operations, groupByColumns)
                 : parent.updateBy(control, operations, groupByColumns);
     }
@@ -142,6 +142,20 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptFill(spec.getFill());
             case EMA:
                 return adaptEma(spec.getEma());
+
+            case ROLLING_SUM:
+                return adaptRollingSum(spec.getRollingSum());
+            case ROLLING_GROUP:
+                return adaptRollingGroup(spec.getRollingGroup());
+            case ROLLING_AVG:
+                return adaptRollingAvg(spec.getRollingAvg());
+            case ROLLING_MIN:
+                return adaptRollingMin(spec.getRollingMin());
+            case ROLLING_MAX:
+                return adaptRollingMax(spec.getRollingMax());
+            case ROLLING_PRODUCT:
+                return adaptRollingProduct(spec.getRollingProduct());
+
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected spec type: " + spec.getTypeCase());
@@ -173,7 +187,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 : EmaSpec.of(adaptTimescale(ema.getTimescale()));
     }
 
-    private static OperationControl adaptEmaOptions(UpdateByEmaOptions options) {
+    private static OperationControl adaptEmaOptions(UpdateByEma.UpdateByEmaOptions options) {
         final OperationControl.Builder builder = OperationControl.builder();
         if (options.hasOnNullValue()) {
             builder.onNullValue(adaptBadDataBehavior(options.getOnNullValue()));
@@ -181,19 +195,46 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         if (options.hasOnNanValue()) {
             builder.onNanValue(adaptBadDataBehavior(options.getOnNanValue()));
         }
-        if (options.hasOnNullTime()) {
-            builder.onNullTime(adaptBadDataBehavior(options.getOnNullTime()));
-        }
-        if (options.hasOnNegativeDeltaTime()) {
-            builder.onNegativeDeltaTime(adaptBadDataBehavior(options.getOnNegativeDeltaTime()));
-        }
-        if (options.hasOnZeroDeltaTime()) {
-            builder.onZeroDeltaTime(adaptBadDataBehavior(options.getOnZeroDeltaTime()));
-        }
         if (options.hasBigValueContext()) {
             builder.bigValueContext(adaptMathContext(options.getBigValueContext()));
         }
         return builder.build();
+    }
+
+    private static RollingSumSpec adaptRollingSum(UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
+        return RollingSumSpec.of(
+                adaptTimescale(sum.getReverseTimescale()),
+                adaptTimescale(sum.getForwardTimescale()));
+    }
+
+    private static RollingGroupSpec adaptRollingGroup(UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
+        return RollingGroupSpec.of(
+                adaptTimescale(group.getReverseTimescale()),
+                adaptTimescale(group.getForwardTimescale()));
+    }
+
+    private static RollingAvgSpec adaptRollingAvg(UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
+        return RollingAvgSpec.of(
+                adaptTimescale(avg.getReverseTimescale()),
+                adaptTimescale(avg.getForwardTimescale()));
+    }
+
+    private static RollingMinMaxSpec adaptRollingMin(UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
+        return RollingMinMaxSpec.of(false,
+                adaptTimescale(min.getReverseTimescale()),
+                adaptTimescale(min.getForwardTimescale()));
+    }
+
+    private static RollingMinMaxSpec adaptRollingMax(UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
+        return RollingMinMaxSpec.of(true,
+                adaptTimescale(max.getReverseTimescale()),
+                adaptTimescale(max.getForwardTimescale()));
+    }
+
+    private static RollingProductSpec adaptRollingProduct(UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
+        return RollingProductSpec.of(
+                adaptTimescale(product.getReverseTimescale()),
+                adaptTimescale(product.getForwardTimescale()));
     }
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {
@@ -225,12 +266,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         }
     }
 
-    private static TimeScale adaptTimescale(UpdateByEma.UpdateByEmaTimescale timescale) {
+    private static WindowScale adaptTimescale(UpdateByEmaTimescale timescale) {
         switch (timescale.getTypeCase()) {
             case TICKS:
-                return TimeScale.ofTicks(timescale.getTicks().getTicks());
+                return WindowScale.ofTicks(timescale.getTicks().getTicks());
             case TIME:
-                return TimeScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getPeriodNanos());
+                return WindowScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getPeriodNanos());
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected timescale type: " + timescale.getTypeCase());

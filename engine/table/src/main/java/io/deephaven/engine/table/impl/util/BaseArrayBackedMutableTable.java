@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
@@ -76,8 +77,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         return !Table.INPUT_TABLE_ATTRIBUTE.equals(attributeName);
     }
 
-    protected static Map<String, ? extends ArrayBackedColumnSource<?>> makeColumnSourceMap(TableDefinition definition) {
-        final Map<String, ArrayBackedColumnSource<?>> resultMap = new LinkedHashMap<>();
+    protected static Map<String, ? extends WritableColumnSource<?>> makeColumnSourceMap(TableDefinition definition) {
+        final Map<String, WritableColumnSource<?>> resultMap = new LinkedHashMap<>();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             resultMap.put(columnDefinition.getName(),
                     ArrayBackedColumnSource.getMemoryColumnSource(0, columnDefinition.getDataType()));
@@ -252,7 +253,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private Table doSnap(Table newData) {
             Table addTable;
             if (newData.isRefreshing()) {
-                addTable = TableTools.emptyTable(1).snapshot(newData);
+                addTable = newData.snapshot();
             } else {
                 addTable = newData.select();
             }
@@ -313,7 +314,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
 
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
-            final Map<String, ArrayBackedColumnSource<Object>> sources =
+            final Map<String, WritableColumnSource<Object>> sources =
                     buildSourcesMap(valueArray.length, columnDefinitions);
             final String[] kabmtColumns =
                     getTableDefinition().getColumnNames().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -330,7 +331,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                     continue;
                 }
                 final ColumnSource<?> cs = Require.neqNull(entry.getValue(), "defaultValue column source: " + colName);
-                final ArrayBackedColumnSource<Object> dest =
+                final WritableColumnSource<Object> dest =
                         Require.neqNull(sources.get(colName), "destination column source: " + colName);
 
                 final RowSet defaultValuesRowSet = defaultValues.getRowSet();
@@ -363,7 +364,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         @Override
         public void addRows(Map<String, Object>[] valueArray, boolean allowEdits, InputTableStatusListener listener) {
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();
-            final Map<String, ArrayBackedColumnSource<Object>> sources =
+            final Map<String, WritableColumnSource<Object>> sources =
                     buildSourcesMap(valueArray.length, columnDefinitions);
 
             for (int rowNumber = 0; rowNumber < valueArray.length; rowNumber++) {
@@ -381,11 +382,11 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         @NotNull
-        private Map<String, ArrayBackedColumnSource<Object>> buildSourcesMap(int capacity,
+        private Map<String, WritableColumnSource<Object>> buildSourcesMap(int capacity,
                 List<ColumnDefinition<?>> columnDefinitions) {
-            final Map<String, ArrayBackedColumnSource<Object>> sources = new LinkedHashMap<>();
+            final Map<String, WritableColumnSource<Object>> sources = new LinkedHashMap<>();
             for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                ArrayBackedColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
+                WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
                         capacity, columnDefinition.getDataType());
                 // noinspection unchecked
                 final ArrayBackedColumnSource<Object> memoryColumnSource = (ArrayBackedColumnSource<Object>) cs;

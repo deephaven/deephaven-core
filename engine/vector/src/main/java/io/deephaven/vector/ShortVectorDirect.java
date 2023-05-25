@@ -8,41 +8,46 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
+/**
+ * A {@link ShortVector} backed by an array.
+ */
 @ArrayType(type = short[].class)
-public class ShortVectorDirect implements ShortVector {
+public final class ShortVectorDirect implements ShortVector {
 
     private final static long serialVersionUID = 3636374971797603565L;
 
+    public static final ShortVector ZERO_LENGTH_VECTOR = new ShortVectorDirect();
+
     private final short[] data;
 
-    public ShortVectorDirect(short... data){
-        this.data = data;
+    public ShortVectorDirect(@NotNull final short... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
-    public static final ShortVector ZERO_LEN_VECTOR = new ShortVectorDirect();
-
     @Override
-    public short get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public short get(final long index) {
+        if (index < 0 || index >= data.length) {
             return NULL_SHORT;
         }
-        return data[LongSizedDataStructure.intSize("ShortVectorDirect get",  i)];
+        return data[(int) index];
     }
 
     @Override
-    public ShortVector subVector(long fromIndex, long toIndex) {
-        return new ShortVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public ShortVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new ShortVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public ShortVector subVectorByPositions(long [] positions) {
+    public ShortVector subVectorByPositions(final long[] positions) {
         return new ShortSubVector(this, positions);
     }
 
@@ -50,6 +55,19 @@ public class ShortVectorDirect implements ShortVector {
     @ArrayTypeGetter
     public short[] toArray() {
         return data;
+    }
+
+    @Override
+    public short[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfShort.of(data);
+        }
+        return ShortVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
 
     @Override
@@ -63,12 +81,12 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return ShortVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof ShortVectorDirect) {
             return Arrays.equals(data, ((ShortVectorDirect) obj).data);
         }
@@ -76,7 +94,7 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return ShortVector.hashCode(this);
     }
 }

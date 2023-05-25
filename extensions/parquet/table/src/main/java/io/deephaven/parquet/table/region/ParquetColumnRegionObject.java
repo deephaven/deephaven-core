@@ -38,13 +38,12 @@ public final class ParquetColumnRegionObject<DATA_TYPE, ATTR extends Any> extend
         this.dictionaryValuesRegionSupplier = dictionaryValuesRegionSupplier;
     }
 
-    public DATA_TYPE getObject(final long elementIndex) {
-        final ChunkPage<ATTR> page = getChunkPageContaining(elementIndex);
+    public DATA_TYPE getObject(final long rowKey) {
+        final ChunkPage<ATTR> page = getChunkPageContaining(rowKey);
         try {
-            return page.<DATA_TYPE>asObjectChunk().get(page.getChunkOffset(elementIndex));
+            return page.<DATA_TYPE>asObjectChunk().get(page.getChunkOffset(rowKey));
         } catch (Exception e) {
-            throw new TableDataException("Error retrieving object at table object rowSet " + elementIndex
-                    + ", from a parquet table", e);
+            throw new TableDataException("Error retrieving object at Object row key " + rowKey + " from a parquet table", e);
         }
     }
 

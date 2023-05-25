@@ -4,7 +4,7 @@
 package io.deephaven.server.config;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.server.runner.Main;
+import io.deephaven.server.runner.MainHelper;
 import io.deephaven.ssl.config.SSLConfig;
 import org.immutables.value.Value.Default;
 
@@ -16,8 +16,6 @@ import java.util.Optional;
  * The server configuration.
  */
 public interface ServerConfig {
-
-    int DEFAULT_TOKEN_EXPIRE_MIN = 5;
 
     int DEFAULT_SCHEDULER_POOL_SIZE = 4;
 
@@ -75,14 +73,14 @@ public interface ServerConfig {
      * </tr>
      * </table>
      *
-     * Also parses {@link Main#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
-     * {@link Main#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
+     * Also parses {@link MainHelper#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
+     * {@link MainHelper#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
      *
      * @param builder the builder
      * @param config the configuration
      * @return the builder
      * @param <B> the builder type
-     * @see Main#parseSSLConfig(Configuration) for {@link Builder#ssl(SSLConfig)}
+     * @see MainHelper#parseSSLConfig(Configuration) for {@link Builder#ssl(SSLConfig)}
      */
     static <B extends Builder<?, B>> B buildFromConfig(B builder, Configuration config) {
         int httpSessionExpireMs = config.getIntegerWithDefault(HTTP_SESSION_DURATION_MS, -1);
@@ -113,8 +111,8 @@ public interface ServerConfig {
         if (proxyHint != null) {
             builder.proxyHint(Boolean.parseBoolean(proxyHint));
         }
-        Main.parseSSLConfig(config).ifPresent(builder::ssl);
-        Main.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
+        MainHelper.parseSSLConfig(config).ifPresent(builder::ssl);
+        MainHelper.parseOutboundSSLConfig(config).ifPresent(builder::outboundSsl);
         return builder;
     }
 
@@ -145,12 +143,9 @@ public interface ServerConfig {
     Optional<SSLConfig> outboundSsl();
 
     /**
-     * The token expiration. Defaults to {@value DEFAULT_TOKEN_EXPIRE_MIN} minutes.
+     * The token expiration.
      */
-    @Default
-    default Duration tokenExpire() {
-        return Duration.ofMinutes(DEFAULT_TOKEN_EXPIRE_MIN);
-    }
+    Duration tokenExpire();
 
     /**
      * The scheduler pool size. Defaults to {@value DEFAULT_SCHEDULER_POOL_SIZE}.

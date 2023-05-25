@@ -14,7 +14,7 @@ import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.FailureListener;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingRunnable;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -293,7 +293,7 @@ public class TestKeyedArrayBackedMutableTable {
     }
 
     private void handleDelayedRefresh(final BaseArrayBackedMutableTable table,
-            final FunctionalInterfaces.ThrowingRunnable<IOException> action) throws Exception {
+            final ThrowingRunnable<IOException> action) throws Exception {
         final Thread refreshThread;
         final CountDownLatch gate = new CountDownLatch(1);
 

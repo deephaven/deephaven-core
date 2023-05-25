@@ -8,7 +8,6 @@ import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
@@ -63,9 +62,8 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      * Get a {@link RowSet} representation of this {@code RowSequence}.
      *
      * @return A {@link RowSet} representation for the same row keys in the same order
-     * @apiNote If you use the result across clock ticks, you may observe inconsistencies.
-     * @apiNote You must not mutate the result.
-     * @apiNote You must {@link SafeCloseable#close() close} the result.
+     * @apiNote If you use the result across clock ticks, you may observe inconsistencies. You must not mutate the
+     *          result. You must {@link SafeCloseable#close() close} the result.
      */
     RowSet asRowSet();
 
@@ -74,8 +72,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      *
      * @return A {@link LongChunk} containing the row keys in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
-     *          remains valid.
-     * @apiNote You must not mutate the result.
+     *          remains valid. You must not mutate the result.
      */
     LongChunk<OrderedRowKeys> asRowKeyChunk();
 
@@ -84,8 +81,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      *
      * @return A {@link LongChunk} containing the row key ranges in this {@code RowSequence}
      * @apiNote This {@code RowSequence} owns the result, which is valid only as long as this {@code RowSequence}
-     *          remains valid.
-     * @apiNote You must not mutate the result.
+     *          remains valid. You must not mutate the result.
      */
     LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk();
 
@@ -97,7 +93,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
      *
      * @param chunkToFill A chunk to fill with individual row keys
      */
-    void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill);
+    void fillRowKeyChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill);
 
     /**
      * <p>

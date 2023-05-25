@@ -12,7 +12,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -38,7 +37,10 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  *
  * If your size is smaller than the maximum array size, prefer {@link ImmutableIntArraySource}.
  */
-public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt, WritableColumnSource<Integer>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation {
+public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSource<Integer>
+        implements ImmutableColumnSourceGetDefaults.ForInt, WritableColumnSource<Integer>, FillUnordered<Values>,
+        InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
+        /* MIXIN_IMPLS */ {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
     private final long segmentShift;
     private final int segmentMask;
@@ -87,12 +89,12 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
         return getUnsafe(rowKey);
     }
 
-    private int keyToSegment(long index) {
-        return (int)(index >> segmentShift);
+    private int keyToSegment(long rowKey) {
+        return (int)(rowKey >> segmentShift);
     }
 
-    private int keyToOffset(long index) {
-        return (int)(index & segmentMask);
+    private int keyToOffset(long rowKey) {
+        return (int)(rowKey & segmentMask);
     }
 
     public final int getUnsafe(long key) {
@@ -146,27 +148,47 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
         }
     }
 
-    private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableIntChunk<? super Values> asIntChunk = destination.asWritableIntChunk();
-        final MutableInt destPos = new MutableInt(0);
+    // region fillChunkByRanges
+    /* TYPE_MIXIN */ void fillChunkByRanges(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableIntChunk<? super Values> chunk = destination.asWritableIntChunk();
+        // endregion chunkDecl
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             while (start < end) {
                 final int segment = keyToSegment(start);
                 final int offset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = (int)(realEnd - start + 1);
-                asIntChunk.copyFromTypedArray(data[segment], offset, destPos.getAndAdd(rangeLength), rangeLength);
-                start += rangeLength;
+                final int length = (int)(realEnd - start + 1);
+                // region copyFromTypedArrayImmutable2D
+                chunk.copyFromTypedArray(data[segment], offset, destPosition.getAndAdd(length), length);
+                // endregion copyFromTypedArrayImmutable2D
+                start += length;
             }
         });
     }
+    // endregion fillChunkByRanges
 
-    private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableIntChunk<? super Values> asIntChunk = destination.asWritableIntChunk();
+    // region fillChunkByKeys
+    /* TYPE_MIXIN */ void fillChunkByKeys(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableIntChunk<? super Values> chunk = destination.asWritableIntChunk();
+        // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asIntChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            chunk.set(srcPos.getAndIncrement(), getUnsafe(key));
+            // endregion conversion
+        });
     }
+    // endregion fillChunkByKeys
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
@@ -204,14 +226,31 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
         }
     }
 
-    private void fillFromChunkByKeys(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final IntChunk<? extends Values> asIntChunk = src.asIntChunk();
+    // region fillFromChunkByKeys
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> set(key, asIntChunk.get(srcPos.getAndIncrement())));
+        rowSequence.forAllRowKeys((long key) -> {
+            // region conversion
+            set(key, chunk.get(srcPos.getAndIncrement()));
+            // endregion conversion
+        });
     }
+    // endregion fillFromChunkByKeys
 
-    private void fillFromChunkByRanges(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final IntChunk<? extends Values> asIntChunk = src.asIntChunk();
+    // region fillFromChunkByRanges
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
+        final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
         final MutableInt srcPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             while (start < end) {
@@ -219,33 +258,56 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
                 final int destOffset = keyToOffset(start);
                 final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
-                final int rangeLength = (int)(realEnd - start + 1);
-                asIntChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], destOffset, rangeLength);
-                start += rangeLength;
+                final int length = (int)(realEnd - start + 1);
+                // region copyToTypedArrayImmutable2D
+                chunk.copyToTypedArray(srcPos.getAndAdd(length), data[segment], destOffset, length);
+                // endregion copyToTypedArrayImmutable2D
+                start += length;
             }
         });
     }
+    // endregion fillFromChunkByRanges
 
+    // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
-        final IntChunk<? extends Values> asIntChunk = src.asIntChunk();
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
-            set(keys.get(ii), asIntChunk.get(ii));
+            // region conversion
+            set(keys.get(ii), chunk.get(ii));
+            // endregion conversion
         }
     }
+    // endregion fillFromChunkUnordered
 
+    // region fillChunkUnordered
     @Override
-    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableIntChunk<? super Values> intDest = dest.asWritableIntChunk();
+    public /* TYPE_MIXIN */ void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableIntChunk<? super Values> chunk = dest.asWritableIntChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ++ii) {
             final long rowKey = keys.get(ii);
             if (rowKey == RowSequence.NULL_ROW_KEY) {
-                intDest.set(ii, NULL_INT);
+                chunk.set(ii, NULL_INT);
             } else {
-                intDest.set(ii, getUnsafe((int)(rowKey)));
+                // region conversion
+                chunk.set(ii, getUnsafe((int)(rowKey)));
+                // endregion conversion
             }
         }
     }
+    // endregion fillChunkUnordered
 
     @Override
     public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
@@ -273,10 +335,11 @@ public class Immutable2DIntArraySource extends AbstractDeferredGroupingColumnSou
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
-        // nothing to do
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
+        // We don't track previous values, but we do need to ensure we can accept the expected rows.
+        ensureCapacity(rowSequence.lastRowKey() + 1, false);
     }
 
-    // region reinterpret
-    // endregion reinterpret
+    // region reinterpretation
+    // endregion reinterpretation
 }

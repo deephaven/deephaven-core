@@ -127,11 +127,11 @@ public class ByteObjectReinterpretedDateTimeColumnTupleSource extends AbstractTu
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteObjectLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ByteChunk<Values> chunk1 = chunks[0].asByteChunk();
-        ObjectChunk<Object, Values> chunk2 = chunks[1].asObjectChunk();
-        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
+        ByteChunk<? extends Values> chunk1 = chunks[0].asByteChunk();
+        ObjectChunk<Object, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteObjectLongTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

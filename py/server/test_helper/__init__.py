@@ -46,7 +46,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             '-XX:MinRAMPercentage=70.0',
             '-XX:MaxRAMPercentage=80.0',
 
-            # Allow netty to (reflectively) access java.nio.Buffer fields
+            # Allow access to java.nio.Buffer fields
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
 
             # Allow our hotspot-impl project to access internals

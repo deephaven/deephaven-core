@@ -30,7 +30,7 @@ import java.util.Set;
 @Singleton
 public final class ObjectTypes implements ObjectTypeLookup, ObjectTypeRegistration {
 
-    private static final Set<String> RESERVED_TYPE_NAMES_LOWERCASE = Set.of("table", "treetable", "");
+    private static final Set<String> RESERVED_TYPE_NAMES_LOWERCASE = Set.of("table", "rolluptable", "treetable", "");
 
     private final Set<String> namesLowercase;
     private final Map<Class<?>, ObjectType> classTypes;

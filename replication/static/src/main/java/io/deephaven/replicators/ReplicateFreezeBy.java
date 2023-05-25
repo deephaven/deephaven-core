@@ -11,18 +11,14 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateFreezeBy {
     public static void main(String[] args) throws IOException {
-        final List<String> results = charToAllButBoolean(
+        charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
 
-        final Optional<String> longResult = results.stream().filter(s -> s.contains("Long")).findFirst();
-        // noinspection OptionalGetWithoutIsPresent
-        fixupLong(longResult.get());
         final String objectResult = charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
@@ -47,13 +43,5 @@ public class ReplicateFreezeBy {
                 ReplicationUtils.globalReplacements(lines, "final BooleanChunk asBoolean = values.asBooleanChunk",
                         "final ObjectChunk<Boolean, ?> asBoolean = values.asObjectChunk");
         FileUtils.writeLines(booleanFile, newLines);
-    }
-
-    private static void fixupLong(String longResult) throws IOException {
-        final File longFile = new File(longResult);
-        final List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
-        final List<String> newLines =
-                ReplicationUtils.globalReplacements(0, lines, "LongArraySource", "AbstractLongArraySource");
-        FileUtils.writeLines(longFile, newLines);
     }
 }

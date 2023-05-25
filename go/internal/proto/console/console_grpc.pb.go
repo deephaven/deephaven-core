@@ -34,6 +34,7 @@ type ConsoleServiceClient interface {
 	// be closed as well. A given document should only be edited within one stream at a
 	// time.
 	AutoCompleteStream(ctx context.Context, opts ...grpc.CallOption) (ConsoleService_AutoCompleteStreamClient, error)
+	CancelAutoComplete(ctx context.Context, in *CancelAutoCompleteRequest, opts ...grpc.CallOption) (*CancelAutoCompleteResponse, error)
 	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
 	// implementation for AutoCompleteStream.
 	OpenAutoCompleteStream(ctx context.Context, in *AutoCompleteRequest, opts ...grpc.CallOption) (ConsoleService_OpenAutoCompleteStreamClient, error)
@@ -166,6 +167,15 @@ func (x *consoleServiceAutoCompleteStreamClient) Recv() (*AutoCompleteResponse, 
 	return m, nil
 }
 
+func (c *consoleServiceClient) CancelAutoComplete(ctx context.Context, in *CancelAutoCompleteRequest, opts ...grpc.CallOption) (*CancelAutoCompleteResponse, error) {
+	out := new(CancelAutoCompleteResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelAutoComplete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *consoleServiceClient) OpenAutoCompleteStream(ctx context.Context, in *AutoCompleteRequest, opts ...grpc.CallOption) (ConsoleService_OpenAutoCompleteStreamClient, error) {
 	stream, err := c.cc.NewStream(ctx, &ConsoleService_ServiceDesc.Streams[2], "/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream", opts...)
 	if err != nil {
@@ -223,6 +233,7 @@ type ConsoleServiceServer interface {
 	// be closed as well. A given document should only be edited within one stream at a
 	// time.
 	AutoCompleteStream(ConsoleService_AutoCompleteStreamServer) error
+	CancelAutoComplete(context.Context, *CancelAutoCompleteRequest) (*CancelAutoCompleteResponse, error)
 	// Half of the browser-based (browser's can't do bidirectional streams without websockets)
 	// implementation for AutoCompleteStream.
 	OpenAutoCompleteStream(*AutoCompleteRequest, ConsoleService_OpenAutoCompleteStreamServer) error
@@ -258,6 +269,9 @@ func (UnimplementedConsoleServiceServer) BindTableToVariable(context.Context, *B
 }
 func (UnimplementedConsoleServiceServer) AutoCompleteStream(ConsoleService_AutoCompleteStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method AutoCompleteStream not implemented")
+}
+func (UnimplementedConsoleServiceServer) CancelAutoComplete(context.Context, *CancelAutoCompleteRequest) (*CancelAutoCompleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CancelAutoComplete not implemented")
 }
 func (UnimplementedConsoleServiceServer) OpenAutoCompleteStream(*AutoCompleteRequest, ConsoleService_OpenAutoCompleteStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method OpenAutoCompleteStream not implemented")
@@ -433,6 +447,24 @@ func (x *consoleServiceAutoCompleteStreamServer) Recv() (*AutoCompleteRequest, e
 	return m, nil
 }
 
+func _ConsoleService_CancelAutoComplete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelAutoCompleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServiceServer).CancelAutoComplete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelAutoComplete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServiceServer).CancelAutoComplete(ctx, req.(*CancelAutoCompleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ConsoleService_OpenAutoCompleteStream_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(AutoCompleteRequest)
 	if err := stream.RecvMsg(m); err != nil {
@@ -502,6 +534,10 @@ var ConsoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BindTableToVariable",
 			Handler:    _ConsoleService_BindTableToVariable_Handler,
+		},
+		{
+			MethodName: "CancelAutoComplete",
+			Handler:    _ConsoleService_CancelAutoComplete_Handler,
 		},
 		{
 			MethodName: "NextAutoCompleteStream",

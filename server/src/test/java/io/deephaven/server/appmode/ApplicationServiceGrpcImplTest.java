@@ -3,7 +3,7 @@
  */
 package io.deephaven.server.appmode;
 
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
@@ -43,8 +42,8 @@ public class ApplicationServiceGrpcImplTest {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
-                authContext -> new SessionState(scheduler, ExecutionContext::createForUnitTests, authContext),
-                TOKEN_EXPIRE_MS, Collections.emptyMap());
+                authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
+                TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
         applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }

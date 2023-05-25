@@ -8,7 +8,11 @@ module.exports = {
     output: {
         path: __dirname+'/build/js-out/',
         filename: 'dh-internal.js',
-        libraryTarget: "umd",
+        libraryTarget: 'module',
+        module:true,
+    },
+    experiments: {
+        outputModule:true
     },
     resolve : {
         modules: ['node_modules', __dirname + '/build/js-src'],

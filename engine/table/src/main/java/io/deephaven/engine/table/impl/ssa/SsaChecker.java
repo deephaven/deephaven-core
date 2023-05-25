@@ -23,7 +23,7 @@ public interface SsaChecker {
                 final LongSortKernel sortKernel = LongSortKernel.makeContext(columnSource.getChunkType(),
                         ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, size, true)) {
             columnSource.fillChunk(fillContext, valuesChunk, rowSequence);
-            rowSequence.fillRowKeyChunk(WritableLongChunk.downcast(keyChunk));
+            rowSequence.fillRowKeyChunk(keyChunk);
             sortKernel.sort(keyChunk, valuesChunk);
             checkSsa(ssa, valuesChunk, keyChunk);
         }

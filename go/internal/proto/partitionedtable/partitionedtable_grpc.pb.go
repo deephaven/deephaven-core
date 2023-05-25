@@ -23,7 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PartitionedTableServiceClient interface {
-	// Transforms a table into a partitioned table, consisting of many separate table, each individually
+	// Transforms a table into a partitioned table, consisting of many separate tables, each individually
 	// addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
 	PartitionBy(ctx context.Context, in *PartitionByRequest, opts ...grpc.CallOption) (*PartitionByResponse, error)
 	// Given a partitioned table, returns a table with the contents of all of the constituent tables.
@@ -82,7 +82,7 @@ func (c *partitionedTableServiceClient) GetTable(ctx context.Context, in *GetTab
 // All implementations must embed UnimplementedPartitionedTableServiceServer
 // for forward compatibility
 type PartitionedTableServiceServer interface {
-	// Transforms a table into a partitioned table, consisting of many separate table, each individually
+	// Transforms a table into a partitioned table, consisting of many separate tables, each individually
 	// addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
 	PartitionBy(context.Context, *PartitionByRequest) (*PartitionByResponse, error)
 	// Given a partitioned table, returns a table with the contents of all of the constituent tables.

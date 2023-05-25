@@ -3,14 +3,17 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
+@TsName(namespace = "dh")
 public class Column {
     private final int index;
 
@@ -93,6 +96,7 @@ public class Column {
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return description;
     }
@@ -110,6 +114,7 @@ public class Column {
     }
 
     @JsProperty
+    @JsNullable
     public String getConstituentType() {
         return constituentType;
     }
@@ -215,5 +220,15 @@ public class Column {
         result = 31 * result + type.hashCode();
         result = 31 * result + name.hashCode();
         return result;
+    }
+
+    public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
+        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn);
+    }
+
+    public Column withStyleColumnIndex(int styleColumnIndex) {
+        return new Column(jsIndex, index, formatColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+                formatStringColumnIndex, description, isInputTableKeyColumn);
     }
 }

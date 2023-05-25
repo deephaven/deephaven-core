@@ -150,7 +150,6 @@ public class RunChartDownsample implements Function<Table, Table> {
 
             if (swapListener != null) {
                 swapListener.setListenerAndResult(downsampleListener, downsampleListener.resultTable);
-                downsampleListener.resultTable.addParentReference(swapListener);
                 downsampleListener.resultTable.addParentReference(downsampleListener);
             }
 

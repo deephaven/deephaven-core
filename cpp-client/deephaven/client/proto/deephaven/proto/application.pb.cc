@@ -132,14 +132,16 @@ const char descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto[] P
   "pplicationService\022}\n\nListFields\0224.io.dee"
   "phaven.proto.backplane.grpc.ListFieldsRe"
   "quest\0325.io.deephaven.proto.backplane.grp"
-  "c.FieldsChangeUpdate\"\0000\001B\004H\001P\001b\006proto3"
+  "c.FieldsChangeUpdate\"\0000\001BGH\001P\001ZAgithub.c"
+  "om/deephaven/deephaven-core/go/internal/"
+  "proto/applicationb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fapplication_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fapplication_2eproto = {
-    false, false, 678, descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto,
+    false, false, 745, descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto,
     "deephaven/proto/application.proto",
     &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once, descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps, 1, 3,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets,

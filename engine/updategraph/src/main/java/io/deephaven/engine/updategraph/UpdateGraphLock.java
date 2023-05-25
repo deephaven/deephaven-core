@@ -3,47 +3,62 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.MultiException;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
+import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Lock class to support {@link UpdateGraphProcessor}.
  */
-public class UpdateGraphLock {
+public abstract class UpdateGraphLock {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateGraphLock.class);
 
     private static final boolean STACK_DUMP_LOCKS =
             Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.stackDumpLocks", false);
 
+    /**
+     * Instrumentation interface for recording lock events.
+     */
     public interface Instrumentation {
 
         default void recordAction(@NotNull final String description, @NotNull final Runnable action) {
             action.run();
         }
 
-        default void recordActionInterruptibly(@NotNull final String description,
-                @NotNull final FunctionalInterfaces.ThrowingRunnable<InterruptedException> action)
+        default void recordActionInterruptibly(
+                @NotNull final String description,
+                @NotNull final ThrowingRunnable<InterruptedException> action)
                 throws InterruptedException {
             action.run();
         }
     }
 
+    /**
+     * Install an {@link UpdateGraphLock.Instrumentation instrumentation recorder} for all UpdateGraphLock instances.
+     *
+     * @param instrumentation The {@link UpdateGraphLock.Instrumentation instrumentation recorder}, or {@code null} to
+     *        install a no-op recorder.
+     */
     public static void installInstrumentation(@Nullable final Instrumentation instrumentation) {
         UpdateGraphLock.instrumentation = instrumentation == null ? new Instrumentation() {} : instrumentation;
     }
@@ -51,36 +66,21 @@ public class UpdateGraphLock {
     private static Instrumentation instrumentation = new Instrumentation() {};
 
     /**
+     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
+     *
+     * @param logicalClock The {@link LogicalClock} instance to use
+     * @param allowUnitTestMode Whether this lock instance is to be used for unit tests only
+     */
+    public static UpdateGraphLock create(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
+        return allowUnitTestMode
+                ? new ResettableUpdateGraphLock(logicalClock)
+                : new FinalUpdateGraphLock(logicalClock);
+    }
+
+    /**
      * The {@link LogicalClock} used for instrumentation and assertions.
      */
-    private final LogicalClock logicalClock;
-
-    /**
-     * The internal {@link java.util.concurrent.locks.ReadWriteLock} wrapped by this class.
-     */
-    private final ReentrantReadWriteLock rwLock;
-
-    /**
-     * The internal read lock wrapped by the shared lock.
-     */
-    private final Lock readLock;
-
-    /**
-     * The internal write lock wrapped by the exclusive lock.
-     */
-    private final Lock writeLock;
-
-    /**
-     * The shared lock.
-     */
-    private final AwareFunctionalLock sharedLock;
-
-    /**
-     * The exclusive lock.
-     */
-    private final AwareFunctionalLock exclusiveLock;
-
-    private final boolean allowUnitTestMode;
+    protected final LogicalClock logicalClock;
 
     /**
      * Construct a lock for a new {@link UpdateGraphProcessor} instance.
@@ -88,25 +88,7 @@ public class UpdateGraphLock {
      * @param logicalClock The {@link LogicalClock} instance to use
      */
     UpdateGraphLock(@NotNull final LogicalClock logicalClock) {
-        this(logicalClock, false);
-    }
-
-    /**
-     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
-     *
-     * @param logicalClock The {@link LogicalClock} instance to use
-     * @param allowUnitTestMode for unit tests only
-     */
-    UpdateGraphLock(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
         this.logicalClock = logicalClock;
-        // TODO: Consider whether using a fair lock causes unacceptable performance degradation under significant
-        // contention, and determine an alternative policy (maybe relying on Thread.yield() if so.
-        rwLock = new ReentrantReadWriteLock(true);
-        readLock = rwLock.readLock();
-        writeLock = rwLock.writeLock();
-        sharedLock = new SharedLock();
-        exclusiveLock = allowUnitTestMode ? new DebugAwareFunctionalLock(new ExclusiveLock()) : new ExclusiveLock();
-        this.allowUnitTestMode = allowUnitTestMode;
     }
 
     /**
@@ -115,9 +97,7 @@ public class UpdateGraphLock {
      *
      * @return The shared lock
      */
-    final AwareFunctionalLock sharedLock() {
-        return sharedLock;
-    }
+    public abstract AwareFunctionalLock sharedLock();
 
     /**
      * Get the exclusive lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with
@@ -125,17 +105,185 @@ public class UpdateGraphLock {
      *
      * @return The exclusive lock
      */
-    final AwareFunctionalLock exclusiveLock() {
-        return exclusiveLock;
+    public abstract AwareFunctionalLock exclusiveLock();
+
+    /**
+     * Reset this UpdateGraphLock between unit tests to ensure a clean slate.
+     */
+    @TestUseOnly
+    public abstract void reset();
+
+    // region Production Implementation
+
+    private static final class FinalUpdateGraphLock extends UpdateGraphLock {
+
+        /**
+         * The shared lock.
+         */
+        private final AwareFunctionalLock sharedLock;
+
+        /**
+         * The exclusive lock.
+         */
+        private final AwareFunctionalLock exclusiveLock;
+
+        private FinalUpdateGraphLock(@NotNull final LogicalClock logicalClock) {
+            super(logicalClock);
+            final ReadWriteLockAccessor lockAccessor = new ReentrantReadWriteLockAccessor();
+            this.sharedLock = new SharedLock(lockAccessor);
+            this.exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
+        }
+
+        @Override
+        public AwareFunctionalLock sharedLock() {
+            return sharedLock;
+        }
+
+        @Override
+        public AwareFunctionalLock exclusiveLock() {
+            return exclusiveLock;
+        }
+
+        @Override
+        @TestUseOnly
+        public void reset() {
+            throw new UnsupportedOperationException("This UpdateGraphLock instance is not resettable");
+        }
     }
+
+    // endregion Production Implementation
+
+    // region Unit Test Implementation
+
+    private static final class ResettableUpdateGraphLock extends UpdateGraphLock {
+
+        /**
+         * The ReadWriteLockAccessor used for the current {@link #sharedLock} and {@link #exclusiveLock} pair.
+         */
+        private RecordedReadWriteLockAccessor lockAccessor;
+
+        /**
+         * The shared lock.
+         */
+        private volatile AwareFunctionalLock sharedLock;
+
+        /**
+         * The exclusive lock.
+         */
+        private volatile AwareFunctionalLock exclusiveLock;
+
+        private ResettableUpdateGraphLock(@NotNull final LogicalClock logicalClock) {
+            super(logicalClock);
+            initialize();
+        }
+
+        private synchronized void initialize() {
+            lockAccessor = new RecordedReadWriteLockAccessor();
+            sharedLock = new SharedLock(lockAccessor);
+            exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
+        }
+
+        @Override
+        public AwareFunctionalLock sharedLock() {
+            return sharedLock;
+        }
+
+        @Override
+        public AwareFunctionalLock exclusiveLock() {
+            return exclusiveLock;
+        }
+
+        @Override
+        @TestUseOnly
+        public synchronized void reset() {
+            final RecordingLock writeLock = lockAccessor.writeLock();
+            try {
+                if (!lockAccessor.readLockIsHeldByCurrentThread()
+                        && !lockAccessor.writeLockIsHeldByCurrentThread()
+                        && writeLock.delegate.tryLock()) {
+                    writeLock.delegate.unlock();
+                } else {
+                    final RecordingLock readLock = lockAccessor.readLock();
+                    final List<LockDebugException> outstandingAcquisitions = Stream.concat(
+                            writeLock.getOutstandingRecordedAcquisitions().stream(),
+                            readLock.getOutstandingRecordedAcquisitions().stream())
+                            .map(rla -> rla.pendingException)
+                            .collect(Collectors.toList());
+                    throw new UncheckedDeephavenException("UpdateGraphLock held during reset",
+                            MultiException.maybeWrapInMultiException("Multiple outstanding recorded acquisitions",
+                                    outstandingAcquisitions));
+                }
+            } finally {
+                initialize();
+            }
+        }
+    }
+
+    // endregion Unit Test Implementation
+
+    // region ReadWriteLockAccessor Interface
+
+    /**
+     * Lock accessor interface used in order to abstract away details and allow unit test implementations that recover
+     * from locking errors.
+     */
+    private interface ReadWriteLockAccessor {
+
+        /**
+         * Test whether the {@link Thread#currentThread() current thread} holds the {@link #readLock() read lock}.
+         *
+         * @return Whether the current thread holds this ReadWriteLockAccessor's read lock
+         */
+        boolean readLockIsHeldByCurrentThread();
+
+        /**
+         * Get the read {@link Lock lock}.
+         *
+         * @return This ReadWriteLockAccessor's read lock; this is guaranteed to always return the same reference over
+         *         the life of the accessor
+         */
+        Lock readLock();
+
+        /**
+         * Test whether the {@link Thread#currentThread() current thread} holds the {@link #writeLock() write lock}.
+         *
+         * @return Whether the current thread holds this ReadWriteLockAccessor's write lock
+         */
+        boolean writeLockIsHeldByCurrentThread();
+
+        /**
+         * Get the write {@link Lock lock}.
+         *
+         * @return This ReadWriteLockAccessor's write lock; this is guaranteed to always return the same reference over
+         *         the life of the accessor
+         */
+        Lock writeLock();
+    }
+
+    // endregion ReadWriteLockAccessor Interface
 
     // region Shared Lock Implementation
 
-    private class SharedLock implements AwareFunctionalLock {
+    private static class SharedLock implements AwareFunctionalLock {
+
+        /**
+         * Accessor for the underlying lock implementation.
+         */
+        private final ReadWriteLockAccessor lockAccessor;
+
+        /**
+         * The read lock.
+         */
+        private final Lock readLock;
+
+        private SharedLock(ReadWriteLockAccessor lockAccessor) {
+            this.lockAccessor = lockAccessor;
+            this.readLock = lockAccessor.readLock();
+        }
 
         @Override
         public final boolean isHeldByCurrentThread() {
-            return rwLock.getReadHoldCount() > 0;
+            return lockAccessor.readLockIsHeldByCurrentThread();
         }
 
         @Override
@@ -212,11 +360,33 @@ public class UpdateGraphLock {
 
     // region Exclusive Lock Implementation
 
-    private class ExclusiveLock implements AwareFunctionalLock {
+    private static class ExclusiveLock implements AwareFunctionalLock {
+
+        /**
+         * Logical clock used for correctness checks.
+         */
+        private final LogicalClock logicalClock;
+        /**
+         * Accessor for the underlying lock implementation.
+         */
+        private final ReadWriteLockAccessor lockAccessor;
+
+        /**
+         * The write lock.
+         */
+        private final Lock writeLock;
+
+        private ExclusiveLock(
+                @NotNull final LogicalClock logicalClock,
+                @NotNull final ReadWriteLockAccessor lockAccessor) {
+            this.logicalClock = logicalClock;
+            this.lockAccessor = lockAccessor;
+            this.writeLock = lockAccessor.writeLock();
+        }
 
         @Override
         public final boolean isHeldByCurrentThread() {
-            return rwLock.isWriteLockedByCurrentThread();
+            return lockAccessor.writeLockIsHeldByCurrentThread();
         }
 
         @Override
@@ -294,40 +464,119 @@ public class UpdateGraphLock {
         public final Condition newCondition() {
             return writeLock.newCondition();
         }
+
+        private void checkForUpgradeAttempt() {
+            if (lockAccessor.readLockIsHeldByCurrentThread()) {
+                throw new UnsupportedOperationException("Cannot upgrade a shared lock to an exclusive lock");
+            }
+        }
     }
 
     // endregion Exclusive Lock Implementation
 
-    // region DebugLock
-    class DebugAwareFunctionalLock implements AwareFunctionalLock {
-        private final ExclusiveLock delegate;
-        private final Deque<Throwable> lockingContext = new ConcurrentLinkedDeque<>();
+    // region ReadWriteLockAccessor implementations
 
-        DebugAwareFunctionalLock(ExclusiveLock delegate) {
-            this.delegate = delegate;
+    private static class ReentrantReadWriteLockAccessor implements ReadWriteLockAccessor {
+
+        /**
+         * The {@link ReentrantReadWriteLock} wrapped by this class.
+         */
+        private final ReentrantReadWriteLock rwLock;
+
+        private ReentrantReadWriteLockAccessor() {
+            // In the future, we may need to consider whether using a fair lock causes unacceptable performance
+            // degradation under significant contention, and determine an alternative policy (maybe relying on
+            // Thread.yield() if so.
+            rwLock = new ReentrantReadWriteLock(true);
         }
 
         @Override
-        public boolean isHeldByCurrentThread() {
-            return delegate.isHeldByCurrentThread();
+        public final boolean readLockIsHeldByCurrentThread() {
+            return rwLock.getReadHoldCount() > 0;
+        }
+
+        @Override
+        public Lock readLock() {
+            return rwLock.readLock();
+        }
+
+        @Override
+        public final boolean writeLockIsHeldByCurrentThread() {
+            return rwLock.isWriteLockedByCurrentThread();
+        }
+
+        @Override
+        public Lock writeLock() {
+            return rwLock.writeLock();
+        }
+    }
+
+    private static final class RecordedReadWriteLockAccessor extends ReentrantReadWriteLockAccessor {
+
+        private final RecordingLock readLock;
+        private final RecordingLock writeLock;
+
+        private RecordedReadWriteLockAccessor() {
+            this.readLock = new RecordingLock("readLock", super.readLock());
+            this.writeLock = new RecordingLock("writeLock", super.writeLock());
+        }
+
+        @Override
+        public RecordingLock readLock() {
+            return readLock;
+        }
+
+        @Override
+        public RecordingLock writeLock() {
+            return writeLock;
+        }
+    }
+
+    // endregion ReadWriteLockAccessor implementation
+
+    // region RecordedLockAcquisition and RecordingLock
+
+    private static class RecordedLockAcquisition extends IntrusiveDoublyLinkedNode.Impl<RecordedLockAcquisition> {
+
+        private final LockDebugException pendingException;
+
+        private RecordedLockAcquisition(@NotNull final LockDebugException pendingException) {
+            this.pendingException = pendingException;
+        }
+    }
+
+    private static class RecordingLock implements Lock {
+
+        private final String name;
+        private final Lock delegate;
+
+        private final IntrusiveDoublyLinkedQueue<RecordedLockAcquisition> outstandingRecordings =
+                new IntrusiveDoublyLinkedQueue<>(
+                        IntrusiveDoublyLinkedNode.Impl.Adapter.<RecordedLockAcquisition>getInstance());
+        private final ThreadLocal<Deque<RecordedLockAcquisition>> threadRecordings =
+                ThreadLocal.withInitial(ArrayDeque::new);
+
+        RecordingLock(@NotNull final String name, @NotNull final Lock delegate) {
+            this.name = name;
+            this.delegate = delegate;
         }
 
         @Override
         public void lock() {
             delegate.lock();
-            pushContext();
+            pushRecording(new LockDebugException(String.format("Recorded %s.lock()", name)));
         }
 
         @Override
         public void lockInterruptibly() throws InterruptedException {
             delegate.lockInterruptibly();
-            pushContext();
+            pushRecording(new LockDebugException(String.format("Recorded %s.lockInterruptibly()", name)));
         }
 
         @Override
         public boolean tryLock() {
             if (delegate.tryLock()) {
-                pushContext();
+                pushRecording(new LockDebugException(String.format("Recorded %s.tryLock()", name)));
                 return true;
             }
             return false;
@@ -336,7 +585,7 @@ public class UpdateGraphLock {
         @Override
         public boolean tryLock(long time, @NotNull TimeUnit unit) throws InterruptedException {
             if (delegate.tryLock(time, unit)) {
-                pushContext();
+                pushRecording(new LockDebugException(String.format("Recorded %s.tryLock(%d, %s)", name, time, unit)));
                 return true;
             }
             return false;
@@ -344,7 +593,7 @@ public class UpdateGraphLock {
 
         @Override
         public void unlock() {
-            lockingContext.pop();
+            popRecording();
             delegate.unlock();
         }
 
@@ -354,43 +603,64 @@ public class UpdateGraphLock {
             return delegate.newCondition();
         }
 
-        String getDebugMessage() {
-            final Throwable item = lockingContext.peek();
-            return item == null ? "locking context is empty" : ExceptionUtils.getStackTrace(item);
+        private Collection<RecordedLockAcquisition> getOutstandingRecordedAcquisitions() {
+            synchronized (outstandingRecordings) {
+                if (outstandingRecordings.isEmpty()) {
+                    return List.of();
+                } else {
+                    return outstandingRecordings.stream().collect(Collectors.toList());
+                }
+            }
         }
 
-        private void pushContext() {
+        private void pushRecording(@NotNull final LockDebugException pendingException) {
             // Implementation must have already acquired lock
+            final RecordedLockAcquisition recordedLockAcquisition;
             try {
-                lockingContext.push(new Throwable());
+                recordedLockAcquisition = new RecordedLockAcquisition(pendingException);
+                threadRecordings.get().push(recordedLockAcquisition);
             } catch (Throwable t) {
                 delegate.unlock();
+                log.warn().append("Unexpected exception while pushing lock context: ").append(t).endl();
+                throw t;
+            }
+            try {
+                synchronized (outstandingRecordings) {
+                    outstandingRecordings.offer(recordedLockAcquisition);
+                }
+            } catch (Throwable t) {
+                delegate.unlock();
+                threadRecordings.get().pop();
+                log.warn().append("Unexpected exception while recording outstanding lock context: ").append(t).endl();
                 throw t;
             }
         }
-    }
-    // endregion DebugLock
 
-    // region Validation Methods
-
-    private void checkForUpgradeAttempt() {
-        if (sharedLock.isHeldByCurrentThread()) {
-            throw new UnsupportedOperationException("Cannot upgrade a shared lock to an exclusive lock");
+        private void popRecording() {
+            try {
+                final RecordedLockAcquisition recordedLockAcquisition = threadRecordings.get().pop();
+                synchronized (outstandingRecordings) {
+                    outstandingRecordings.remove(recordedLockAcquisition);
+                }
+            } catch (Throwable t) {
+                log.warn().append("Unexpected exception while popping lock context: ").append(t).endl();
+                // Don't re-throw, instead let the caller unlock
+            }
         }
     }
 
-    // endregion Validation Methods
+    // endregion DebugLock
 
     // region Debugging Tools
 
     private static final class LockDebugException extends Exception {
 
         private LockDebugException(@NotNull final String message) {
-            super(message);
+            super(String.format("%s: %s", Thread.currentThread().getName(), message));
         }
     }
 
-    private void maybeLogStackTrace(final String type) {
+    private static void maybeLogStackTrace(final String type) {
         if (STACK_DUMP_LOCKS) {
             log.info().append("Update Graph Processor ").append(new LockDebugException(type)).endl();
         }

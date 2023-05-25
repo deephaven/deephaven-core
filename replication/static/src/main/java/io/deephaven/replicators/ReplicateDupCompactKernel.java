@@ -122,7 +122,7 @@ public class ReplicateDupCompactKernel {
 
         lines = ReplicateSortKernel.fixupNanComparisons(lines, type, ascending);
 
-        lines = simpleFixup(lines, "eq", "lhs == rhs", type + "Comparisons.eq(lhs, rhs)");
+        lines = simpleFixup(lines, "equality", "lhs == rhs", type + "Comparisons.eq(lhs, rhs)");
 
         FileUtils.writeLines(file, lines);
     }
@@ -139,12 +139,5 @@ public class ReplicateDupCompactKernel {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         FileUtils.writeLines(objectFile, ReplicateSortKernel.fixupObjectComparisons(fixupChunkAttributes(lines)));
-    }
-
-    @NotNull
-    private static List<String> fixupChunkAttributes(List<String> lines) {
-        lines = lines.stream().map(x -> x.replaceAll("ObjectChunk<([^>]*)>", "ObjectChunk<Object, $1>"))
-                .collect(Collectors.toList());
-        return lines;
     }
 }

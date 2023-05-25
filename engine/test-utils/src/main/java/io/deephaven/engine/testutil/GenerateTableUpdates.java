@@ -12,8 +12,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.sources.DateTimeTreeMapSource;
-import io.deephaven.engine.testutil.sources.TreeMapSource;
+import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -26,20 +25,20 @@ import java.util.function.BiConsumer;
 
 public class GenerateTableUpdates {
 
-    static public void generateTableUpdates(int size, Random random, QueryTable table,
-            ColumnInfo[] columnInfo) {
+    public static void generateTableUpdates(int size, Random random, QueryTable table,
+            ColumnInfo<?, ?>[] columnInfo) {
         final RowSet[] result = computeTableUpdates(size, random, table, columnInfo);
         table.notifyListeners(result[0], result[1], result[2]);
     }
 
     public static void generateAppends(final int size, Random random, QueryTable table,
-            ColumnInfo[] columnInfos) {
+            ColumnInfo<?, ?>[] columnInfos) {
         final long firstKey = table.getRowSet().lastRowKey() + 1;
         final int randomSize = 1 + random.nextInt(size);
         final RowSet keysToAdd = RowSetFactory.fromRange(firstKey, firstKey + randomSize - 1);
-        final ColumnHolder[] columnAdditions = new ColumnHolder[columnInfos.length];
+        final ColumnHolder<?>[] columnAdditions = new ColumnHolder[columnInfos.length];
         for (int i = 0; i < columnAdditions.length; i++) {
-            columnAdditions[i] = columnInfos[i].populateMapAndC(keysToAdd, random);
+            columnAdditions[i] = columnInfos[i].generateUpdateColumnHolder(keysToAdd, random);
         }
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
@@ -57,13 +56,13 @@ public class GenerateTableUpdates {
         table.notifyListeners(keysToAdd, RowSetFactory.empty(), RowSetFactory.empty());
     }
 
-    static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-            ColumnInfo[] columnInfo) {
+    public static RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+            ColumnInfo<?, ?>[] columnInfo) {
         return computeTableUpdates(size, random, table, columnInfo, true, true, true);
     }
 
-    static public RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
-            ColumnInfo[] columnInfo, boolean add, boolean remove, boolean modify) {
+    public static RowSet[] computeTableUpdates(int size, Random random, QueryTable table,
+            ColumnInfo<?, ?>[] columnInfo, boolean add, boolean remove, boolean modify) {
         final RowSet keysToRemove;
         if (remove && table.getRowSet().size() > 0) {
             keysToRemove =
@@ -76,11 +75,8 @@ public class GenerateTableUpdates {
         final RowSet keysToAdd =
                 add ? TstUtils.newIndex(random.nextInt(size / 2 + 1), table.getRowSet(), random) : TstUtils.i();
         TstUtils.removeRows(table, keysToRemove);
-        for (final RowSet.Iterator iterator = keysToRemove.iterator(); iterator.hasNext();) {
-            final long next = iterator.nextLong();
-            for (final ColumnInfo info : columnInfo) {
-                info.remove(next);
-            }
+        for (final ColumnInfo<?, ?> info : columnInfo) {
+            info.remove(keysToRemove);
         }
 
         final RowSet keysToModify;
@@ -91,13 +87,13 @@ public class GenerateTableUpdates {
         } else {
             keysToModify = TstUtils.i();
         }
-        final ColumnHolder columnAdditions[] = new ColumnHolder[columnInfo.length];
+        final ColumnHolder<?>[] columnAdditions = new ColumnHolder[columnInfo.length];
         for (int i = 0; i < columnAdditions.length; i++) {
-            columnAdditions[i] = columnInfo[i].populateMapAndC(keysToModify, random);
+            columnAdditions[i] = columnInfo[i].generateUpdateColumnHolder(keysToModify, random);
         }
         TstUtils.addToTable(table, keysToModify, columnAdditions);
         for (int i = 0; i < columnAdditions.length; i++) {
-            columnAdditions[i] = columnInfo[i].populateMapAndC(keysToAdd, random);
+            columnAdditions[i] = columnInfo[i].generateUpdateColumnHolder(keysToAdd, random);
         }
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
@@ -120,13 +116,15 @@ public class GenerateTableUpdates {
 
     public static class SimulationProfile {
         // Shift Strategy. Must sum to <= 100%.
-        public int SHIFT_10_PERCENT_KEY_SPACE = 10;
-        public int SHIFT_10_PERCENT_POS_SPACE = 30;
-        public int SHIFT_AGGRESSIVELY = 10;
+        protected int SHIFT_10_PERCENT_KEY_SPACE = 10;
+        protected int SHIFT_10_PERCENT_POS_SPACE = 30;
+        protected int SHIFT_AGGRESSIVELY = 10;
 
-        int SHIFT_LIMIT_50_PERCENT = 80; // limit shift domain to less than 50% of keyspace
+        /** limit shift domain to less than 50% of keyspace */
+        protected int SHIFT_LIMIT_50_PERCENT = 80;
 
-        int MOD_ADDITIONAL_COLUMN = 50; // probability of modifying each column
+        /** probability of modifying each column */
+        protected int MOD_ADDITIONAL_COLUMN = 50;
 
         void validate() {
             validateGroup(SHIFT_10_PERCENT_KEY_SPACE, SHIFT_10_PERCENT_POS_SPACE, SHIFT_AGGRESSIVELY);
@@ -144,9 +142,9 @@ public class GenerateTableUpdates {
         }
     }
 
-    static public final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
+    public static final SimulationProfile DEFAULT_PROFILE = new SimulationProfile();
 
-    static public void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
+    public static void generateShiftAwareTableUpdates(final SimulationProfile profile, final int targetUpdateSize,
             final Random random, final QueryTable table,
             final ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
@@ -159,7 +157,7 @@ public class GenerateTableUpdates {
             final TableUpdateImpl update = new TableUpdateImpl();
 
             // Removes in pre-shift keyspace.
-            if (rowSet.size() > 0) {
+            if (rowSet.isNonempty()) {
                 update.removed =
                         TstUtils.selectSubIndexSet(Math.min(rowSet.intSize(), random.nextInt(targetUpdateSize)),
                                 rowSet, random);
@@ -278,7 +276,7 @@ public class GenerateTableUpdates {
         }
     }
 
-    static public void generateTableUpdates(final TableUpdate update,
+    public static void generateTableUpdates(final TableUpdate update,
             final Random random, final QueryTable table,
             final ColumnInfo<?, ?>[] columnInfo) {
         final WritableRowSet rowSet = table.getRowSet().writableCast();
@@ -290,52 +288,36 @@ public class GenerateTableUpdates {
 
         // Remove data:
         TstUtils.removeRows(table, update.removed());
-        for (final RowSet.Iterator iterator = update.removed().iterator(); iterator.hasNext();) {
-            final long next = iterator.nextLong();
-            for (final ColumnInfo<?, ?> info : columnInfo) {
-                info.remove(next);
-            }
+        for (final ColumnInfo<?, ?> info : columnInfo) {
+            info.remove(update.removed());
         }
         rowSet.remove(update.removed());
 
         // Shift data:
         update.shifted().apply((start, end, delta) -> {
             // Move data!
-            final RowSet.SearchIterator iter = (delta < 0) ? rowSet.searchIterator() : rowSet.reverseIterator();
-            if (iter.advance((delta < 0) ? start : end)) {
-                long idx = iter.currentValue();
-                do {
-                    if (idx < start || idx > end) {
-                        break;
-                    }
-                    for (final ColumnInfo<?, ?> info : columnInfo) {
-                        info.move(idx, idx + delta);
-                    }
-                    idx = iter.hasNext() ? iter.nextLong() : RowSequence.NULL_ROW_KEY;
-                } while (idx != RowSequence.NULL_ROW_KEY);
+            for (final ColumnInfo<?, ?> info : columnInfo) {
+                info.shift(start, end, delta);
             }
             for (final ColumnSource<?> column : table.getColumnSources()) {
-                if (column instanceof TreeMapSource) {
-                    final TreeMapSource<?> treeMapSource = (TreeMapSource<?>) column;
-                    treeMapSource.shift(start, end, delta);
-                } else if (column instanceof DateTimeTreeMapSource) {
-                    final DateTimeTreeMapSource treeMapSource = (DateTimeTreeMapSource) column;
-                    treeMapSource.shift(start, end, delta);
+                if (column instanceof TestColumnSource) {
+                    final TestColumnSource<?> testSource = (TestColumnSource<?>) column;
+                    testSource.shift(start, end, delta);
                 }
             }
         });
         update.shifted().apply(rowSet);
 
         // Modifies and Adds in post-shift keyspace.
-        final ColumnHolder[] cModsOnly = new ColumnHolder[columnInfo.length];
-        final ColumnHolder[] cAddsOnly = new ColumnHolder[columnInfo.length];
+        final ColumnHolder<?>[] cModsOnly = new ColumnHolder[columnInfo.length];
+        final ColumnHolder<?>[] cAddsOnly = new ColumnHolder[columnInfo.length];
 
         final BitSet dirtyColumns = update.modifiedColumnSet().extractAsBitSet();
         for (int i = 0; i < columnInfo.length; i++) {
             final ColumnInfo<?, ?> ci = columnInfo[i];
             final RowSet keys = dirtyColumns.get(i) ? update.modified() : TstUtils.i();
-            cModsOnly[i] = ci.populateMapAndC(keys, random);
-            cAddsOnly[i] = ci.populateMapAndC(update.added(), random);
+            cModsOnly[i] = ci.generateUpdateColumnHolder(keys, random);
+            cAddsOnly[i] = ci.generateUpdateColumnHolder(update.added(), random);
         }
         TstUtils.addToTable(table, update.added(), cAddsOnly);
         TstUtils.addToTable(table, update.modified(), cModsOnly);

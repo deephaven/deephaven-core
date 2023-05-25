@@ -7,11 +7,12 @@
 #include <vector>
 #include "deephaven/client/columns.h"
 #include "deephaven/client/impl/expression_impl.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::impl {
 class DateTimeExpressionImpl : public ExpressionImpl {
 protected:
-  typedef deephaven::client::DateTime DateTime;
+  typedef deephaven::dhcore::DateTime DateTime;
 
 public:
   static std::shared_ptr<DateTimeExpressionImpl> createFromLiteral(std::string value);

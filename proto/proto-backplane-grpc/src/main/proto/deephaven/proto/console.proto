@@ -34,6 +34,7 @@ service ConsoleService {
      * time.
      */
     rpc AutoCompleteStream(stream AutoCompleteRequest) returns (stream AutoCompleteResponse) {}
+    rpc CancelAutoComplete(CancelAutoCompleteRequest) returns (CancelAutoCompleteResponse) {}
 
     /*
      * Half of the browser-based (browser's can't do bidirectional streams without websockets)
@@ -81,9 +82,14 @@ message GetHeapInfoResponse {
     int64 free_memory = 3 [jstype=JS_STRING];
 }
 
+// Presently you get _all_ logs, not just your console. A future version might take a specific console_id to
+// restrict this to a single console.
 message LogSubscriptionRequest {
-    // presently you get _all_ logs, not just your console
 //    Ticket console_id = 1;
+    // If a non-zero value is specified, represents the timestamp in microseconds since the unix epoch when
+    // the client last saw a message. Technically this might skip messages if more than one message was
+    // logged at the same microsecond that connection was lost - to avoid this, subtract one from the last
+    // seen message's micros, and expect to receive some messages that have already been seen.
     int64 last_seen_log_timestamp = 1 [jstype=JS_STRING];
     repeated string levels = 2;
 }
@@ -120,7 +126,18 @@ message CancelCommandResponse {
 
 }
 
+message CancelAutoCompleteRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    int32 request_id = 2;
+}
+
+message CancelAutoCompleteResponse {
+
+}
+
 message AutoCompleteRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 5;
+    int32 request_id = 6;
     oneof request {
         // Starts a document in a given console - to end, just close the stream, the server will hang up right away
         OpenDocumentRequest open_document = 1;
@@ -131,13 +148,28 @@ message AutoCompleteRequest {
         // Requests that a response be sent back with completion items
         GetCompletionItemsRequest get_completion_items = 3;
 
+        // Request for help about the method signature at the cursor
+        GetSignatureHelpRequest get_signature_help = 7;
+
+        // Request for help about what the user is hovering over
+        GetHoverRequest get_hover = 8;
+
+        // Request to perform file diagnostics
+        GetDiagnosticRequest get_diagnostic = 9;
+
         // Closes the document, indicating that it will not be referenced again
         CloseDocumentRequest close_document = 4;
     }
 }
 message AutoCompleteResponse {
+    int32 request_id = 2;
+    bool success = 3;
     oneof response {
         GetCompletionItemsResponse completion_items = 1;
+        GetSignatureHelpResponse signatures = 4;
+        GetHoverResponse hover = 5;
+        GetPullDiagnosticResponse diagnostic = 6;
+        GetPublishDiagnosticResponse diagnostic_publish = 7;
     }
 }
 
@@ -145,7 +177,7 @@ message BrowserNextResponse {
 }
 
 message OpenDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
     TextDocumentItem text_document = 2;
 }
 message TextDocumentItem {
@@ -156,13 +188,13 @@ message TextDocumentItem {
 }
 
 message CloseDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
+    VersionedTextDocumentIdentifier text_document = 2;
 }
 
 message ChangeDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
+    VersionedTextDocumentIdentifier text_document = 2;
     repeated TextDocumentContentChangeEvent content_changes = 3;
 
     message TextDocumentContentChangeEvent {
@@ -184,14 +216,19 @@ message Position {
     int32 character = 2;
 }
 
+message MarkupContent {
+    string kind = 1;
+    string value = 2;
+}
+
 message GetCompletionItemsRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
 
     CompletionContext context = 2;
     VersionedTextDocumentIdentifier text_document = 3;
     Position position = 4;
 
-    int32 request_id = 5;
+    int32 request_id = 5 [deprecated=true];
 }
 message CompletionContext {
     int32 trigger_kind = 1;
@@ -200,8 +237,10 @@ message CompletionContext {
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
 
-    int32 request_id = 2;
-    bool success = 3;
+    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
+    int32 request_id = 2 [deprecated=true];
+    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
+    bool success = 3 [deprecated=true];
 }
 message CompletionItem {
     int32 start = 1;
@@ -209,7 +248,7 @@ message CompletionItem {
     string label = 3;
     int32 kind = 4;
     string detail = 5;
-    string documentation = 6;
+    reserved 6; // Old documentation as a string. Was never used by us
     bool deprecated = 7;
     bool preselect = 8;
     TextEdit text_edit = 9;
@@ -218,10 +257,98 @@ message CompletionItem {
     int32 insert_text_format = 12;
     repeated TextEdit additional_text_edits = 13;
     repeated string commit_characters = 14;
+    MarkupContent documentation = 15;
 }
 message TextEdit {
     DocumentRange range = 1;
     string text = 2;
+}
+
+message GetSignatureHelpRequest {
+    SignatureHelpContext context = 1;
+    VersionedTextDocumentIdentifier text_document = 2;
+    Position position = 3;
+}
+message SignatureHelpContext {
+    int32 trigger_kind = 1;
+    optional string trigger_character = 2;
+    bool is_retrigger = 3;
+    GetSignatureHelpResponse active_signature_help = 4;
+}
+
+message GetSignatureHelpResponse {
+    repeated SignatureInformation signatures = 1;
+    optional int32 active_signature = 2;
+    optional int32 active_parameter = 3;
+}
+
+message SignatureInformation {
+    string label = 1;
+    MarkupContent documentation = 2;
+    repeated ParameterInformation parameters = 3;
+    optional int32 active_parameter = 4;
+}
+
+message ParameterInformation {
+    string label = 1;
+    MarkupContent documentation = 2;
+}
+
+message GetHoverRequest {
+    VersionedTextDocumentIdentifier text_document = 1;
+    Position position = 2;
+}
+
+message GetHoverResponse {
+    MarkupContent contents = 1;
+    DocumentRange range = 2;
+}
+
+message GetDiagnosticRequest {
+    VersionedTextDocumentIdentifier text_document = 1;
+    optional string identifier = 2;
+    optional string previous_result_id = 3;
+}
+
+message GetPullDiagnosticResponse {
+    string kind = 1;
+    optional string result_id = 2;
+    repeated Diagnostic items = 3;
+}
+
+message GetPublishDiagnosticResponse {
+    string uri = 1;
+    optional int32 version = 2;
+    repeated Diagnostic diagnostics = 3;
+}
+
+message Diagnostic {
+    enum DiagnosticSeverity {
+        NOT_SET_SEVERITY = 0;
+        ERROR = 1;
+        WARNING = 2;
+        INFORMATION = 3;
+        HINT = 4;
+    }
+
+    enum DiagnosticTag {
+        NOT_SET_TAG = 0;
+        UNNECESSARY = 1;
+        DEPRECATED = 2;
+    }
+
+    message CodeDescription {
+        string href = 1;
+    }
+
+    DocumentRange range = 1;
+    DiagnosticSeverity severity = 2;
+    optional string code = 3;
+    optional CodeDescription code_description = 4;
+    optional string source = 5;
+    string message = 6;
+    repeated DiagnosticTag tags = 7;
+    optional bytes data = 9;
 }
 
 message FigureDescriptor {

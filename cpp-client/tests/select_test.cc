@@ -7,7 +7,7 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 #include "deephaven/client/client.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 #include <iostream>
 #include <arrow/flight/client.h>
@@ -27,15 +27,15 @@ using deephaven::client::Client;
 using deephaven::client::NumCol;
 using deephaven::client::StrCol;
 using deephaven::client::TableHandle;
-using deephaven::client::utility::streamf;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::TableMaker;
+using deephaven::dhcore::utility::streamf;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client::tests {
 TEST_CASE("Support all types", "[select]") {
   auto tm = TableMakerForTests::create();
 
-  // std::vector<bool> boolData;
+  std::vector<bool> boolData;
   std::vector<char16_t> charData;
   std::vector<int8_t> byteData;
   std::vector<int16_t> shortData;
@@ -48,7 +48,7 @@ TEST_CASE("Support all types", "[select]") {
   const int startValue = -8;
   const int endValue = 8;
   for (auto i = startValue; i != endValue; ++i) {
-    // boolData.push_back((i % 2) == 0);
+    boolData.push_back((i % 2) == 0);
     charData.push_back(i * 10);
     byteData.push_back(i * 11);
     shortData.push_back(i * 1000);
@@ -60,7 +60,7 @@ TEST_CASE("Support all types", "[select]") {
   }
 
   TableMaker maker;
-  // maker.addColumn("boolData", boolData);
+  maker.addColumn("boolData", boolData);
   maker.addColumn("charData", charData);
   maker.addColumn("byteData", byteData);
   maker.addColumn("shortData", shortData);
@@ -76,7 +76,7 @@ TEST_CASE("Support all types", "[select]") {
 
   compareTable(
       t,
-      // "boolData", boolData,
+      "boolData", boolData,
       "charData", charData,
       "byteData", byteData,
       "shortData", shortData,

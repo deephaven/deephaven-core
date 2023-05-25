@@ -1470,11 +1470,11 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
      *                           one before the first value (so that next must be called)
      * @return an iterator for this SSA
      */
-    Iterator iterator(boolean disallowExactMatch, boolean isRightSide) {
+    public Iterator iterator(boolean disallowExactMatch, boolean isRightSide) {
         return new Iterator(disallowExactMatch, isRightSide);
     }
 
-    final class Iterator {
+    public final class Iterator {
         int leafIndex = 0;
         int indexWithinLeaf = 0;
         private final boolean disallowExactMatch;
@@ -1488,7 +1488,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             }
         }
 
-        void next() {
+        public void next() {
             indexWithinLeaf++;
             if (leafCount > 1) {
                 if (indexWithinLeaf == leafSizes[leafIndex]) {
@@ -1498,7 +1498,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             }
         }
 
-        boolean hasNext() {
+        public boolean hasNext() {
             if (leafCount == 0) {
                 return false;
             }
@@ -1508,7 +1508,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             return leafIndex < leafCount - 1 || (indexWithinLeaf < leafSizes[leafIndex] - 1);
         }
 
-        long getValue() {
+        public long getValue() {
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf];
             }
@@ -1517,7 +1517,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             }
         }
 
-        long nextValue() {
+        public long nextValue() {
             Assert.assertion(hasNext(), "hasNext()");
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf + 1];
@@ -1529,7 +1529,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             }
         }
 
-        long getKey() {
+        public long getKey() {
             if (leafCount == 1) {
                 return directoryRowKeys[indexWithinLeaf];
             }
@@ -1538,7 +1538,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
             }
         }
 
-        long nextKey() {
+        public long nextKey() {
             Assert.assertion(hasNext(), "hasNext()");
             if (leafCount == 1) {
                 return directoryRowKeys[indexWithinLeaf + 1];
@@ -1556,7 +1556,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
          *
          * @param value the value we are searching for
          */
-        void advanceToLast(long value) {
+        public void advanceToLast(long value) {
             advanceToInternal(value, true);
         }
 
@@ -1565,7 +1565,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
          *
          * @param value the value we are searching for
          */
-        void advanceToBeforeFirst(long value) {
+        public void advanceToBeforeFirst(long value) {
             advanceToInternal(value, false);
             if (disallowExactMatch) {
                 if (hasNext() && nextValue() == value) {
@@ -1663,7 +1663,7 @@ public final class LongReverseSegmentedSortedArray implements SegmentedSortedArr
         /**
          * Advance the iterator to the last value which is equal to the current value.
          */
-        void advanceWhileEqual() {
+        public void advanceWhileEqual() {
             final long value = getValue();
             findLastInLeaf(value);
             while (leafIndex < leafCount - 1) {

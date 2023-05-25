@@ -3,119 +3,81 @@
  */
 package io.deephaven.proto;
 
-import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
-import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceBlockingStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceFutureStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
-import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceFutureStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
+import io.grpc.CallCredentials;
 import io.grpc.Channel;
+import io.grpc.ClientInterceptor;
 
-import javax.inject.Inject;
-import java.util.Objects;
-
-/**
- * A Deephaven service helper for a {@link Channel channel}.
- */
-public class DeephavenChannel {
-    private final Channel channel;
-
-    @Inject
-    public DeephavenChannel(Channel channel) {
-        this.channel = Objects.requireNonNull(channel);
+public interface DeephavenChannel {
+    static DeephavenChannel withCallCredentials(DeephavenChannel channel, CallCredentials callCredentials) {
+        return new DeephavenChannelWithCallCredentials(channel, callCredentials);
     }
 
-    public Channel channel() {
-        return channel;
+    static DeephavenChannel withClientInterceptors(DeephavenChannel channel, ClientInterceptor... clientInterceptors) {
+        return new DeephavenChannelWithClientInterceptors(channel, clientInterceptors);
     }
 
-    public SessionServiceStub session() {
-        return SessionServiceGrpc.newStub(channel);
-    }
+    Channel channel();
 
-    public TableServiceStub table() {
-        return TableServiceGrpc.newStub(channel);
-    }
+    SessionServiceStub session();
 
-    public ConsoleServiceStub console() {
-        return ConsoleServiceGrpc.newStub(channel);
-    }
+    TableServiceStub table();
 
-    public ObjectServiceStub object() {
-        return ObjectServiceGrpc.newStub(channel);
-    }
+    ConsoleServiceStub console();
 
-    public ApplicationServiceStub application() {
-        return ApplicationServiceGrpc.newStub(channel);
-    }
+    ObjectServiceStub object();
 
-    public InputTableServiceStub inputTable() {
-        return InputTableServiceGrpc.newStub(channel);
-    }
+    ApplicationServiceStub application();
 
-    public SessionServiceBlockingStub sessionBlocking() {
-        return SessionServiceGrpc.newBlockingStub(channel);
-    }
+    InputTableServiceStub inputTable();
 
-    public TableServiceBlockingStub tableBlocking() {
-        return TableServiceGrpc.newBlockingStub(channel);
-    }
+    ConfigServiceStub config();
 
-    public ConsoleServiceBlockingStub consoleBlocking() {
-        return ConsoleServiceGrpc.newBlockingStub(channel);
-    }
+    SessionServiceBlockingStub sessionBlocking();
 
-    public ObjectServiceBlockingStub objectBlocking() {
-        return ObjectServiceGrpc.newBlockingStub(channel);
-    }
+    TableServiceBlockingStub tableBlocking();
 
-    public ApplicationServiceBlockingStub applicationBlocking() {
-        return ApplicationServiceGrpc.newBlockingStub(channel);
-    }
+    ConsoleServiceBlockingStub consoleBlocking();
 
-    public InputTableServiceBlockingStub inputTableBlocking() {
-        return InputTableServiceGrpc.newBlockingStub(channel);
-    }
+    ObjectServiceBlockingStub objectBlocking();
 
-    public SessionServiceFutureStub sessionFuture() {
-        return SessionServiceGrpc.newFutureStub(channel);
-    }
+    ApplicationServiceBlockingStub applicationBlocking();
 
-    public TableServiceFutureStub tableFuture() {
-        return TableServiceGrpc.newFutureStub(channel);
-    }
+    InputTableServiceBlockingStub inputTableBlocking();
 
-    public ConsoleServiceFutureStub consoleFuture() {
-        return ConsoleServiceGrpc.newFutureStub(channel);
-    }
+    ConfigServiceBlockingStub configBlocking();
 
-    public ObjectServiceFutureStub objectFuture() {
-        return ObjectServiceGrpc.newFutureStub(channel);
-    }
+    SessionServiceFutureStub sessionFuture();
 
-    public ApplicationServiceFutureStub applicationFuture() {
-        return ApplicationServiceGrpc.newFutureStub(channel);
-    }
+    TableServiceFutureStub tableFuture();
 
-    public InputTableServiceFutureStub inputTableFuture() {
-        return InputTableServiceGrpc.newFutureStub(channel);
-    }
+    ConsoleServiceFutureStub consoleFuture();
+
+    ObjectServiceFutureStub objectFuture();
+
+    ApplicationServiceFutureStub applicationFuture();
+
+    InputTableServiceFutureStub inputTableFuture();
+
+    ConfigServiceFutureStub configFuture();
 }

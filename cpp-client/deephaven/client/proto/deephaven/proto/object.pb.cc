@@ -100,14 +100,16 @@ const char descriptor_table_protodef_deephaven_2fproto_2fobject_2eproto[] PROTOB
   "ervice\022~\n\013FetchObject\0225.io.deephaven.pro"
   "to.backplane.grpc.FetchObjectRequest\0326.i"
   "o.deephaven.proto.backplane.grpc.FetchOb"
-  "jectResponse\"\000B\004H\001P\001b\006proto3"
+  "jectResponse\"\000BBH\001P\001Z<github.com/deephav"
+  "en/deephaven-core/go/internal/proto/obje"
+  "ctb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fobject_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fobject_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fobject_2eproto = {
-    false, false, 468, descriptor_table_protodef_deephaven_2fproto_2fobject_2eproto,
+    false, false, 530, descriptor_table_protodef_deephaven_2fproto_2fobject_2eproto,
     "deephaven/proto/object.proto",
     &descriptor_table_deephaven_2fproto_2fobject_2eproto_once, descriptor_table_deephaven_2fproto_2fobject_2eproto_deps, 1, 2,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fobject_2eproto::offsets,

@@ -86,7 +86,7 @@ public class ParquetTableWriter {
     /**
      * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
      * to be written out to the Parquet file.
-     * 
+     *
      * @param <B>
      */
     interface TransferObject<B> extends SafeCloseable {
@@ -318,7 +318,8 @@ public class ParquetTableWriter {
             final String colName = column.getName();
             if (table.hasColumns(colName)) {
                 if (StringSet.class.isAssignableFrom(column.getDataType())) {
-                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName, colName + ".values()"));
+                    updateViewColumnsTransform.add(FormulaColumn.createFormulaColumn(colName,
+                            "isNull(" + colName + ") ? null : " + colName + ".values()"));
                 }
                 viewColumnsTransform.add(new SourceColumn(colName));
             } else {
@@ -330,13 +331,11 @@ public class ParquetTableWriter {
 
         Table transformed = table;
         if (!viewColumnsTransform.isEmpty()) {
-            transformed =
-                    transformed.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
+            transformed = transformed.view(viewColumnsTransform);
         }
 
         if (!updateViewColumnsTransform.isEmpty()) {
-            transformed = transformed
-                    .updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            transformed = transformed.updateView(updateViewColumnsTransform);
         }
         return transformed;
     }
@@ -513,11 +512,13 @@ public class ParquetTableWriter {
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == DateTime.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(
+                    (ColumnSource<DateTime>) columnSource);
             columnType = columnSource.getType();
         } else if (columnType == Boolean.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(
+                    (ColumnSource<Boolean>) columnSource);
         }
 
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
@@ -686,6 +687,10 @@ public class ParquetTableWriter {
                         arraySizeBuffers.add(newBuffer);
                     }
                 }
+            }
+
+            if (keyCount == 0 && hasNulls) {
+                return false;
             }
 
             columnWriter.addDictionaryPage(encodedKeys, keyCount);
@@ -1066,8 +1071,8 @@ public class ParquetTableWriter {
 
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         final QueryTable coalesced = (QueryTable) tableToSave.coalesce();
-        final Table tableToGroup = coalesced.isRefreshing() ? coalesced.silent() : coalesced;
-        tableToGroup.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true); // We want persistent first/last-by
+        final Table tableToGroup = (coalesced.isRefreshing() ? (QueryTable) coalesced.silent() : coalesced)
+                .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)); // We want persistent first/last-by
         final Table grouped = tableToGroup
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
                         Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive

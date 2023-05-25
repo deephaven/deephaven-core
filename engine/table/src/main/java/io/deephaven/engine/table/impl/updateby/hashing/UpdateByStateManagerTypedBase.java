@@ -23,10 +23,10 @@ import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager {
-    public static final int CHUNK_SIZE = 4096;
+    private static final int CHUNK_SIZE = 4096;
     private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
-    public static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;
+    protected static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;
 
     // the number of slots in our table
     protected int tableSize;
@@ -214,14 +214,18 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-
                 while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize(), outputPositions)) {
                     migrateFront(outputPositions);
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }

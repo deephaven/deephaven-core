@@ -6,7 +6,7 @@ package io.deephaven.engine.rowset.impl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
@@ -131,7 +131,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         wrappedOK.fillRowKeyChunk(chunkToFill);
         shiftIndicesChunk(chunkToFill);
     }
@@ -190,7 +190,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
         return mi.intValue();
     }
 
-    private void shiftIndicesChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
+    private void shiftIndicesChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         for (int ii = 0; ii < chunkToFill.size(); ++ii) {
             chunkToFill.set(ii, chunkToFill.get(ii) + shiftAmount);
         }

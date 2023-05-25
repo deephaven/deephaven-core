@@ -11,7 +11,7 @@ public class ReplicateBarrageUtils {
     public static void main(final String[] args) throws IOException {
         ReplicatePrimitiveCode.charToAllButBoolean(
                 "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/CharChunkInputStreamGenerator.java");
-        ReplicatePrimitiveCode.charToAll(
+        ReplicatePrimitiveCode.charToAllButBoolean(
                 "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/array/CharArrayExpansionKernel.java");
         ReplicatePrimitiveCode.charToAllButBoolean(
                 "extensions/barrage/src/main/java/io/deephaven/extensions/barrage/chunk/vector/CharVectorExpansionKernel.java");

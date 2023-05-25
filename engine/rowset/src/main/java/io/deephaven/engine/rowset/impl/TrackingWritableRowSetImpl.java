@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -16,6 +17,9 @@ import java.util.function.Function;
 public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements TrackingWritableRowSet {
 
     private transient OrderedLongSet prevInnerSet;
+
+    private final WritableRowSetImpl prev = new UnmodifiableRowSetImpl();
+
     /**
      * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
      * right after the constructor, in special cases).
@@ -45,6 +49,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
             }
             prevInnerSet.ixRelease();
             prevInnerSet = getInnerSet().ixCowRef();
+            prev.assign(prevInnerSet.ixCowRef());
             changeTimeStep = currentClockStep;
             return prevInnerSet;
         }
@@ -112,6 +117,12 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
+    public RowSet prev() {
+        checkAndGetPrev();
+        return prev;
+    }
+
+    @Override
     public long getPrev(final long rowPosition) {
         if (rowPosition < 0) {
             return -1;
@@ -138,5 +149,28 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     public void readExternal(@NotNull final ObjectInput in) throws IOException {
         super.readExternal(in);
         initializePreviousValue();
+    }
+
+    /**
+     * An unmodifiable view of a {@link WritableRowSetImpl}.
+     */
+    private static class UnmodifiableRowSetImpl extends WritableRowSetImpl {
+
+        public UnmodifiableRowSetImpl() {}
+
+        @Override
+        public final void preMutationHook() {
+            throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
+        }
+
+        @Override
+        public final void postMutationHook() {
+            throw new UnsupportedOperationException("Unmodifiable view must never be mutated");
+        }
+
+        @Override
+        public final void close() {
+            throw new UnsupportedOperationException("Unmodifiable view must never be closed");
+        }
     }
 }

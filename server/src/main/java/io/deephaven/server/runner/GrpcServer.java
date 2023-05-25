@@ -39,9 +39,26 @@ public interface GrpcServer {
     void join() throws InterruptedException;
 
     /**
+     * Server must stop accepting new streams, but let existing streams continue for now.
+     * <p>
+     * </p>
+     * In theory the listening socket should be freed and available for another application to take it, but this is not
+     * rigorously tested.
+     * <p>
+     * </p>
+     * To complete shutdown, call stopWithTimeout() after any remaining calls have been completed to the server's
+     * satisfaction, which will terminate the remaining calls.
+     */
+    void beginShutdown();
+
+
+    /**
      * Stops the server, using the specified timeout as a deadline. Returns immediately. Call {@link #join()} to block
      * until this is completed.
-     * 
+     * <p>
+     * </p>
+     * If pending calls do not matter, it is unnecessary to call beginShutdown() before this method.
+     *
      * @param timeout time to allow for a graceful shutdown before giving up and halting
      * @param unit unit to apply to the timeout
      */
@@ -68,7 +85,13 @@ public interface GrpcServer {
             }
 
             @Override
+            public void beginShutdown() {
+                server.shutdown();
+            }
+
+            @Override
             public void stopWithTimeout(long timeout, TimeUnit unit) {
+                // gRPC's Server.shutdown is idempotent, so we call it again in case beginShutdown was never invoked
                 server.shutdown();
 
                 // Create and start a thread to make sure we obey the deadline

@@ -11,7 +11,7 @@ import org.junit.Test;
 */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
 public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegionedColumnSourcePrimitive<DATA_TYPE, Values,
-        ColumnRegionObject<DATA_TYPE, Values>> {
+        ColumnRegionObject<DATA_TYPE, Values>, ColumnRegionObject<DATA_TYPE, Values>> {
 
     TstRegionedColumnSourceObject(Value<?>[] values) {
         super(ColumnRegionObject.class);

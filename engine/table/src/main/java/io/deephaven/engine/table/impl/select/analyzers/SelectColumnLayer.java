@@ -6,11 +6,13 @@ package io.deephaven.engine.table.impl.select.analyzers;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -20,6 +22,7 @@ import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -30,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
 import java.util.stream.StreamSupport;
@@ -41,7 +43,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
      * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
-    private final WritableColumnSource writableSource;
+    private final WritableColumnSource<?> writableSource;
 
     /**
      * The execution context the select column layer was constructed in
@@ -70,12 +72,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private ChunkSource.WithPrev<Values> chunkSource;
 
     SelectColumnLayer(RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            WritableColumnSource ws, WritableColumnSource underlying,
+            WritableColumnSource<?> ws, WritableColumnSource<?> underlying,
             String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
             boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
-        this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
+        this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
         this.isRedirected = isRedirected;
         this.executionContext = ExecutionContext.getContextToRecord();
 
@@ -88,7 +90,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
         canParallelizeThisColumn = !isRedirected
-                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(ws) && sc.isStateless();
+                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
+                && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.
@@ -107,7 +110,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
-            chunkSource = ReinterpretUtils.maybeConvertToPrimitive(selectColumn.getDataView());
+            ColumnSource<?> dataSource = selectColumn.getDataView();
+            if (dataSource.getType() != writableSource.getType()) {
+                // this should only occur when using primitives internally and the user has requested a non-primitive
+                dataSource = ReinterpretUtils.maybeConvertToPrimitive(dataSource);
+                Assert.eq(dataSource.getType(), "dataSource.getType()",
+                        writableSource.getType(), "writableSource.getType()");
+            }
+            chunkSource = dataSource;
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }
@@ -138,6 +148,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
                         // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
+
+                        final boolean checkTableOperations =
+                                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
+                                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
                                 ((resultTypeIsTable && totalSize > 0)
@@ -180,12 +195,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             jobScheduler.submit(
                                     executionContext,
                                     () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                            liveResultOwner, onCompletion, this::onError, updates),
+                                            liveResultOwner, onCompletion, this::onError, updates,
+                                            checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
                                     executionContext,
-                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion),
+                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
+                                            checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -195,51 +212,59 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
             final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
             final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
-            final List<TableUpdate> splitUpdates) {
+            final List<TableUpdate> splitUpdates, final boolean checkTableOperations) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
         prepareSourcesForParallelPopulation(upstream);
 
-        final boolean checkTableOperations =
-                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
-                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
-        final AtomicInteger divisions = new AtomicInteger(splitUpdates.size());
-
-        long destinationOffset = 0;
-        for (TableUpdate splitUpdate : splitUpdates) {
-            final long fdest = destinationOffset;
-            jobScheduler.submit(
-                    executionContext,
-                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
-                            checkTableOperations, divisions, fdest),
-                    SelectColumnLayer.this, onError);
-            if (flattenedResult) {
+        final int numTasks = splitUpdates.size();
+        final long[] destinationOffsets = new long[numTasks];
+        if (flattenedResult) {
+            // Note that prepareSourcesForParallelPopulation asserts that upstream has no removes, modifies, or shifts
+            long destinationOffset = 0;
+            for (int ti = 0; ti < numTasks; ++ti) {
+                final TableUpdate splitUpdate = splitUpdates.get(ti);
+                Assert.assertion(splitUpdate.removed().isEmpty(), "splitUpdate.removed().isEmpty()");
+                Assert.assertion(splitUpdate.modified().isEmpty(), "splitUpdate.modified().isEmpty()");
+                Assert.assertion(splitUpdate.shifted().empty(), "splitUpdate.shifted().empty()");
+                destinationOffsets[ti] = destinationOffset;
                 destinationOffset += splitUpdate.added().size();
-                Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
-                Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
-                Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
             }
         }
+        jobScheduler.iterateParallel(
+                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, numTasks,
+                (ctx, ti, nec) -> doParallelApplyUpdate(
+                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti]),
+                () -> {
+                    if (!isRedirected) {
+                        clearObjectsAtThisLevel(toClear);
+                    }
+                    onCompletion.onLayerCompleted(getLayerIndex());
+                },
+                onError);
     }
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion) {
+            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
+            final boolean checkTableOperations) {
         doEnsureCapacity();
-        SystemicObjectTracker.executeSystemically(isSystemic,
-                () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
-
+        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        try {
+            SystemicObjectTracker.executeSystemically(isSystemic,
+                    () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
+        } finally {
+            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+        }
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
         onCompletion.onLayerCompleted(getLayerIndex());
     }
 
-    private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
-            final boolean checkTableOperations, final AtomicInteger divisions, final long startOffset) {
+    private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner, final boolean checkTableOperations, final long startOffset) {
         final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
@@ -248,13 +273,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
         }
         upstream.release();
-
-        if (divisions.decrementAndGet() == 0) {
-            if (!isRedirected) {
-                clearObjectsAtThisLevel(toClear);
-            }
-            onCompletion.onLayerCompleted(getLayerIndex());
-        }
     }
 
     private Boolean doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
@@ -269,9 +287,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
-        // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
-        // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
-        // data begins to flow; start-of-day is likely a bad time to find formula errors for our customers.
         final ChunkSource<Values> chunkSource = getChunkSource();
 
         final boolean needGetContext = upstream.added().isNonempty() || modifiesAffectUs;
@@ -282,13 +297,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final boolean isBackingChunkExposed =
                 ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(writableSource);
 
-        try (final ChunkSink.FillFromContext destContext =
-                needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
-                final ChunkSource.GetContext chunkSourceContext =
-                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null;
-                final ChunkSource.FillContext chunkSourceFillContext =
-                        needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize)
-                                : null) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final ChunkSink.FillFromContext destContext = needDestContext
+                        ? writableSource.makeFillFromContext(destContextSize)
+                        : null;
+                final ChunkSource.GetContext chunkSourceContext = needGetContext
+                        ? chunkSource.makeGetContext(chunkSourceContextSize)
+                        : null;
+                final ChunkSource.FillContext chunkSourceFillContext = needGetContext && isBackingChunkExposed
+                        ? chunkSource.makeFillContext(chunkSourceContextSize)
+                        : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
@@ -312,6 +330,29 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 }
             }
 
+            // apply modifies!
+            if (modifiesAffectUs) {
+                assert !flattenedResult;
+                assert chunkSourceContext != null;
+                final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
+                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
+                        final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
+                                ? upstream.getModifiedPreShift().getRowSequenceIterator()
+                                : null;
+                        final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
+                                ? columnSource.makeFillContext(PAGE_SIZE)
+                                : null) {
+                    while (keyIter.hasMore()) {
+                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                        final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
+                        writableSource.fillFromChunk(destContext, modifiedResults, keys);
+                        if (needToUnmanagePrevValues) {
+                            handleModifyManagement(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
+                        }
+                    }
+                }
+            }
+
             // apply adds!
             if (upstream.added().isNonempty()) {
                 assert destContext != null;
@@ -324,7 +365,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // fill as much as possible as quickly as possible
                         long destinationOffset = startOffset;
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                                final ResettableWritableChunk<?> backingChunk =
+                                final ResettableWritableChunk<Any> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final long destCapacity = exposedWritableSource
@@ -343,7 +384,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                                 .forRange(startOffset, startOffset + upstream.added().size() - 1)
                                                 .getRowSequenceIterator()
                                         : null;
-                                final ResettableWritableChunk<?> backingChunk =
+                                final ResettableWritableChunk<Any> backingChunk =
                                         writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
@@ -397,29 +438,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             writableSource.fillFromChunk(destContext,
                                     maybeManageAdds(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
                                     keys);
-                        }
-                    }
-                }
-            }
-
-            // apply modifies!
-            if (modifiesAffectUs) {
-                assert !flattenedResult;
-                assert chunkSourceContext != null;
-                final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
-                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
-                        final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
-                                ? upstream.getModifiedPreShift().getRowSequenceIterator()
-                                : null;
-                        final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
-                                ? columnSource.makeFillContext(PAGE_SIZE)
-                                : null) {
-                    while (keyIter.hasMore()) {
-                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                        final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
-                        writableSource.fillFromChunk(destContext, modifiedResults, keys);
-                        if (needToUnmanagePrevValues) {
-                            handleModifyManagement(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
                         }
                     }
                 }
@@ -517,7 +535,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         new ObjectChunkIterator<>(pvc), pvc.size(), Spliterator.ORDERED), false))
                 .filter(Objects::nonNull)
                 .filter(DynamicNode::notDynamicOrIsRefreshing));
-        prevValueChunksToUnmanage.forEach(SafeCloseable::closeSingle);
+        prevValueChunksToUnmanage.forEach(SafeCloseable::closeIfNonNull);
         prevValueChunksToUnmanage.clear();
     }
 
@@ -533,13 +551,29 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    void prepareSourcesForParallelPopulation(TableUpdate upstream) {
-        // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
-        // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
-        try (final WritableRowSet changedRows = upstream.added().union(upstream.getModifiedPreShift())) {
-            changedRows.insert(upstream.removed());
-            ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
-                    .prepareForParallelPopulation(changedRows);
+    void prepareSourcesForParallelPopulation(@NotNull final TableUpdate upstream) {
+        // We do not permit in-column parallelization with redirected results, so do not need to worry about how this
+        // interacts with the previous clearing of the RowRedirection that has occurred at the start of applyUpdate.
+        Assert.eqFalse(isRedirected, "isRedirected");
+
+        if (flattenedResult) {
+            // For flattened results the input table must be static; upstream is a "fake" update, and is not permitted
+            // to have removes, modifies, or shifts.
+            Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
+            Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+            Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+            try (final RowSequence flattenedChanges = RowSequenceFactory.forRange(0, upstream.added().size() - 1)) {
+                ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                        .prepareForParallelPopulation(flattenedChanges);
+            }
+        } else {
+            // Upstream is not permitted to have shifts for parallel update processing.
+            Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+            try (final WritableRowSet changedRows = upstream.added().union(upstream.modified())) {
+                changedRows.insert(upstream.removed());
+                ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                        .prepareForParallelPopulation(changedRows);
+            }
         }
     }
 
@@ -568,6 +602,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
+        return selectColumn.isStateless() && inner.allowCrossColumnParallelization();
     }
 }

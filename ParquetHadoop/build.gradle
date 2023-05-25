@@ -17,8 +17,10 @@ tasks.withType(License) {
 }
 
 dependencies {
-    api('org.apache.parquet:parquet-hadoop:1.12.3')
+    // TODO(deephaven-core#3148): LZ4_RAW parquet support
+    api('org.apache.parquet:parquet-hadoop:1.13.0')
 
+    // TODO(deephaven-core#806): Remove dependency on hadoop-common
     api('org.apache.hadoop:hadoop-common:3.3.3') {
         // do not take any dependencies of this project,
         // we just want a few classes (Configuration, Path) for
@@ -48,7 +50,7 @@ dependencies {
      * lz4-pure-java - note that we can't _easily_ use aircompressor here, as the service loader sees
      * the copy in hadoop-common. TODO use config instead of service loader
      */
-    runtimeOnly('com.fasterxml.woodstox:woodstox-core:6.3.1') {
+    runtimeOnly('com.fasterxml.woodstox:woodstox-core:6.4.0') {
         because 'hadoop-common required dependency for Configuration'
     }
     runtimeOnly('org.apache.hadoop.thirdparty:hadoop-shaded-guava:1.1.1') {

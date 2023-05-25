@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -17,7 +19,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
-public interface DoubleVector extends Vector<DoubleVector> {
+/**
+ * A {@link Vector} of primitive doubles.
+ */
+public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
 
     long serialVersionUID = -1373264425081841175L;
 
@@ -25,23 +30,65 @@ public interface DoubleVector extends Vector<DoubleVector> {
         return PrimitiveVectorType.of(DoubleVector.class, DoubleType.instance());
     }
 
-    double get(long i);
+    /**
+     * Get the element of this DoubleVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_DOUBLE null double}.
+     *
+     * @param index An offset into this DoubleVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_DOUBLE null double}
+     */
+    double get(long index);
 
     @Override
-    DoubleVector subVector(long fromIndex, long toIndex);
+    DoubleVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    DoubleVector subVectorByPositions(long [] positions);
+    DoubleVector subVectorByPositions(long[] positions);
 
     @Override
     double[] toArray();
 
     @Override
-    long size();
+    double[] copyToArray();
+
+    @Override
+    DoubleVector getDirect();
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default CloseablePrimitiveIteratorOfDouble iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfDouble() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public double nextDouble() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
+
+    @Override
+    @FinalDefault
+    default Class<?> getComponentType() {
         return double.class;
     }
 
@@ -51,12 +98,8 @@ public interface DoubleVector extends Vector<DoubleVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
-    @Override
-    DoubleVector getDirect();
-
     static String doubleValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveDoubleValToString((Double)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveDoubleValToString((Double) val);
     }
 
     static String primitiveDoubleValToString(final double val) {
@@ -66,21 +109,22 @@ public interface DoubleVector extends Vector<DoubleVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The DoubleVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The DoubleVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final DoubleVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final DoubleVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveDoubleValToString(array.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveDoubleValToString(array.get(ei)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveDoubleValToString(iterator.nextDouble()));
+            iterator.forEachRemaining(
+                    (final double value) -> builder.append(',').append(primitiveDoubleValToString(value)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,44 +135,55 @@ public interface DoubleVector extends Vector<DoubleVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a DoubleVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a DoubleVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final DoubleVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final DoubleVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof DoubleVector)) {
+        if (!(bObj instanceof DoubleVector)) {
             return false;
         }
-        final DoubleVector bArray = (DoubleVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final DoubleVector bVector = (DoubleVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (Double.doubleToLongBits(aArray.get(ei)) != Double.doubleToLongBits(bArray.get(ei))) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfDouble aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                // region ElementEquals
+                if (Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())) {
+                    return false;
+                }
+                // endregion ElementEquals
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(double[])}.
      *
-     * @param array The DoubleVector to hash
+     * @param vector The DoubleVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final DoubleVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final DoubleVector vector) {
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Double.hashCode(array.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Double.hashCode(iterator.nextDouble());
+            }
         }
         return result;
     }
@@ -138,7 +193,22 @@ public interface DoubleVector extends Vector<DoubleVector> {
      */
     abstract class Indirect implements DoubleVector {
 
-        private static final long serialVersionUID = 1L;
+        @Override
+        public double[] toArray() {
+            final int size = intSize("DoubleVector.toArray");
+            final double[] result = new double[size];
+            try (final CloseablePrimitiveIteratorOfDouble iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextDouble();
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public double[] copyToArray() {
+            return toArray();
+        }
 
         @Override
         public DoubleVector getDirect() {
@@ -162,7 +232,7 @@ public interface DoubleVector extends Vector<DoubleVector> {
         }
 
         protected final Object writeReplace() {
-            return new DoubleVectorDirect(toArray());
+            return getDirect();
         }
     }
 }

@@ -24,21 +24,6 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     ColumnName[] ZERO_LENGTH_COLUMNNAME_ARRAY = new ColumnName[0];
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Snapshot Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default TOPS snapshot(TABLE baseTable, String... stampColumns) {
-        return snapshot(baseTable, true, stampColumns);
-    }
-
-    @Override
-    default TOPS snapshot(TABLE baseTable, boolean doInitialSnapshot, Collection<ColumnName> stampColumns) {
-        return snapshot(baseTable, doInitialSnapshot,
-                stampColumns.stream().map(ColumnName::name).toArray(String[]::new));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Sort Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -63,7 +48,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     @ConcurrentMethod
     default TOPS where(String... filters) {
-        return where(Filter.from(filters));
+        return where(Filter.and(Filter.from(filters)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -94,25 +79,31 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     @ConcurrentMethod
-    default TOPS updateView(String... newColumns) {
-        return updateView(Selectable.from((newColumns)));
+    default TOPS updateView(String... columns) {
+        return updateView(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS update(String... newColumns) {
-        return update(Selectable.from((newColumns)));
+    default TOPS update(String... columns) {
+        return update(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS lazyUpdate(String... newColumns) {
-        return lazyUpdate(Selectable.from((newColumns)));
+    default TOPS lazyUpdate(String... colummns) {
+        return lazyUpdate(Selectable.from((colummns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+
+    @Override
+    default TOPS select() {
+        return select(Collections.emptyList());
+    }
 
     @Override
     default TOPS select(String... columns) {
@@ -149,6 +140,11 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default TOPS join(TABLE rightTable) {
+        return join(rightTable, Collections.emptyList(), Collections.emptyList());
+    }
 
     @Override
     default TOPS join(TABLE rightTable, String columnsToMatch) {
@@ -205,6 +201,29 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     default TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return raj(rightTable, columnsToMatch, columnsToAdd, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default TOPS rangeJoin(
+            final TABLE rightTable,
+            final Collection<String> columnsToMatch,
+            final Collection<? extends Aggregation> aggregations) {
+        if (columnsToMatch.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No match expressions found; must include at least a range match expression");
+        }
+        final Iterator<String> matchExpressions = columnsToMatch.iterator();
+        final int numExactMatches = columnsToMatch.size() - 1;
+        final Collection<JoinMatch> exactMatches = numExactMatches == 0
+                ? Collections.emptyList()
+                : new ArrayList<>(numExactMatches);
+        for (int emi = 0; emi < numExactMatches; ++emi) {
+            exactMatches.add(JoinMatch.parse(matchExpressions.next()));
+        }
+        final RangeJoinMatch rangeMatch = RangeJoinMatch.parse(matchExpressions.next());
+        return rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -313,45 +332,51 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends ColumnName> groupByColumns) {
-        return aggBy(aggregations, false, null, groupByColumns);
+        return aggBy(aggregations, AGG_BY_PRESERVE_EMPTY_DEFAULT, null, groupByColumns);
     }
 
     // -------------------------------------------------------------------------------------------
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByOperation operation) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation) {
+        return updateBy(control, Collections.singletonList(operation),
+                Collections.emptyList());
+    }
+
+    @Override
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByControl control, final Collection<? extends UpdateByOperation> operations) {
         return updateBy(control, operations, Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
     @Override
-    @ConcurrentMethod
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation, final String... byColumns) {
+        return updateBy(control, Collections.singletonList(operation),
+                ColumnName.from(byColumns));
+    }
+
+    @Override
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, ColumnName.from(byColumns));
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, byColumns);
@@ -363,12 +388,6 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS selectDistinct(String... columns) {
         return selectDistinct(Selectable.from(columns));
-    }
-
-    @Override
-    @ConcurrentMethod
-    default TOPS selectDistinct(Selectable... columns) {
-        return selectDistinct(Arrays.asList(columns));
     }
 
     // -------------------------------------------------------------------------------------------
@@ -707,6 +726,20 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS wavgBy(String weightColumn, Collection<String> groupByColumns) {
         return wavgBy(weightColumn, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    }
+
+    // -------------------------------------------------------------------------------------------
+
+    @Override
+    @ConcurrentMethod
+    default TOPS dropColumns(Collection<String> columnNames) {
+        return dropColumns(columnNames.toArray(new String[0]));
+    }
+
+    @Override
+    @ConcurrentMethod
+    default TOPS dropColumns(ColumnName... columnNames) {
+        return dropColumns(Arrays.stream(columnNames).map(ColumnName::name).toArray(String[]::new));
     }
 
     // -------------------------------------------------------------------------------------------

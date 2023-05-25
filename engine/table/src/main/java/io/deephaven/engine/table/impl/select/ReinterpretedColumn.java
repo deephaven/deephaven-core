@@ -3,24 +3,43 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
+import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
+import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
+import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsLocalDateColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsLocalTimeColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsZonedDateTimeColumnSource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.util.TableTimeConversions;
+import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
- * Allows us to support ColumnSource reinterpretation via view-type Table operations. Currently, this is only exposed in
- * V2 tables' support for dateTimeColumnAsNanos().
+ * Allows {@link ColumnSource} reinterpretation via view-type ({@link Table#view} and {@link Table#updateView})
+ * {@link Table} operations.
  *
  * TODO: If we come up with other valid, useful reinterpretations, it would be trivial to create a general purpose
  * syntax for use in view()/updateView() column expressions.
@@ -42,15 +61,33 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     private final String destName;
     @NotNull
     private final Class<D> destDataType;
-
+    private final Object[] reinterpParams;
     private ColumnSource<S> sourceColumnSource;
 
-    public ReinterpretedColumn(String sourceName, Class<S> sourceDataType, String destName, Class<D> destDataType) {
+    private ZoneId zone;
+
+    /**
+     * Create a {@link ReinterpretedColumn} that attempts to convert the source column into the destination type,
+     * optionally with parameters.
+     *
+     * @param sourceName the name of the Source column within the table
+     * @param sourceDataType the type of the source column
+     * @param destName the name of the desired destination column
+     * @param destDataType the type to try to convert to
+     * @param reinterpParams a varargs set of parameters for the arguments if required.
+     */
+    public ReinterpretedColumn(
+            @NotNull String sourceName,
+            @NotNull Class<S> sourceDataType,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            Object... reinterpParams) {
+        Assert.gtZero(destName.length(), "destName.length()");
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
-        Require.gtZero(destName.length(), "destName.length()");
+        this.reinterpParams = reinterpParams;
     }
 
     @Override
@@ -70,16 +107,53 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
         if (localSourceColumnSource == null) {
             throw new NoSuchColumnException(columnsOfInterest.keySet(), sourceName);
         }
+
         if (!localSourceColumnSource.getType().equals(sourceDataType)) {
             throw new IllegalArgumentException("Source column " + sourceName + " has wrong data type "
                     + localSourceColumnSource.getType() + ", expected " + sourceDataType);
         }
+
         if (!(localSourceColumnSource.allowsReinterpret(destDataType))) {
-            throw new IllegalArgumentException("Source column " + sourceName + " (Class="
-                    + localSourceColumnSource.getClass() + ") - cannot be reinterpreted as " + destDataType);
+            if (TableTimeConversions.requiresZone(destDataType)) {
+                if (reinterpParams == null || reinterpParams.length != 1 || !(reinterpParams[0] instanceof ZoneId)) {
+                    throw new IllegalArgumentException("Incorrect arguments for ZonedDateTime conversion");
+                }
+                zone = (ZoneId) reinterpParams[0];
+            } else {
+                zone = null;
+            }
+
+            final boolean isDestTypeTimeIsh = destDataType == ZonedDateTime.class ||
+                    destDataType == LocalDate.class ||
+                    destDataType == LocalTime.class ||
+                    destDataType == Instant.class ||
+                    destDataType == DateTime.class ||
+                    destDataType == long.class ||
+                    destDataType == Long.class;
+
+            if (localSourceColumnSource instanceof ConvertableTimeSource
+                    && ((ConvertableTimeSource) localSourceColumnSource).supportsTimeConversion()) {
+                if (!isDestTypeTimeIsh) {
+                    throw new IllegalArgumentException(
+                            "Source column " + sourceName + " (Class=" + localSourceColumnSource.getClass()
+                                    + ") - cannot be reinterpreted as " + destDataType);
+                }
+            } else if (sourceDataType == DateTime.class ||
+                    sourceDataType == Instant.class ||
+                    sourceDataType == ZonedDateTime.class ||
+                    sourceDataType == long.class || sourceDataType == Long.class) {
+                if (!isDestTypeTimeIsh) {
+                    throw new IllegalArgumentException(
+                            "Source column " + sourceName + " (Class=" + localSourceColumnSource.getClass()
+                                    + ") - cannot be reinterpreted as " + destDataType);
+                }
+            } else {
+                throw new IllegalArgumentException("Source column " + sourceName + " (Class="
+                        + localSourceColumnSource.getClass() + ") - cannot be reinterpreted as " + destDataType);
+            }
         }
-        // noinspection unchecked
-        sourceColumnSource = (ColumnSource<S>) columnsOfInterest.get(sourceName);
+
+        sourceColumnSource = localSourceColumnSource;
         return getColumns();
     }
 
@@ -115,12 +189,90 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<D> getDataView() {
-        final ColumnSource<D> result = sourceColumnSource.reinterpret(destDataType);
-        if (!result.getType().equals(destDataType)) {
-            throw new IllegalArgumentException("Reinterpreted column from " + sourceName + " has wrong data type "
-                    + result.getType() + ", expected " + destDataType);
+
+        final Function<ColumnSource<?>, ColumnSource<D>> checkResult = result -> {
+            if (!result.getType().equals(destDataType)) {
+                throw new IllegalArgumentException("Reinterpreted column from " + sourceName + " has wrong data type "
+                        + result.getType() + ", expected " + destDataType);
+            }
+            // noinspection unchecked
+            return (ColumnSource<D>) result;
+        };
+
+        if (sourceColumnSource.allowsReinterpret(destDataType)) {
+            return checkResult.apply(sourceColumnSource.reinterpret(destDataType));
         }
-        return result;
+
+        // The only other conversions we will do are various time permutations.
+        // If we can just reinterpret as time, great!
+        if (sourceColumnSource instanceof ConvertableTimeSource &&
+                ((ConvertableTimeSource) sourceColumnSource).supportsTimeConversion()) {
+            if (destDataType == ZonedDateTime.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toZonedDateTime(zone));
+            } else if (destDataType == LocalDate.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toLocalDate(zone));
+            } else if (destDataType == LocalTime.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toLocalTime(zone));
+            } else if (destDataType == Instant.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toInstant());
+            } else if (destDataType == DateTime.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toDateTime());
+            } else if (destDataType == long.class || destDataType == Long.class) {
+                return checkResult.apply(((ConvertableTimeSource) sourceColumnSource).toEpochNano());
+            }
+        }
+
+        if (sourceDataType == ZonedDateTime.class &&
+                (destDataType == LocalDate.class || destDataType == LocalTime.class)) {
+            // We can short circuit some ZDT conversions to try to be less wasteful
+            if (destDataType == LocalDate.class) {
+                return checkResult.apply(new LocalDateWrapperSource(
+                        (ColumnSource<ZonedDateTime>) sourceColumnSource, zone));
+            } else {
+                return checkResult.apply(new LocalTimeWrapperSource(
+                        (ColumnSource<ZonedDateTime>) sourceColumnSource, zone));
+            }
+        }
+
+        // If we just want to go from X to long, this is fairly straightforward. Note that we skip LocalDate and
+        // LocalTime these are not linked to nanos of epoch in any way. You could argue that LocalDate is, but then
+        // we have to create even more garbage objects just to get the "time at midnight". Users should just do that
+        // directly.
+        final ColumnSource<Long> intermediate;
+        if (sourceDataType == DateTime.class) {
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) sourceColumnSource);
+        } else if (sourceDataType == Instant.class) {
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) sourceColumnSource);
+        } else if (sourceDataType == ZonedDateTime.class) {
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) sourceColumnSource);
+        } else if (sourceDataType == long.class || sourceDataType == Long.class) {
+            // noinspection unchecked
+            intermediate = (ColumnSource<Long>) sourceColumnSource;
+        } else {
+            throw new IllegalArgumentException("Source column " + sourceName + " (Class="
+                    + sourceColumnSource.getClass() + ") - cannot be reinterpreted as " + destDataType);
+        }
+
+        // Otherwise we'll have to go from long back to a wrapped typed source.
+        if (destDataType == Long.class || destDataType == long.class) {
+            return checkResult.apply(intermediate);
+        } else if (destDataType == DateTime.class) {
+            return checkResult.apply(new LongAsDateTimeColumnSource(intermediate));
+        } else if (destDataType == ZonedDateTime.class) {
+            return checkResult.apply(new LongAsZonedDateTimeColumnSource(intermediate, zone));
+        } else if (destDataType == Instant.class) {
+            return checkResult.apply(new LongAsInstantColumnSource(intermediate));
+        } else if (destDataType == LocalDate.class) {
+            return checkResult.apply(new LongAsLocalDateColumnSource(intermediate, zone));
+        } else if (destDataType == LocalTime.class) {
+            return checkResult.apply(new LongAsLocalTimeColumnSource(intermediate, zone));
+        }
+
+        throw new IllegalArgumentException("Source column " + sourceName + " (Class=" + sourceColumnSource.getClass()
+                + ") - cannot be reinterpreted as " + destDataType);
     }
 
     @NotNull
@@ -141,7 +293,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
     @Override
     public WritableColumnSource<?> newDestInstance(long size) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("ReinterpretedColumn should only be used with updateView() clauses.");
     }
 
     @Override
@@ -173,12 +325,8 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
         result = 31 * result + sourceDataType.hashCode();
         result = 31 * result + destName.hashCode();
         result = 31 * result + destDataType.hashCode();
+        result = 31 * result + Arrays.hashCode(reinterpParams);
         return result;
-    }
-
-    @Override
-    public boolean disallowRefresh() {
-        return false;
     }
 
     @Override
@@ -188,6 +336,6 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
     @Override
     public ReinterpretedColumn<S, D> copy() {
-        return new ReinterpretedColumn<>(sourceName, sourceDataType, destName, destDataType);
+        return new ReinterpretedColumn<>(sourceName, sourceDataType, destName, destDataType, reinterpParams);
     }
 }

@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
@@ -19,7 +19,7 @@ public class LongPercentileTypeMedianHelper extends LongPercentileTypeHelper {
     private final double percentile;
     private final DoubleArraySource resultColumn;
 
-    LongPercentileTypeMedianHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    LongPercentileTypeMedianHelper(double percentile, WritableColumnSource resultColumn) {
         super(percentile, null);
         this.percentile = percentile;
         // region resultColumn

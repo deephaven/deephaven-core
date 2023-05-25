@@ -3,8 +3,7 @@
  */
 package io.deephaven.server.util;
 
-import com.google.common.collect.Ordering;
-import com.google.common.collect.TreeMultimap;
+import io.deephaven.base.Pair;
 import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -12,17 +11,17 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class TestControlledScheduler extends ClockNanoBase implements Scheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestControlledScheduler.class);
 
-    private long currentTimeInNs = 0;
+    private volatile long currentTimeInNs = 0;
 
-    private final TreeMultimap<DateTime, Runnable> workQueue =
-            TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
+    private final Queue<Pair<DateTime, Runnable>> workQueue =
+            new PriorityBlockingQueue<>(11, Comparator.comparing(Pair::getFirst));
 
     @Override
     public boolean inTestMode() {
@@ -32,19 +31,15 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
     /**
      * Runs the first queued command if there are any.
      */
-    public void runOne() {
-        if (workQueue.isEmpty()) {
+    public synchronized void runOne() {
+        final Pair<DateTime, Runnable> item = workQueue.poll();
+        if (item == null) {
             return;
         }
 
+        currentTimeInNs = Math.max(currentTimeInNs, item.getFirst().getNanos());
         try {
-            final Map.Entry<DateTime, Collection<Runnable>> entry = workQueue.asMap().firstEntry();
-            final Runnable runner = entry.getValue().iterator().next();
-
-            currentTimeInNs = Math.max(currentTimeInNs, entry.getKey().getNanos());
-            workQueue.remove(entry.getKey(), runner);
-
-            runner.run();
+            item.getSecond().run();
         } catch (final Exception exception) {
             log.error().append("Exception while running task: ").append(exception).endl();
             throw exception;
@@ -57,10 +52,11 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      *
      * @param untilTime time to run until
      */
-    public void runUntil(final DateTime untilTime) {
-        while (!workQueue.isEmpty()) {
+    public synchronized void runUntil(final DateTime untilTime) {
+        Pair<DateTime, Runnable> item;
+        while ((item = workQueue.peek()) != null) {
             final long now = Math.max(currentTimeInNs, untilTime.getNanos());
-            if (workQueue.asMap().firstEntry().getKey().getNanos() >= now) {
+            if (item.getFirst().getNanos() >= now) {
                 break;
             }
 
@@ -80,10 +76,11 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      *
      * @param throughTimeNanos time to run through
      */
-    public void runThroughNanos(final long throughTimeNanos) {
-        while (!workQueue.isEmpty()) {
+    public synchronized void runThroughNanos(final long throughTimeNanos) {
+        Pair<DateTime, Runnable> item;
+        while ((item = workQueue.peek()) != null) {
             final long now = Math.max(currentTimeInNs, throughTimeNanos);
-            if (workQueue.asMap().firstEntry().getKey().getNanos() > now) {
+            if (item.getFirst().getNanos() > now) {
                 break;
             }
 
@@ -96,7 +93,7 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
     /**
      * Will run commands until all work items have been run.
      */
-    public void runUntilQueueEmpty() {
+    public synchronized void runUntilQueueEmpty() {
         while (!workQueue.isEmpty()) {
             runOne();
         }
@@ -119,22 +116,21 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
 
     @Override
     public void runAtTime(long epochMillis, @NotNull Runnable command) {
-        workQueue.put(DateTimeUtils.millisToTime(epochMillis), command);
+        workQueue.add(new Pair<>(DateTimeUtils.millisToTime(epochMillis), command));
     }
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        workQueue.put(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
+        workQueue.add(new Pair<>(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command));
     }
 
     @Override
     public void runImmediately(final @NotNull Runnable command) {
-        workQueue.put(DateTime.of(this), command);
+        workQueue.add(new Pair<>(DateTime.of(this), command));
     }
 
     @Override
     public void runSerially(@NotNull Runnable command) {
-        // we aren't multi-threaded anyways
         runImmediately(command);
     }
 }

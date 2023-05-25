@@ -41,7 +41,7 @@ class PartitionedTableServiceServicer(object):
 
     def PartitionBy(self, request, context):
         """
-        Transforms a table into a partitioned table, consisting of many separate table, each individually
+        Transforms a table into a partitioned table, consisting of many separate tables, each individually
         addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

@@ -4,9 +4,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
@@ -17,7 +18,7 @@ import java.util.*;
 
 /**
  * Indices for memoized operations on QueryTable.
- *
+ * <p>
  * When a null key is returned from one of the static methods; the operation will not be memoized (e.g., if we might
  * depend on the query scope; we can't memoize the operation).
  */
@@ -95,8 +96,8 @@ public abstract class MemoizedOperationKey {
         return Reverse.REVERSE_INSTANCE;
     }
 
-    public static MemoizedOperationKey treeTable(String idColumn, String parentColumn) {
-        return new TreeTable(idColumn, parentColumn);
+    public static MemoizedOperationKey tree(String idColumn, String parentColumn) {
+        return new Tree(idColumn, parentColumn);
     }
 
     public static MemoizedOperationKey aggBy(
@@ -155,13 +156,15 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
+            }
 
-            final SelectUpdateViewOrUpdateView selectOrView = (SelectUpdateViewOrUpdateView) o;
+            final SelectUpdateViewOrUpdateView selectOrView = (SelectUpdateViewOrUpdateView) other;
 
             return flavor == selectOrView.flavor && Arrays.equals(selectColumns, selectOrView.selectColumns);
         }
@@ -199,13 +202,15 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
+            }
 
-            final DropColumns dropColumns = (DropColumns) o;
+            final DropColumns dropColumns = (DropColumns) other;
 
             return Arrays.equals(columns, dropColumns.columns);
         }
@@ -229,13 +234,15 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
+            }
 
-            final Sort sort = (Sort) o;
+            final Sort sort = (Sort) other;
 
             return Arrays.equals(sortPairs, sort.sortPairs);
         }
@@ -264,8 +271,8 @@ public abstract class MemoizedOperationKey {
         static final Reverse REVERSE_INSTANCE = new Reverse();
 
         @Override
-        public boolean equals(Object o) {
-            return o != null && o.getClass() == getClass();
+        public boolean equals(final Object other) {
+            return other != null && getClass() == other.getClass();
         }
 
         @Override
@@ -287,12 +294,14 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
-            final Filter filter = (Filter) o;
+            }
+            final Filter filter = (Filter) other;
             return Arrays.equals(filters, filter.filters);
         }
 
@@ -308,30 +317,42 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class TreeTable extends MemoizedOperationKey {
+    private static class Tree extends MemoizedOperationKey {
         private final String idColumn;
         private final String parentColumn;
 
 
-        private TreeTable(String idColumn, String parentColumn) {
+        private Tree(String idColumn, String parentColumn) {
             this.idColumn = idColumn;
             this.parentColumn = parentColumn;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
-            final TreeTable treeTable = (TreeTable) o;
-            return Objects.equals(idColumn, treeTable.idColumn) &&
-                    Objects.equals(parentColumn, treeTable.parentColumn);
+            }
+            final Tree tree = (Tree) other;
+            return Objects.equals(idColumn, tree.idColumn) &&
+                    Objects.equals(parentColumn, tree.parentColumn);
         }
 
         @Override
         public int hashCode() {
             return Objects.hash(idColumn, parentColumn);
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.Tree;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation getParentCopyType() {
+            return BaseTable.CopyAttributeOperation.TreeCopy;
         }
     }
 
@@ -362,14 +383,14 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (other == null || getClass() != other.getClass()) {
                 return false;
             }
-            AggBy aggBy = (AggBy) o;
+            AggBy aggBy = (AggBy) other;
             return aggregations.equals(aggBy.aggregations)
                     && preserveEmpty == aggBy.preserveEmpty
                     && equalWeakRefsByReferentIdentity(initialGroups, aggBy.initialGroups)
@@ -398,14 +419,14 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (other == null || getClass() != other.getClass()) {
                 return false;
             }
-            PartitionBy that = (PartitionBy) o;
+            PartitionBy that = (PartitionBy) other;
             return dropKeys == that.dropKeys && groupByColumns.equals(that.groupByColumns);
         }
 
@@ -433,14 +454,14 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (other == null || getClass() != other.getClass()) {
                 return false;
             }
-            final Rollup rollup = (Rollup) o;
+            final Rollup rollup = (Rollup) other;
             return includeConstituents == rollup.includeConstituents && Objects.equals(aggBy, rollup.aggBy);
         }
 
@@ -455,17 +476,17 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static MemoizedOperationKey symbolTable(@NotNull final SymbolTableSource symbolTableSource,
+    public static MemoizedOperationKey symbolTable(@NotNull final SymbolTableSource<?> symbolTableSource,
             final boolean useLookupCaching) {
         return new SymbolTable(symbolTableSource, useLookupCaching);
     }
 
     private static final class SymbolTable extends MemoizedOperationKey {
 
-        private final SymbolTableSource symbolTableSource;
+        private final SymbolTableSource<?> symbolTableSource;
         private final boolean useLookupCaching;
 
-        private SymbolTable(@NotNull final SymbolTableSource symbolTableSource, final boolean useLookupCaching) {
+        private SymbolTable(@NotNull final SymbolTableSource<?> symbolTableSource, final boolean useLookupCaching) {
             this.symbolTableSource = symbolTableSource;
             this.useLookupCaching = useLookupCaching;
         }
@@ -497,12 +518,14 @@ public abstract class MemoizedOperationKey {
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (obj == null || getClass() != obj.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
-            final WouldMatch wouldMatch = (WouldMatch) obj;
+            }
+            final WouldMatch wouldMatch = (WouldMatch) other;
             return Arrays.equals(pairs, wouldMatch.pairs);
         }
 
@@ -522,35 +545,37 @@ public abstract class MemoizedOperationKey {
     }
 
     private static class CrossJoin extends AttributeAgnosticMemoizedOperationKey {
-        private final WeakReference<Table> rightTableCandidate;
+        private final WeakReference<Table> rightTableReference;
         private final MatchPair[] columnsToMatch;
         private final MatchPair[] columnsToAdd;
         private final int numRightBitsToReserve;
         private final int cachedHashCode;
 
-        CrossJoin(final Table rightTableCandidate, final MatchPair[] columnsToMatch,
+        CrossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
                 final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
-            this.rightTableCandidate = new WeakReference<>(rightTableCandidate);
+            this.rightTableReference = new WeakReference<>(rightTable);
             this.columnsToMatch = columnsToMatch;
             this.columnsToAdd = columnsToAdd;
             this.numRightBitsToReserve = numRightBitsToReserve;
 
             // precompute hash as right table may disappear
             int hash = Integer.hashCode(numRightBitsToReserve);
-            hash = 31 * hash + System.identityHashCode(rightTableCandidate);
+            hash = 31 * hash + System.identityHashCode(rightTable);
             hash = 31 * hash + Arrays.hashCode(columnsToMatch);
             hash = 31 * hash + Arrays.hashCode(columnsToAdd);
             this.cachedHashCode = hash;
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o)
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
-            if (o == null || getClass() != o.getClass())
+            }
+            if (other == null || getClass() != other.getClass()) {
                 return false;
-            final CrossJoin crossJoin = (CrossJoin) o;
-            return equalWeakRefsByReferentIdentity(rightTableCandidate, crossJoin.rightTableCandidate) &&
+            }
+            final CrossJoin crossJoin = (CrossJoin) other;
+            return equalWeakRefsByReferentIdentity(rightTableReference, crossJoin.rightTableReference) &&
                     numRightBitsToReserve == crossJoin.numRightBitsToReserve &&
                     Arrays.equals(columnsToMatch, crossJoin.columnsToMatch) &&
                     Arrays.equals(columnsToAdd, crossJoin.columnsToAdd);
@@ -567,12 +592,73 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    public static CrossJoin crossJoin(final Table rightTableCandidate, final MatchPair[] columnsToMatch,
+    public static CrossJoin crossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
             final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
-        return new CrossJoin(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+        return new CrossJoin(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 
-    private static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
+    private static class RangeJoin extends AttributeAgnosticMemoizedOperationKey {
+
+        private final WeakReference<Table> rightTableReference;
+        private final JoinMatch[] exactMatches;
+        private final RangeJoinMatch rangeMatch;
+        private final Aggregation[] aggregations;
+
+        private final int cachedHashCode;
+
+        private RangeJoin(
+                @NotNull final Table rightTable,
+                @NotNull final Collection<? extends JoinMatch> exactMatches,
+                @NotNull final RangeJoinMatch rangeMatch,
+                @NotNull final Collection<? extends Aggregation> aggregations) {
+            this.rightTableReference = new WeakReference<>(rightTable);
+            this.exactMatches = exactMatches.toArray(JoinMatch[]::new);
+            this.rangeMatch = rangeMatch;
+            this.aggregations = aggregations.toArray(Aggregation[]::new);
+
+            // precompute hash as right table may disappear
+            int hash = System.identityHashCode(rightTable);
+            hash = 31 * hash + Arrays.hashCode(this.exactMatches);
+            hash = 31 * hash + rangeMatch.hashCode();
+            hash = 31 * hash + Arrays.hashCode(this.aggregations);
+            this.cachedHashCode = hash;
+        }
+
+        @Override
+        public boolean equals(final Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (other == null || getClass() != other.getClass()) {
+                return false;
+            }
+            final RangeJoin otherRangeJoin = (RangeJoin) other;
+            return equalWeakRefsByReferentIdentity(rightTableReference, otherRangeJoin.rightTableReference) &&
+                    Arrays.equals(exactMatches, otherRangeJoin.exactMatches) &&
+                    rangeMatch.equals(otherRangeJoin.rangeMatch) &&
+                    Arrays.equals(aggregations, otherRangeJoin.aggregations);
+        }
+
+        @Override
+        public int hashCode() {
+            return cachedHashCode;
+        }
+
+        @Override
+        BaseTable.CopyAttributeOperation copyType() {
+            return BaseTable.CopyAttributeOperation.None;
+        }
+    }
+
+    public static RangeJoin rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> exactMatches,
+            @NotNull final RangeJoinMatch rangeMatch,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        return new RangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
+    }
+
+    protected static boolean equalWeakRefsByReferentIdentity(final WeakReference<?> r1, final WeakReference<?> r2) {
         if (r1 == r2) {
             return true;
         }

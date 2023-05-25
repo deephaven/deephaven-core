@@ -11,7 +11,8 @@
 #include "arrow/status.h"
 #include "arrow/pretty_print.h"
 #include "deephaven/client/client.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/client/flight.h"
+#include "deephaven/client/utility/arrow_util.h"
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::Client;
@@ -23,17 +24,21 @@ arrow::Status doit(const TableHandleManager &manager, const std::string &csvfn);
 }  // namespace
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " filename" << std::endl;
+  const char *server = "localhost:10000";
+  if (argc != 2 && argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " [host:port] filename" << std::endl;
     std::exit(1);
   }
-
-  const char *server = "localhost:10000";
+  int c = 1;
+  if (argc == 3) {
+    server = argv[c++];
+  }
+  const char *filename = argv[c++];
 
   try {
     auto client = Client::connect(server);
     auto manager = client.getManager();
-    auto st = doit(manager, argv[1]);
+    auto st = doit(manager, filename);
     if (!st.ok()) {
       std::cerr << "Failed with status " << st << std::endl;
     }

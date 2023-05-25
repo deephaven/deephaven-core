@@ -3,127 +3,115 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-public final class IntColumnSourceWritableRowRedirection implements WritableRowRedirection {
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-    private final WritableColumnSource<Integer> columnSource;
+/**
+ * {@link WritableRowRedirection} implementation that wraps a {@link WritableColumnSource} of {@code ints}.
+ */
+public final class IntColumnSourceWritableRowRedirection
+        extends IntColumnSourceRowRedirection<WritableColumnSource<Integer>>
+        implements WritableRowRedirection {
 
-    public IntColumnSourceWritableRowRedirection(WritableColumnSource<Integer> columnSource) {
-        this.columnSource = columnSource;
+    public IntColumnSourceWritableRowRedirection(@NotNull final WritableColumnSource<Integer> columnSource) {
+        super(columnSource);
+    }
+
+    private static int longToIntRowKey(final long innerRowKey) {
+        return innerRowKey == NULL_LONG ? NULL_INT : Math.toIntExact(innerRowKey);
     }
 
     @Override
-    public final long put(long outerRowKey, long innerRowKey) {
+    public long put(final long outerRowKey, final long innerRowKey) {
         final int previous = columnSource.getInt(outerRowKey);
 
-        columnSource.set(outerRowKey, (int) innerRowKey);
+        columnSource.set(outerRowKey, longToIntRowKey(innerRowKey));
 
-        return previous == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : previous;
+        return previous == NULL_INT ? NULL_ROW_KEY : previous;
     }
 
     @Override
-    public final void putVoid(long outerRowKey, long innerRowKey) {
-        columnSource.set(outerRowKey, (int) innerRowKey);
+    public void putVoid(final long outerRowKey, final long innerRowKey) {
+        columnSource.set(outerRowKey, longToIntRowKey(innerRowKey));
     }
 
     @Override
-    public final long get(long outerRowKey) {
-        final int innerIndex = columnSource.getInt(outerRowKey);
-        if (innerIndex == QueryConstants.NULL_INT) {
-            return RowSequence.NULL_ROW_KEY;
-        }
-        return innerIndex;
-    }
-
-    @Override
-    public final long getPrev(long outerRowKey) {
-        final int innerIndex = columnSource.getPrevInt(outerRowKey);
-        if (innerIndex == QueryConstants.NULL_INT) {
-            return RowSequence.NULL_ROW_KEY;
-        }
-        return innerIndex;
-    }
-
-    private static final class FillContext implements ChunkSource.FillContext {
-
-        private final ColumnSource.FillContext colSrcCtx;
-        private final WritableIntChunk<Values> intChunk;
-
-        private FillContext(final IntColumnSourceWritableRowRedirection csrc, final int chunkSize) {
-            colSrcCtx = csrc.columnSource.makeFillContext(chunkSize);
-            intChunk = WritableIntChunk.makeWritableChunk(chunkSize);
-        }
-
-        @Override
-        public final void close() {
-            colSrcCtx.close();
-            intChunk.close();
-        }
-    }
-
-    @Override
-    public final ChunkSource.FillContext makeFillContext(final int chunkSize, final SharedContext sharedContext) {
-        return new FillContext(this, chunkSize);
-    }
-
-    @Override
-    public final void fillChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
-            @NotNull final RowSequence outerRowKeys) {
-        final FillContext effectiveContext = (FillContext) fillContext;
-        columnSource.fillChunk(effectiveContext.colSrcCtx, effectiveContext.intChunk, outerRowKeys);
-        final int sz = outerRowKeys.intSize();
-        for (int ii = 0; ii < sz; ++ii) {
-            final int innerIndex = effectiveContext.intChunk.get(ii);
-            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : innerIndex);
-        }
-        innerRowKeys.setSize(sz);
-    }
-
-    @Override
-    public final void fillPrevChunk(
-            @NotNull final ChunkSource.FillContext fillContext,
-            @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
-            @NotNull final RowSequence outerRowKeys) {
-        final FillContext effectiveContext = (FillContext) fillContext;
-        columnSource.fillPrevChunk(effectiveContext.colSrcCtx, effectiveContext.intChunk, outerRowKeys);
-        final int sz = outerRowKeys.intSize();
-        for (int ii = 0; ii < sz; ++ii) {
-            final int innerIndex = effectiveContext.intChunk.get(ii);
-            innerRowKeys.set(ii, innerIndex == QueryConstants.NULL_INT ? RowSequence.NULL_ROW_KEY : innerIndex);
-        }
-        innerRowKeys.setSize(sz);
-    }
-
-    @Override
-    public final long remove(long outerRowKey) {
+    public long remove(final long outerRowKey) {
         final int previous = columnSource.getInt(outerRowKey);
-        if (previous == QueryConstants.NULL_INT) {
-            return RowSequence.NULL_ROW_KEY;
+        if (previous == NULL_INT) {
+            return NULL_ROW_KEY;
         }
-        columnSource.set(outerRowKey, QueryConstants.NULL_INT);
+        columnSource.setNull(outerRowKey);
         return previous;
     }
 
     @Override
-    public final void removeVoid(long outerRowKey) {
-        columnSource.set(outerRowKey, QueryConstants.NULL_INT);
+    public void removeVoid(final long outerRowKey) {
+        columnSource.setNull(outerRowKey);
     }
 
     @Override
-    public final void startTrackingPrevValues() {
+    public void removeAll(final RowSequence rowSequence) {
+        columnSource.setNull(rowSequence);
+    }
+
+    @Override
+    public void removeAllUnordered(@NotNull final LongChunk<RowKeys> outerRowKeys) {
+        final int size = outerRowKeys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            columnSource.setNull(outerRowKeys.get(ii));
+        }
+    }
+
+    @Override
+    public ChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
+        return new FillFromContext(columnSource, chunkCapacity);
+    }
+
+    @Override
+    public void fillFromChunk(
+            @NotNull final ChunkSink.FillFromContext context,
+            @NotNull final Chunk<? extends RowKeys> innerRowKeys,
+            @NotNull final RowSequence outerRowKeys) {
+        final FillFromContext ffc = (FillFromContext) context;
+        final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
+        final int size = innerRowKeys.size();
+        for (int ii = 0; ii < size; ++ii) {
+            ffc.intInnerRowKeys.set(ii, longToIntRowKey(innerRowKeysTyped.get(ii)));
+        }
+        ffc.intInnerRowKeys.setSize(size);
+        columnSource.fillFromChunk(context, ffc.intInnerRowKeys, outerRowKeys);
+    }
+
+    private static final class FillFromContext implements ChunkSink.FillFromContext {
+
+        private final ChunkSink.FillFromContext innerFillFromContext;
+        private final WritableIntChunk<? extends RowKeys> intInnerRowKeys;
+
+        private FillFromContext(@NotNull final WritableColumnSource<Integer> columnSource, final int chunkCapacity) {
+            innerFillFromContext = columnSource.makeFillFromContext(chunkCapacity);
+            intInnerRowKeys = WritableIntChunk.makeWritableChunk(chunkCapacity);
+        }
+
+        @Override
+        public void close() {
+            SafeCloseable.closeAll(innerFillFromContext, intInnerRowKeys);
+        }
+    }
+
+    @Override
+    public void startTrackingPrevValues() {
         columnSource.startTrackingPrevValues();
     }
 }

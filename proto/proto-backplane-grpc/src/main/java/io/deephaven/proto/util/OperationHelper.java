@@ -64,16 +64,24 @@ public class OperationHelper {
                 return Stream.of(op.getAsOfJoin().getLeftId(), op.getAsOfJoin().getRightId());
             case COMBO_AGGREGATE:
                 return Stream.of(op.getComboAggregate().getSourceId());
+            case AGGREGATE_ALL:
+                return Stream.of(op.getAggregateAll().getSourceId());
+            case AGGREGATE:
+                return op.getAggregate().hasInitialGroupsId()
+                        ? Stream.of(op.getAggregate().getSourceId(), op.getAggregate().getInitialGroupsId())
+                        : Stream.of(op.getAggregate().getSourceId());
             case SNAPSHOT:
-                return Stream.of(op.getSnapshot().getLeftId(), op.getSnapshot().getRightId());
+                return Stream.of(op.getSnapshot().getSourceId());
+            case SNAPSHOT_WHEN:
+                return Stream.of(op.getSnapshotWhen().getBaseId(), op.getSnapshotWhen().getTriggerId());
             case FLATTEN:
                 return Stream.of(op.getFlatten().getSourceId());
+            case META_TABLE:
+                return Stream.of(op.getMetaTable().getSourceId());
             case RUN_CHART_DOWNSAMPLE:
                 return Stream.of(op.getRunChartDownsample().getSourceId());
             case FETCH_TABLE:
                 return Stream.of(op.getFetchTable().getSourceId());
-            case FETCH_PANDAS_TABLE:
-                return Stream.of(op.getFetchPandasTable().getSourceId());
             case APPLY_PREVIEW_COLUMNS:
                 return Stream.of(op.getApplyPreviewColumns().getSourceId());
             case CREATE_INPUT_TABLE:
@@ -84,6 +92,8 @@ public class OperationHelper {
                 return Stream.of(op.getUpdateBy().getSourceId());
             case WHERE_IN:
                 return Stream.of(op.getWhereIn().getLeftId(), op.getWhereIn().getRightId());
+            case RANGE_JOIN:
+                return Stream.of(op.getRangeJoin().getLeftId(), op.getRangeJoin().getRightId());
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

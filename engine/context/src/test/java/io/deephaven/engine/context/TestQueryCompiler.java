@@ -55,7 +55,7 @@ public class TestQueryCompiler {
 
     @Before
     public void setUp() {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @After

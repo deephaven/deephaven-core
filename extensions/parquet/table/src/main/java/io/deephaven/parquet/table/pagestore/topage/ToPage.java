@@ -31,7 +31,6 @@ public interface ToPage<ATTR extends Any, RESULT> {
 
     /**
      * @return The native type for the elements of engine arrays produced by this object.
-     * @apiNote
      */
     @NotNull
     default Class<?> getNativeComponentType() {
@@ -69,7 +68,7 @@ public interface ToPage<ATTR extends Any, RESULT> {
     /**
      * @return the method to create a Vector from RESULT.
      */
-    default Vector makeVector(RESULT result) {
+    default Vector<?> makeVector(RESULT result) {
         return VectorFactory.forElementType(getNativeType()).vectorWrap(result);
     }
 

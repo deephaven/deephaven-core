@@ -5,12 +5,13 @@ package io.deephaven.base;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 /**
  * A trivial circular buffer, like java.util.concurrent.ArrayBlockingQueue but without all the synchronization and
  * collection cruft.
  */
-public class RingBuffer<E> {
+public class RingBuffer<E> implements Iterable<E> {
     private Object[] storage;
     private int indexMask;
     private int head, tail;
@@ -108,6 +109,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
+        // noinspection unchecked
         E e = (E) storage[head];
         storage[head] = null;
         head = (head + 1) & indexMask;
@@ -118,6 +120,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             return null;
         }
+        // noinspection unchecked
         E e = (E) storage[head];
         storage[head] = null;
         head = (head + 1) & indexMask;
@@ -128,6 +131,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
+        // noinspection unchecked
         return (E) storage[head];
     }
 
@@ -135,6 +139,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             return null;
         }
+        // noinspection unchecked
         return (E) storage[head];
     }
 
@@ -142,6 +147,7 @@ public class RingBuffer<E> {
         if (offset >= size()) {
             return null;
         }
+        // noinspection unchecked
         return (E) storage[(head + offset) & indexMask];
     }
 
@@ -154,6 +160,7 @@ public class RingBuffer<E> {
         if (offset >= size()) {
             throw new NoSuchElementException();
         }
+        // noinspection unchecked
         return (E) storage[(head + offset) & indexMask];
     }
 
@@ -162,6 +169,7 @@ public class RingBuffer<E> {
             throw new NoSuchElementException();
         }
         final int index = (head + offset) & indexMask;
+        // noinspection unchecked
         final E removed = (E) storage[index];
         tail = (tail - 1) & indexMask;
         if (index != tail) {
@@ -174,6 +182,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
+        // noinspection unchecked
         return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail - 1]);
     }
 
@@ -181,6 +190,7 @@ public class RingBuffer<E> {
         if (isEmpty()) {
             return null;
         }
+        // noinspection unchecked
         return (E) (tail == 0 ? storage[storage.length - 1] : storage[tail - 1]);
     }
 
@@ -188,14 +198,25 @@ public class RingBuffer<E> {
         if (offset >= size()) {
             return null;
         }
+        // noinspection unchecked
         return (E) storage[(tail - 1 - offset) & indexMask];
     }
 
+    @Override
     public Iterator iterator() {
         return new Iterator();
     }
 
-    public class Iterator {
+    @Override
+    public void forEach(Consumer<? super E> action) {
+        final int L = size();
+        for (int i = 0; i < L; ++i) {
+            // noinspection unchecked
+            action.accept((E) storage[(head + i) & indexMask]);
+        }
+    }
+
+    public class Iterator implements java.util.Iterator<E> {
         int count = -1;
 
         public boolean hasNext() {
@@ -204,6 +225,7 @@ public class RingBuffer<E> {
 
         public E next() {
             count++;
+            // noinspection unchecked
             return (E) storage[(head + count) & indexMask];
         }
 

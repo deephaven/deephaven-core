@@ -87,7 +87,7 @@ public class JoinControl {
         return getRedirectionType(leftTable, 4.0, true);
     }
 
-    static RedirectionType getRedirectionType(final @NotNull Table table, final double maximumOverhead,
+    public static RedirectionType getRedirectionType(final @NotNull Table table, final double maximumOverhead,
             final boolean allowSparseRedirection) {
         if (table.isFlat() && table.size() < Integer.MAX_VALUE) {
             if (table.isRefreshing()) {

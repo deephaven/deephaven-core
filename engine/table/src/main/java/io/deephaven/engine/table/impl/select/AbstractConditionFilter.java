@@ -3,14 +3,17 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.Pair;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
@@ -50,7 +53,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     boolean usesII;
     boolean usesK;
     private final boolean unboxArguments;
-
+    private Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
 
     protected AbstractConditionFilter(@NotNull String formula, boolean unboxArguments) {
         this.formula = formula;
@@ -150,6 +153,28 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                             ExecutionContext.getContext().getQueryLibrary().getClassImports(),
                             ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
                             possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
+            formulaShiftColPair = result.getFormulaShiftColPair();
+            if (formulaShiftColPair != null) {
+                log.debug("Formula (after shift conversion) : " + formulaShiftColPair.getFirst());
+
+                // apply renames to shift column pairs immediately
+                if (!outerToInnerNames.isEmpty()) {
+                    final Map<Long, List<MatchPair>> shifts = formulaShiftColPair.getSecond();
+                    for (Map.Entry<Long, List<MatchPair>> entry : shifts.entrySet()) {
+                        List<MatchPair> pairs = entry.getValue();
+                        ArrayList<MatchPair> resultPairs = new ArrayList<>(pairs.size());
+                        for (MatchPair pair : pairs) {
+                            if (outerToInnerNames.containsKey(pair.rightColumn())) {
+                                final String newRightColumn = outerToInnerNames.get(pair.rightColumn());
+                                resultPairs.add(new MatchPair(pair.leftColumn(), newRightColumn));
+                            } else {
+                                resultPairs.add(pair);
+                            }
+                        }
+                        entry.setValue(resultPairs);
+                    }
+                }
+            }
 
             log.debug("Expression (after language conversion) : " + result.getConvertedExpression());
 
@@ -195,6 +220,26 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             }
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+        }
+    }
+
+    @Override
+    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+        if (sourceTable.hasAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+            // allow any tests to use i, ii, and k without throwing an exception; we're probably using it safely
+            return;
+        }
+        if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
+            // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
+            boolean isUnsafe = !sourceTable.isAppendOnly() && (usesI || usesII);
+            isUnsafe |= !sourceTable.isAddOnly() && usesK;
+            isUnsafe |= !usedColumnArrays.isEmpty();
+            if (isUnsafe) {
+                throw new IllegalArgumentException("Formula '" + formula + "' uses i, ii, k, or column array " +
+                        "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
+                        "table are safe. To allow unsafe refreshing formulas, set the system property " +
+                        "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");
+            }
         }
     }
 
@@ -290,6 +335,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             copy.usesII = usesII;
             copy.usesK = usesK;
             copy.params = params;
+            copy.formulaShiftColPair = formulaShiftColPair;
         }
     }
 
@@ -301,6 +347,23 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     @Override
     public boolean isSimpleFilter() {
         return false;
+    }
+
+    /**
+     * @return true if the formula expression of the filter has Array Access that conforms to "i +/- &lt;constant&gt;"
+     *         or "ii +/- &lt;constant&gt;".
+     */
+    public boolean hasConstantArrayAccess() {
+        return getFormulaShiftColPair() != null;
+    }
+
+    /**
+     * @return a Pair object, consisting of formula string and shift to column MatchPairs, if the filter formula or
+     *         expression has Array Access that conforms to "i +/- &lt;constant&gt;" or "ii +/- &lt;constant&gt;". If
+     *         there is a parsing error for the expression null is returned.
+     */
+    public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
+        return formulaShiftColPair;
     }
 
     public abstract AbstractConditionFilter renameFilter(Map<String, String> renames);

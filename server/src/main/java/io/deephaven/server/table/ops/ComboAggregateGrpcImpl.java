@@ -7,12 +7,13 @@ import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 import org.jetbrains.annotations.NotNull;
@@ -32,21 +33,20 @@ import static io.deephaven.api.agg.Aggregation.*;
 public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateRequest> {
 
     @Inject
-    public ComboAggregateGrpcImpl() {
-        super(BatchTableRequest.Operation::getComboAggregate, ComboAggregateRequest::getResultId,
-                ComboAggregateRequest::getSourceId);
+    public ComboAggregateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionComboAggregate, BatchTableRequest.Operation::getComboAggregate,
+                ComboAggregateRequest::getResultId, ComboAggregateRequest::getSourceId);
     }
 
     @Override
     public void validateRequest(ComboAggregateRequest request) throws StatusRuntimeException {
         if (request.getAggregatesCount() == 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "ComboAggregateRequest incorrectly has zero aggregates provided");
         }
         for (String groupByColumn : request.getGroupByColumnsList()) {
             if (!NameValidator.isValidColumnName(groupByColumn)) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "ComboAggregateRequest group by");
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "ComboAggregateRequest group by");
             }
         }
         if (isSimpleAggregation(request)) {
@@ -54,21 +54,21 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
             // which would suggest they meant to set force_combo=true
             ComboAggregateRequest.Aggregate aggregate = request.getAggregates(0);
             if (aggregate.getMatchPairsCount() != 0) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "force_combo is false and only one aggregate provided, but match_pairs is specified");
             }
             if (aggregate.getPercentile() != 0) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "force_combo is false and only one aggregate provided, but percentile is specified");
             }
             if (aggregate.getAvgMedian()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "force_combo is false and only one aggregate provided, but avg_median is specified");
             }
             if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT
                     && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
                 if (!aggregate.getColumnName().isEmpty()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "force_combo is false and only one aggregate provided, but column_name is specified for type other than COUNT or WEIGHTED_AVG");
                 }
             }
@@ -76,24 +76,24 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
             for (ComboAggregateRequest.Aggregate aggregate : request.getAggregatesList()) {
                 if (aggregate.getType() != ComboAggregateRequest.AggType.PERCENTILE) {
                     if (aggregate.getPercentile() != 0) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "percentile is specified for type " + aggregate.getType());
                     }
                     if (aggregate.getAvgMedian()) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "avg_median is specified for type " + aggregate.getType());
                     }
                 }
                 if (aggregate.getType() == ComboAggregateRequest.AggType.COUNT) {
                     if (aggregate.getMatchPairsCount() != 0) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "match_pairs is specified for type COUNT");
                     }
                 }
                 if (aggregate.getType() != ComboAggregateRequest.AggType.COUNT
                         && aggregate.getType() != ComboAggregateRequest.AggType.WEIGHTED_AVG) {
                     if (!aggregate.getColumnName().isEmpty()) {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 "column_name is specified for type " + aggregate.getType());
                     }
                 }

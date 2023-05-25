@@ -12,13 +12,20 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableWritableChunk} implementation for long data.
  */
-public final class ResettableWritableLongChunk<ATTR_BASE extends Any> extends WritableLongChunk implements ResettableWritableChunk<ATTR_BASE> {
+public final class ResettableWritableLongChunk<ATTR_BASE extends Any>
+        extends WritableLongChunk<ATTR_BASE>
+        implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableLongChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getLongChunkPool().takeResettableWritableLongChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getLongChunkPool().takeResettableWritableLongChunk();
+        }
+        return new ResettableWritableLongChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableLongChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -34,49 +41,51 @@ public final class ResettableWritableLongChunk<ATTR_BASE extends Any> extends Wr
     }
 
     @Override
-    public final ResettableWritableLongChunk slice(int offset, int capacity) {
+    public ResettableWritableLongChunk<ATTR_BASE> slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableWritableLongChunk<>(data, this.offset + offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
         return resetFromTypedChunk(other.asWritableLongChunk(), offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
         final long[] typedArray = (long[])array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromArray(Object array) {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromArray(Object array) {
         final long[] typedArray = (long[])array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> clear() {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> clear() {
         return resetFromArray(ArrayTypeUtils.EMPTY_LONG_ARRAY, 0, 0);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromTypedChunk(WritableLongChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromTypedChunk(WritableLongChunk<ATTR> other, int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromTypedArray(long[] data, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableLongChunk<ATTR> resetFromTypedArray(long[] data, int offset, int capacity) {
         ChunkHelpers.checkArrayArgs(data.length, offset, capacity);
         this.data = data;
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
         //noinspection unchecked
-        return this;
+        return (WritableLongChunk<ATTR>) this;
     }
 
     @Override
-    public final void close() {
-        MultiChunkPool.forThisThread().getLongChunkPool().giveResettableWritableLongChunk(this);
+    public void close() {
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getLongChunkPool().giveResettableWritableLongChunk(this);
+        }
     }
 }

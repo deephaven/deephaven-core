@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
 public interface TableLocation extends NamedImplementation, LogOutputAppendable, TableLocationState {
 
     /**
-     * ShiftObliviousListener interface for anything that wants to know about changes to a location.
+     * Listener interface for anything that wants to know about changes to a location.
      */
     interface Listener extends BasicTableDataListener {
 

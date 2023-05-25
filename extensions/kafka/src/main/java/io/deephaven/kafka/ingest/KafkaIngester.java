@@ -49,8 +49,12 @@ public class KafkaIngester {
             });
     private final String logPrefix;
     private long messagesProcessed = 0;
+    private long bytesProcessed = 0;
+    private long pollCalls = 0;
     private long messagesWithErr = 0;
-    private long lastProcessed = 0;
+    private long lastMessages = 0;
+    private long lastBytes = 0;
+    private long lastPollCalls = 0;
 
     private volatile boolean needsAssignment;
     private volatile boolean done;
@@ -156,7 +160,7 @@ public class KafkaIngester {
      * @param topic The topic to replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
+     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(Object)} or
      *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
@@ -185,7 +189,7 @@ public class KafkaIngester {
      * @param partitionFilter A predicate indicating which partitions we should replicate
      * @param partitionToStreamConsumer A function implementing a mapping from partition to its consumer of records. The
      *        function will be invoked once per partition at construction; implementations should internally defer
-     *        resource allocation until first call to {@link KafkaStreamConsumer#accept(Object)} or
+     *        resource allocation until first call to {@link KafkaStreamConsumer#consume(Object)} or
      *        {@link KafkaStreamConsumer#acceptFailure(Throwable)} if appropriate.
      * @param partitionToInitialSeekOffset A function implementing a mapping from partition to its initial seek offset,
      *        or -1 if seek to beginning is intended.
@@ -254,21 +258,24 @@ public class KafkaIngester {
         t.start();
     }
 
-    private static double msgPerSec(final long msgs, final long nanos) {
-        return 1000.0 * 1000.0 * 1000.0 * msgs / nanos;
+    private static double unitsPerSec(final long units, final long nanos) {
+        if (nanos <= 0) {
+            return 0;
+        }
+        return 1000.0 * 1000.0 * 1000.0 * units / nanos;
     }
 
     private void consumerLoop() {
         final long reportIntervalNanos = REPORT_INTERVAL_MS * 1_000_000L;
         long lastReportNanos = System.nanoTime();
-        final DecimalFormat rateFormat = new DecimalFormat("#.0000");
+        long nextReport = lastReportNanos + reportIntervalNanos;
+        final DecimalFormat rateFormat = new DecimalFormat("#.###");
         while (!done) {
             while (needsAssignment) {
                 needsAssignment = false;
                 assign();
             }
             final long beforePoll = System.nanoTime();
-            final long nextReport = lastReportNanos + reportIntervalNanos;
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
             boolean more = pollOnce(Duration.ofNanos(remainingNanos));
             if (!more) {
@@ -280,15 +287,25 @@ public class KafkaIngester {
             }
             final long afterPoll = System.nanoTime();
             if (afterPoll > nextReport) {
-                final long intervalMessages = messagesProcessed - lastProcessed;
-                final long intervalNanos = afterPoll - lastReportNanos;
+                final long periodMessages = messagesProcessed - lastMessages;
+                final long periodBytes = bytesProcessed - lastBytes;
+                final long periodPolls = pollCalls - lastPollCalls;
+                final long periodNanos = afterPoll - lastReportNanos;
                 log.info().append(logPrefix)
-                        .append("Processed ").append(intervalMessages).append(" in ")
-                        .append(intervalNanos / 1000_000L).append("ms, ")
-                        .append(rateFormat.format(msgPerSec(intervalMessages, intervalNanos))).append(" msgs/sec")
+                        .append("ingestion period summary")
+                        .append(": polls=").append(periodPolls)
+                        .append(", messages=").append(periodMessages)
+                        .append(", bytes=").append(periodBytes)
+                        .append(", time=").append(periodNanos / 1000_000L).append("ms")
+                        .append(", polls/sec=").append(rateFormat.format(unitsPerSec(periodPolls, periodNanos)))
+                        .append(", msgs/sec=").append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
+                        .append(", bytes/sec=").append(rateFormat.format(unitsPerSec(periodBytes, periodNanos)))
                         .endl();
                 lastReportNanos = afterPoll;
-                lastProcessed = messagesProcessed;
+                nextReport = lastReportNanos + reportIntervalNanos;
+                lastMessages = messagesProcessed;
+                lastBytes = bytesProcessed;
+                lastPollCalls = pollCalls;
             }
         }
         log.info().append(logPrefix).append("Closing Kafka consumer").endl();
@@ -302,6 +319,7 @@ public class KafkaIngester {
     private boolean pollOnce(final Duration timeout) {
         final ConsumerRecords<?, ?> records;
         try {
+            ++pollCalls;
             records = kafkaConsumer.poll(timeout);
         } catch (WakeupException we) {
             // we interpret a wakeup as a signal to stop /this/ poll.
@@ -329,7 +347,7 @@ public class KafkaIngester {
             }
 
             try {
-                streamConsumer.accept(partitionRecords);
+                bytesProcessed += streamConsumer.consume(partitionRecords);
             } catch (Throwable ex) {
                 ++messagesWithErr;
                 log.error().append(logPrefix).append("Exception while processing Kafka message:").append(ex).endl();

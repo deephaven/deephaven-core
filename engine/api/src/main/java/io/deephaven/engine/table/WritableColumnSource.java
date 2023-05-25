@@ -109,21 +109,21 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
         public static SinkFiller create(final ChunkType chunkType) {
             switch (chunkType) {
                 case Byte:
-                    return ByteFiller.INSTANCE;
+                    return new ByteFiller();
                 case Char:
-                    return CharFiller.INSTANCE;
+                    return new CharFiller();
                 case Double:
-                    return DoubleFiller.INSTANCE;
+                    return new DoubleFiller();
                 case Float:
-                    return FloatFiller.INSTANCE;
+                    return new FloatFiller();
                 case Int:
-                    return IntFiller.INSTANCE;
+                    return new IntFiller();
                 case Long:
-                    return LongFiller.INSTANCE;
+                    return new LongFiller();
                 case Short:
-                    return ShortFiller.INSTANCE;
+                    return new ShortFiller();
                 case Object:
-                    return ObjectFiller.INSTANCE;
+                    return new ObjectFiller();
 
                 // Boolean Chunks will be passing in chunkType = Object, so there is no use case for passing in
                 // ChunkType.Boolean.
@@ -147,8 +147,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class ByteFiller extends SinkFiller {
-        static final ByteFiller INSTANCE = new ByteFiller();
-
         private ByteChunk<? extends Values> typedSrc;
 
         @Override
@@ -165,8 +163,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class CharFiller extends SinkFiller {
-        static final CharFiller INSTANCE = new CharFiller();
-
         private CharChunk<? extends Values> typedSrc;
 
         @Override
@@ -183,8 +179,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class DoubleFiller extends SinkFiller {
-        static final DoubleFiller INSTANCE = new DoubleFiller();
-
         private DoubleChunk<? extends Values> typedSrc;
 
         @Override
@@ -201,8 +195,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class FloatFiller extends SinkFiller {
-        static final FloatFiller INSTANCE = new FloatFiller();
-
         private FloatChunk<? extends Values> typedSrc;
 
         @Override
@@ -219,8 +211,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class IntFiller extends SinkFiller {
-        static final IntFiller INSTANCE = new IntFiller();
-
         private IntChunk<? extends Values> typedSrc;
 
         @Override
@@ -237,8 +227,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class LongFiller extends SinkFiller {
-        static final LongFiller INSTANCE = new LongFiller();
-
         private LongChunk<? extends Values> typedSrc;
 
         @Override
@@ -255,8 +243,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class ShortFiller extends SinkFiller {
-        static final ShortFiller INSTANCE = new ShortFiller();
-
         private ShortChunk<? extends Values> typedSrc;
 
         @Override
@@ -273,8 +259,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
 
     class ObjectFiller extends SinkFiller {
-        static final ObjectFiller INSTANCE = new ObjectFiller();
-
         private ObjectChunk<?, ? extends Values> typedSrc;
 
         @Override

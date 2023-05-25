@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util.scripts;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.GroovyDeephavenSession;
@@ -13,6 +12,7 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -58,7 +58,7 @@ public class TestGroovyDeephavenSession {
         final Table y = fetchTable("y");
         final TableDefinition definition = y.getDefinition();
         final Class<?> colClass = definition.getColumn("X").getDataType();
-        Assert.equals(colClass, "colClass", java.util.List.class);
+        Assert.assertEquals(colClass, java.util.List.class);
     }
 
     @Test
@@ -71,9 +71,9 @@ public class TestGroovyDeephavenSession {
                 "}\n" +
                 "obj = new MyObj(1)\n" +
                 "result = emptyTable(1).select(\"A = obj.a\")");
-        Assert.neqNull(fetch("obj", Object.class), "fetchObject");
+        Assert.assertNotNull(fetch("obj", Object.class));
         final Table result = fetchTable("result");
-        Assert.eqFalse(result.isFailed(), "result.isFailed()");
+        Assert.assertFalse(result.isFailed());
     }
 
     @Test
@@ -85,8 +85,19 @@ public class TestGroovyDeephavenSession {
         final String[] names = new String[] {"x", "z", "y", "u"};
         final MutableInt offset = new MutableInt();
         changes.created.forEach((name, type) -> {
-            Assert.eq(name, "name", names[offset.getAndIncrement()], "names[offset.getAndIncrement()]");
+            Assert.assertEquals(name, names[offset.getAndIncrement()]);
         });
+    }
+
+    @Test
+    public void testUnloadedWildcardPackageImport() {
+        // it's unlikely we have loaded anything from this groovy package
+        final String packageString = "groovy.time";
+
+        if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
+            Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
+        }
+        session.evaluateScript("import " + packageString + ".*");
     }
 }
 

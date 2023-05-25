@@ -3,7 +3,6 @@
  */
 package io.deephaven.time;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
 import io.deephaven.base.clock.TimeZones;
@@ -12,31 +11,28 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.time.calendar.BusinessCalendar;
-import io.deephaven.time.calendar.Calendars;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joda.time.DateMidnight;
-import org.joda.time.DateTimeZone;
 import org.joda.time.DurationFieldType;
 
-import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * Utilities for Deephaven date/time storage and manipulation.
  */
-@SuppressWarnings("UnusedDeclaration")
+@SuppressWarnings("unused")
 public class DateTimeUtils {
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
@@ -71,10 +67,6 @@ public class DateTimeUtils {
     // DateTime literals
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
             "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z]+");
-    private static final Pattern JIM_DATETIME_PATTERN = Pattern.compile(
-            "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9][\\+-][0-9][0-9][0-9][0-9]");
-    private static final Pattern JIM_MICROS_DATETIME_PATTERN = Pattern.compile(
-            "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9][0-9][0-9][0-9][\\+-][0-9][0-9][0-9][0-9]");
     private static final Pattern TIME_AND_DURATION_PATTERN = Pattern.compile(
             "\\-?([0-9]+T)?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
     private static final Pattern PERIOD_PATTERN = Pattern.compile(
@@ -157,19 +149,6 @@ public class DateTimeUtils {
 
     private static final double YEARS_PER_NANO = 1. / (double) YEAR;
 
-    /**
-     * Allows setting an alternate date instead of "today" to be returned from {@link #currentDateNy}. This is mainly
-     * used when setting up for a replay simulation.
-     */
-    public static String currentDateNyOverride;
-
-    /**
-     * Allows setting an alternate date instead of the business day before "today" to be returned from
-     * {@link #lastBusinessDateNy}. This is mainly used when setting up for a replay simulation.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static String lastBusinessDayNyOverride;
-
     // TODO(deephaven-core#3044): Improve scaffolding around full system replay
     /**
      * Allows setting a custom clock instead of actual current time. This is mainly used when setting up for a replay
@@ -186,7 +165,7 @@ public class DateTimeUtils {
      */
     public static long millis(DateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
 
         return dateTime.getMillis();
@@ -200,19 +179,26 @@ public class DateTimeUtils {
      */
     public static long nanos(DateTime dateTime) {
         if (dateTime == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
 
         return dateTime.getNanos();
     }
 
+    /**
+     * Returns nanoseconds since Epoch for an {@link Instant} value.
+     *
+     * @param instant The {@link Instant} for which the nanoseconds offset should be returned.
+     * @return A long value of nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
+     */
     public static long nanos(Instant instant) {
         if (instant == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
         return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
     }
 
+    // region Comparisons
     /**
      * Evaluates whether one {@link DateTime} value is earlier than a second {@link DateTime} value.
      *
@@ -256,7 +242,7 @@ public class DateTimeUtils {
      *         nanoseconds from Epoch.
      */
     public static DateTime plus(DateTime dateTime, long nanos) {
-        if (dateTime == null || nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (dateTime == null || nanos == NULL_LONG) {
             return null;
         }
 
@@ -274,7 +260,7 @@ public class DateTimeUtils {
      *         nanoseconds from Epoch.
      */
     public static DateTime minus(DateTime dateTime, long nanos) {
-        if (dateTime == null || -nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (dateTime == null || -nanos == NULL_LONG) {
             return null;
         }
 
@@ -344,7 +330,7 @@ public class DateTimeUtils {
      */
     public static long minus(DateTime d1, DateTime d2) {
         if (d1 == null || d2 == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
 
         return checkUnderflowMinus(d1.getNanos(), d2.getNanos(), true);
@@ -433,6 +419,7 @@ public class DateTimeUtils {
 
         return (double) diffNanos(start, end) / DAY;
     }
+    // endregion
 
     /**
      * Returns a {@link DateTime} for the requested {@link DateTime} at midnight in the specified time zone.
@@ -452,21 +439,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link DateTime} representing midnight in New York time zone on the date specified by the a number of
-     * milliseconds from Epoch.
-     *
-     * @param millis A long value of the number of milliseconds from Epoch for which the {@link DateTime} is to be
-     *        calculated.
-     * @return A {@link DateTime} rounded down to midnight in the New York time zone for the specified number of
-     *         milliseconds from Epoch.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime millisToDateAtMidnightNy(final long millis) {
-        return millisToDateAtMidnight(millis, TimeZone.TZ_NY);
-    }
-
-    /**
-     * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by the a number of
+     * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by a number of
      * milliseconds from Epoch.
      *
      * @param millis A long value of the number of milliseconds from Epoch for which the {@link DateTime} is to be
@@ -477,13 +450,14 @@ public class DateTimeUtils {
      */
     @SuppressWarnings("WeakerAccess")
     public static DateTime millisToDateAtMidnight(final long millis, final TimeZone timeZone) {
-        if (millis == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (millis == NULL_LONG) {
             return null;
         }
 
         return new DateTime(millisToNanos(new DateMidnight(millis, timeZone.getTimeZone()).getMillis()));
     }
 
+    // region Formatting
     /**
      * Returns a String date/time representation.
      *
@@ -500,16 +474,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a String date/time representation of a {@link DateTime} interpreted for the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @return A null String if the input is null, otherwise a String formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn NY.
-     */
-    public static String formatNy(DateTime dateTime) {
-        return format(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns a String date representation of a {@link DateTime} interpreted for a specified time zone.
      *
      * @param dateTime The {@link DateTime} to format as a String.
@@ -523,16 +487,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.toDateString(timeZone);
-    }
-
-    /**
-     * Returns a String date representation of a {@link DateTime} interpreted for the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @return A null String if the input is null, otherwise a String formatted as yyyy-MM-dd.
-     */
-    public static String formatDateNy(DateTime dateTime) {
-        return formatDate(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -578,16 +532,25 @@ public class DateTimeUtils {
             buf.append(days).append('T');
         }
 
-        buf.append(hours).append(':').append(StringUtils.pad(String.valueOf(minutes), 2, '0')).append(':')
-                .append(StringUtils.pad(String.valueOf(seconds), 2, '0'));
+        buf.append(hours).append(':').append(pad(String.valueOf(minutes), 2)).append(':')
+                .append(pad(String.valueOf(seconds), 2));
 
         if (nanos != 0) {
-            buf.append('.').append(StringUtils.pad(String.valueOf(nanos), 9, '0'));
+            buf.append('.').append(pad(String.valueOf(nanos), 9));
         }
 
         return buf.toString();
     }
+    // endregion
 
+    static String pad(@NotNull final String str, final int length) {
+        if (length <= str.length()) {
+            return str;
+        }
+        return "0".repeat(length - str.length()) + str;
+    }
+
+    // region Chronology Getters
     /**
      * Returns an int value of the day of the month for a {@link DateTime} and specified time zone.
      *
@@ -603,17 +566,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getDayOfMonth();
-    }
-
-    /**
-     * Returns an int value of the day of the month for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the month.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the month
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfMonthNy(DateTime dateTime) {
-        return dayOfMonth(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -634,18 +586,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the day of the week for a {@link DateTime} in the New York time zone, with 1 being Monday
-     * and 7 being Sunday.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the week.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the week
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfWeekNy(DateTime dateTime) {
-        return dayOfWeek(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the day of the year.
@@ -659,17 +599,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getDayOfYear();
-    }
-
-    /**
-     * Returns an int value of the day of the year (Julian date) for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the year.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the year
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfYearNy(DateTime dateTime) {
-        return dayOfYear(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -691,18 +620,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the hour of the day for a {@link DateTime} in the New York time zone. The hour is on a 24
-     * hour clock (0 - 23).
-     *
-     * @param dateTime The {@link DateTime} for which to find the hour of the day.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the hour of the day
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int hourOfDayNy(DateTime dateTime) {
-        return hourOfDay(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of milliseconds since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
@@ -718,18 +635,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMillisOfDay();
-    }
-
-    /**
-     * Returns an int value of milliseconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int millisOfDayNy(DateTime dateTime) {
-        return millisOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -752,19 +657,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of milliseconds since the top of the second for a {@link DateTime} in the New York time
-     * zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
-     *         time zone.
-     */
-    public static int millisOfSecondNy(DateTime dateTime) {
-        return millisOfSecond(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns a long value of nanoseconds since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the nanoseconds since midnight.
@@ -776,22 +668,10 @@ public class DateTimeUtils {
     @SuppressWarnings("WeakerAccess")
     public static long nanosOfDay(DateTime dateTime, TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
 
         return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfDay()) + dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds since midnight.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static long nanosOfDayNy(DateTime dateTime) {
-        return nanosOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -807,22 +687,10 @@ public class DateTimeUtils {
     @SuppressWarnings("WeakerAccess")
     public static long nanosOfSecond(DateTime dateTime, TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+            return NULL_LONG;
         }
 
         return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfSecond()) + dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since the top of the second for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
-     *         time zone.
-     */
-    public static long nanosOfSecondNy(DateTime dateTime) {
-        return nanosOfSecond(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -846,21 +714,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of microseconds that have elapsed since the start of the millisecond represented by the
-     * provided {@code dateTime} in the New York time zone. Nanoseconds are rounded, not dropped -- '20:41:39.123456700'
-     * has 457 micros, not 456.
-     *
-     * @param dateTime The {@link DateTime} for which to find the microseconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of microseconds since the
-     *         top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the New
-     *         York time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int microsOfMilliNy(DateTime dateTime) {
-        return microsOfMilli(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of minutes since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the minutes.
@@ -876,17 +729,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMinuteOfDay();
-    }
-
-    /**
-     * Returns an int value of minutes since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since midnight
-     *         for the date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int minuteOfDayNy(DateTime dateTime) {
-        return minuteOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -908,18 +750,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of minutes since the top of the hour for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the minutes.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since the top
-     *         of the hour for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int minuteOfHourNy(DateTime dateTime) {
-        return minuteOfHour(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value for the month of a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the month.
@@ -935,17 +765,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMonthOfYear();
-    }
-
-    /**
-     * Returns an int value for the month of a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the month.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the month for the
-     *         date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int monthOfYearNy(DateTime dateTime) {
-        return monthOfYear(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -967,18 +786,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of seconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int secondOfDayNy(DateTime dateTime) {
-        return secondOfDay(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of seconds since the top of the minute for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the seconds.
@@ -994,18 +801,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getSecondOfMinute();
-    }
-
-    /**
-     * Returns an int value of seconds since the top of the minute for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of seconds since the top
-     *         of the minute for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int secondOfMinuteNy(DateTime dateTime) {
-        return secondOfMinute(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -1025,18 +820,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the year for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the year for the
-     *         date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int yearNy(DateTime dateTime) {
-        return year(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of the two-digit year for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the year.
@@ -1052,18 +835,9 @@ public class DateTimeUtils {
 
         return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
     }
+    // endregion
 
-    /**
-     * Returns an int value of the two-digit year for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the two-digit year
-     *         for the date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int yearOfCenturyNy(DateTime dateTime) {
-        return yearOfCentury(dateTime, TimeZone.TZ_NY);
-    }
-
+    // region Base and Unit conversion
     /**
      * Returns the Excel double time format representation of a {@link DateTime}.
      *
@@ -1116,8 +890,8 @@ public class DateTimeUtils {
      *         containing the equivalent number of nanoseconds for the input in microseconds.
      */
     public static long microsToNanos(long micros) {
-        if (micros == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+        if (micros == NULL_LONG) {
+            return NULL_LONG;
         }
         if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
             throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
@@ -1134,8 +908,8 @@ public class DateTimeUtils {
      */
     @SuppressWarnings("WeakerAccess")
     public static long nanosToMicros(long nanos) {
-        if (nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+        if (nanos == NULL_LONG) {
+            return NULL_LONG;
         }
         return nanos / 1000;
     }
@@ -1160,8 +934,8 @@ public class DateTimeUtils {
      *         the equivalent number of nanoseconds to the input.
      */
     public static long millisToNanos(long millis) {
-        if (millis == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+        if (millis == NULL_LONG) {
+            return NULL_LONG;
         }
         if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
             throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
@@ -1178,8 +952,8 @@ public class DateTimeUtils {
      *         containing the equivalent number of nanoseconds for the input in seconds.
      */
     public static long secondsToNanos(long seconds) {
-        if (seconds == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+        if (seconds == NULL_LONG) {
+            return NULL_LONG;
         }
         if (Math.abs(seconds) > MAX_CONVERTIBLE_SECONDS) {
             throw new DateTimeOverflowException("Converting " + seconds + " seconds to nanos would overflow");
@@ -1196,8 +970,8 @@ public class DateTimeUtils {
      *         equivalent number of milliseconds for the input in nanoseconds.
      */
     public static long nanosToMillis(long nanos) {
-        if (nanos == io.deephaven.util.QueryConstants.NULL_LONG) {
-            return io.deephaven.util.QueryConstants.NULL_LONG;
+        if (nanos == NULL_LONG) {
+            return NULL_LONG;
         }
 
         return nanos / 1000000;
@@ -1225,6 +999,7 @@ public class DateTimeUtils {
         return nanosToTime(secondsToNanos(seconds));
     }
 
+
     /**
      * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#system()}.
      *
@@ -1234,6 +1009,165 @@ public class DateTimeUtils {
         return Objects.requireNonNullElse(clock, Clock.system());
     }
 
+    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
+        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
+                    + " to nanoseconds");
+        }
+
+        return epochSecond * 1_000_000_000L + nanoOfSecond;
+    }
+
+    /**
+     * Convert the specified instant to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
+     *
+     * @param value the instant to convert
+     *
+     * @return nanoseconds since epoch or {@link QueryConstants#NULL_LONG null}
+     */
+    public static long toEpochNano(@Nullable final Instant value) {
+        if (value == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(value.getEpochSecond(), value.getNano());
+    }
+
+    /**
+     * Convert the specified {@link ZonedDateTime} to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
+     *
+     * @param value the instant to convert
+     *
+     * @return nanoseconds since epoch or {@link QueryConstants#NULL_LONG null}
+     */
+    public static long toEpochNano(@Nullable final ZonedDateTime value) {
+        if (value == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(value.toEpochSecond(), value.getNano());
+    }
+
+    /**
+     * Convert nanos since epoch to an {@link Instant} value.
+     *
+     * @param nanos nanoseconds since epoch
+     * @return a new {@link Instant} or null if nanos was {@link QueryConstants#NULL_LONG}.
+     */
+    @Nullable
+    public static Instant makeInstant(final long nanos) {
+        return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
+    }
+
+    /**
+     * Converts nanos of epoch to a {@link ZonedDateTime} using the {@link TimeZone#TZ_DEFAULT default} time zone.
+     *
+     * @param nanos nanoseconds since epoch
+     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
+     */
+    @Nullable
+    public static ZonedDateTime makeZonedDateTime(final long nanos) {
+        return makeZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts nanos of epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since epoch
+     * @param timeZone the {@link TimeZone time zone}
+     *
+     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
+     */
+    @Nullable
+    public static ZonedDateTime makeZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
+        return makeZonedDateTime(nanos, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts nanos of epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since epoch
+     * @param zone the {@link ZoneId time zone}
+     *
+     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
+     */
+    @Nullable
+    public static ZonedDateTime makeZonedDateTime(final long nanos, ZoneId zone) {
+        // noinspection ConstantConditions
+        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(makeInstant(nanos), zone);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime The a {@link DateTime} to convert.
+     * @return A {@link ZonedDateTime} using the default time zone for the session as indicated by
+     *         {@link TimeZone#TZ_DEFAULT}.
+     */
+    @Nullable
+    public static ZonedDateTime getZonedDateTime(final @Nullable DateTime dateTime) {
+        return getZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime The a {@link DateTime} to convert.
+     * @param timeZone The {@link TimeZone} to use for the conversion.
+     * @return A {@link ZonedDateTime} using the specified time zone. or null if dateTime was null
+     */
+    @Nullable
+    public static ZonedDateTime getZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
+        return dateTime.toZonedDateTime(zone);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime The a {@link DateTime} to convert.
+     * @param timeZone The {@link ZoneId} to use for the conversion.
+     * @return A {@link ZonedDateTime} using the specified time zone. or null if dateTime was null
+     */
+    @Nullable
+    public static ZonedDateTime getZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.toZonedDateTime(timeZone);
+    }
+
+    /**
+     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
+     *
+     * @param zonedDateTime The a {@link ZonedDateTime} to convert.
+     * @throws DateTimeOverflowException if the input is out of the range for a {@link DateTime}, otherwise, a
+     *         {@link DateTime} version of the input.
+     */
+    @Nullable
+    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
+        if (zonedDateTime == null) {
+            return null;
+        }
+
+        int nanos = zonedDateTime.getNano();
+        long seconds = zonedDateTime.toEpochSecond();
+
+        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
+        if (seconds >= limit) {
+            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
+        }
+
+        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
+    }
+    // endregion
+
+    // region Query Helper Methods
     /**
      * Equivalent to {@code DateTime.of(currentClock())}.
      *
@@ -1251,111 +1185,6 @@ public class DateTimeUtils {
      */
     public static DateTime currentTimeMillis() {
         return DateTime.ofMillis(currentClock());
-    }
-
-    // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the
-    // CachedCurrentDate to skip a map lookup.
-    public static String currentDateNy = null;
-
-    public static long endOfCurrentDateNy = 0;
-
-    /**
-     * Provides a String representing the current date in the New York time zone or, if a custom
-     * {@link #currentDateNyOverride} has been set, the date provided by that override.
-     *
-     * @return A String in yyyy-MM-dd format.
-     */
-    public static String currentDateNy() {
-        if (currentDateNyOverride != null) {
-            return currentDateNyOverride;
-        }
-        final long currentTimeMillis = System.currentTimeMillis();
-        if (currentTimeMillis > endOfCurrentDateNy) {
-            final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-            format.setTimeZone(TimeZones.TZ_NEWYORK);
-            currentDateNy = format.format(new Date(currentTimeMillis));
-
-            // Calculate when this cached value expires
-            endOfCurrentDateNy = getMillisAtMidnightNy(currentTimeMillis);
-        }
-        return currentDateNy;
-    }
-
-    /**
-     * Sets the {@link #lastBusinessDayNyOverride} to the previous business day from a currently set
-     * {@link #currentDateNyOverride} value. If {@link #currentDateNyOverride} has not been set, this method has no
-     * effect.
-     */
-    public static void overrideLastBusinessDateNyFromCurrentDateNy() {
-        if (currentDateNyOverride != null) {
-            final BusinessCalendar bc = Calendars.calendar("USNYSE");
-            lastBusinessDayNyOverride = bc.previousBusinessDay(currentDateNyOverride.substring(0, 10));
-        }
-    }
-
-    /**
-     * Cached value of lastBusinessDateNy, which expires after milliseconds from Epoch value of
-     * {@link #endOfCurrentDateNyLastBusinessDay}
-     */
-    public static String lastBusinessDateNy = null;
-    /**
-     * Expiration for cached {@link #lastBusinessDateNy} as milliseconds from Epoch.
-     */
-    public static long endOfCurrentDateNyLastBusinessDay = 0;
-
-    /**
-     * Provides a String representing the previous business date in the New York time zone using the NYSE calendar, or,
-     * if a custom {@link #lastBusinessDayNyOverride} has been set, the date provided by that override.
-     *
-     * @return A String in yyyy-MM-dd format.
-     */
-    public static String lastBusinessDateNy() {
-        return lastBusinessDateNy(System.currentTimeMillis());
-    }
-
-    /**
-     * Provides a String representing the previous business date in the New York time zone using the NYSE calendar, or,
-     * if a custom {@link #lastBusinessDayNyOverride} has been set, the date provided by that override.
-     *
-     * @param currentTimeMillis The current date/time in milliseconds from Epoch to be used when determining the
-     *        previous business date. Typically this is System.currentTimeMillis() and is passed in by calling the
-     *        niladic variant of this method.
-     * @return A String in yyyy-MM-dd format.
-     */
-    public static String lastBusinessDateNy(final long currentTimeMillis) {
-        if (lastBusinessDayNyOverride != null) {
-            return lastBusinessDayNyOverride;
-        }
-
-        if (currentTimeMillis > endOfCurrentDateNyLastBusinessDay) {
-            final BusinessCalendar bc = Calendars.calendar("USNYSE");
-
-            lastBusinessDateNy = bc.previousBusinessDay(DateTimeUtils.millisToTime(currentTimeMillis));
-
-            // Calculate when this cached value expires
-            endOfCurrentDateNyLastBusinessDay = getMillisAtMidnightNy(currentTimeMillis);
-        }
-        return lastBusinessDateNy;
-    }
-
-    /**
-     * Returns the number of milliseconds from Epoch for midnight at the beginning of the next day in the New York time
-     * zone relative to the date represented by a passed milliseconds from Epoch date/time.
-     *
-     * @param currentTimeMillis A long value of milliseconds from Epoch which is the date/time from which the next New
-     *        York time zone midnight value should be calculated.
-     * @return A long of milliseconds from Epoch for midnight at the beginning of the next day in the New York time
-     *         zone.
-     */
-    private static long getMillisAtMidnightNy(final long currentTimeMillis) {
-        final Calendar calendar = Calendar.getInstance(TimeZones.TZ_NEWYORK);
-        calendar.setTimeInMillis(currentTimeMillis);
-        calendar.set(Calendar.MILLISECOND, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.add(Calendar.DAY_OF_YEAR, 1); // should handle daylight savings
-        return calendar.getTimeInMillis();
     }
 
     private abstract static class CachedDate {
@@ -1431,7 +1260,7 @@ public class DateTimeUtils {
      *         {@link QueryConstants#NULL_LONG NULL_LONG}.
      */
     public static DateTime nanosToTime(long nanos) {
-        return nanos == io.deephaven.util.QueryConstants.NULL_LONG ? null : new DateTime(nanos);
+        return nanos == NULL_LONG ? null : new DateTime(nanos);
     }
 
     /**
@@ -1462,7 +1291,7 @@ public class DateTimeUtils {
      *         corresponding to the passed in epoch value.
      */
     public static long autoEpochToNanos(final long epoch) {
-        if (epoch == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (epoch == NULL_LONG) {
             return epoch;
         }
         final long absEpoch = Math.abs(epoch);
@@ -1506,7 +1335,7 @@ public class DateTimeUtils {
      * @return Null if either input is null, otherwise a {@link DateTime} representing the start of the window.
      */
     public static DateTime lowerBin(DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
             return null;
         }
 
@@ -1525,7 +1354,7 @@ public class DateTimeUtils {
      * @return Null if either input is null, otherwise a {@link DateTime} representing the start of the window.
      */
     public static DateTime lowerBin(DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == QueryConstants.NULL_LONG || offset == QueryConstants.NULL_LONG) {
+        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
             return null;
         }
 
@@ -1542,7 +1371,7 @@ public class DateTimeUtils {
      * @return Null if either input is null, otherwise a {@link DateTime} representing the end of the window.
      */
     public static DateTime upperBin(DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
             return null;
         }
 
@@ -1561,15 +1390,14 @@ public class DateTimeUtils {
      * @return Null if either input is null, otherwise a {@link DateTime} representing the end of the window.
      */
     public static DateTime upperBin(DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == io.deephaven.util.QueryConstants.NULL_LONG
-                || offset == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (dateTime == null || intervalNanos == NULL_LONG
+                || offset == NULL_LONG) {
             return null;
         }
 
         return nanosToTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
-
-    // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // endregion
 
     // + can only result in flow if both positive or both negative
     private static long checkOverflowPlus(final long l1, final long l2, final boolean minusOperation) {
@@ -1618,7 +1446,7 @@ public class DateTimeUtils {
         final StringBuilder instanceVariablesString = new StringBuilder();
         final HashMap<String, Class<?>> newVariables = new HashMap<>();
 
-        final StringBuffer convertedFormula = new StringBuffer();
+        final StringBuilder convertedFormula = new StringBuilder();
 
         int localDateIndex = 0;
         int dateTimeIndex = 0;
@@ -1650,7 +1478,7 @@ public class DateTimeUtils {
                         .append("\");\n");
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;
-            } else if (convertTimeQuiet(s) != io.deephaven.util.QueryConstants.NULL_LONG) {
+            } else if (convertTimeQuiet(s) != NULL_LONG) {
                 matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
                 instanceVariablesString.append("        private long _time").append(timeIndex)
                         .append("=DateTimeUtils.convertTime(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
@@ -1717,13 +1545,14 @@ public class DateTimeUtils {
             return dateTime.getNanos();
         }
         long time = convertTimeQuiet(s);
-        if (time != io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (time != NULL_LONG) {
             return time;
         }
         final Period period = convertPeriodQuiet(s);
         if (period != null) {
             try {
-                return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(), 1_000_000L);
+                return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
+                        period.isPositive() ? 1_000_000L : -1_000_000L);
             } catch (ArithmeticException ex) {
                 throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
             }
@@ -1782,7 +1611,7 @@ public class DateTimeUtils {
     public static long convertTime(String s) {
         long ret = convertTimeQuiet(s);
 
-        if (ret == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (ret == NULL_LONG) {
             throw new RuntimeException("Cannot parse time : " + s);
         }
 
@@ -1946,42 +1775,6 @@ public class DateTimeUtils {
         return null;
     }
 
-    /*
-     * This version assumes you know what date it is and that the format is correct and just want the time, so we can
-     * save time (e.g. 2010-09-02T08:17:17.502-0400) 0123456789012345678901234567 1 2
-     */
-
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime convertJimDateTimeQuiet(String s) {
-        int year = extractFourDigitNum(s, 0);
-        int month = extractTwoDigitNum(s, 5);
-        int day = extractTwoDigitNum(s, 8);
-        int hour = extractTwoDigitNum(s, 11);
-        int min = extractTwoDigitNum(s, 14);
-        int sec = extractTwoDigitNum(s, 17);
-        int millis = extractThreeDigitNum(s, 20);
-        int tzHours = (s.charAt(23) == '-' ? -1 : 1) * extractTwoDigitNum(s, 24);
-        DateTimeZone timeZone = DateTimeZone.forOffsetHours(tzHours);
-        org.joda.time.DateTime d = new org.joda.time.DateTime(year, month, day, hour, min, sec, millis, timeZone);
-        return new DateTime(millisToNanos(d.getMillis()));
-    }
-
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime convertJimMicrosDateTimeQuiet(String s) {
-        int year = extractFourDigitNum(s, 0);
-        int month = extractTwoDigitNum(s, 5);
-        int day = extractTwoDigitNum(s, 8);
-        int hour = extractTwoDigitNum(s, 11);
-        int min = extractTwoDigitNum(s, 14);
-        int sec = extractTwoDigitNum(s, 17);
-        int micros = extractSixDigitNum(s, 20);
-        int tzHours = (s.charAt(26) == '-' ? -1 : 1) * extractTwoDigitNum(s, 27);
-        DateTimeZone timeZone = DateTimeZone.forOffsetHours(tzHours);
-        org.joda.time.DateTime d =
-                new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
-        return new DateTime(millisToNanos(d.getMillis()) + (micros % 1000) * 1000);
-    }
-
     /**
      * Converts a {@link DateTime} String from a few specific zoned formats to a {@link DateTime}.
      *
@@ -2008,10 +1801,6 @@ public class DateTimeUtils {
                 }
                 timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
                 dateTimeString = s.substring(0, spaceIndex);
-            } else if (JIM_DATETIME_PATTERN.matcher(s).matches()) {
-                return convertJimDateTimeQuiet(s);
-            } else if (JIM_MICROS_DATETIME_PATTERN.matcher(s).matches()) {
-                return convertJimMicrosDateTimeQuiet(s);
             }
 
             if (timeZone == null) {
@@ -2058,28 +1847,6 @@ public class DateTimeUtils {
             result += digit;
         }
         return result;
-    }
-
-    // This function and the next are FAR faster than convertJimMicrosDateTimeQuiet provided you can reuse the time zone
-    // across calls. Helpful for log file parsing.
-    public static DateTime convertJimMicrosDateTimeQuietFast(String s, DateTimeZone timeZone) {
-        int year = extractFourDigitNum(s, 0);
-        int month = extractTwoDigitNum(s, 5);
-        int day = extractTwoDigitNum(s, 8);
-        int hour = extractTwoDigitNum(s, 11);
-        int min = extractTwoDigitNum(s, 14);
-        int sec = extractTwoDigitNum(s, 17);
-        int micros = extractSixDigitNum(s, 20);
-        org.joda.time.DateTime d =
-                new org.joda.time.DateTime(year, month, day, hour, min, sec, micros / 1000, timeZone);
-        return new DateTime(millisToNanos(d.getMillis()) + (micros % 1000) * 1000);
-    }
-
-    // This function is very slow. If you can call it once and reuse the result across many calls to the above, this is
-    // FAR faster than convertJimMicrosDateTimeQuiet
-    public static DateTimeZone convertJimMicrosDateTimeQuietFastTz(String s) {
-        int tzHours = (s.charAt(26) == '-' ? -1 : 1) * extractTwoDigitNum(s, 27);
-        return DateTimeZone.forOffsetHours(tzHours);
     }
 
     /**
@@ -2134,7 +1901,7 @@ public class DateTimeUtils {
             // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
         }
 
-        return io.deephaven.util.QueryConstants.NULL_LONG;
+        return NULL_LONG;
     }
 
     /**
@@ -2158,49 +1925,6 @@ public class DateTimeUtils {
         }
 
         return null;
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime The a {@link DateTime} to convert.
-     * @return A {@link ZonedDateTime} using the default time zone for the session as indicated by
-     *         {@link TimeZone#TZ_DEFAULT}.
-     */
-    public static ZonedDateTime getZonedDateTime(DateTime dateTime) {
-        return getZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime The a {@link DateTime} to convert.
-     * @param timeZone The {@link TimeZone} to use for the conversion.
-     * @return A {@link ZonedDateTime} using the specified time zone.
-     */
-    public static ZonedDateTime getZonedDateTime(DateTime dateTime, TimeZone timeZone) {
-        Instant millis = dateTime.getInstant();
-        ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
-        return ZonedDateTime.ofInstant(millis, zone);
-    }
-
-    /**
-     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
-     *
-     * @param zonedDateTime The a {@link ZonedDateTime} to convert.
-     * @throws DateTimeOverflowException if the input is out of the range for a {@link DateTime}, otherwise, a
-     *         {@link DateTime} version of the input.
-     */
-    public static DateTime toDateTime(ZonedDateTime zonedDateTime) {
-        int nanos = zonedDateTime.getNano();
-        long seconds = zonedDateTime.toEpochSecond();
-
-        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
-        if (seconds >= limit) {
-            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
-        }
-
-        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
 
     /**
@@ -2293,7 +2017,7 @@ public class DateTimeUtils {
      */
     public static String getPartitionFromTimestampMillis(@NotNull final DateTimeFormatter dateTimeFormatter,
             final long timestampMillis) {
-        if (timestampMillis == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (timestampMillis == NULL_LONG) {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMillis));
@@ -2309,7 +2033,7 @@ public class DateTimeUtils {
      */
     public static String getPartitionFromTimestampMicros(@NotNull final DateTimeFormatter dateTimeFormatter,
             final long timestampMicros) {
-        if (timestampMicros == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (timestampMicros == NULL_LONG) {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMicros / 1_000));
@@ -2325,7 +2049,7 @@ public class DateTimeUtils {
      */
     public static String getPartitionFromTimestampNanos(@NotNull final DateTimeFormatter dateTimeFormatter,
             final long timestampNanos) {
-        if (timestampNanos == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (timestampNanos == NULL_LONG) {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampNanos / 1_000_000));
@@ -2341,7 +2065,7 @@ public class DateTimeUtils {
      */
     public static String getPartitionFromTimestampSeconds(@NotNull final DateTimeFormatter dateTimeFormatter,
             final long timestampSeconds) {
-        if (timestampSeconds == io.deephaven.util.QueryConstants.NULL_LONG) {
+        if (timestampSeconds == NULL_LONG) {
             return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
         }
         return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));

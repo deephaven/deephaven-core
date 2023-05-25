@@ -3,7 +3,6 @@ package io.deephaven.engine.testutil.generator;
 import io.deephaven.time.DateTime;
 
 import java.util.Random;
-import java.util.TreeMap;
 
 public class UnsortedDateTimeLongGenerator extends AbstractReinterpretedGenerator<DateTime, Long> {
     private final DateTime minTime;
@@ -31,7 +30,7 @@ public class UnsortedDateTimeLongGenerator extends AbstractReinterpretedGenerato
     }
 
     @Override
-    Long nextValue(TreeMap<Long, Long> values, long key, Random random) {
+    Long nextValue(Random random) {
         if (nullFrac > 0 && random.nextDouble() < nullFrac) {
             return null;
         }

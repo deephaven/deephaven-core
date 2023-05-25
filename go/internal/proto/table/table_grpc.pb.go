@@ -27,8 +27,6 @@ type TableServiceClient interface {
 	GetExportedTableCreationResponse(ctx context.Context, in *ticket.Ticket, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(ctx context.Context, in *ApplyPreviewColumnsRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -80,13 +78,28 @@ type TableServiceClient interface {
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of a range join operation.
+	RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an aggregate table operation.
+	//
+	// Deprecated: Please use AggregateAll or Aggregate instead
 	ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
-	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
-	// The left table's change events cause a new snapshot to be taken. The result table includes a
-	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
-	// remaining columns in the result table come from right table, the table being snapshotted.
+	// Aggregates all non-grouping columns against a single aggregation specification.
+	AggregateAll(ctx context.Context, in *AggregateAllRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+	// aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+	// changes.
+	Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Takes a single snapshot of the source_id table.
 	Snapshot(ctx context.Context, in *SnapshotTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+	// The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+	// "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+	// remaining columns in the result table come from base_id table, the table being snapshotted.
+	SnapshotWhen(ctx context.Context, in *SnapshotWhenTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns a new table with a flattened row set.
 	Flatten(ctx context.Context, in *FlattenRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// *
@@ -114,6 +127,10 @@ type TableServiceClient interface {
 	// exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
 	// initial update had been sent.
 	ExportedTableUpdates(ctx context.Context, in *ExportedTableUpdatesRequest, opts ...grpc.CallOption) (TableService_ExportedTableUpdatesClient, error)
+	// Seek a row number within a table.
+	SeekRow(ctx context.Context, in *SeekRowRequest, opts ...grpc.CallOption) (*SeekRowResponse, error)
+	// Returns the meta table of a table.
+	MetaTable(ctx context.Context, in *MetaTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 }
 
 type tableServiceClient struct {
@@ -136,15 +153,6 @@ func (c *tableServiceClient) GetExportedTableCreationResponse(ctx context.Contex
 func (c *tableServiceClient) FetchTable(ctx context.Context, in *FetchTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchTable", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *tableServiceClient) FetchPandasTable(ctx context.Context, in *FetchPandasTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
-	out := new(ExportedTableCreationResponse)
-	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -376,6 +384,16 @@ func (c *tableServiceClient) AsOfJoinTables(ctx context.Context, in *AsOfJoinTab
 	return out, nil
 }
 
+func (c *tableServiceClient) RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// Deprecated: Do not use.
 func (c *tableServiceClient) ComboAggregate(ctx context.Context, in *ComboAggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate", in, out, opts...)
@@ -385,9 +403,36 @@ func (c *tableServiceClient) ComboAggregate(ctx context.Context, in *ComboAggreg
 	return out, nil
 }
 
+func (c *tableServiceClient) AggregateAll(ctx context.Context, in *AggregateAllRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) Aggregate(ctx context.Context, in *AggregateRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Aggregate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *tableServiceClient) Snapshot(ctx context.Context, in *SnapshotTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/Snapshot", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) SnapshotWhen(ctx context.Context, in *SnapshotWhenTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -494,6 +539,24 @@ func (x *tableServiceExportedTableUpdatesClient) Recv() (*ExportedTableUpdateMes
 	return m, nil
 }
 
+func (c *tableServiceClient) SeekRow(ctx context.Context, in *SeekRowRequest, opts ...grpc.CallOption) (*SeekRowResponse, error) {
+	out := new(SeekRowResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/SeekRow", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) MetaTable(ctx context.Context, in *MetaTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/MetaTable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TableServiceServer is the server API for TableService service.
 // All implementations must embed UnimplementedTableServiceServer
 // for forward compatibility
@@ -502,8 +565,6 @@ type TableServiceServer interface {
 	GetExportedTableCreationResponse(context.Context, *ticket.Ticket) (*ExportedTableCreationResponse, error)
 	// Fetches a Table from an existing source ticket and exports it to the local session result ticket.
 	FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error)
-	// Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-	FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error)
 	// Create a table that has preview columns applied to an existing source table.
 	ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error)
 	// Create an empty table with the given column names and types.
@@ -555,13 +616,28 @@ type TableServiceServer interface {
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of an as of join operation.
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of a range join operation.
+	RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an aggregate table operation.
+	//
+	// Deprecated: Please use AggregateAll or Aggregate instead
 	ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error)
-	// Snapshot rightId, triggered by leftId, and export the resulting new Table.
-	// The left table's change events cause a new snapshot to be taken. The result table includes a
-	// "snapshot key" which is a subset (possibly all) of the left table's columns. The
-	// remaining columns in the result table come from right table, the table being snapshotted.
+	// Aggregates all non-grouping columns against a single aggregation specification.
+	AggregateAll(context.Context, *AggregateAllRequest) (*ExportedTableCreationResponse, error)
+	// Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+	// aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+	// the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+	// changes.
+	Aggregate(context.Context, *AggregateRequest) (*ExportedTableCreationResponse, error)
+	// Takes a single snapshot of the source_id table.
 	Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error)
+	// Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+	// The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+	// "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+	// remaining columns in the result table come from base_id table, the table being snapshotted.
+	SnapshotWhen(context.Context, *SnapshotWhenTableRequest) (*ExportedTableCreationResponse, error)
 	// Returns a new table with a flattened row set.
 	Flatten(context.Context, *FlattenRequest) (*ExportedTableCreationResponse, error)
 	// *
@@ -589,6 +665,10 @@ type TableServiceServer interface {
 	// exports have sent their refresh update. Table updates may be intermingled with initial refresh updates after their
 	// initial update had been sent.
 	ExportedTableUpdates(*ExportedTableUpdatesRequest, TableService_ExportedTableUpdatesServer) error
+	// Seek a row number within a table.
+	SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error)
+	// Returns the meta table of a table.
+	MetaTable(context.Context, *MetaTableRequest) (*ExportedTableCreationResponse, error)
 	mustEmbedUnimplementedTableServiceServer()
 }
 
@@ -601,9 +681,6 @@ func (UnimplementedTableServiceServer) GetExportedTableCreationResponse(context.
 }
 func (UnimplementedTableServiceServer) FetchTable(context.Context, *FetchTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FetchTable not implemented")
-}
-func (UnimplementedTableServiceServer) FetchPandasTable(context.Context, *FetchPandasTableRequest) (*ExportedTableCreationResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method FetchPandasTable not implemented")
 }
 func (UnimplementedTableServiceServer) ApplyPreviewColumns(context.Context, *ApplyPreviewColumnsRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ApplyPreviewColumns not implemented")
@@ -680,11 +757,23 @@ func (UnimplementedTableServiceServer) LeftJoinTables(context.Context, *LeftJoin
 func (UnimplementedTableServiceServer) AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AsOfJoinTables not implemented")
 }
+func (UnimplementedTableServiceServer) RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RangeJoinTables not implemented")
+}
 func (UnimplementedTableServiceServer) ComboAggregate(context.Context, *ComboAggregateRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ComboAggregate not implemented")
 }
+func (UnimplementedTableServiceServer) AggregateAll(context.Context, *AggregateAllRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AggregateAll not implemented")
+}
+func (UnimplementedTableServiceServer) Aggregate(context.Context, *AggregateRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Aggregate not implemented")
+}
 func (UnimplementedTableServiceServer) Snapshot(context.Context, *SnapshotTableRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Snapshot not implemented")
+}
+func (UnimplementedTableServiceServer) SnapshotWhen(context.Context, *SnapshotWhenTableRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SnapshotWhen not implemented")
 }
 func (UnimplementedTableServiceServer) Flatten(context.Context, *FlattenRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Flatten not implemented")
@@ -703,6 +792,12 @@ func (UnimplementedTableServiceServer) Batch(*BatchTableRequest, TableService_Ba
 }
 func (UnimplementedTableServiceServer) ExportedTableUpdates(*ExportedTableUpdatesRequest, TableService_ExportedTableUpdatesServer) error {
 	return status.Errorf(codes.Unimplemented, "method ExportedTableUpdates not implemented")
+}
+func (UnimplementedTableServiceServer) SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SeekRow not implemented")
+}
+func (UnimplementedTableServiceServer) MetaTable(context.Context, *MetaTableRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetaTable not implemented")
 }
 func (UnimplementedTableServiceServer) mustEmbedUnimplementedTableServiceServer() {}
 
@@ -749,24 +844,6 @@ func _TableService_FetchTable_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TableServiceServer).FetchTable(ctx, req.(*FetchTableRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _TableService_FetchPandasTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FetchPandasTableRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TableServiceServer).FetchPandasTable(ctx, req.(*FetchPandasTableRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1221,6 +1298,24 @@ func _TableService_AsOfJoinTables_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_RangeJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RangeJoinTablesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).RangeJoinTables(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).RangeJoinTables(ctx, req.(*RangeJoinTablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_ComboAggregate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ComboAggregateRequest)
 	if err := dec(in); err != nil {
@@ -1239,6 +1334,42 @@ func _TableService_ComboAggregate_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_AggregateAll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AggregateAllRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).AggregateAll(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).AggregateAll(ctx, req.(*AggregateAllRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_Aggregate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AggregateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).Aggregate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/Aggregate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).Aggregate(ctx, req.(*AggregateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_Snapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SnapshotTableRequest)
 	if err := dec(in); err != nil {
@@ -1253,6 +1384,24 @@ func _TableService_Snapshot_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TableServiceServer).Snapshot(ctx, req.(*SnapshotTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_SnapshotWhen_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SnapshotWhenTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).SnapshotWhen(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).SnapshotWhen(ctx, req.(*SnapshotWhenTableRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1371,6 +1520,42 @@ func (x *tableServiceExportedTableUpdatesServer) Send(m *ExportedTableUpdateMess
 	return x.ServerStream.SendMsg(m)
 }
 
+func _TableService_SeekRow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SeekRowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).SeekRow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).SeekRow(ctx, req.(*SeekRowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TableService_MetaTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetaTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).MetaTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/MetaTable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).MetaTable(ctx, req.(*MetaTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TableService_ServiceDesc is the grpc.ServiceDesc for TableService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1385,10 +1570,6 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FetchTable",
 			Handler:    _TableService_FetchTable_Handler,
-		},
-		{
-			MethodName: "FetchPandasTable",
-			Handler:    _TableService_FetchPandasTable_Handler,
 		},
 		{
 			MethodName: "ApplyPreviewColumns",
@@ -1491,12 +1672,28 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TableService_AsOfJoinTables_Handler,
 		},
 		{
+			MethodName: "RangeJoinTables",
+			Handler:    _TableService_RangeJoinTables_Handler,
+		},
+		{
 			MethodName: "ComboAggregate",
 			Handler:    _TableService_ComboAggregate_Handler,
 		},
 		{
+			MethodName: "AggregateAll",
+			Handler:    _TableService_AggregateAll_Handler,
+		},
+		{
+			MethodName: "Aggregate",
+			Handler:    _TableService_Aggregate_Handler,
+		},
+		{
 			MethodName: "Snapshot",
 			Handler:    _TableService_Snapshot_Handler,
+		},
+		{
+			MethodName: "SnapshotWhen",
+			Handler:    _TableService_SnapshotWhen_Handler,
 		},
 		{
 			MethodName: "Flatten",
@@ -1513,6 +1710,14 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "WhereIn",
 			Handler:    _TableService_WhereIn_Handler,
+		},
+		{
+			MethodName: "SeekRow",
+			Handler:    _TableService_SeekRow_Handler,
+		},
+		{
+			MethodName: "MetaTable",
+			Handler:    _TableService_MetaTable_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

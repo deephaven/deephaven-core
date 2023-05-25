@@ -88,16 +88,6 @@ public class UpdateOrSelectSessionTest extends DeephavenSessionTestBase {
     }
 
     @Test
-    public void allowTickingI() throws InterruptedException, TableHandle.TableHandleException {
-        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = i");
-    }
-
-    @Test
-    public void allowTickingII() throws InterruptedException, TableHandle.TableHandleException {
-        allow(TimeTable.of(Duration.ofSeconds(1)).tail(1), "Y = ii");
-    }
-
-    @Test
     public void allowSpecificFunctions() throws TableHandle.TableHandleException, InterruptedException {
         // This test isn't meant to be exhaustive
         allow(TableSpec.empty(1).view("Seconds=(long)1659095381"), "Nanos = secondsToNanos(Seconds)");

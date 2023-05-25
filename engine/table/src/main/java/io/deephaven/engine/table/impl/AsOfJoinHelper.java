@@ -55,6 +55,8 @@ public class AsOfJoinHelper {
 
     static Table asOfJoin(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
+
         if (columnsToMatch.length == 0) {
             throw new IllegalArgumentException("aj() requires at least one column to match!");
         }
@@ -309,13 +311,13 @@ public class AsOfJoinHelper {
             public void onUpdate(TableUpdate upstream) {
                 final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
 
-                upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
+                rowRedirection.removeAll(upstream.removed());
 
                 final boolean keysModified = upstream.modifiedColumnSet().containsAny(leftKeysOrStamps);
 
                 final RowSet restampKeys;
                 if (keysModified) {
-                    upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
+                    rowRedirection.removeAll(upstream.getModifiedPreShift());
                     restampKeys = upstream.modified().union(upstream.added());
                 } else {
                     restampKeys = upstream.added();
@@ -333,7 +335,7 @@ public class AsOfJoinHelper {
 
                     try (final RowSet foundKeys = foundBuilder.build();
                             final RowSet notFound = restampKeys.minus(foundKeys)) {
-                        notFound.forAllRowKeys(rowRedirection::removeVoid);
+                        rowRedirection.removeAll(notFound);
                     }
 
                     try (final AsOfStampContext stampContext = new AsOfStampContext(order, disallowExactMatch,
@@ -601,7 +603,7 @@ public class AsOfJoinHelper {
         }
 
         // we will close them now, but the listener is able to resurrect them as needed
-        SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
+        SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues, rightKeyIndices,
                 rightKeysForLeft);
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
@@ -866,7 +868,7 @@ public class AsOfJoinHelper {
                     }
                 }
 
-                SafeCloseable.closeArray(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
+                SafeCloseable.closeAll(sortContext, leftStampFillContext, rightStampFillContext, rightValues,
                         rightKeyIndices, rightKeysForLeft);
 
                 downstream.modified = modifiedBuilder.build();
@@ -940,7 +942,7 @@ public class AsOfJoinHelper {
         final SsaFactory rightSsaFactory = new SsaFactory() {
             @Override
             public void close() {
-                SafeCloseable.closeArray(rightStampFillContext, rightStampValues, rightStampKeys);
+                SafeCloseable.closeAll(rightStampFillContext, rightStampValues, rightStampKeys);
             }
 
             @Override
@@ -961,7 +963,7 @@ public class AsOfJoinHelper {
         final SsaFactory leftSsaFactory = new SsaFactory() {
             @Override
             public void close() {
-                SafeCloseable.closeArray(sortKernel, leftStampFillContext, leftStampValues, leftStampKeys);
+                SafeCloseable.closeAll(sortKernel, leftStampFillContext, leftStampValues, leftStampKeys);
             }
 
             @Override
@@ -1473,14 +1475,14 @@ public class AsOfJoinHelper {
                                 public void onUpdate(TableUpdate upstream) {
                                     final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
 
-                                    upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
+                                    rowRedirection.removeAll(upstream.removed());
 
                                     final boolean stampModified = upstream.modified().isNonempty()
                                             && upstream.modifiedColumnSet().containsAny(leftStampColumn);
 
                                     final RowSet restampKeys;
                                     if (stampModified) {
-                                        upstream.getModifiedPreShift().forAllRowKeys(rowRedirection::removeVoid);
+                                        rowRedirection.removeAll(upstream.getModifiedPreShift());
                                         restampKeys = upstream.modified().union(upstream.added());
                                     } else {
                                         restampKeys = upstream.added();
@@ -1528,8 +1530,9 @@ public class AsOfJoinHelper {
             MatchPair[] columnsToAdd, boolean refreshing) {
         final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
-            final RedirectedColumnSource<?> rightSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
+            // note that we must always redirect the right-hand side, because unmatched rows will be redirected to null
+            final ColumnSource<?> rightSource =
+                    RedirectedColumnSource.alwaysRedirect(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }

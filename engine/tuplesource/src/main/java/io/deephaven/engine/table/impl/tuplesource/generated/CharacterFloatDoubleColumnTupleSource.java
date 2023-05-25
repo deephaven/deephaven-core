@@ -125,11 +125,11 @@ public class CharacterFloatDoubleColumnTupleSource extends AbstractTupleSource<C
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<CharFloatDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        CharChunk<Values> chunk1 = chunks[0].asCharChunk();
-        FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
-        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
+        CharChunk<? extends Values> chunk1 = chunks[0].asCharChunk();
+        FloatChunk<? extends Values> chunk2 = chunks[1].asFloatChunk();
+        DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new CharFloatDoubleTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

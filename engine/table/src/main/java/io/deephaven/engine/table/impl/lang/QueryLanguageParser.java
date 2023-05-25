@@ -3,45 +3,139 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.TokenRange;
-import com.github.javaparser.ast.*;
+import com.github.javaparser.ast.ArrayCreationLevel;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
+import com.github.javaparser.ast.body.AnnotationDeclaration;
+import com.github.javaparser.ast.body.AnnotationMemberDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
+import com.github.javaparser.ast.body.EnumConstantDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.InitializerDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.body.*;
+import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.comments.BlockComment;
-import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.comments.LineComment;
-import com.github.javaparser.ast.expr.*;
-import com.github.javaparser.ast.stmt.*;
+import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.expr.ArrayAccessExpr;
+import com.github.javaparser.ast.expr.ArrayCreationExpr;
+import com.github.javaparser.ast.expr.ArrayInitializerExpr;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.BooleanLiteralExpr;
+import com.github.javaparser.ast.expr.CastExpr;
+import com.github.javaparser.ast.expr.CharLiteralExpr;
+import com.github.javaparser.ast.expr.ClassExpr;
+import com.github.javaparser.ast.expr.ConditionalExpr;
+import com.github.javaparser.ast.expr.DoubleLiteralExpr;
+import com.github.javaparser.ast.expr.EnclosedExpr;
+import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.InstanceOfExpr;
+import com.github.javaparser.ast.expr.IntegerLiteralExpr;
+import com.github.javaparser.ast.expr.LambdaExpr;
+import com.github.javaparser.ast.expr.LiteralExpr;
+import com.github.javaparser.ast.expr.LongLiteralExpr;
+import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
+import com.github.javaparser.ast.expr.MemberValuePair;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.expr.MethodReferenceExpr;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.expr.NullLiteralExpr;
+import com.github.javaparser.ast.expr.ObjectCreationExpr;
+import com.github.javaparser.ast.expr.SingleMemberAnnotationExpr;
+import com.github.javaparser.ast.expr.StringLiteralExpr;
+import com.github.javaparser.ast.expr.SuperExpr;
+import com.github.javaparser.ast.expr.ThisExpr;
+import com.github.javaparser.ast.expr.TypeExpr;
+import com.github.javaparser.ast.expr.UnaryExpr;
+import com.github.javaparser.ast.expr.VariableDeclarationExpr;
+import com.github.javaparser.ast.stmt.AssertStmt;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import com.github.javaparser.ast.stmt.BreakStmt;
+import com.github.javaparser.ast.stmt.CatchClause;
+import com.github.javaparser.ast.stmt.ContinueStmt;
+import com.github.javaparser.ast.stmt.DoStmt;
+import com.github.javaparser.ast.stmt.EmptyStmt;
+import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt;
+import com.github.javaparser.ast.stmt.ExpressionStmt;
+import com.github.javaparser.ast.stmt.ForStmt;
+import com.github.javaparser.ast.stmt.IfStmt;
+import com.github.javaparser.ast.stmt.LabeledStmt;
+import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.SwitchStmt;
+import com.github.javaparser.ast.stmt.SynchronizedStmt;
+import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.stmt.TryStmt;
+import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.type.ArrayType;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.PrimitiveType;
+import com.github.javaparser.ast.type.TypeParameter;
+import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
-import com.github.javaparser.ast.type.*;
-import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import com.github.javaparser.ast.visitor.GenericVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
 import io.deephaven.vector.Vector;
-import io.deephaven.vector.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.*;
-import java.util.*;
+import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -165,7 +259,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         final VisitArgs printer = VisitArgs.create();
         try {
-            Expression expr = JavaExpressionParser.parseExpression(expression);
+            final Expression expr = JavaExpressionParser.parseExpression(expression);
+            final boolean isConstantValueExpression = JavaExpressionParser.isConstantValueExpression(expr);
+            final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair =
+                    ShiftedColumnsFactory.getShiftToColPairsMap(expr);
+
             WrapperNode wrapperNode = new WrapperNode(expr);
             expr.setParentNode(wrapperNode);
 
@@ -216,7 +314,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
 
-            result = new Result(type, printer.builder.toString(), variablesUsed);
+            result = new Result(type, printer.builder.toString(), variablesUsed,    isConstantValueExpression,
+                    formulaShiftColPair);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
@@ -366,7 +465,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         printer.append('(');
         for (int i = 0; i < arguments.length; i++) {
-            types.add(arguments[i].accept(this, printer));
+            types.add(arguments[i].accept(this, printer.cloneWithCastingContext(null)));
 
             if (i != arguments.length - 1) {
                 printer.append(", ");
@@ -878,7 +977,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * both {@code false}, but {@code QueryLanguageParser.dhqlIsAssignableFrom(Double.TYPE, Integer.TYPE)} and
      * {@code QueryLanguageParser.dhqlIsAssignableFrom(Double.TYPE, Integer.class)} are both {@code true}.
      * <p>
-     * 
+     *
      * @param classA The potential target type for a reference/primitive value of {@code classB}
      * @param classB The class whose assignability to {@code classA} should be checked
      * @return {@code true} if it's acceptable to cast {@code classB} to {@code classA}
@@ -932,10 +1031,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (IntVector.class.isAssignableFrom(type)) {
             return int[].class;
         }
-        // noinspection deprecation
-        if (BooleanVector.class.isAssignableFrom(type)) {
-            return Boolean[].class;
-        }
         if (DoubleVector.class.isAssignableFrom(type)) {
             return double[].class;
         }
@@ -961,7 +1056,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     /**
      * Replaces {@code origExpr} with {@code newExpr} in {@code parentNode}. Throws an exception if {@code origExpr}
      * could not be found in the parent.
-     * 
+     *
      * @param parentNode The parent node in which a child should be replaced
      * @param origExpr The original expression to find & replace in the {@code parentNode}
      * @param newExpr The new expression to put in the place of the {@code origExpr}
@@ -984,7 +1079,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return cachedTypes.get(n);
     }
 
-    static String getOperatorSymbol(BinaryExpr.Operator op) {
+    public static String getOperatorSymbol(BinaryExpr.Operator op) {
         return op.asString();
     }
 
@@ -1056,6 +1151,33 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private Expression[] convertParameters(final Executable executable,
             final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
             final Class<?>[][] typeArguments, Expression[] expressions) {
+        // For Python callables, all Vector columns should be converted into arrays
+        if (executable.getDeclaringClass() == PyCallableWrapper.class) {
+            for (int ei = 0; ei < expressionTypes.length; ei++) {
+                if (isTypedVector(expressionTypes[ei])) {
+                    // replace node in its parent, otherwise setArguments() will clear the parent of 'expressions[ei]'
+                    expressions[ei].replace(new DummyExpr());
+
+                    expressions[ei] =
+                            new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
+                                    new NodeList<>(expressions[ei]));
+                    // To prevent JPY from unpacking a non-primitive array to make sure the result array is treated
+                    // as a single argument
+                    if (ObjectVector.class.isAssignableFrom(expressionTypes[ei])) {
+                        expressions[ei] = new CastExpr(
+                                new ClassOrInterfaceType("java.lang.Object"),
+                                expressions[ei]);
+                        expressionTypes[ei] = Object.class;
+                    } else {
+                        expressionTypes[ei] = convertVector(expressionTypes[ei],
+                                typeArguments[ei] == null ? null : typeArguments[ei][0]);
+                    }
+                }
+            }
+        }
+
+
+
         final int nArgs = argumentTypes.length; // Number of declared arguments
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
@@ -1070,8 +1192,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 // note: the setArguments() bug does not arise here in practice, since nodes representing boxed types
                 // are not replaced by the parser, but it is better to insert the DummyExpr anyway as future-proofing.
                 expressions[ai].replace(new DummyExpr());
-                expressions[ai] = new MethodCallExpr(expressions[ai],
-                        argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
+                if (expressionTypes[ai] == NULL_CLASS) {
+                    expressions[ai] = new FieldAccessExpr(new NameExpr("io.deephaven.util.QueryConstants"),
+                            "NULL_" + argumentTypes[ai].getSimpleName().toUpperCase());
+                } else {
+                    expressions[ai] = new MethodCallExpr(expressions[ai],
+                            argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
+                }
             } else if (argumentTypes[ai].isArray() && isTypedVector(expressionTypes[ai])) {
                 // note: the setArguments() bug does not arise here in practice, since nodes representing a Vector
                 // are not replaced by the parser, but it is better to insert the DummyExpr anyway as future-proofing.
@@ -1135,8 +1262,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
 
-            if (varArgType.isPrimitive() && allExpressionTypesArePrimitive) {
-                // there are ambiguous oddities with primitive varargs, so if it's primitive let's just box it ourselves
+            if ((TypeUtils.isBoxedType(varArgType) || varArgType.isPrimitive()) && allExpressionTypesArePrimitive) {
+                // method invocation is ambiguous when both boxed and primitive versions of the method exist
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
                 System.arraycopy(expressions, 0, temp, 0, temp.length - 1);
@@ -1149,10 +1276,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
 
                 NodeList<ArrayCreationLevel> levels = new NodeList<>(new ArrayCreationLevel());
+                com.github.javaparser.ast.type.Type elementType;
+                if (varArgType.isPrimitive()) {
+                    // wrap the vararg argument expressions in a primitive array:
+                    elementType = new PrimitiveType(PrimitiveType.Primitive.valueOf(
+                            varArgType.getSimpleName().toUpperCase()));
+                } else {
+                    // wrap the vararg argument expressions in a boxed array:
+                    elementType = StaticJavaParser.parseClassOrInterfaceType(varArgType.getSimpleName());
+                }
                 temp[temp.length - 1] = new ArrayCreationExpr(
-                        new PrimitiveType(
-                                PrimitiveType.Primitive.valueOf(varArgType.getSimpleName().toUpperCase())),
-                        levels, new ArrayInitializerExpr(new NodeList<>(varArgExpressions)));
+                        elementType, levels, new ArrayInitializerExpr(new NodeList<>(varArgExpressions)));
 
                 expressions = temp;
             }
@@ -1669,7 +1803,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * {@code true} for {@code myMethod("some", "args"} or {@code myVar}, {@code false} for {@code a&&b}. (Because
      * {@code !myMethod("some", "args")} or {@code !myVar} work fine, but {@code !a&&b} is very different from
      * {@code !(a&&b)}.)
-     * 
+     *
      * @param expr The expression to check.
      * @return {@code true} if prepending a unary operator will apply the operator to the entire expression instead of
      *         just its first term.
@@ -1928,7 +2062,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 try {
                     // For Python object, the type of the field is PyObject by default, the actual data type if
                     // primitive will only be known at runtime
-                    if (scopeType == PyObject.class) {
+                    if (scopeType == PyObject.class || scopeType == PyCallableWrapper.class) {
                         ret = PyObject.class;
                     } else {
                         ret = scopeType.getField(fieldName).getType();
@@ -2250,6 +2384,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (pyCallableWrapper.isVectorized()) {
                 throw ex;
             }
+            pyCallableWrapper.setVectorizable(false);
             if (log.isDebugEnabled()) {
                 log.debug().append("Python function call ").append(n.toString()).append(" is not auto-vectorizable:")
                         .append(ex.getMessage()).endl();
@@ -2281,6 +2416,13 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         + ": Python vectorized function arguments can only be columns, variables, and constants: "
                         + expressions[i]);
             }
+        }
+
+        List<Class<?>> paramTypes = pyCallableWrapper.getParamTypes();
+        if (paramTypes.size() != expressions.length) {
+            // note vectorization doesn't handle Python variadic arguments
+            throw new PythonCallVectorizationFailure("Python function argument count mismatch: " + n + " "
+                    + paramTypes.size() + " vs. " + expressions.length);
         }
     }
 
@@ -2769,11 +2911,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final Class<?> type;
         private final String source;
         private final HashSet<String> variablesUsed;
+        private final boolean isConstantValueExpression;
+        private final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
 
-        Result(Class<?> type, String source, HashSet<String> variablesUsed) {
+        Result(Class<?> type, String source, HashSet<String> variablesUsed, boolean isConstantValueExpression,
+                Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair) {
             this.type = Objects.requireNonNull(type, "type");
             this.source = source;
             this.variablesUsed = variablesUsed;
+            this.isConstantValueExpression = isConstantValueExpression;
+            this.formulaShiftColPair = formulaShiftColPair;
         }
 
         public Class<?> getType() {
@@ -2784,8 +2931,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return source;
         }
 
+        public boolean isConstantValueExpression() {
+            return isConstantValueExpression;
+        }
+
         public HashSet<String> getVariablesUsed() {
             return variablesUsed;
+        }
+
+        public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
+            return formulaShiftColPair;
         }
     }
 

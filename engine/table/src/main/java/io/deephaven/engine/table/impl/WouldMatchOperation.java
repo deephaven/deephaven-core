@@ -38,7 +38,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     /**
      * Just a little helper to keep column stuff together.
      */
-    private static class ColumnHolder {
+    private class ColumnHolder {
         final WouldMatchPair wouldMatchPair;
         IndexWrapperColumnSource column;
 
@@ -309,6 +309,46 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                     final RowSet sourcePrev = source.copyPrev();
                     final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
+            }
+        }
+
+        @Override
+        public WritableRowSet match(
+                boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper, Object... keys) {
+            boolean hasFalse = false;
+            boolean hasTrue = false;
+            boolean hasOther = false;
+
+            for (Object key : keys) {
+                if (key instanceof Boolean) {
+                    if ((Boolean) key) {
+                        hasTrue = true;
+                    } else {
+                        hasFalse = true;
+                    }
+                } else {
+                    hasOther = true;
+                }
+            }
+
+            if (hasTrue && hasFalse) {
+                return invertMatch ? RowSetFactory.empty() : mapper.copy();
+            } else if (!hasTrue && !hasFalse) {
+                return invertMatch ? mapper.copy() : RowSetFactory.empty();
+            }
+
+            try (final SafeCloseableList closer = new SafeCloseableList()) {
+                final WritableRowSet intersection;
+                if (usePrev) {
+                    intersection = mapper.intersect(closer.add(source.copyPrev()));
+                } else {
+                    intersection = mapper.intersect(source);
+                }
+                if (invertMatch ^ hasFalse) {
+                    closer.add(intersection);
+                    return mapper.minus(intersection);
+                }
+                return intersection;
             }
         }
 

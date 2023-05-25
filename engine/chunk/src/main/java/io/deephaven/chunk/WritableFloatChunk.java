@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.nio.FloatBuffer;
  */
 public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableFloatChunk[] EMPTY_WRITABLE_FLOAT_CHUNK_ARRAY = new WritableFloatChunk[0];
 
     static <ATTR extends Any> WritableFloatChunk<ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
     }
 
     public static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getFloatChunkPool().takeWritableFloatChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getFloatChunkPool().takeWritableFloatChunk(size);
+        }
+        return new WritableFloatChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableFloatChunk makeWritableChunkForPool(int size) {
         return new WritableFloatChunk(makeArray(size), 0, size) {
             @Override
@@ -61,7 +68,7 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         return new WritableFloatChunk<>(data, offset, size);
     }
 
-    WritableFloatChunk(float[] data, int offset, int capacity) {
+    protected WritableFloatChunk(float[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -76,6 +83,31 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableFloatChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableFloatChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableFloatChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final float[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableFloatChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

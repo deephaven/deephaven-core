@@ -45,6 +45,12 @@ project.tasks.register('outputVersion') {task ->
     }
 }
 
+project.tasks.register('printVersion') {task ->
+    task.doLast {
+        println(project.version)
+    }
+}
+
 tasks.register('nightly') {
     it.group 'Deephaven lifecycle'
     it.description 'A lifecycle task that defines the nightly tasks to be run in CI, see .github/workflows/nighty-check-ci.yml'

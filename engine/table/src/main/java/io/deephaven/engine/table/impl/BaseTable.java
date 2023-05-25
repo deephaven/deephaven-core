@@ -6,25 +6,22 @@ package io.deephaven.engine.table.impl;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import io.deephaven.base.Base64;
-import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.NotSortableException;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
+import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -34,28 +31,24 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
-import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * Base abstract class all standard table implementations.
  */
-public abstract class BaseTable extends LivenessArtifact
+public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends BaseGridAttributes<Table, IMPL_TYPE>
         implements TableDefaults, NotificationStepReceiver, NotificationStepSource {
 
     private static final long serialVersionUID = 1L;
@@ -68,10 +61,6 @@ public abstract class BaseTable extends LivenessArtifact
             Configuration.getInstance().getBooleanWithDefault("BaseTable.printSerializedUpdateOverlaps", false);
 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
-
-    private static final AtomicReferenceFieldUpdater<BaseTable, Map> ATTRIBUTES_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Map.class, "attributes");
-    private static final Map<String, Object> EMPTY_ATTRIBUTES = Collections.emptyMap();
 
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
@@ -98,10 +87,6 @@ public abstract class BaseTable extends LivenessArtifact
      */
     protected final String description;
 
-    private Map<String, Object> initialAttributes;
-    // Attribute support, set via ensureField with ATTRIBUTES_UPDATER if not initialized
-    volatile Map<String, Object> attributes;
-
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
     @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
@@ -124,45 +109,17 @@ public abstract class BaseTable extends LivenessArtifact
             @NotNull final TableDefinition definition,
             @NotNull final String description,
             @Nullable final Map<String, Object> attributes) {
+        super(attributes);
         this.definition = definition;
         this.description = description;
-        this.attributes = this.initialAttributes = Objects.requireNonNullElse(attributes, EMPTY_ATTRIBUTES);
         lastNotificationStep = LogicalClock.DEFAULT.currentStep();
-        initializeSystemicAttribute();
-    }
 
-    /**
-     * Ensure a field is initialized exactly once, and get the current value after possibly initializing it.
-     *
-     * @param updater An {@link AtomicReferenceFieldUpdater} associated with the field
-     * @param defaultValue The reference value that signifies that the field has not been initialized
-     * @param valueFactory A factory for new values; may be called concurrently by multiple threads as they race to
-     *        initialize the field
-     * @return The initialized value of the field
-     */
-    <FIELD_TYPE, INSTANCE_TYPE extends BaseTable> FIELD_TYPE ensureField(
-            @NotNull final AtomicReferenceFieldUpdater<INSTANCE_TYPE, FIELD_TYPE> updater,
-            @Nullable final FIELD_TYPE defaultValue,
-            @NotNull final Supplier<FIELD_TYPE> valueFactory) {
-        // noinspection unchecked
-        final INSTANCE_TYPE instance = (INSTANCE_TYPE) this;
-        final FIELD_TYPE currentValue = updater.get(instance);
-        if (currentValue != defaultValue) {
-            // The field has previously been initialized, return the current value we already retrieved
-            return currentValue;
-        }
-        final FIELD_TYPE candidateValue = valueFactory.get();
-        if (updater.compareAndSet(instance, defaultValue, candidateValue)) {
-            // This thread won the initialization race, return the candidate value we set
-            return candidateValue;
-        }
-        // This thread lost the initialization race, re-read and return the current value
-        return updater.get(instance);
-    }
-
-    private void initializeSystemicAttribute() {
-        if (SystemicObjectTracker.isSystemicThread()) {
-            markSystemic();
+        // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than
+        // getAttribute, in order to avoid triggering the "immutable after first access" restrictions of
+        // LiveAttributeMap.
+        if (SystemicObjectTracker.isSystemicThread()
+                && (attributes == null || !Boolean.TRUE.equals(attributes.get(Table.SYSTEMIC_TABLE_ATTRIBUTE)))) {
+            setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
         }
     }
 
@@ -194,63 +151,6 @@ public abstract class BaseTable extends LivenessArtifact
     // Attribute Operation Implementations
     // ------------------------------------------------------------------------------------------------------------------
 
-    @Override
-    public void setAttribute(@NotNull final String key, @NotNull final Object object) {
-        if (object instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(object)) {
-            manage((LivenessReferent) object);
-        }
-        ensureAttributes().put(key, object);
-    }
-
-    private Map<String, Object> ensureAttributes() {
-        // If we see an "old" value, in the worst case we'll just try (and fail) to replace attributes.
-        final Map<String, Object> localInitial = initialAttributes;
-        if (localInitial == null) {
-            // We've replaced the initial attributes already, no fanciness required.
-            return attributes;
-        }
-        try {
-            if (localInitial == EMPTY_ATTRIBUTES) {
-                // noinspection unchecked
-                return ensureField(ATTRIBUTES_UPDATER, EMPTY_ATTRIBUTES, ConcurrentHashMap::new);
-            }
-            // noinspection unchecked
-            return ensureField(ATTRIBUTES_UPDATER, localInitial, () -> new ConcurrentHashMap(localInitial));
-        } finally {
-            initialAttributes = null; // Avoid referencing initially-shared attributes for longer than necessary.
-        }
-    }
-
-    @Override
-    public Object getAttribute(@NotNull String key) {
-        return attributes.get(key);
-    }
-
-    @Override
-    @NotNull
-    public Set<String> getAttributeNames() {
-        return new HashSet<>(attributes.keySet());
-    }
-
-    @Override
-    public boolean hasAttribute(@NotNull final String name) {
-        return attributes.containsKey(name);
-    }
-
-    @Override
-    public Map<String, Object> getAttributes(Collection<String> excludedAttrs) {
-        // If nothing is excluded, don't make more garbage
-        if (excludedAttrs == null || excludedAttrs.isEmpty()) {
-            return Collections.unmodifiableMap(attributes);
-        }
-
-        return attributes.entrySet().stream()
-                .filter(ent -> !excludedAttrs.contains(ent.getKey()))
-                .collect(Collectors.collectingAndThen(
-                        Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue),
-                        Collections::unmodifiableMap));
-    }
-
     public enum CopyAttributeOperation {
         // Do not copy any attributes
         None,
@@ -258,17 +158,17 @@ public abstract class BaseTable extends LivenessArtifact
         // legacy attributes
         Flatten, Sort, UpdateView, Join, Filter,
         // new attributes
-        DropColumns, View, Reverse,
+        DropColumns, RenameColumns, View, Reverse,
         /**
          * The result tables that go in a PartitionBy TableMap
          */
         PartitionBy, Coalesce, WouldMatch, LastBy, FirstBy,
 
         // Hierarchical attributes
-        Rollup, Treetable,
+        Rollup, Tree,
 
         // Copy attributes
-        RollupCopy, TreetableCopy,
+        RollupCopy, TreeCopy,
 
         Preview
     }
@@ -299,11 +199,12 @@ public abstract class BaseTable extends LivenessArtifact
         // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.View));
 
-        tempMap.put(EMPTY_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
+        tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
                 CopyAttributeOperation.Rollup,
-                CopyAttributeOperation.Treetable)));
+                CopyAttributeOperation.Tree)));
         tempMap.put(SORTABLE_COLUMNS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
@@ -338,60 +239,10 @@ public abstract class BaseTable extends LivenessArtifact
 
         tempMap.put(SYSTEMIC_TABLE_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.None));
 
-        // Column renderers propagate for all operations that will not rename, remove, or change column types
-        tempMap.put(COLUMN_RENDERERS_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.LastBy,
-                CopyAttributeOperation.FirstBy,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.Preview));
+        tempMap.put(AGGREGATION_ROW_LOOKUP_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.RollupCopy,
+                CopyAttributeOperation.TreeCopy));
 
-        // Tree table attributes
-        tempMap.put(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(ROLLUP_LEAF_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
-                CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.PartitionBy,
-                CopyAttributeOperation.Flatten));
-
-        tempMap.put(TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE, EnumSet.of(
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(REVERSE_LOOKUP_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.RollupCopy));
-
-        tempMap.put(PREPARED_RLL_ATTRIBUTE, EnumSet.of(CopyAttributeOperation.Filter));
 
         tempMap.put(COLUMN_DESCRIPTIONS_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
@@ -402,35 +253,36 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.LastBy,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.TreetableCopy,
+                CopyAttributeOperation.Tree,
+                CopyAttributeOperation.TreeCopy,
                 CopyAttributeOperation.Preview));
 
-        tempMap.put(TABLE_DESCRIPTION_ATTRIBUTE, EnumSet.of(
+        tempMap.put(DESCRIPTION_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.Sort,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Reverse,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce,
-                CopyAttributeOperation.Treetable,
-                CopyAttributeOperation.TreetableCopy,
+                CopyAttributeOperation.Tree,
+                CopyAttributeOperation.TreeCopy,
                 CopyAttributeOperation.Preview));
 
         tempMap.put(SNAPSHOT_VIEWPORT_TYPE, EnumSet.allOf(CopyAttributeOperation.class));
 
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.View,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
-        tempMap.put(PREDEFINED_ROLLUP_ATTRIBUTE, EnumSet.of(
+
+        tempMap.put(APPEND_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
+                CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.Flatten,
-                CopyAttributeOperation.Sort,
-                CopyAttributeOperation.Filter,
-                CopyAttributeOperation.Reverse,
+                CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
         tempMap.put(PREVIEW_PARENT_TABLE, EnumSet.of(CopyAttributeOperation.Flatten));
@@ -458,7 +310,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.PartitionBy));
 
-        tempMap.put(STREAM_TABLE_ATTRIBUTE, EnumSet.of(
+        tempMap.put(BLINK_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Sort,
@@ -469,6 +321,7 @@ public abstract class BaseTable extends LivenessArtifact
                 CopyAttributeOperation.View, // and Select, if added
                 CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
                 CopyAttributeOperation.WouldMatch));
 
@@ -479,7 +332,7 @@ public abstract class BaseTable extends LivenessArtifact
         attributeToCopySet = Collections.unmodifiableMap(tempMap);
     }
 
-    static protected boolean shouldCopyAttribute(String attrName, CopyAttributeOperation copyType) {
+    public static boolean shouldCopyAttribute(String attrName, CopyAttributeOperation copyType) {
         return attributeToCopySet.getOrDefault(attrName, LEGACY_COPY_ATTRIBUTES).contains(copyType);
     }
 
@@ -490,7 +343,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
      */
-    public void copyAttributes(Table dest, CopyAttributeOperation copyType) {
+    public void copyAttributes(BaseTable<?> dest, CopyAttributeOperation copyType) {
         copyAttributes(this, dest, copyType);
     }
 
@@ -500,7 +353,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param dest The table to copy attributes to
      * @param shouldCopy should we copy this attribute?
      */
-    public void copyAttributes(Table dest, Predicate<String> shouldCopy) {
+    public void copyAttributes(BaseTable<?> dest, Predicate<String> shouldCopy) {
         copyAttributes(this, dest, shouldCopy);
     }
 
@@ -510,24 +363,8 @@ public abstract class BaseTable extends LivenessArtifact
      * @param dest The table to copy attributes to
      * @param copyType The operation being performed that requires attributes to be copied.
      */
-    static void copyAttributes(Table source, Table dest, CopyAttributeOperation copyType) {
+    static void copyAttributes(Table source, BaseTable<?> dest, CopyAttributeOperation copyType) {
         copyAttributes(source, dest, attrName -> shouldCopyAttribute(attrName, copyType));
-    }
-
-    /**
-     * Copy attributes between tables. Attributes are copied based on a predicate.
-     *
-     * @param source The table to copy attributes from
-     * @param dest The table to copy attributes to
-     * @param shouldCopy should we copy this attribute?
-     */
-    private static void copyAttributes(Table source, Table dest, Predicate<String> shouldCopy) {
-        for (final Map.Entry<String, Object> attrEntry : source.getAttributes().entrySet()) {
-            final String attrName = attrEntry.getKey();
-            if (shouldCopy.test(attrName)) {
-                dest.setAttribute(attrName, attrEntry.getValue());
-            }
-        }
     }
 
     /**
@@ -540,27 +377,39 @@ public abstract class BaseTable extends LivenessArtifact
         if (!isRefreshing()) {
             return true;
         }
-        return Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean addOnly = Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean appendOnly = Boolean.TRUE.equals(getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE));
+        return addOnly || appendOnly;
     }
 
     /**
-     * Returns true if this table is a stream table.
+     * Returns true if this table is append-only, or has an attribute asserting that no modifies, shifts, or removals
+     * are generated and that all new rows are added to the end of the table.
      *
-     * @return Whether this table is a stream table
-     * @see #STREAM_TABLE_ATTRIBUTE
+     * @return true if this table may only append rows at the end of the table
      */
-    public boolean isStream() {
-        return StreamTableTools.isStream(this);
+    public boolean isAppendOnly() {
+        if (!isRefreshing()) {
+            return true;
+        }
+        boolean addOnly = Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean appendOnly = Boolean.TRUE.equals(getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE));
+        return appendOnly || (addOnly && isFlat());
+    }
+
+    /**
+     * Returns true if this table is a blink table.
+     *
+     * @return Whether this table is a blink table
+     * @see #BLINK_TABLE_ATTRIBUTE
+     */
+    public boolean isBlink() {
+        return BlinkTableTools.isBlink(this);
     }
 
     @Override
-    public Table dropStream() {
-        if (!isStream()) {
-            return this;
-        }
-        final Table result = copy();
-        result.setAttribute(STREAM_TABLE_ATTRIBUTE, false);
-        return result;
+    public Table removeBlink() {
+        return withoutAttributes(Set.of(BLINK_TABLE_ATTRIBUTE));
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -580,7 +429,7 @@ public abstract class BaseTable extends LivenessArtifact
 
     private Collection<Object> ensureParents() {
         // noinspection unchecked
-        return ensureField(PARENTS_UPDATER, EMPTY_PARENTS,
+        return FieldUtils.ensureField(this, PARENTS_UPDATER, EMPTY_PARENTS,
                 () -> new KeyedObjectHashSet<>(IdentityKeyedObjectKey.getInstance()));
     }
 
@@ -640,7 +489,8 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     private Condition ensureCondition() {
-        return ensureField(CONDITION_UPDATER, null, () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
+        return FieldUtils.ensureField(this, CONDITION_UPDATER, null,
+                () -> UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition());
     }
 
     private void maybeSignal() {
@@ -676,12 +526,16 @@ public abstract class BaseTable extends LivenessArtifact
 
     private SimpleReferenceManager<TableUpdateListener, ? extends SimpleReference<TableUpdateListener>> ensureChildListenerReferences() {
         // noinspection unchecked
-        return ensureField(CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
-                () -> new SimpleReferenceManager<>((
-                        final TableUpdateListener tableUpdateListener) -> tableUpdateListener instanceof LegacyListenerAdapter
-                                ? (LegacyListenerAdapter) tableUpdateListener
-                                : new WeakSimpleReference<>(tableUpdateListener),
-                        true));
+        return FieldUtils.ensureField(this, CHILD_LISTENER_REFERENCES_UPDATER, EMPTY_CHILD_LISTENER_REFERENCES,
+                () -> new SimpleReferenceManager<>((final TableUpdateListener tableUpdateListener) -> {
+                    if (tableUpdateListener instanceof LegacyListenerAdapter) {
+                        return (LegacyListenerAdapter) tableUpdateListener;
+                    } else if (tableUpdateListener instanceof SwapListener) {
+                        return ((SwapListener) tableUpdateListener).getReferenceForSource();
+                    } else {
+                        return new WeakSimpleReference<>(tableUpdateListener);
+                    }
+                }, true));
     }
 
     @Override
@@ -739,6 +593,11 @@ public abstract class BaseTable extends LivenessArtifact
      *        callers should pass a {@code copy} for updates they intend to further use.
      */
     public final void notifyListeners(final TableUpdate update) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        // tables may only be updated once per cycle
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
             update.release();
@@ -749,8 +608,6 @@ public abstract class BaseTable extends LivenessArtifact
 
         final boolean hasNoListeners = !hasListeners();
         if (hasNoListeners) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
-            Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
             lastNotificationStep = currentStep;
             update.release();
             return;
@@ -762,11 +619,21 @@ public abstract class BaseTable extends LivenessArtifact
         Assert.neqNull(update.shifted(), "shifted");
 
         if (isFlat()) {
-            Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
+            Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
         }
-        if (isAddOnly()) {
+        if (isAppendOnly() || isAddOnly()) {
             Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
             Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
+            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+        }
+        if (isAppendOnly()) {
+            Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
+                    "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
+        }
+        if (isBlink()) {
+            Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
+            Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
+            Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
             Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
         }
 
@@ -783,10 +650,6 @@ public abstract class BaseTable extends LivenessArtifact
         if (VALIDATE_UPDATE_OVERLAPS) {
             validateUpdateOverlaps(update);
         }
-
-        // tables may only be updated once per cycle
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
 
         lastNotificationStep = currentStep;
 
@@ -892,11 +755,14 @@ public abstract class BaseTable extends LivenessArtifact
      * @param e error
      * @param sourceEntry performance tracking
      */
-    public final void notifyListenersOnError(final Throwable e,
-            @Nullable final TableListener.Entry sourceEntry) {
+    public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
+        Assert.eqFalse(isFailed, "isFailed");
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "LogicalClock.DEFAULT.currentStep()");
+
         isFailed = true;
         maybeSignal();
-        lastNotificationStep = LogicalClock.DEFAULT.currentStep();
+        lastNotificationStep = currentStep;
 
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> notificationQueue
@@ -931,10 +797,9 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public void markSystemic() {
-        if (!isSystemicObject()) {
-            setAttribute(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE);
-        }
+    public Table markSystemic() {
+        // TODO (https://github.com/deephaven/deephaven-core/issues/3003): Maybe we should be memoizing the result?
+        return withAttributes(Map.of(Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE));
     }
 
     /**
@@ -992,10 +857,10 @@ public abstract class BaseTable extends LivenessArtifact
 
         @ReferentialIntegrity
         private final Table parent;
-        private final BaseTable dependent;
+        private final BaseTable<?> dependent;
         private final boolean canReuseModifiedColumnSet;
 
-        public ListenerImpl(String description, Table parent, BaseTable dependent) {
+        public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -1048,77 +913,53 @@ public abstract class BaseTable extends LivenessArtifact
             return parent;
         }
 
-        protected BaseTable getDependent() {
+        protected BaseTable<?> getDependent() {
             return dependent;
         }
     }
 
     @Override
     public Table withKeys(String... columns) {
-        if (columns == null || columns.length == 0) {
-            throw new IllegalArgumentException("withKeys() must be called with at least one key column");
-        }
-
-        if (getAttribute(Table.KEY_COLUMNS_ATTRIBUTE) != null) {
-            throw new IllegalStateException(
-                    "This table already has a set of key columns.  You must create a new table in order to use different keys");
-        }
-
-        checkAvailableColumns(columns);
-
-        setAttribute(Table.KEY_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(columns, ","));
-        return this;
+        return withAttributes(Map.of(Table.KEY_COLUMNS_ATTRIBUTE, formatKeyColumns(columns)));
     }
 
     @Override
     public Table withUniqueKeys(String... columns) {
-        final Table t = withKeys(columns);
-        setAttribute(Table.UNIQUE_KEYS_ATTRIBUTE, true);
-
-        return t;
+        return withAttributes(Map.of(
+                Table.KEY_COLUMNS_ATTRIBUTE, formatKeyColumns(columns),
+                Table.UNIQUE_KEYS_ATTRIBUTE, true));
     }
 
-    @Override
-    public Table restrictSortTo(String... allowedSortingColumns) {
-        Assert.neqNull(allowedSortingColumns, "allowedSortingColumns");
-
-        checkAvailableColumns(allowedSortingColumns);
-        setAttribute(Table.SORTABLE_COLUMNS_ATTRIBUTE, StringUtils.joinStrings(allowedSortingColumns, ","));
-
-        return this;
-    }
-
-    @Override
-    public Table clearSortingRestrictions() {
-        final Map<String, Object> localAttributes = attributes;
-        if (localAttributes != EMPTY_ATTRIBUTES) {
-            localAttributes.remove(SORTABLE_COLUMNS_ATTRIBUTE);
+    private String formatKeyColumns(String... columns) {
+        if (columns == null || columns.length == 0) {
+            throw new IllegalArgumentException("withKeys() must be called with at least one key column");
         }
-        return this;
+        checkAvailableColumns(Arrays.asList(columns));
+        return String.join(",", columns);
     }
 
-    private void checkAvailableColumns(String[] columns) {
+    @Override
+    public void checkAvailableColumns(@NotNull final Collection<String> columns) {
         final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
         final String[] missingColumns =
-                Arrays.stream(columns).filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
-
+                columns.stream().filter(col -> !sourceMap.containsKey(col)).toArray(String[]::new);
         if (missingColumns.length > 0) {
             throw new NoSuchColumnException(sourceMap.keySet(), Arrays.asList(missingColumns));
         }
     }
 
-    void maybeUpdateSortableColumns(Table destination) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+    public void copySortableColumns(
+            @NotNull final BaseGridAttributes<?, ?> destination,
+            @NotNull final Predicate<String> shouldCopy) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
-
-        destination.restrictSortTo(Arrays.stream(currentSortableColumns.split(","))
-                .filter(destination.getColumnSourceMap()::containsKey).toArray(String[]::new));
+        destination.setSortableColumns(currentSortableColumns.stream().filter(shouldCopy).collect(Collectors.toList()));
     }
 
-    void maybeUpdateSortableColumns(Table destination, MatchPair[] renamedColumns) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+    void copySortableColumns(BaseTable<?> destination, MatchPair[] renamedColumns) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
@@ -1141,31 +982,31 @@ public abstract class BaseTable extends LivenessArtifact
         // Process the original set of sortable columns, adding them to the new set if one of the below
         // 1) The column exists in the new table and was not renamed in any way but the Identity (C1 = C1)
         // 2) The column does not exist in the new table, but was renamed to another (C2 = C1)
-        final Map<String, ? extends ColumnSource<?>> sourceMap = destination.getColumnSourceMap();
-        for (String col : currentSortableColumns.split(",")) {
+        final Set<String> resultColumnNames = destination.getDefinition().getColumnNameMap().keySet();
+        for (final String columnName : currentSortableColumns) {
             // Only add it to the set of sortable columns if it hasn't changed in an unknown way
-            final String maybeRenamedColumn = columnMapping.get(col);
-            if (sourceMap.get(col) != null && (maybeRenamedColumn == null || maybeRenamedColumn.equals(col))) {
-                sortableColumns.add(col);
+            final String maybeRenamedColumn = columnMapping.get(columnName);
+            if (resultColumnNames.contains(columnName)
+                    && (maybeRenamedColumn == null || maybeRenamedColumn.equals(columnName))) {
+                sortableColumns.add(columnName);
             } else {
-                final String newName = columnMapping.inverse().get(col);
+                final String newName = columnMapping.inverse().get(columnName);
                 if (newName != null) {
                     sortableColumns.add(newName);
                 }
             }
         }
 
-        // Apply the new mapping to the result table.
-        destination.restrictSortTo(sortableColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        destination.setSortableColumns(sortableColumns);
     }
 
-    void maybeUpdateSortableColumns(Table destination, SelectColumn[] selectCols) {
-        final String currentSortableColumns = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
+    void copySortableColumns(BaseTable<?> destination, SelectColumn[] selectCols) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
         if (currentSortableColumns == null) {
             return;
         }
 
-        final Set<String> currentSortableSet = CollectionUtil.setFromArray(currentSortableColumns.split(","));
+        final Set<String> currentSortableSet = new HashSet<>(currentSortableColumns);
         final Set<String> newSortableSet = new HashSet<>();
 
         for (SelectColumn sc : selectCols) {
@@ -1194,7 +1035,7 @@ public abstract class BaseTable extends LivenessArtifact
             }
         }
 
-        destination.restrictSortTo(newSortableSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        destination.setSortableColumns(newSortableSet);
     }
 
     /**
@@ -1204,35 +1045,22 @@ public abstract class BaseTable extends LivenessArtifact
      */
     void assertSortable(String... columns) throws NotSortableException {
         // Does this table actually have the requested columns?
-        checkAvailableColumns(columns);
+        checkAvailableColumns(Arrays.asList(columns));
 
-        final String sortable = (String) getAttribute(SORTABLE_COLUMNS_ATTRIBUTE);
-
-        if (sortable == null) {
+        final Collection<String> currentSortableColumns = getSortableColumns();
+        if (currentSortableColumns == null) {
             return;
         }
 
-        final List<String> sortableColSet;
-        if (sortable.isEmpty()) {
-            sortableColSet = Collections.emptyList();
-        } else {
-            sortableColSet = Arrays.asList(sortable.split(","));
-        }
-
-        // TODO: This is hacky. SortTableGrpcImpl will update the table with __ABS__ prefixed columns
-        // TODO: when the user requests to sort absolute.
         final Set<String> unsortable = Arrays.stream(columns)
-                .map(cn -> cn.startsWith("__ABS__") ? cn.replace("__ABS__", "") : cn).collect(Collectors.toSet());
-        sortableColSet.forEach(unsortable::remove);
+                .map(AbsoluteSortColumnConventions::stripAbsoluteColumnName).collect(Collectors.toSet());
+        currentSortableColumns.forEach(unsortable::remove);
 
         if (unsortable.isEmpty()) {
             return;
         }
 
-        // If this is null, we never should have gotten to this point because _all_ columns are sortable.
-        Assert.neqNull(sortable, "sortable");
-
-        throw new NotSortableException(unsortable, sortableColSet);
+        throw new NotSortableException(unsortable, currentSortableColumns);
     }
 
     /**
@@ -1240,7 +1068,7 @@ public abstract class BaseTable extends LivenessArtifact
      *
      * @param destination the table which shall possibly have a column-description attribute created
      */
-    void maybeCopyColumnDescriptions(final Table destination) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination) {
         // noinspection unchecked
         final Map<String, String> sourceDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1254,7 +1082,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param destination the table which shall possibly have a column-description attribute created
      * @param renamedColumns an array of the columns which have been renamed
      */
-    void maybeCopyColumnDescriptions(final Table destination, final MatchPair[] renamedColumns) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination, final MatchPair[] renamedColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1284,7 +1112,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param destination the table which shall possibly have a column-description attribute created
      * @param selectColumns columns which may be changed during this operation, and have their descriptions invalidated
      */
-    void maybeCopyColumnDescriptions(final Table destination, final SelectColumn[] selectColumns) {
+    void maybeCopyColumnDescriptions(final BaseTable<?> destination, final SelectColumn[] selectColumns) {
         // noinspection unchecked
         final Map<String, String> oldDescriptions =
                 (Map<String, String>) getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
@@ -1314,7 +1142,10 @@ public abstract class BaseTable extends LivenessArtifact
      * @param joinedColumns the columns on which this table is being joined
      * @param addColumns the right-table's columns which are being added by the join operation
      */
-    void maybeCopyColumnDescriptions(final Table destination, final Table rightTable, final MatchPair[] joinedColumns,
+    void maybeCopyColumnDescriptions(
+            final BaseTable<?> destination,
+            final Table rightTable,
+            final MatchPair[] joinedColumns,
             final MatchPair[] addColumns) {
         // noinspection unchecked
         final Map<String, String> leftDescriptions =
@@ -1353,7 +1184,8 @@ public abstract class BaseTable extends LivenessArtifact
      * @param destination the table which shall possibly have a column-description attribute created
      * @param sourceDescriptions column name->description mapping
      */
-    private static void maybeCopyColumnDescriptions(final Table destination,
+    private static void maybeCopyColumnDescriptions(
+            final BaseTable<?> destination,
             final Map<String, String> sourceDescriptions) {
         if (sourceDescriptions == null || sourceDescriptions.isEmpty()) {
             return; // short-circuit; there are no column-descriptions in this operation
@@ -1372,58 +1204,13 @@ public abstract class BaseTable extends LivenessArtifact
         }
     }
 
-    /**
-     * Copies this table, but with a new set of attributes.
-     *
-     * @return an identical table; but with a new set of attributes
-     */
-    public Table copy() {
-        return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
-
-            final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
-            initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
-                final QueryTable resultTable = (QueryTable) getSubTable(getRowSet());
-                propagateFlatness(resultTable);
-                copyAttributes(resultTable, a -> true);
-
-                if (swapListener != null) {
-                    final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
-                    swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
-                }
-
-                result.setValue(resultTable);
-                return true;
-            });
-
-            return result.getValue();
-        });
-    }
-
-    @Override
-    public Table setLayoutHints(String hints) {
-        final Table result = copy();
-        result.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, hints);
-        return result;
-    }
-
     @Override
     public Table setTotalsTable(String directive) {
-        final Table result = copy();
-        result.setAttribute(TOTALS_TABLE_ATTRIBUTE, directive);
-        return result;
+        return withAttributes(Map.of(TOTALS_TABLE_ATTRIBUTE, directive));
     }
 
-    @Override
-    public Table setColumnRenderers(String directive) {
-        final Table result = copy();
-        result.setAttribute(COLUMN_RENDERERS_ATTRIBUTE, directive);
-        return result;
-    }
-
-    public static <SL extends SwapListenerBase<?>> void initializeWithSnapshot(
-            String logPrefix, SL swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
+    public static void initializeWithSnapshot(
+            String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
             snapshotFunction.call(false, LogicalClock.DEFAULT.currentValue());
             return;
@@ -1431,7 +1218,7 @@ public abstract class BaseTable extends LivenessArtifact
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);
     }
 
-    public interface SwapListenerFactory<T extends SwapListenerBase<?>> {
+    public interface SwapListenerFactory<T extends SwapListener> {
         T newListener(BaseTable sourceTable);
     }
 
@@ -1443,7 +1230,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @return a swap listener for this table (or null)
      */
     @Nullable
-    public <T extends SwapListenerBase<?>> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
+    public <T extends SwapListener> T createSwapListenerIfRefreshing(final SwapListenerFactory<T> factory) {
         if (!isRefreshing()) {
             return null;
         }
@@ -1451,24 +1238,6 @@ public abstract class BaseTable extends LivenessArtifact
         final T swapListener = factory.newListener(this);
         swapListener.subscribeForUpdates();
         return swapListener;
-    }
-
-    /**
-     * <p>
-     * If this table is flat, then set the result table flat.
-     * </p>
-     *
-     * <p>
-     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
-     * must also be flat.
-     * </p>
-     *
-     * @param result the table derived from this table
-     */
-    public void propagateFlatness(QueryTable result) {
-        if (isFlat()) {
-            result.setFlat();
-        }
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -1482,38 +1251,5 @@ public abstract class BaseTable extends LivenessArtifact
         // happen or happen out of order if the listeners were GC'd and not explicitly left unmanaged.
         childListenerReferences.clear();
         parents.clear();
-    }
-
-    @Override
-    public Table withTableDescription(String description) {
-        final Table result = copy();
-        result.setAttribute(TABLE_DESCRIPTION_ATTRIBUTE, description);
-        return result;
-    }
-
-    @Override
-    public Table withColumnDescription(Map<String, String> descriptions) {
-        if (!hasColumns(descriptions.keySet())) {
-            final Map<String, ColumnDefinition<?>> existingColumns = getDefinition().getColumnNameMap();
-            throw new IllegalArgumentException(
-                    "Cannot set column descriptions.  The table does not contain the following columns [ " +
-                            descriptions.keySet().stream()
-                                    .filter(col -> !existingColumns.containsKey(col))
-                                    .collect(Collectors.joining(", "))
-                            + " ]");
-        }
-
-        final Table result = copy();
-
-        // noinspection unchecked
-        Map<String, String> existingDescriptions =
-                (Map<String, String>) result.getAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE);
-        if (existingDescriptions == null) {
-            existingDescriptions = new HashMap<>();
-            result.setAttribute(Table.COLUMN_DESCRIPTIONS_ATTRIBUTE, existingDescriptions);
-        }
-
-        existingDescriptions.putAll(descriptions);
-        return result;
     }
 }

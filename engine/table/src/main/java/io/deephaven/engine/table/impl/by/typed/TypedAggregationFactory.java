@@ -87,7 +87,7 @@ public class TypedAggregationFactory {
         if (alternate) {
             builder.addStatement("int $L = hashToTableLocationAlternate(hash)", tableLocationName);
             builder.beginControlFlow("if ($L >= rehashPointer)", tableLocationName);
-            builder.addStatement("return -1");
+            builder.addStatement("return UNKNOWN_ROW");
             builder.endControlFlow();
         } else {
             builder.addStatement("int $L = hashToTableLocation(hash)", tableLocationName);
@@ -106,7 +106,7 @@ public class TypedAggregationFactory {
         if (hasherConfig.openAddressedAlternate && !alternate) {
             findPositionForKeyOpenAddressed(hasherConfig, chunkTypes, builder, true);
         } else {
-            builder.addStatement("return -1");
+            builder.addStatement("return UNKNOWN_ROW");
         }
 
         builder.endControlFlow();

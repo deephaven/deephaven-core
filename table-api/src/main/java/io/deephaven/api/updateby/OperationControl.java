@@ -68,38 +68,6 @@ public abstract class OperationControl {
     }
 
     /**
-     * Get the behavior for when {@code null} timestamps are encountered. Defaults to {@link BadDataBehavior#SKIP SKIP}.
-     * 
-     * @return the behavior for {@code null} timestamps.
-     */
-    @Value.Derived
-    public BadDataBehavior onNullTimeOrDefault() {
-        return onNullTime().orElse(BadDataBehavior.SKIP);
-    }
-
-    /**
-     * Get the behavior for when negative sample-to-sample time differences are encountered. Defaults to
-     * {@link BadDataBehavior#THROW THROW}.
-     * 
-     * @return the behavior for when dt is negative
-     */
-    @Value.Derived
-    public BadDataBehavior onNegativeDeltaTimeOrDefault() {
-        return onNegativeDeltaTime().orElse(BadDataBehavior.THROW);
-    }
-
-    /**
-     * Get the behavior for when zero sample-to-sample-time differences are encountered. Defaults to
-     * {@link BadDataBehavior#SKIP SKIP}.
-     * 
-     * @return the behavior for when dt is zero
-     */
-    @Value.Derived
-    public BadDataBehavior onZeroDeltaTimeOrDefault() {
-        return onZeroDeltaTime().orElse(BadDataBehavior.SKIP);
-    }
-
-    /**
      * Get the {@link MathContext} to use when processing {@link java.math.BigInteger} and {@link java.math.BigDecimal}
      * values. Defaults to {@link MathContext#DECIMAL128}.
      * 
@@ -121,9 +89,6 @@ public abstract class OperationControl {
         return builder()
                 .onNullValue(onNullValueOrDefault())
                 .onNanValue(onNanValueOrDefault())
-                .onNullTime(onNullTimeOrDefault())
-                .onNegativeDeltaTime(onNegativeDeltaTimeOrDefault())
-                .onZeroDeltaTime(onZeroDeltaTimeOrDefault())
                 .bigValueContext(bigValueContextOrDefault())
                 .build();
     }
@@ -132,12 +97,6 @@ public abstract class OperationControl {
         Builder onNullValue(BadDataBehavior badDataBehavior);
 
         Builder onNanValue(BadDataBehavior badDataBehavior);
-
-        Builder onNullTime(BadDataBehavior badDataBehavior);
-
-        Builder onNegativeDeltaTime(BadDataBehavior badDataBehavior);
-
-        Builder onZeroDeltaTime(BadDataBehavior badDataBehavior);
 
         Builder bigValueContext(MathContext context);
 

@@ -9,8 +9,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.QueryTableTestBase;
 import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
@@ -38,13 +36,12 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     private final static boolean DO_STATIC_JOIN_PRINT = false;
 
-    private static void testNaturalJoinRandomStatic(int seed, int leftSize, int rightSize, Class dataType,
+    private static void testNaturalJoinRandomStatic(int seed, int leftSize, int rightSize, Class<?> dataType,
             boolean grouped, boolean flattenLeft, @Nullable JoinControl control) {
-        final Logger log = new StreamLoggerImpl();
         final Random random = new Random(seed);
 
-        final Generator leftGenerator;
-        final Generator rightGenerator;
+        final TestDataGenerator<?, ?> leftGenerator;
+        final TestDataGenerator<?, ?> rightGenerator;
 
         if (dataType == int.class) {
             leftGenerator = new IntGenerator(1, 10 * rightSize);
@@ -53,11 +50,11 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             leftGenerator = new ShortGenerator((short) 1, (short) (2 * rightSize));
             rightGenerator = new UniqueShortGenerator((short) 1, (short) (2 * rightSize));
         } else if (dataType == byte.class) {
-            leftGenerator = new ByteGenerator((byte) 1, (byte) rightSize);
-            rightGenerator = new UniqueByteGenerator((byte) 1, (byte) rightSize);
+            leftGenerator = new ByteGenerator((byte) 1, (byte) Math.min(2 * rightSize, Byte.MAX_VALUE));
+            rightGenerator = new UniqueByteGenerator((byte) 1, (byte) Math.min(2 * rightSize, Byte.MAX_VALUE));
         } else if (dataType == char.class) {
-            leftGenerator = new CharGenerator((char) 1, (char) rightSize);
-            rightGenerator = new UniqueCharGenerator((char) 1, (char) rightSize);
+            leftGenerator = new CharGenerator((char) 1, (char) (2 * rightSize));
+            rightGenerator = new UniqueCharGenerator((char) 1, (char) (2 * rightSize));
         } else if (dataType == String.class) {
             final UniqueStringGenerator uniqueStringGenerator = new UniqueStringGenerator();
 
@@ -66,19 +63,19 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                 duplicateRights.add("Dup-" + Long.toHexString(random.nextLong()));
             }
 
-            final List<Generator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
+            final List<TestDataGenerator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
                     new SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
             rightGenerator = new CompositeGenerator<>(generatorList, 0.9);
             leftGenerator = new FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
         } else if (dataType == ArrayTuple.class) {
-            final UniqueTupleGenerator uniqueTupleGenerator =
-                    new UniqueTupleGenerator(new LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
+            final UniqueArrayTupleGenerator uniqueTupleGenerator =
+                    new UniqueArrayTupleGenerator(new LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
                             new IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
-            final TupleGenerator defaultGenerator =
-                    new TupleGenerator(new LongGenerator(0, (long) Math.sqrt(rightSize)),
+            final ArrayTupleGenerator defaultGenerator =
+                    new ArrayTupleGenerator(new LongGenerator(0, (long) Math.sqrt(rightSize)),
                             new IntGenerator(0, (int) Math.sqrt(rightSize)));
             rightGenerator = uniqueTupleGenerator;
-            leftGenerator = new FromUniqueTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
+            leftGenerator = new FromUniqueArrayTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
         } else {
             throw new UnsupportedOperationException("Invalid Data Type: " + dataType);
         }
@@ -104,9 +101,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         if (dataType == int.class) {
             final TIntIntMap rightMap = new TIntIntHashMap(rightTable.intSize(), 0.5f, -1, NULL_INT);
 
-            // noinspection unchecked
             final ColumnSource<Integer> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -117,9 +112,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         } else if (dataType == short.class) {
             final TShortIntMap rightMap = new TShortIntHashMap(rightTable.intSize(), 0.5f, (short) -1, NULL_INT);
 
-            // noinspection unchecked
             final ColumnSource<Short> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -130,9 +123,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         } else if (dataType == byte.class) {
             final TByteIntMap rightMap = new TByteIntHashMap(rightTable.intSize(), 0.5f, (byte) -1, NULL_INT);
 
-            // noinspection unchecked
             final ColumnSource<Byte> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -143,9 +134,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         } else if (dataType == char.class) {
             final TCharIntMap rightMap = new TCharIntHashMap(rightTable.intSize(), 0.5f, (char) -1, NULL_INT);
 
-            // noinspection unchecked
             final ColumnSource<Character> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -156,9 +145,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         } else if (dataType == String.class) {
             final Map<String, Integer> rightMap = new HashMap<>();
 
-            // noinspection unchecked
             final ColumnSource<String> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -170,9 +157,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         if (dataType == ArrayTuple.class) {
             final Map<ArrayTuple, Integer> rightMap = new HashMap<>();
 
-            // noinspection unchecked
             final ColumnSource<ArrayTuple> rightKey = rightTable.getColumnSource("JoinKey");
-            // noinspection unchecked
             final ColumnSource<Integer> rightSentinel = rightTable.getColumnSource("RightSentinel");
             for (final RowSet.Iterator it = rightTable.getRowSet().iterator(); it.hasNext();) {
                 final long next = it.nextLong();
@@ -231,7 +216,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             for (int rightSize = 10; rightSize <= 100_000; rightSize *= 10) {
                 for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
+                    for (Class<?> dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
                         for (boolean grouped : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
                             System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                                     + ", type=" + dataType + ", grouped=" + grouped);
@@ -247,7 +232,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         for (int leftSize = 10; leftSize <= 100_000; leftSize *= 10) {
             final int rightSize = 100;
             for (int seed = 0; seed < 2; ++seed) {
-                for (Class dataType : Arrays.asList(byte.class, char.class, short.class)) {
+                for (Class<?> dataType : Arrays.asList(byte.class, char.class, short.class)) {
                     for (boolean grouped : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
                         System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                                 + ", type=" + dataType + ", grouped=" + grouped);
@@ -263,7 +248,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         for (int leftSize = 10_000; leftSize <= 10_000; leftSize *= 10) {
             for (int rightSize = 10_000; rightSize <= 10_000; rightSize *= 10) {
                 for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Collections.singletonList(int.class)) {
+                    for (Class<?> dataType : Collections.singletonList(int.class)) {
                         for (boolean grouped : Arrays.asList(Boolean.TRUE, Boolean.FALSE)) {
                             for (JoinControl.RedirectionType redirectionType : JoinControl.RedirectionType.values()) {
                                 System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize="

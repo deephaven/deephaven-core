@@ -4,6 +4,7 @@
 package io.deephaven.qst.array;
 
 import io.deephaven.qst.type.DoubleType;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -58,6 +59,17 @@ public final class DoubleArray extends PrimitiveArrayBase<Double> {
      */
     public final double[] values() {
         return values;
+    }
+
+    @Override
+    public Double value(int index) {
+        double value = values[index];
+        return value == QueryConstants.NULL_DOUBLE ? null : value;
+    }
+
+    @Override
+    public boolean isNull(int index) {
+        return values[index] == QueryConstants.NULL_DOUBLE;
     }
 
     @Override

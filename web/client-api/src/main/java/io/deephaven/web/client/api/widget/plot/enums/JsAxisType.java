@@ -3,11 +3,12 @@
  */
 package io.deephaven.web.client.api.widget.plot.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import jsinterop.annotations.JsType;
 
-@JsType(name = "AxisType")
-@SuppressWarnings("unusable-by-js")
+@JsType(name = "AxisType", namespace = "dh.plot")
+@TsTypeDef(tsType = "number")
 public class JsAxisType {
     public static final int X = AxisDescriptor.AxisType.getX();
     public static final int Y = AxisDescriptor.AxisType.getY();

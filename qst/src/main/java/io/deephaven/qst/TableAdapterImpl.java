@@ -7,39 +7,8 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
-import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.CountByTable;
-import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.HeadTable;
-import io.deephaven.qst.table.InputTable;
-import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LazyUpdateTable;
-import io.deephaven.qst.table.MergeTable;
-import io.deephaven.qst.table.NaturalJoinTable;
-import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ParentsVisitor;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
-import io.deephaven.qst.table.ReverseTable;
-import io.deephaven.qst.table.SelectDistinctTable;
-import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SnapshotTable;
-import io.deephaven.qst.table.SortTable;
-import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.*;
 import io.deephaven.qst.table.TableSpec.Visitor;
-import io.deephaven.qst.table.TailTable;
-import io.deephaven.qst.table.TicketTable;
-import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.UngroupTable;
-import io.deephaven.qst.table.UpdateByTable;
-import io.deephaven.qst.table.UpdateTable;
-import io.deephaven.qst.table.UpdateViewTable;
-import io.deephaven.qst.table.ViewTable;
-import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereTable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -155,15 +124,20 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(SnapshotTable snapshotTable) {
-        final TOPS trigger = ops(snapshotTable.trigger());
-        final TABLE base = table(snapshotTable.base());
-        addOp(snapshotTable, trigger.snapshot(base, snapshotTable.doInitialSnapshot(),
-                snapshotTable.stampColumns()));
+        final TOPS base = ops(snapshotTable.base());
+        addOp(snapshotTable, base.snapshot());
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        final TOPS base = ops(snapshotWhenTable.base());
+        final TABLE trigger = table(snapshotWhenTable.trigger());
+        addOp(snapshotWhenTable, base.snapshotWhen(trigger, snapshotWhenTable.options()));
     }
 
     @Override
     public void visit(WhereTable whereTable) {
-        addOp(whereTable, parentOps(whereTable).where(whereTable.filters()));
+        addOp(whereTable, parentOps(whereTable).where(whereTable.filter()));
     }
 
     @Override
@@ -220,8 +194,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(JoinTable joinTable) {
         final TOPS left = ops(joinTable.left());
         final TABLE right = table(joinTable.right());
-        addOp(joinTable,
-                left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
+        if (joinTable.reserveBits().isPresent()) {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits().getAsInt()));
+        } else {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions()));
+        }
     }
 
     @Override
@@ -235,29 +214,40 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(ReverseAsOfJoinTable raj) {
         final TOPS left = ops(raj.left());
         final TABLE right = table(raj.right());
-        addOp(raj, left.exactJoin(right, raj.matches(), raj.additions()));
+        addOp(raj, left.raj(right, raj.matches(), raj.additions(), raj.rule()));
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        final AggSpec spec = aggAllByTable.spec();
-        if (aggAllByTable.groupByColumns().isEmpty()) {
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
+    public void visit(RangeJoinTable rangeJoinTable) {
+        final TOPS left = ops(rangeJoinTable.left());
+        final TABLE right = table(rangeJoinTable.right());
+        addOp(rangeJoinTable, left.rangeJoin(
+                right, rangeJoinTable.exactMatches(), rangeJoinTable.rangeMatch(), rangeJoinTable.aggregations()));
+    }
+
+    @Override
+    public void visit(AggregateAllTable aggregateAllTable) {
+        final AggSpec spec = aggregateAllTable.spec();
+        if (aggregateAllTable.groupByColumns().isEmpty()) {
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec));
         } else {
-            final ColumnName[] groupByColumns = aggAllByTable.groupByColumns().toArray(new ColumnName[0]);
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
+            final ColumnName[] groupByColumns = aggregateAllTable.groupByColumns().toArray(new ColumnName[0]);
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec, groupByColumns));
         }
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        if (aggregationTable.groupByColumns().isEmpty()) {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty()));
+    public void visit(AggregateTable aggregateTable) {
+        if (aggregateTable.groupByColumns().isEmpty()) {
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty()));
         } else {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty(), aggregationTable.initialGroups().map(this::table).orElse(null),
-                    aggregationTable.groupByColumns()));
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty(),
+                    aggregateTable.initialGroups().map(this::table).orElse(null),
+                    aggregateTable.groupByColumns()));
         }
     }
 
@@ -282,16 +272,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        if (countByTable.groupByColumns().isEmpty()) {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
-        } else {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new ColumnName[0])));
-        }
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         if (updateByTable.control().isPresent()) {
             addOp(updateByTable, parentOps(updateByTable).updateBy(
@@ -309,6 +289,12 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(UngroupTable ungroupTable) {
         addOp(ungroupTable, parentOps(ungroupTable)
                 .ungroup(ungroupTable.nullFill(), ungroupTable.ungroupColumns()));
+    }
+
+    @Override
+    public void visit(DropColumnsTable dropColumnsTable) {
+        addOp(dropColumnsTable,
+                parentOps(dropColumnsTable).dropColumns(dropColumnsTable.dropColumns().toArray(new ColumnName[0])));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

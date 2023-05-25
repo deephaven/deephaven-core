@@ -107,10 +107,10 @@ public class BooleanLongColumnTupleSource extends AbstractTupleSource<ByteLongTu
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ByteLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Boolean, Values> chunk1 = chunks[0].asObjectChunk();
-        LongChunk<Values> chunk2 = chunks[1].asLongChunk();
+        ObjectChunk<Boolean, ? extends Values> chunk1 = chunks[0].asObjectChunk();
+        LongChunk<? extends Values> chunk2 = chunks[1].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteLongTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), chunk2.get(ii)));
         }

@@ -43,18 +43,26 @@ server.timezone=America/New_York
 
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
-OperationInitializationThreadPool.threads=1
+deephaven.console.type=python
 
+# Default session duration is 5 minutes
+http.session.durationMs=300000
 
+# Default to allowing anonymous access, but don't yet warn users that it is unsafe by default
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
+authentication.anonymous.warn=true
 
 # List of configuration properties to provide to unauthenticated clients, so that they can decide how best to prove their
 # identity to the server.
 authentication.client.configuration.list=AuthHandlers
 
 # List of configuration properties to provide to authenticated clients, so they can interact with the server.
-client.configuration.list=java.version,deephaven.version,barrage.version,
+client.configuration.list=java.version,deephaven.version,barrage.version,http.session.durationMs
 # Version list to add to the configuration property list. Each `=`-delimited pair denotes a short name for a versioned
 # jar, and a class that is found in that jar. Any such keys will be made available to the client.configuration.list
 # as <key>.version.
 client.version.list=deephaven=io.deephaven.engine.table.Table,barrage=io.deephaven.barrage.flatbuf.BarrageMessageWrapper
+
+
+# Specifies additional setup to run on threads that can perform table operations with user code. Comma-separated list, instances must be of type io.deephaven.util.thread.ThreadInitializationFactory
+thread.initialization=io.deephaven.server.console.python.DebuggingInitializer

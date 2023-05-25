@@ -8,10 +8,8 @@ import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -25,17 +23,16 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.net.CommBase;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
-import io.deephaven.util.thread.ThreadDump;
-import org.apache.commons.lang3.exception.ExceptionUtils;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -111,12 +108,11 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private LongConsumer watchDogTimeoutProcedure = null;
 
     public static final String ALLOW_UNIT_TEST_MODE_PROP = "UpdateGraphProcessor.allowUnitTestMode";
-    private final boolean allowUnitTestMode =
+    private final boolean ALLOW_UNIT_TEST_MODE =
             Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
-    private String unitTestModeHolder = "none";
     private ExecutorService unitTestRefreshThreadPool;
 
     private static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
@@ -252,7 +248,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     /**
      * Encapsulates locking support.
      */
-    private final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT, allowUnitTestMode);
+    private final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, ALLOW_UNIT_TEST_MODE);
 
     /**
      * When UpdateGraphProcessor.printDependencyInformation is set to true, the UpdateGraphProcessor will print debug
@@ -266,21 +262,18 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
 
-        refreshThread = new Thread("UpdateGraphProcessor." + name() + ".refreshThread") {
-            @Override
-            public void run() {
-                configureRefreshThread();
-                // noinspection InfiniteLoopStatement
-                while (true) {
-                    Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
-                    refreshTablesAndFlushNotifications();
-                }
+        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
+            configureRefreshThread();
+            // noinspection InfiniteLoopStatement
+            while (true) {
+                Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
+                refreshTablesAndFlushNotifications();
             }
-        };
+        }), "UpdateGraphProcessor." + name() + ".refreshThread");
         refreshThread.setDaemon(true);
 
         final int updateThreads =
-                Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1);
+                Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", -1);
         if (updateThreads <= 0) {
             this.updateThreads = Runtime.getRuntime().availableProcessors();
         } else {
@@ -562,29 +555,22 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         if (unitTestMode) {
             return;
         }
-        if (!allowUnitTestMode) {
+        if (!ALLOW_UNIT_TEST_MODE) {
             throw new IllegalStateException("UpdateGraphProcessor.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
             throw new IllegalStateException("UpdateGraphProcessor.refreshThread is executing!");
         }
-        assertLockAvailable("enabling unit test mode");
+        lock.reset();
         unitTestMode = true;
-        unitTestModeHolder = ExceptionUtils.getStackTrace(new Exception());
         unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
     }
 
-    private void assertLockAvailable(@NotNull final String action) {
-        final AwareFunctionalLock exclusiveLock = UpdateGraphProcessor.DEFAULT.exclusiveLock();
-        if (!exclusiveLock.tryLock()) {
-            log.error().append("Lock is held when ").append(action).append(", with previous holder: ")
-                    .append(unitTestModeHolder).endl();
-            ThreadDump.threadDump(System.err);
-            UpdateGraphLock.DebugAwareFunctionalLock lock = (UpdateGraphLock.DebugAwareFunctionalLock) exclusiveLock;
-            throw new IllegalStateException(
-                    "Lock is held when " + action + ", with previous holder: " + lock.getDebugMessage());
-        }
-        exclusiveLock.unlock();
+    /**
+     * @return whether unit test mode is allowed
+     */
+    public boolean isUnitTestModeAllowed() {
+        return ALLOW_UNIT_TEST_MODE;
     }
 
     /**
@@ -662,7 +648,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     public void start() {
         Assert.eqFalse(unitTestMode, "unitTestMode");
-        Assert.eqFalse(allowUnitTestMode, "allowUnitTestMode");
+        Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
         synchronized (refreshThread) {
             if (!refreshThread.isAlive()) {
                 log.info().append("UpdateGraphProcessor starting with ").append(updateThreads)
@@ -686,7 +672,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             ((DynamicNode) updateSource).setRefreshing(true);
         }
 
-        if (!allowUnitTestMode) {
+        if (!ALLOW_UNIT_TEST_MODE) {
             // if we are in unit test mode we never want to start the UGP
             sources.add(updateSource);
             start();
@@ -788,7 +774,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      *
      * @see #addNotification(Notification)
      */
-    public void addNotifications(@NotNull final Collection<Notification> notifications) {
+    public void addNotifications(@NotNull final Collection<? extends Notification> notifications) {
         synchronized (pendingNormalNotifications) {
             synchronized (terminalNotifications) {
                 notifications.forEach(this::addNotification);
@@ -893,7 +879,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             }
         }
 
-        assertLockAvailable("resetting for unit tests");
+        lock.reset();
     }
 
     /**
@@ -962,7 +948,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param runnable the runnable to execute.
      */
     @TestUseOnly
-    public <T extends Exception> void runWithinUnitTestCycle(FunctionalInterfaces.ThrowingRunnable<T> runnable)
+    public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
             throws T {
         startCycleForUnitTests();
         try {
@@ -1037,6 +1023,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         if (satisfied != null) {
             notificationProcessor.submit(satisfied);
         } else if (somethingWasPending) {
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted(
                     "Did not flush any notifications in unit test mode, yet there were outstanding notifications");
         }
@@ -1075,6 +1062,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 if (!flushed) {
                     final long remainingNanos = deadlineNanoTime - System.nanoTime();
                     if (!controlledNotificationProcessor.blockUntilNotificationAdded(remainingNanos)) {
+                        // noinspection ThrowableNotThrown
                         Assert.statementNeverExecuted(
                                 "Unit test failure due to timeout after " + timeoutMillis + " ms");
                     }
@@ -1108,10 +1096,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     private void flushNotificationsAndCompleteCycle() {
         // We cannot proceed with normal notifications, nor are we satisfied, until all update source refresh
-        // notifications
-        // have been processed. Note that non-update source notifications that require dependency satisfaction are
-        // delivered first to the pendingNormalNotifications queue, and hence will not be processed until we advance to
-        // the flush* methods.
+        // notifications have been processed. Note that non-update source notifications that require dependency
+        // satisfaction are delivered first to the pendingNormalNotifications queue, and hence will not be processed
+        // until we advance to the flush* methods.
         // TODO: If and when we properly integrate update sources into the dependency tracking system, we can
         // discontinue this distinct phase, along with the requirement to treat the UGP itself as a Dependency.
         // Until then, we must delay the beginning of "normal" notification processing until all update sources are
@@ -1295,7 +1282,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
 
         try (final SafeCloseable ignored = scope == null ? null : LivenessScopeStack.open(scope, releaseScopeOnClose)) {
-            notification.runInContext();
+            notification.run();
             logDependencies().append(Thread.currentThread().getName()).append(": Completed ").append(notification)
                     .endl();
         } catch (final Exception e) {
@@ -1317,6 +1304,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private final Semaphore pendingNormalNotificationsCheckNeeded = new Semaphore(0, false);
 
         private volatile boolean running = true;
+        private volatile boolean isHealthy = true;
 
         public ConcurrentNotificationProcessor(@NotNull final ThreadFactory threadFactory,
                 final int updateThreadCount) {
@@ -1330,27 +1318,35 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private void processSatisfiedNotifications() {
             log.info().append(Thread.currentThread().getName())
                     .append(": starting to poll for satisfied notifications");
-            while (running) {
-                Notification satisfiedNotification = null;
-                synchronized (satisfiedNotifications) {
-                    while (running && (satisfiedNotification = satisfiedNotifications.poll()) == null) {
-                        try {
-                            satisfiedNotifications.wait();
-                        } catch (InterruptedException ignored) {
+            Notification satisfiedNotification = null;
+            try {
+                while (running) {
+                    synchronized (satisfiedNotifications) {
+                        while (running && (satisfiedNotification = satisfiedNotifications.poll()) == null) {
+                            try {
+                                satisfiedNotifications.wait();
+                            } catch (InterruptedException ignored) {
+                            }
                         }
                     }
-                }
-                if (satisfiedNotification == null) {
-                    break;
-                }
-                try {
+                    if (satisfiedNotification == null) {
+                        break;
+                    }
+
                     runNotification(satisfiedNotification);
-                } finally {
+                    satisfiedNotification = null;
                     outstandingNotifications.decrementAndGet();
                     pendingNormalNotificationsCheckNeeded.release();
                 }
+            } finally {
+                if (satisfiedNotification != null) {
+                    // if we were thrown out of the loop; decrement / release after setting the unhealthy flag
+                    isHealthy = false;
+                    outstandingNotifications.decrementAndGet();
+                    pendingNormalNotificationsCheckNeeded.release();
+                }
+                log.info().append(Thread.currentThread().getName()).append(": terminating");
             }
-            log.info().append(Thread.currentThread().getName()).append(": terminating");
         }
 
         @Override
@@ -1391,6 +1387,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public void doWork() {
             try {
                 pendingNormalNotificationsCheckNeeded.acquire();
+                // if a processing thread exits unexpectedly, propagate an error to the outer refresh thread
+                Assert.eqTrue(isHealthy, "isHealthy");
             } catch (InterruptedException ignored) {
             }
         }
@@ -1400,6 +1398,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             while (outstandingNotificationsCount() > 0) {
                 doWork();
             }
+            // A successful and a failed notification may race the release of pendingNormalNotificationsCheckNeeded,
+            // causing this thread to miss a false isHealthy. Since isHealthy is set prior to decrementing
+            // outstandingNotificationsCount, we're guaranteed to read the correct value after exiting the while loop.
+            Assert.eqTrue(isHealthy, "isHealthy");
         }
 
         @Override
@@ -1502,16 +1504,19 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         @Override
         public void doWork() {
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
         }
 
         @Override
         public void doAllWork() {
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
         }
 
         @Override
         public void shutdown() {
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
         }
 
@@ -1529,6 +1534,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             try {
                 return pendingNormalNotificationsCheckNeeded.tryAcquire(nanosToWait, TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
+                // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted();
                 return false;
             }
@@ -1731,6 +1737,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             Assert.eqNull(refreshScope, "refreshScope");
             refreshScope = new LivenessScope();
             final long updatingCycleValue = LogicalClock.DEFAULT.startUpdateCycle();
+            logDependencies().append("Beginning UpdateGraphProcessor cycle step=")
+                    .append(LogicalClock.DEFAULT.currentStep()).endl();
             try (final SafeCloseable ignored = LivenessScopeStack.open(refreshScope, true)) {
                 refreshFunction.run();
                 flushNotificationsAndCompleteCycle();
@@ -1738,6 +1746,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 LogicalClock.DEFAULT.ensureUpdateCycleCompleted(updatingCycleValue);
                 refreshScope = null;
             }
+            logDependencies().append("Completed UpdateGraphProcessor cycle step=")
+                    .append(LogicalClock.DEFAULT.currentStep()).endl();
         });
     }
 
@@ -1748,8 +1758,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             implements SimpleReference<Runnable> {
 
         private final WeakReference<Runnable> updateSourceRef;
-
-        private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
         private UpdateSourceRefreshNotification(@NotNull final Runnable updateSource) {
             super(false);
@@ -1786,11 +1794,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public void clear() {
             updateSourceRef.clear();
         }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return executionContext;
-        }
     }
 
     public LogEntry logDependencies() {
@@ -1808,10 +1811,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 configureRefreshThread();
                 r.run();
-            });
+            }));
         }
     }
 
@@ -1843,7 +1846,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
 
         private UnitTestRefreshThreadFactory() {
-            super(UpdateGraphProcessor.class, "unitTestRefresh", true);
+            super(UpdateGraphProcessor.class, "unitTestRefresh");
         }
 
         @Override

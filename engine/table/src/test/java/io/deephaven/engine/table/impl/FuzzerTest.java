@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.clock.Clock;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -186,12 +187,14 @@ public class FuzzerTest {
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
         for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
+                ChunkPoolReleaseTracking.enableStrict();
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;
                     runLargeFuzzerSetWithSeed(seed1 + iteration, firstRun, firstRun + 10, false, 180, 0);
                 }
+                ChunkPoolReleaseTracking.checkAndDisable();
             }
         }
     }
@@ -283,9 +286,12 @@ public class FuzzerTest {
 
     private void annotateBinding(GroovyDeephavenSession session) {
         // noinspection unchecked
-        session.getBinding().getVariables().forEach((k, v) -> {
-            if (v instanceof Table) {
-                ((Table) v).setAttribute("BINDING_VARIABLE_NAME", k);
+        ((Map<String, Object>) session.getBinding().getVariables()).forEach((key, value) -> {
+            if (value instanceof LiveAttributeMap) {
+                final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) value;
+                if (!liveAttributeMap.published()) {
+                    liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", key);
+                }
             }
         });
     }
@@ -327,7 +333,7 @@ public class FuzzerTest {
                     final QueryTable coalesced = (QueryTable) table.coalesce();
                     addValidator(hardReferences, description, coalesced);
                     return coalesced;
-                });
+                }, true);
                 hardReferences.put(k.toString(), validated);
             }
         });

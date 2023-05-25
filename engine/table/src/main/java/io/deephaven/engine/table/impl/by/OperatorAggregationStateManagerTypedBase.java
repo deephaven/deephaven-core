@@ -8,6 +8,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
@@ -58,7 +59,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
     private int freeOverflowCount = 0;
 
     // the keys for our hash entries
-    protected final ArrayBackedColumnSource<?>[] mainKeySources;
+    protected final WritableColumnSource<?>[] mainKeySources;
     // the location of the first overflow entry in this bucket, parallel to keySources
     protected final IntegerArraySource mainOverflowLocationSource = new IntegerArraySource();
 
@@ -66,7 +67,7 @@ public abstract class OperatorAggregationStateManagerTypedBase
     private int nextOverflowLocation = 0;
 
     // the overflow chains, logically a linked list using integer pointers into these three parallel array sources
-    protected final ArrayBackedColumnSource<?>[] overflowKeySources;
+    protected final WritableColumnSource<?>[] overflowKeySources;
     // the location of the next key in an overflow bucket, parallel with overflowKeySources
     protected final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
 

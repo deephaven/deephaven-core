@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ public class NullSelectColumn<T> implements SelectColumn {
     private final String name;
     private final NullValueColumnSource<T> nvcs;
 
-    public NullSelectColumn(final Class<T> type, final Class<T> elementType, final String name) {
+    public NullSelectColumn(final Class<T> type, final Class<?> elementType, final String name) {
         nvcs = NullValueColumnSource.getInstance(type, elementType);
         this.name = name;
     }
@@ -89,11 +90,6 @@ public class NullSelectColumn<T> implements SelectColumn {
 
     @Override
     public boolean isRetain() {
-        return false;
-    }
-
-    @Override
-    public boolean disallowRefresh() {
         return false;
     }
 

@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.OrderedChunkUtils;
@@ -157,7 +156,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
+    public final void fillRowKeyChunk(final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         final int newSize = Math.toIntExact(size());
         // noinspection unchecked
         backingChunk.copyToChunk(0, (WritableLongChunk) chunkToFill, 0, newSize);

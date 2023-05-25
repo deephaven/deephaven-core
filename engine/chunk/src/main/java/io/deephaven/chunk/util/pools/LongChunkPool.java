@@ -64,42 +64,43 @@ public final class LongChunkPool implements ChunkPool {
     }
 
     @Override
-    public final <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
         return takeWritableLongChunk(capacity);
     }
 
     @Override
-    public final <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
         giveWritableLongChunk(writableChunk.asWritableLongChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
         return takeResettableLongChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
         giveResettableLongChunk(resettableChunk.asResettableLongChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
         return takeResettableWritableLongChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+    public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
         giveResettableWritableLongChunk(resettableWritableChunk.asResettableWritableLongChunk());
     }
 
-    public final <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(final int capacity) {
+    public <ATTR extends Any> WritableLongChunk<ATTR> takeWritableLongChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked
             return (WritableLongChunk<ATTR>) EMPTY;
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
+            //noinspection resource
             final WritableLongChunk result = writableLongChunks[poolIndexForTake].take();
             result.setSize(capacity);
             //noinspection unchecked
@@ -109,7 +110,7 @@ public final class LongChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableLongChunk.makeWritableChunkForPool(capacity));
     }
 
-    public final void giveWritableLongChunk(@NotNull final WritableLongChunk writableLongChunk) {
+    public void giveWritableLongChunk(@NotNull final WritableLongChunk<?> writableLongChunk) {
         if (writableLongChunk == EMPTY || writableLongChunk.isAlias(EMPTY)) {
             return;
         }
@@ -121,21 +122,21 @@ public final class LongChunkPool implements ChunkPool {
         }
     }
 
-    public final <ATTR extends Any> ResettableLongChunk<ATTR> takeResettableLongChunk() {
+    public <ATTR extends Any> ResettableLongChunk<ATTR> takeResettableLongChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableLongChunks.take());
     }
 
-    public final void giveResettableLongChunk(@NotNull final ResettableLongChunk resettableLongChunk) {
+    public void giveResettableLongChunk(@NotNull final ResettableLongChunk resettableLongChunk) {
         resettableLongChunks.give(ChunkPoolReleaseTracking.onGive(resettableLongChunk));
     }
 
-    public final <ATTR extends Any> ResettableWritableLongChunk<ATTR> takeResettableWritableLongChunk() {
+    public <ATTR extends Any> ResettableWritableLongChunk<ATTR> takeResettableWritableLongChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableLongChunks.take());
     }
 
-    public final void giveResettableWritableLongChunk(@NotNull final ResettableWritableLongChunk resettableWritableLongChunk) {
+    public void giveResettableWritableLongChunk(@NotNull final ResettableWritableLongChunk resettableWritableLongChunk) {
         resettableWritableLongChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableLongChunk));
     }
 }

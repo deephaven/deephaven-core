@@ -1,0 +1,17 @@
+version: "3.4"
+
+services:
+  postgres:
+    image: postgres:15.1
+    hostname: postgres
+    volumes:
+      # Deliberately no storage volume, so that removing the container frees storage
+      # This file creates a single deephaven user, with username admin and password p@ssw0rd
+      - ./init-users.sql:/docker-entrypoint-initdb.d/init-users.sql
+    ports:
+      - 5432:5432
+    environment:
+      # The container requires a admin password - this is unsafe, but usable for testing
+      - POSTGRES_PASSWORD=password
+    # Specify a custom command, turning off safety features for faster LOCAL-ONLY development. Do not use this in production.
+    command: postgres -c fsync=off -c synchronous_commit=off

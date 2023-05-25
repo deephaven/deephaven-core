@@ -5,9 +5,12 @@ plugins {
 
 dependencies {
     implementation project(':authentication')
+    implementation project(':authorization')
     implementation project(':engine-table')
     implementation project(':extensions-csv')
+    implementation project(':extensions-arrow')
     implementation project(':extensions-parquet-table')
+    implementation project(':extensions-performance')
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
@@ -24,7 +27,9 @@ dependencies {
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
     implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':open-api-lang-tools')
+    api(project(':open-api-lang-tools')) {
+        because 'downstream dagger compile, see deephaven-core#1722'
+    }
     api(project(':log-factory')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
@@ -32,7 +37,7 @@ dependencies {
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
+    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
 
     api(project(':Configuration')) {
         because 'jetty/netty implementations will access the configuration in their main()s'
@@ -72,6 +77,7 @@ dependencies {
 
     runtimeOnly project(':plugin-figure')
     runtimeOnly project(':plugin-partitionedtable')
+    runtimeOnly project(':plugin-hierarchicaltable')
     implementation project(':plugin-gc-app')
 
     Classpaths.inheritGrpcPlatform(project, 'api')
@@ -90,6 +96,7 @@ dependencies {
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
+    testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'Util')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')

@@ -3,13 +3,16 @@
  */
 package io.deephaven.util.datastructures.intrusive;
 
-import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class TestIntrusiveArraySet extends TestCase {
-    private static class IntrusiveValue {
+import static org.junit.Assert.*;
+
+public class TestIntrusiveArraySet {
+    private static class IntrusiveValue implements Comparable<IntrusiveValue> {
         private IntrusiveValue(int sentinel) {
             this.sentinel = sentinel;
         }
@@ -28,6 +31,11 @@ public class TestIntrusiveArraySet extends TestCase {
                     ", slot=" + slot +
                     '}';
         }
+
+        @Override
+        public int compareTo(@NotNull final IntrusiveValue other) {
+            return Integer.compare(sentinel, other.sentinel);
+        }
     }
 
     private static class Adapter implements IntrusiveArraySet.Adapter<IntrusiveValue> {
@@ -43,6 +51,7 @@ public class TestIntrusiveArraySet extends TestCase {
         }
     }
 
+    @Test
     public void testSimple() {
         final IntrusiveArraySet<IntrusiveValue> set = new IntrusiveArraySet<>(new Adapter(), IntrusiveValue.class);
         final IntrusiveValue twentyThree = new IntrusiveValue(23);
@@ -63,10 +72,7 @@ public class TestIntrusiveArraySet extends TestCase {
         assertTrue(set.contains(values.get(1)));
         assertTrue(set.containsAll(values));
 
-        final List<IntrusiveValue> copy = new ArrayList<>();
-        for (IntrusiveValue value : set) {
-            copy.add(value);
-        }
+        final List<IntrusiveValue> copy = new ArrayList<>(set);
 
         assertEquals(values, copy);
 
@@ -75,12 +81,7 @@ public class TestIntrusiveArraySet extends TestCase {
         set.add(nineteen);
         assertEquals(values.size(), set.size());
 
-        for (final Iterator<IntrusiveValue> it = set.iterator(); it.hasNext();) {
-            final IntrusiveValue next = it.next();
-            if (next.sentinel == 1 || next.sentinel == 7 || next.sentinel == 19) {
-                it.remove();
-            }
-        }
+        set.removeIf(next -> next.sentinel == 1 || next.sentinel == 7 || next.sentinel == 19);
 
         assertFalse(set.contains(values.get(0)));
         assertFalse(set.contains(values.get(4)));
@@ -94,7 +95,7 @@ public class TestIntrusiveArraySet extends TestCase {
         copy.clear();
         copy.addAll(set);
 
-        copy.sort(Comparator.comparing(v -> v.sentinel));
+        copy.sort(Comparator.naturalOrder());
         assertEquals(values, copy);
 
         set.retainAll(values);
@@ -102,11 +103,11 @@ public class TestIntrusiveArraySet extends TestCase {
         copy.clear();
         copy.addAll(set);
 
-        copy.sort(Comparator.comparing(v -> v.sentinel));
+        copy.sort(Comparator.naturalOrder());
         assertEquals(values, copy);
 
         final List<IntrusiveValue> valueCopy = new ArrayList<>(values);
-        valueCopy.removeIf(x -> x.sentinel == 2 || x.sentinel < 13);
+        valueCopy.removeIf(x -> x.sentinel < 13);
         valueCopy.add(valueCopy.get(0));
         valueCopy.add(valueCopy.get(0));
 
@@ -121,5 +122,41 @@ public class TestIntrusiveArraySet extends TestCase {
         valueCopy.remove(valueCopy.size() - 1);
 
         assertEquals(valueCopy, copy);
+    }
+
+    @Test
+    public void testSort() {
+        final IntrusiveArraySet<IntrusiveValue> set = new IntrusiveArraySet<>(new Adapter(), IntrusiveValue.class);
+        set.sort(Comparator.naturalOrder());
+
+        final List<IntrusiveValue> values = IntrusiveValue.make(78, 1, 22, 5, 4, 3, 66, 67, 0, 100);
+        set.ensureCapacity(values.size());
+        set.addAll(values);
+
+        assertArrayEquals(set.toArray(), values.toArray());
+
+        set.sort(Comparator.naturalOrder());
+        values.sort(Comparator.naturalOrder());
+
+        assertArrayEquals(set.toArray(), values.toArray());
+
+        set.remove(values.remove(2));
+        set.remove(values.remove(5));
+
+        set.sort(Comparator.naturalOrder());
+        values.sort(Comparator.naturalOrder());
+
+        assertArrayEquals(set.toArray(), values.toArray());
+
+        values.addAll(IntrusiveValue.make(101, 102, 100, 99, 65, 87, 2, 2, 4));
+        set.ensureCapacity(100);
+        set.addAll(values);
+
+        assertArrayEquals(set.toArray(), values.toArray());
+
+        set.sort(Comparator.naturalOrder());
+        values.sort(Comparator.naturalOrder());
+
+        assertArrayEquals(set.toArray(), values.toArray());
     }
 }

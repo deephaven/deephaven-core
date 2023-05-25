@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -23,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 
 class BucketingContext implements SafeCloseable {
     final int keyColumnCount;
@@ -73,11 +72,15 @@ class BucketingContext implements SafeCloseable {
             }
 
             if (leftType == DateTime.class) {
-                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource(rightSources[ii]);
+                // noinspection unchecked
+                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) leftSources[ii]);
+                // noinspection unchecked
+                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {
-                leftSources[ii] = ReinterpretUtils.booleanToByteSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtils.booleanToByteSource(rightSources[ii]);
+                // noinspection unchecked
+                leftSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) leftSources[ii]);
+                // noinspection unchecked
+                rightSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) rightSources[ii]);
                 if (leftSources.length == 1) {
                     uniqueValues = true;
                     maximumUniqueValue = BooleanUtils.TRUE_BOOLEAN_AS_BYTE;

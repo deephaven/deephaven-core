@@ -64,42 +64,43 @@ public final class ByteChunkPool implements ChunkPool {
     }
 
     @Override
-    public final <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
+    public <ATTR extends Any> WritableChunk<ATTR> takeWritableChunk(final int capacity) {
         return takeWritableByteChunk(capacity);
     }
 
     @Override
-    public final <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
+    public <ATTR extends Any> void giveWritableChunk(@NotNull final WritableChunk<ATTR> writableChunk) {
         giveWritableByteChunk(writableChunk.asWritableByteChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
+    public <ATTR extends Any> ResettableReadOnlyChunk<ATTR> takeResettableChunk() {
         return takeResettableByteChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+    public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
         giveResettableByteChunk(resettableChunk.asResettableByteChunk());
     }
 
     @Override
-    public final <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
+    public <ATTR extends Any> ResettableWritableChunk<ATTR> takeResettableWritableChunk() {
         return takeResettableWritableByteChunk();
     }
 
     @Override
-    public final <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+    public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
         giveResettableWritableByteChunk(resettableWritableChunk.asResettableWritableByteChunk());
     }
 
-    public final <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
+    public <ATTR extends Any> WritableByteChunk<ATTR> takeWritableByteChunk(final int capacity) {
         if (capacity == 0) {
             //noinspection unchecked
             return (WritableByteChunk<ATTR>) EMPTY;
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
+            //noinspection resource
             final WritableByteChunk result = writableByteChunks[poolIndexForTake].take();
             result.setSize(capacity);
             //noinspection unchecked
@@ -109,7 +110,7 @@ public final class ByteChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableByteChunk.makeWritableChunkForPool(capacity));
     }
 
-    public final void giveWritableByteChunk(@NotNull final WritableByteChunk writableByteChunk) {
+    public void giveWritableByteChunk(@NotNull final WritableByteChunk<?> writableByteChunk) {
         if (writableByteChunk == EMPTY || writableByteChunk.isAlias(EMPTY)) {
             return;
         }
@@ -121,21 +122,21 @@ public final class ByteChunkPool implements ChunkPool {
         }
     }
 
-    public final <ATTR extends Any> ResettableByteChunk<ATTR> takeResettableByteChunk() {
+    public <ATTR extends Any> ResettableByteChunk<ATTR> takeResettableByteChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableByteChunks.take());
     }
 
-    public final void giveResettableByteChunk(@NotNull final ResettableByteChunk resettableByteChunk) {
+    public void giveResettableByteChunk(@NotNull final ResettableByteChunk resettableByteChunk) {
         resettableByteChunks.give(ChunkPoolReleaseTracking.onGive(resettableByteChunk));
     }
 
-    public final <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk() {
+    public <ATTR extends Any> ResettableWritableByteChunk<ATTR> takeResettableWritableByteChunk() {
         //noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableByteChunks.take());
     }
 
-    public final void giveResettableWritableByteChunk(@NotNull final ResettableWritableByteChunk resettableWritableByteChunk) {
+    public void giveResettableWritableByteChunk(@NotNull final ResettableWritableByteChunk resettableWritableByteChunk) {
         resettableWritableByteChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableByteChunk));
     }
 }

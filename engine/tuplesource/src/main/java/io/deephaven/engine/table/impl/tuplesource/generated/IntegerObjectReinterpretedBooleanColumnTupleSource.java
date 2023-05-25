@@ -126,11 +126,11 @@ public class IntegerObjectReinterpretedBooleanColumnTupleSource extends Abstract
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<IntObjectByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        IntChunk<Values> chunk1 = chunks[0].asIntChunk();
-        ObjectChunk<Object, Values> chunk2 = chunks[1].asObjectChunk();
-        ByteChunk<Values> chunk3 = chunks[2].asByteChunk();
+        IntChunk<? extends Values> chunk1 = chunks[0].asIntChunk();
+        ObjectChunk<Object, ? extends Values> chunk2 = chunks[1].asObjectChunk();
+        ByteChunk<? extends Values> chunk3 = chunks[2].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new IntObjectByteTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

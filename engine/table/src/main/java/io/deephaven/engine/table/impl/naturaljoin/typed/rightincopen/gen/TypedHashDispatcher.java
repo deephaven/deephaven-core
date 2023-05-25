@@ -9,15 +9,16 @@ import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinSta
 import java.util.Arrays;
 
 /**
- * The TypedHashDispatcher returns a pre-generated and precompiled hasher instance suitable for the provided column sources, or null if there is not a precompiled hasher suitable for the specified sources. */
+ * The TypedHashDispatcher returns a pre-generated and precompiled hasher instance suitable for the provided column sources, or null if there is not a precompiled hasher suitable for the specified sources.
+ */
 public class TypedHashDispatcher {
     private TypedHashDispatcher() {
         // static use only
     }
 
-    public static RightIncrementalNaturalJoinStateManagerTypedBase dispatch(ColumnSource[] tableKeySources,
-            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
-            double targetLoadFactor) {
+    public static RightIncrementalNaturalJoinStateManagerTypedBase dispatch(
+            ColumnSource[] tableKeySources, ColumnSource[] originalTableKeySources, int tableSize,
+            double maximumLoadFactor, double targetLoadFactor) {
         final ChunkType[] chunkTypes = Arrays.stream(tableKeySources).map(ColumnSource::getChunkType).toArray(ChunkType[]::new);;
         if (chunkTypes.length == 1) {
             return dispatchSingle(chunkTypes[0], tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
@@ -25,9 +26,10 @@ public class TypedHashDispatcher {
         return null;
     }
 
-    private static RightIncrementalNaturalJoinStateManagerTypedBase dispatchSingle(ChunkType chunkType,
-            ColumnSource[] tableKeySources, ColumnSource[] originalTableKeySources, int tableSize,
-            double maximumLoadFactor, double targetLoadFactor) {
+    private static RightIncrementalNaturalJoinStateManagerTypedBase dispatchSingle(
+            ChunkType chunkType, ColumnSource[] tableKeySources,
+            ColumnSource[] originalTableKeySources, int tableSize, double maximumLoadFactor,
+            double targetLoadFactor) {
         switch (chunkType) {
             default: throw new UnsupportedOperationException("Invalid chunk type for typed hashers: " + chunkType);
             case Char: return new RightIncrementalNaturalJoinHasherChar(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor, targetLoadFactor);

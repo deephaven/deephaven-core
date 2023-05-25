@@ -6,7 +6,6 @@ package io.deephaven.server.object;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectType;
@@ -18,11 +17,13 @@ import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse.Builder;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -50,29 +51,29 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     }
 
     @Override
-    public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final String type = request.getSourceId().getType();
-            if (type.isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No type supplied");
-            }
-            if (request.getSourceId().getTicket().getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
-            }
-            final SessionState.ExportObject<Object> object = ticketRouter.resolve(
-                    session, request.getSourceId().getTicket(), "sourceId");
-            session.nonExport()
-                    .require(object)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final Object o = object.get();
-                        final FetchObjectResponse response = serialize(type, session, o);
-                        responseObserver.onNext(response);
-                        responseObserver.onCompleted();
-                        return null;
-                    });
-        });
+    public void fetchObject(
+            @NotNull final FetchObjectRequest request,
+            @NotNull final StreamObserver<FetchObjectResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        final String type = request.getSourceId().getType();
+        if (type.isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No type supplied");
+        }
+        if (request.getSourceId().getTicket().getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "No ticket supplied");
+        }
+        final SessionState.ExportObject<Object> object = ticketRouter.resolve(
+                session, request.getSourceId().getTicket(), "sourceId");
+        session.nonExport()
+                .require(object)
+                .onError(responseObserver)
+                .submit(() -> {
+                    final Object o = object.get();
+                    final FetchObjectResponse response = serialize(type, session, o);
+                    responseObserver.onNext(response);
+                    responseObserver.onCompleted();
+                    return null;
+                });
     }
 
     private FetchObjectResponse serialize(String expectedType, SessionState state, Object object) throws IOException {
@@ -80,12 +81,12 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
         // TODO(deephaven-core#1872): Optimize ObjectTypeLookup
         final Optional<ObjectType> o = objectTypeLookup.findObjectType(object);
         if (o.isEmpty()) {
-            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     String.format("No ObjectType found, expected type '%s'", expectedType));
         }
         final ObjectType objectType = o.get();
         if (!expectedType.equals(objectType.name())) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, String.format(
                     "Unexpected ObjectType, expected type '%s', actual type '%s'", expectedType, objectType.name()));
         }
         final ExportCollector exportCollector = new ExportCollector(state);

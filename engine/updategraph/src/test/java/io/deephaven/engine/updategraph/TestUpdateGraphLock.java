@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.UncheckedDeephavenException;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
@@ -18,7 +19,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testUpgradeFailures() throws InterruptedException {
-        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
 
         lock.sharedLock().doLocked(() -> {
             try {
@@ -55,7 +56,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testDowngradeSuccess() throws InterruptedException {
-        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
 
         lock.exclusiveLock().doLocked(() -> {
             final MutableBoolean success = new MutableBoolean(false);
@@ -109,7 +110,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testSharedLockHeld() {
-        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
             lock.sharedLock().doLocked(r::run);
@@ -125,7 +126,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testExclusiveLockHeld() {
-        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
             lock.exclusiveLock().doLocked(r::run);
@@ -140,7 +141,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testConditions() throws InterruptedException {
-        final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
         try {
             lock.sharedLock().newCondition();
             TestCase.fail("Unexpectedly got shard lock condition successfully");
@@ -160,5 +161,26 @@ public class TestUpdateGraphLock {
             // Technically, this is a random-failer, but I expect it to be fine.
             TestCase.assertTrue(done.getValue());
         });
+    }
+
+    @Test
+    public void testDebugImplementation() {
+        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, true);
+        lock.sharedLock().lock();
+        lock.sharedLock().lock();
+        try {
+            lock.reset();
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException expected) {
+            expected.printStackTrace();
+        }
+        lock.exclusiveLock().lock();
+        try {
+            lock.reset();
+            TestCase.fail("Expected exception");
+        } catch (UncheckedDeephavenException expected) {
+            expected.printStackTrace();
+        }
+        lock.reset();
     }
 }

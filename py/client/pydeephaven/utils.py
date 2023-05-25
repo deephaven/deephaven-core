@@ -1,17 +1,18 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+"""This module hosts helper functions for use with the Deephaven Python Client API."""
 
-import pyarrow
+import pyarrow as pa
 
 from .dherror import DHError
-from ._arrow_flight_service import _map_arrow_type
+from ._arrow import map_arrow_type
 
 
-def is_deephaven_compatible(data_type: pyarrow.DataType) -> bool:
-    """ check if the arrow data type is supported by Deephaven. """
+def is_deephaven_compatible(data_type: pa.DataType) -> bool:
+    """Checks if the arrow data type is supported by Deephaven."""
     try:
-        dh_type = _map_arrow_type(data_type)
+        dh_type = map_arrow_type(data_type)
         return True
     except DHError:
         return False

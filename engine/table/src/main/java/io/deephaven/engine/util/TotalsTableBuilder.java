@@ -5,7 +5,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.type.EnumValue;
@@ -609,7 +608,7 @@ public class TotalsTableBuilder {
         final Map<AggType, List<String>> columnsByType = new LinkedHashMap<>();
         for (final Map.Entry<String, ? extends ColumnSource> entry : source.getColumnSourceMap().entrySet()) {
             final String columnName = entry.getKey();
-            if (ColumnFormattingValues.isFormattingColumn(columnName)) {
+            if (ColumnFormatting.isFormattingColumn(columnName)) {
                 continue;
             }
 
@@ -643,7 +642,7 @@ public class TotalsTableBuilder {
             case Group:
                 throw new IllegalArgumentException("Can not use Group aggregation in totals table.");
             case Count:
-                return Stream.of(columnNames).map(Aggregation::AggCount);
+                return Arrays.stream(columnNames).map(Aggregation::AggCount);
             case Min:
                 return Stream.of(AggMin(columnNames));
             case Max:

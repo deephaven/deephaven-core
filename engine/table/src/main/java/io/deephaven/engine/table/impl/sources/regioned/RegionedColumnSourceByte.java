@@ -8,6 +8,8 @@
  */
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.engine.table.ColumnSource;
+
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
@@ -24,7 +26,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceByte<ATTR extends Values>
         extends RegionedColumnSourceArray<Byte, ATTR, ColumnRegionByte<ATTR>>
-        implements ColumnSourceGetDefaults.ForByte {
+        implements ColumnSourceGetDefaults.ForByte /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceByte(@NotNull final ColumnRegionByte<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionByte<ATTR>> makeDeferred) {
@@ -48,35 +50,22 @@ abstract class RegionedColumnSourceByte<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return alternateDataType == boolean.class || alternateDataType == Boolean.class || super.allowsReinterpret(alternateDataType);
+    }
+
+    @Override
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        //noinspection unchecked
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new RegionedColumnSourceBoolean((RegionedColumnSourceByte<Values>)this);
+    }
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceByte<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionByte.createNull(PARAMETERS.regionMask), DeferredColumnRegionByte::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native byte type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Byte, ColumnRegionByte<ATTR>>
-            implements ColumnSourceGetDefaults.ForByte {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionByte<ATTR>>> outerColumnSource) {
-            super(Byte.class, outerColumnSource);
-        }
-
-        @Override
-        public byte getByte(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getByte(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionByte<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 

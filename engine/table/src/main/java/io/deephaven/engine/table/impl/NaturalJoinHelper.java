@@ -35,15 +35,25 @@ class NaturalJoinHelper {
     @VisibleForTesting
     static Table naturalJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
-        final Table result =
+        final QueryTable result =
                 naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
+        // note in exact match we require that the right table can match as soon as a row is added to the left
+        boolean rightDoesNotGenerateModifies = !rightTable.isRefreshing() || (exactMatch && rightTable.isAddOnly());
+        if (leftTable.isAddOnly() && rightDoesNotGenerateModifies) {
+            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if (leftTable.isAppendOnly() && rightDoesNotGenerateModifies) {
+            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        }
         return result;
     }
 
-    private static Table naturalJoinInternal(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
-            MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+    private static QueryTable naturalJoinInternal(QueryTable leftTable, QueryTable rightTable,
+            MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, boolean exactMatch, JoinControl control) {
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
+
         try (final BucketingContext bucketingContext =
                 new BucketingContext("naturalJoin", leftTable, rightTable, columnsToMatch, columnsToAdd, control)) {
 
@@ -275,7 +285,7 @@ class NaturalJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
+    private static QueryTable zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
             boolean exactMatch, String listenerDescription) {
         // we are a single value join, we do not need to do any work
         final SingleValueRowRedirection rowRedirection;
@@ -440,8 +450,9 @@ class NaturalJoinHelper {
             final boolean rightRefreshingColumns) {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         for (MatchPair mp : columnsToAdd) {
-            final RedirectedColumnSource<?> redirectedColumnSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
+            // note that we must always redirect the right-hand side, because unmatched rows will be redirected to null
+            final ColumnSource<?> redirectedColumnSource =
+                    RedirectedColumnSource.alwaysRedirect(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (rightRefreshingColumns) {
                 redirectedColumnSource.startTrackingPrevValues();
             }
@@ -552,7 +563,7 @@ class NaturalJoinHelper {
         @Override
         public void onUpdate(final TableUpdate upstream) {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
+            rowRedirection.removeAll(upstream.removed());
 
             try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
@@ -772,7 +783,7 @@ class NaturalJoinHelper {
 
             if (rightIndex == RowSequence.NULL_ROW_KEY) {
                 jsm.checkExactMatch(exactMatch, leftIndices.firstRowKey(), rightIndex);
-                leftIndices.forAllRowKeys(rowRedirection::removeVoid);
+                rowRedirection.removeAll(leftIndices);
             } else {
                 leftIndices.forAllRowKeys((long key) -> rowRedirection.putVoid(key, rightIndex));
             }
@@ -938,7 +949,7 @@ class NaturalJoinHelper {
                         probeSize == 0 ? null : jsm.makeProbeContext(leftSources, probeSize);
                         final Context bc =
                                 buildSize == 0 ? null : jsm.makeBuildContext(leftSources, buildSize)) {
-                    leftRemoved.forAllRowKeys(rowRedirection::removeVoid);
+                    rowRedirection.removeAll(leftRemoved);
                     jsm.removeLeft(pc, leftRemoved, leftSources);
 
                     final RowSet leftModifiedPreShift;
@@ -951,7 +962,7 @@ class NaturalJoinHelper {
 
                         // remove pre-shift modified
                         jsm.removeLeft(pc, leftModifiedPreShift, leftSources);
-                        leftModifiedPreShift.forAllRowKeys(rowRedirection::removeVoid);
+                        rowRedirection.removeAll(leftModifiedPreShift);
                     } else {
                         leftModifiedPreShift = null;
                     }

@@ -1,0 +1,41 @@
+# This workflow will automatically create a PR in deephaven-core to update the WEB_VERSION
+name: Update web version
+
+on: workflow_dispatch
+jobs:
+  update-web:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout latest
+        uses: actions/checkout@v3
+        with:
+          ref: main
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+      - name: Get web versions
+        id: web_versions
+        run: |
+          echo "WEB_VERSION=$(npm info @deephaven/code-studio@latest version)" >> $GITHUB_OUTPUT
+          echo "GRID_VERSION=$(npm info @deephaven/embed-grid@latest version)" >> $GITHUB_OUTPUT
+          echo "CHART_VERSION=$(npm info @deephaven/embed-chart@latest version)" >> $GITHUB_OUTPUT
+      - name: Update deephaven-core
+        env:
+          WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
+          GRID_VERSION: ${{steps.web_versions.outputs.GRID_VERSION}}
+          CHART_VERSION: ${{steps.web_versions.outputs.CHART_VERSION}}
+        run: |
+          sed -i "s/^ARG WEB_VERSION=.*/ARG WEB_VERSION=$WEB_VERSION/" ./web/client-ui/Dockerfile
+          sed -i "s/^ARG GRID_VERSION=.*/ARG GRID_VERSION=$GRID_VERSION/" ./web/client-ui/Dockerfile
+          sed -i "s/^ARG CHART_VERSION=.*/ARG CHART_VERSION=$CHART_VERSION/" ./web/client-ui/Dockerfile
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        env:
+          WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
+        with:
+          base: main
+          title: Update web version ${{ env.WEB_VERSION }}
+          body: Release notes https://github.com/deephaven/web-client-ui/releases/tag/v${{ env.WEB_VERSION }}
+          branch: deephaven-bot/update-web-${{ env.WEB_VERSION }}
+          delete-branch: true

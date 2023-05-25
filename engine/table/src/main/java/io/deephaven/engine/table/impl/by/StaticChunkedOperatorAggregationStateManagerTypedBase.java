@@ -123,7 +123,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
         final ColumnSource[] keyHashTableSources = new ColumnSource[mainKeySources.length];
         for (int kci = 0; kci < mainKeySources.length; ++kci) {
             // noinspection unchecked
-            keyHashTableSources[kci] = new RedirectedColumnSource(resultIndexToHashSlot,
+            keyHashTableSources[kci] = RedirectedColumnSource.maybeRedirect(resultIndexToHashSlot,
                     new HashTableColumnSource(mainKeySources[kci], overflowKeySources[kci]));
         }
         return keyHashTableSources;

@@ -263,7 +263,6 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                                 swapListener.setListenerAndResult(
                                         new SymbolTableUpdateListener(description, sourceTable, symbolTable),
                                         symbolTable);
-                                symbolTable.addParentReference(swapListener);
                             }
                             result.setValue(symbolTable);
                             return true;

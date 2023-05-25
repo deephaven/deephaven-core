@@ -3,13 +3,15 @@
  */
 package io.deephaven.base.pool;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.verify.Require;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A pool that
@@ -26,39 +28,34 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
 
     public static Factory FACTORY = new Factory() {
         @Override
-        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory, Procedure.Unary<T> clearingProcedure) {
+        public <T> Pool<T> create(int nSize, Supplier<T> itemFactory, Consumer<T> clearingProcedure) {
             return new ThreadSafeLenientFixedSizePool<T>(Require.geq(nSize, "nSize", MIN_SIZE, "MIN_SIZE"),
                     Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
         }
     };
 
-    private static <T> Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> makeNullaryFactoryAdapter(
-            final Function.Nullary<T> factory) {
-        return new Function.Unary<T, ThreadSafeLenientFixedSizePool<T>>() {
-            @Override
-            public T call(ThreadSafeLenientFixedSizePool<T> arg) {
-                return factory.call();
-            }
-        };
+    private static <T> Function<ThreadSafeLenientFixedSizePool<T>, T> makeNullaryFactoryAdapter(
+            final Supplier<T> factory) {
+        return arg -> factory.get();
     }
 
     public static final int MIN_SIZE = 7;
 
     private final LockFreeArrayQueue<T> pool; // TODO: should be a stack
-    private final Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory;
-    private final Procedure.Unary<? super T> clearingProcedure;
+    private final Function<ThreadSafeLenientFixedSizePool<T>, T> factory;
+    private final Consumer<? super T> clearingProcedure;
     private final Counter extraFactoryCalls;
 
-    public ThreadSafeLenientFixedSizePool(int size, Function.Nullary<T> factory,
-            Procedure.Unary<? super T> clearingProcedure) {
+    public ThreadSafeLenientFixedSizePool(int size, Supplier<T> factory,
+            Consumer<? super T> clearingProcedure) {
         this(
                 Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
                 makeNullaryFactoryAdapter(Require.neqNull(factory, "factory")),
                 clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(String name, int size, Function.Nullary<T> factory,
-            Procedure.Unary<? super T> clearingProcedure) {
+    public ThreadSafeLenientFixedSizePool(String name, int size, Supplier<T> factory,
+            Consumer<? super T> clearingProcedure) {
         this(
                 name,
                 Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
@@ -66,21 +63,25 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
                 clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(int size, Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
-            Procedure.Unary<? super T> clearingProcedure) {
+    public ThreadSafeLenientFixedSizePool(
+            int size,
+            Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
+            Consumer<? super T> clearingProcedure) {
         this(null, size, factory, clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(String name, int size,
-            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory,
-            Procedure.Unary<? super T> clearingProcedure) {
+    public ThreadSafeLenientFixedSizePool(
+            String name,
+            int size,
+            Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
+            Consumer<? super T> clearingProcedure) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.neqNull(factory, "factory");
         this.factory = factory;
         this.clearingProcedure = clearingProcedure;
         this.pool = new LockFreeArrayQueue<T>(MathUtil.ceilLog2(size + 2));
         for (int i = 0; i < size; ++i) {
-            pool.enqueue(factory.call(this));
+            pool.enqueue(factory.apply(this));
         }
         extraFactoryCalls = name == null ? null : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
     }
@@ -91,7 +92,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
             if (extraFactoryCalls != null) {
                 extraFactoryCalls.sample(1);
             }
-            return factory.call(this);
+            return factory.apply(this);
         }
         return item;
     }
@@ -105,7 +106,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
             return false;
         }
         if (null != clearingProcedure) {
-            clearingProcedure.call(item);
+            clearingProcedure.accept(item);
         }
         return pool.enqueue(item); // discard if enqueue fails
     }

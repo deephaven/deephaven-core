@@ -5,23 +5,24 @@
  */
 package io.deephaven.engine.table.impl.updateby.internal;
 
+import io.deephaven.util.QueryConstants;
+import io.deephaven.engine.table.impl.sources.ByteArraySource;
+import io.deephaven.engine.table.impl.sources.ByteSparseArraySource;
+import io.deephaven.engine.table.WritableColumnSource;
+
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.sized.SizedByteChunk;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.UpdateBy;
-import io.deephaven.engine.table.impl.UpdateByOperator;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,54 +30,115 @@ import java.util.Collections;
 import java.util.Map;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.*;
 
-public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
+public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
     protected final WritableColumnSource<Byte> outputSource;
     protected final WritableColumnSource<Byte> maybeInnerSource;
-    protected final MatchPair pair;
-    protected final String[] affectingColumns;
-    protected final boolean isRedirected;
-
-    protected WritableColumnSource<Byte> bucketLastVal;
-
-    /** These are only used in grouped operations */
-    protected byte singletonVal;
-    protected long singletonGroup = QueryConstants.NULL_LONG;
-
-    protected boolean initialized = false;
 
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
 
-    protected class Context implements UpdateContext {
-        public final SizedSafeCloseable<ChunkSink.FillFromContext> fillContext;
-        public final SizedByteChunk<Values> outputValues;
-        public boolean canProcessDirectly;
-        public UpdateBy.UpdateType currentUpdateType;
+    protected abstract class Context extends UpdateByOperator.Context {
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableByteChunk<Values> outputValues;
 
-        public RowSetBuilderSequential modifiedBuilder;
-        public RowSet newModified;
-
-        public byte curVal = nullValue;
+        public byte curVal = NULL_BYTE;
 
         protected Context(final int chunkSize) {
-            this.fillContext = new SizedSafeCloseable<>(outputSource::makeFillFromContext);
-            this.fillContext.ensureCapacity(chunkSize);
-            this.outputValues = new SizedByteChunk<>(chunkSize);
+            this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
+            this.outputValues = WritableByteChunk.makeWritableChunk(chunkSize);
         }
 
-        public RowSetBuilderSequential getModifiedBuilder() {
-            if(modifiedBuilder == null) {
-                modifiedBuilder = RowSetFactory.builderSequential();
+        @Override
+        public void accumulateCumulative(@NotNull final RowSequence inputKeys,
+                                         @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable final LongChunk<? extends Values> tsChunk,
+                                         final int len) {
+
+            setValueChunks(valueChunkArr);
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                push(ii, 1);
+                writeToOutputChunk(ii);
             }
-            return modifiedBuilder;
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void accumulateRolling(@NotNull final RowSequence inputKeys,
+                                      @NotNull final Chunk<? extends Values>[] influencerValueChunkArr,
+                                      @Nullable final LongChunk<OrderedRowKeys> affectedPosChunk,
+                                      @Nullable final LongChunk<OrderedRowKeys> influencerPosChunk,
+                                      @NotNull final IntChunk<? extends Values> pushChunk,
+                                      @NotNull final IntChunk<? extends Values> popChunk,
+                                      final int len) {
+
+            setValueChunks(influencerValueChunkArr);
+            setPosChunks(affectedPosChunk, influencerPosChunk);
+
+            int pushIndex = 0;
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                final int pushCount = pushChunk.get(ii);
+                final int popCount = popChunk.get(ii);
+
+                if (pushCount == NULL_INT) {
+                    writeNullToOutputChunk(ii);
+                    continue;
+                }
+
+                // pop for this row
+                if (popCount > 0) {
+                    pop(popCount);
+                }
+
+                // push for this row
+                if (pushCount > 0) {
+                    push(pushIndex, pushCount);
+                    pushIndex += pushCount;
+                }
+
+                // write the results to the output chunk
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {}
+
+        @Override
+        public void writeToOutputChunk(final int outIdx) {
+            outputValues.set(outIdx, curVal);
+        }
+
+        void writeNullToOutputChunk(final int outIdx) {
+            outputValues.set(outIdx, NULL_BYTE);
+        }
+
+        @Override
+        public void writeToOutputColumn(@NotNull final RowSequence inputKeys) {
+            outputSource.fillFromChunk(outputFillContext, outputValues, inputKeys);
+        }
+
+        @Override
+        public void reset() {
+            curVal = NULL_BYTE;
+            nullCount = 0;
         }
 
         @Override
         public void close() {
             outputValues.close();
-            fillContext.close();
+            outputFillContext.close();
         }
     }
 
@@ -86,22 +148,47 @@ public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
      * @param pair             the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
      *                         of this operator.
-     * @param rowRedirection the {@link RowRedirection} if one is used
+     * @param rowRedirection the {@link RowRedirection} for the output column
      */
     public BaseByteUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
                                     @Nullable final RowRedirection rowRedirection
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
+    ) {
+        this(pair, affectingColumns, rowRedirection, null, 0, 0, false);
+    }
+
+    /**
+     * Construct a base operator for operations that produce byte outputs.
+     *
+     * @param pair             the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns a list of all columns (including the input column from the pair) that affects the result
+     *                         of this operator.
+     * @param rowRedirection the {@link RowRedirection} for the output column
+     * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
+     *        integer ticks.
+     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
+     */
+    public BaseByteUpdateByOperator(@NotNull final MatchPair pair,
+                                    @NotNull final String[] affectingColumns,
+                                    @Nullable final RowRedirection rowRedirection,
+                                    @Nullable final String timestampColumnName,
+                                    final long reverseWindowScaleUnits,
+                                    final long forwardWindowScaleUnits,
+                                    final boolean isWindowed
+                                    // region extra-constructor-args
+                                    // endregion extra-constructor-args
                                     ) {
-        this.pair = pair;
-        this.affectingColumns = affectingColumns;
-        this.isRedirected = rowRedirection != null;
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
         if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = makeDenseSource();
             // endregion create-dense
-            this.outputSource = new WritableRedirectedColumnSource(rowRedirection, maybeInnerSource, 0);
+            this.outputSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, maybeInnerSource, 0);
         } else {
             this.maybeInnerSource = null;
             // region create-sparse
@@ -112,9 +199,8 @@ public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
         // region constructor
         this.nullValue = getNullValue();
         // endregion constructor
-
-        this.singletonVal = nullValue;
     }
+
 
     // region extra-methods
     protected byte getNullValue() {
@@ -132,171 +218,29 @@ public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
     // endregion extra-methods
 
     @Override
-    public void setChunkSize(@NotNull final UpdateContext context, final int chunkSize) {
-        ((Context)context).outputValues.ensureCapacity(chunkSize);
-        ((Context)context).fillContext.ensureCapacity(chunkSize);
-    }
-
-    @Override
-    public void setBucketCapacity(final int capacity) {
-        bucketLastVal.ensureCapacity(capacity);
-    }
-
-    @NotNull
-    @Override
-    public String getInputColumnName() {
-        return pair.rightColumn;
-    }
-
-    @NotNull
-    @Override
-    public String[] getAffectingColumnNames() {
-        return affectingColumns;
-    }
-
-    @NotNull
-    @Override
-    public String[] getOutputColumnNames() {
-        return new String[] { pair.leftColumn };
-    }
-
-    @NotNull
-    @Override
-    public Map<String, ColumnSource<?>> getOutputColumns() {
-        return Collections.singletonMap(pair.leftColumn, outputSource);
-    }
-
-    @NotNull
-    @Override
-    public UpdateContext makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
-    }
-
-    @Override
-    public void initializeForUpdate(@NotNull final UpdateContext context,
-                                    @NotNull final TableUpdate upstream,
-                                    @NotNull final RowSet resultSourceIndex,
-                                    final boolean usingBuckets,
-                                    final boolean isUpstreamAppendOnly) {
-        final Context ctx = (Context) context;
-        if(!initialized) {
-            initialized = true;
-            if(usingBuckets) {
-                // region create-bucket
-                this.bucketLastVal = makeDenseSource();
-                // endregion create-bucket
-            }
+    public void initializeCumulative(@NotNull final UpdateByOperator.Context context,
+                                     final long firstUnmodifiedKey,
+                                     final long firstUnmodifiedTimestamp,
+                                     @NotNull final RowSet bucketRowSet) {
+        Context ctx = (Context) context;
+        ctx.reset();
+        if (firstUnmodifiedKey != NULL_ROW_KEY) {
+            ctx.curVal = outputSource.getByte(firstUnmodifiedKey);
         }
-
-        // If we're redirected we have to make sure we tell the output source it's actual size, or we're going
-        // to have a bad time.  This is not necessary for non-redirections since the SparseArraySources do not
-        // need to do anything with capacity.
-        if(isRedirected) {
-            // The redirection index does not use the 0th index for some reason.
-            outputSource.ensureCapacity(resultSourceIndex.size() + 1);
-        }
-
-        if(!usingBuckets) {
-            // If we aren't bucketing, we'll just remember the appendyness.
-            ctx.canProcessDirectly = isUpstreamAppendOnly;
-        }
-    }
-
-    @Override
-    public void initializeFor(@NotNull final UpdateContext updateContext,
-                              @NotNull final RowSet updateIndex,
-                              @NotNull final UpdateBy.UpdateType type) {
-        ((Context)updateContext).currentUpdateType = type;
-        ((Context)updateContext).curVal = nullValue;
-    }
-
-    @Override
-    public void finishFor(@NotNull final UpdateContext updateContext, @NotNull final UpdateBy.UpdateType type) {
-        final Context ctx = (Context) updateContext;
-        if(type == UpdateBy.UpdateType.Reprocess) {
-            ctx.newModified = ctx.modifiedBuilder.build();
-        }
-    }
-
-    @Override
-    public boolean requiresKeys() {
-        return false;
-    }
-
-    @Override
-    public boolean requiresValues(@NotNull final UpdateContext context) {
-        final Context ctx = (Context) context;
-        // We only need to read actual values if we can process them at this moment,  so that means if we are
-        // either part of an append-only update, or within the reprocess cycle
-        return (ctx.currentUpdateType == UpdateBy.UpdateType.Add && ctx.canProcessDirectly) || ctx.currentUpdateType == UpdateBy.UpdateType.Reprocess;
     }
 
     @Override
     public void startTrackingPrev() {
         outputSource.startTrackingPrevValues();
-        if(isRedirected) {
+        if (rowRedirection != null) {
+            assert maybeInnerSource != null;
             maybeInnerSource.startTrackingPrevValues();
         }
     }
 
-    @NotNull
-    @Override
-    final public RowSet getAdditionalModifications(@NotNull final UpdateContext ctx) {
-        return ((Context)ctx).newModified == null ? RowSetFactory.empty() : ((Context)ctx).newModified;
-    }
-
-    @Override
-    final public boolean anyModified(@NotNull final UpdateContext ctx) {
-        return ((Context)ctx).newModified != null;
-    }
-
-    @Override
-    public void onBucketsRemoved(@NotNull final RowSet removedBuckets) {
-        if(bucketLastVal != null) {
-            bucketLastVal.setNull(removedBuckets);
-        } else {
-            singletonVal = nullValue;
-        }
-    }
-
-    @Override
-    public boolean canProcessNormalUpdate(@NotNull UpdateContext context) {
-        return ((Context)context).canProcessDirectly;
-    }
-
-    // region Addition
-    @Override
-    public void addChunk(@NotNull final UpdateContext updateContext,
-                         @NotNull final RowSequence inputKeys,
-                         @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                         @NotNull final Chunk<Values> values,
-                         long bucketPosition) {
-        final Context ctx = (Context) updateContext;
-        if (ctx.canProcessDirectly) {
-            doAddChunk(ctx, inputKeys, values, bucketPosition);
-        }
-    }
-
-    /**
-     * Add a chunk of values to the operator.
-     *
-     * @param ctx the context object
-     * @param inputKeys the input keys for the chunk
-     * @param workingChunk the chunk of values
-     * @param bucketPosition the bucket position that the values belong to.
-     */
-    protected abstract void doAddChunk(@NotNull final Context ctx,
-                                       @NotNull final RowSequence inputKeys,
-                                       @NotNull final Chunk<Values> workingChunk,
-                                       final long bucketPosition);
-
-    // endregion
-
     // region Shifts
     @Override
-    public void applyOutputShift(@NotNull final UpdateContext context,
-                                 @NotNull final RowSet subIndexToShift,
-                                 final long delta) {
+    public void applyOutputShift(@NotNull final RowSet subIndexToShift, final long delta) {
         if (outputSource instanceof BooleanSparseArraySource.ReinterpretedAsByte) {
             ((BooleanSparseArraySource.ReinterpretedAsByte)outputSource).shift(subIndexToShift, delta);
         } else {
@@ -305,75 +249,26 @@ public abstract class BaseByteUpdateByOperator implements UpdateByOperator {
     }
     // endregion Shifts
 
-    // region Reprocessing
-
-    public void resetForReprocess(@NotNull final UpdateContext context,
-                                  @NotNull final RowSet sourceIndex,
-                                  long firstUnmodifiedKey) {
-        final Context ctx = (Context) context;
-        if(!ctx.canProcessDirectly) {
-            singletonVal = firstUnmodifiedKey == NULL_ROW_KEY ? nullValue : outputSource.getByte(firstUnmodifiedKey);
+    @Override
+    public void prepareForParallelPopulation(final RowSet changedRows) {
+        if (rowRedirection != null) {
+            assert maybeInnerSource != null;
+            ((WritableSourceWithPrepareForParallelPopulation) maybeInnerSource).prepareForParallelPopulation(changedRows);
+        } else {
+            ((WritableSourceWithPrepareForParallelPopulation) outputSource).prepareForParallelPopulation(changedRows);
         }
     }
 
-
+    @NotNull
     @Override
-    public void resetForReprocess(@NotNull final UpdateContext ctx,
-                                  @NotNull final RowSet bucketIndex,
-                                  final long bucketPosition,
-                                  final long firstUnmodifiedKey) {
-        final byte previousVal = firstUnmodifiedKey == NULL_ROW_KEY ? nullValue : outputSource.getByte(firstUnmodifiedKey);
-        bucketLastVal.set(bucketPosition, previousVal);
+    public Map<String, ColumnSource<?>> getOutputColumns() {
+        return Collections.singletonMap(pair.leftColumn, outputSource);
     }
 
+    // region clear-output
     @Override
-    public void reprocessChunk(@NotNull final UpdateContext updateContext,
-                               @NotNull final RowSequence inputKeys,
-                               @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                               @NotNull final Chunk<Values> valuesChunk,
-                               @NotNull final RowSet postUpdateSourceIndex) {
-        final Context ctx = (Context) updateContext;
-        doAddChunk(ctx, inputKeys, valuesChunk, 0);
-        ctx.getModifiedBuilder().appendRowSequence(inputKeys);
+    public void clearOutputRows(final RowSet toClear) {
+        // NOP for primitive types
     }
-
-    @Override
-    public void reprocessChunk(@NotNull UpdateContext updateContext,
-                               @NotNull final RowSequence chunkOk,
-                               @NotNull final Chunk<Values> values,
-                               @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                               @NotNull final IntChunk<RowKeys> bucketPositions,
-                               @NotNull final IntChunk<ChunkPositions> runStartPositions,
-                               @NotNull final IntChunk<ChunkLengths> runLengths) {
-        addChunk(updateContext, values, keyChunk, bucketPositions, runStartPositions, runLengths);
-        ((Context)updateContext).getModifiedBuilder().appendRowSequence(chunkOk);
-    }
-
-    // endregion
-
-    // region No-Op Operations
-
-    @Override
-    final public void modifyChunk(@NotNull final UpdateContext updateContext,
-                                  @Nullable final LongChunk<OrderedRowKeys> prevKeyChunk,
-                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk,
-                                  @NotNull final Chunk<Values> postValuesChunk,
-                                  long bucketPosition) {
-    }
-
-    @Override
-    final public void removeChunk(@NotNull final UpdateContext updateContext,
-                                  @Nullable final LongChunk<OrderedRowKeys> keyChunk,
-                                  @NotNull final Chunk<Values> prevValuesChunk,
-                                  long bucketPosition) {
-    }
-
-    @Override
-    final public void applyShift(@NotNull final UpdateContext updateContext,
-                                 @NotNull final RowSet prevIndex,
-                                 @NotNull final RowSetShiftData shifted) {
-
-    }
-    // endregion
+    // endregion clear-output
 }

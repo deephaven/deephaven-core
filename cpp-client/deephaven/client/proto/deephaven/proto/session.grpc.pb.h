@@ -59,6 +59,8 @@ class SessionService final {
     //
     // Handshake between client and server to create a new session. The response includes a metadata header name and the
     // token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+    //
+    // Deprecated: Please use Flight's Handshake or http authorization headers instead.
     virtual ::grpc::Status NewSession(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest& request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::HandshakeResponse>> AsyncNewSession(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::HandshakeResponse>>(AsyncNewSessionRaw(context, request, cq));
@@ -69,6 +71,8 @@ class SessionService final {
     //
     // Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
     // token that should replace the existing token for subsequent requests.
+    //
+    // Deprecated: Please use Flight's Handshake with an empty payload.
     virtual ::grpc::Status RefreshSessionToken(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest& request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::HandshakeResponse>> AsyncRefreshSessionToken(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::HandshakeResponse>>(AsyncRefreshSessionTokenRaw(context, request, cq));
@@ -139,11 +143,15 @@ class SessionService final {
       //
       // Handshake between client and server to create a new session. The response includes a metadata header name and the
       // token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+      //
+      // Deprecated: Please use Flight's Handshake or http authorization headers instead.
       virtual void NewSession(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void NewSession(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       //
       // Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
       // token that should replace the existing token for subsequent requests.
+      //
+      // Deprecated: Please use Flight's Handshake with an empty payload.
       virtual void RefreshSessionToken(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response, std::function<void(::grpc::Status)>) = 0;
       virtual void RefreshSessionToken(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       //
@@ -309,10 +317,14 @@ class SessionService final {
     //
     // Handshake between client and server to create a new session. The response includes a metadata header name and the
     // token to send on every subsequent request. The auth mechanisms here are unary to best support grpc-web.
+    //
+    // Deprecated: Please use Flight's Handshake or http authorization headers instead.
     virtual ::grpc::Status NewSession(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response);
     //
     // Keep-alive a given token to ensure that a session is not cleaned prematurely. The response may include an updated
     // token that should replace the existing token for subsequent requests.
+    //
+    // Deprecated: Please use Flight's Handshake with an empty payload.
     virtual ::grpc::Status RefreshSessionToken(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::HandshakeRequest* request, ::io::deephaven::proto::backplane::grpc::HandshakeResponse* response);
     //
     // Proactively close an open session. Sessions will automatically close on timeout. When a session is closed, all

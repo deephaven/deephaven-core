@@ -19,28 +19,41 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import junit.framework.TestCase;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
 
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
+
+    @Test
+    public void testWindowCheckIterative() {
+        for (int seed = 0; seed < 1; ++seed) {
+            testWindowCheckIterative(seed);
+        }
+    }
 
     /**
      * Run a window check over the course of a simulated day.
@@ -52,12 +65,11 @@ public class TestWindowCheck {
      * The WindowEvalNugget verifies the original columns are unchanged and that the value of the InWindow column is
      * correct. A prev checker is added to ensure that getPrev works on the new table.
      */
-    @Test
-    public void testWindowCheckIterative() {
-        final Random random = new Random(0);
-        final Random combinedRandom = new Random(0);
+    private void testWindowCheckIterative(int seed) {
+        final Random random = new Random(seed);
+        final Random combinedRandom = new Random(seed);
 
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 100;
         final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
         final DateTime endTime;
@@ -138,7 +150,7 @@ public class TestWindowCheck {
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
         final QueryTable tableToCheck = testRefreshingTable(i().toTracking(),
-                c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
+                col("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
@@ -150,9 +162,143 @@ public class TestWindowCheck {
 
     }
 
+    @Test
+    public void testWindowCheckGetPrev() {
+        final TestClock timeProvider = new TestClock();
+        final DateTime startTime = DateTimeUtils.convertDateTime("2022-07-14T09:30:00 NY");
+        timeProvider.now = startTime.getNanos();
+
+        final DateTime[] initialValues = Stream.concat(Arrays.stream(
+                new String[] {"2022-07-14T09:25:00 NY", "2022-07-14T09:30:00 NY", "2022-07-14T09:35:00 NY"})
+                .map(DateTimeUtils::convertDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
+        final QueryTable tableToCheck = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
+                col("Timestamp", initialValues),
+                intCol("Sentinel", 1, 2, 3, 4));
+
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed =
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(
+                        timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", false));
+
+        TableTools.showWithRowSet(windowed.first);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
+
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
+
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.get(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.get(3));
+        Assert.assertEquals(resultSource.getPrev(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.getPrev(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.getPrev(3));
+
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+
+        timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
+        windowed.second.run();
+
+        while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
+            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+        }
+
+        Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(1), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.get(3));
+        Assert.assertEquals(resultSource.getPrev(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.getPrev(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.getPrev(3));
+
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+    }
+
+    @Test
+    public void testWindowCheckStatic() {
+
+        final TestClock timeProvider = new TestClock();
+        final DateTime startTime = DateTimeUtils.convertDateTime("2022-07-14T09:30:00 NY");
+        timeProvider.now = startTime.getNanos();
+
+        final DateTime[] initialValues = Stream.concat(Arrays.stream(
+                new String[] {"2022-07-14T09:25:00 NY", "2022-07-14T09:30:00 NY", "2022-07-14T09:35:00 NY"})
+                .map(DateTimeUtils::convertDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
+        final QueryTable tableToCheck = testTable(i(0, 1, 2, 3).toTracking(),
+                col("Timestamp", initialValues),
+                intCol("Sentinel", 1, 2, 3, 4));
+        Assert.assertFalse(tableToCheck.isRefreshing());
+
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed =
+                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(
+                        timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", false));
+
+        TableTools.showWithRowSet(windowed.first);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
+
+        assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
+
+        final ColumnSource<Boolean> resultSource = windowed.first.getColumnSource("InWindow", Boolean.class);
+        Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.get(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.get(3));
+        Assert.assertEquals(resultSource.getPrev(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.getPrev(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.getPrev(3));
+
+        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+
+        timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
+        windowed.second.run();
+
+        while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
+            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+        }
+
+        Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(1), Boolean.FALSE);
+        Assert.assertEquals(resultSource.get(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.get(3));
+        Assert.assertEquals(resultSource.getPrev(0), Boolean.FALSE);
+        Assert.assertEquals(resultSource.getPrev(1), Boolean.TRUE);
+        Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
+        Assert.assertNull(resultSource.getPrev(3));
+
+        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+    }
+
+    @Test
+    public void testMemoryUsage() {
+        final QueryTable inputTable = (QueryTable) TableTools.emptyTable(500_000_000)
+                .updateView("Timestamp = '2022-07-01T00:00 NY'");
+        inputTable.setRefreshing(true);
+        System.gc();
+        final long memStart = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.out.println("Start Memory: " + memStart);
+        final Table withCheck = WindowCheck.addTimeWindow(
+                inputTable,
+                "Timestamp",
+                60 * DateTimeUtils.SECOND,
+                "InLastXSeconds");
+        System.gc();
+        final long memEnd = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+        System.out.println("End Memory: " + memEnd);
+        final long memChange = memEnd - memStart;
+        System.out.println("Change: " + memChange);
+        // this previously would require about 2 gigabytes, so we're doing better
+        TestCase.assertTrue(memChange < 100_000_000);
+        assertTableEquals(inputTable.updateView("InLastXSeconds=false"), withCheck);
+    }
+
     private static class WindowEvalNugget implements EvalNuggetInterface {
         final Pair<Table, WindowCheck.TimeWindowListener> windowed;
         private final QueryTable table;
+        @ReferentialIntegrity
         private final TableUpdateValidator validator;
         private final TestClock clock;
         private final long windowNanos;
@@ -186,7 +332,7 @@ public class TestWindowCheck {
                     WindowCheck.addTimeWindowInternal(clock, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable) windowed.first);
 
-            ((QueryTable) windowed.first).addUpdateListener(windowedFailureListener);
+            windowed.first.addUpdateListener(windowedFailureListener);
             validator.getResultTable().addUpdateListener(updateFailureListener);
         }
 

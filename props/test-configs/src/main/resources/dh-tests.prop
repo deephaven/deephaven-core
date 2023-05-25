@@ -87,6 +87,8 @@ Liveness.cleanupLogEnabled=false
 
 # Force more parallelism
 QueryTable.minimumParallelSelectRows=1024
+QueryTable.forceParallelWhere=true
+QueryTable.parallelWhereSegments=2
 
 BarrageMessageProducer.subscriptionGrowthEnabled=true
 BarrageMessageProducer.targetSnapshotPercentage=0.1
@@ -94,9 +96,12 @@ BarrageMessageProducer.minSnapshotCellCount=50
 BarrageMessageProducer.maxSnapshotCellCount=50
 BarrageStreamGenerator.batchSize=4
 
-#BarrageTable.debug=true
-#BarrageMessageProducer.debug=true
-
+http.session.durationMs=300000
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
 authentication.client.configuration.list=
 client.version.list=
+
+authentication.anonymous.warn=false
+
+deephaven.console.type=none
+thread.initialization=

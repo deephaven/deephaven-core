@@ -4,8 +4,8 @@
 package io.deephaven.base.stats;
 
 import java.util.ArrayList;
-
-import io.deephaven.base.Function;
+import java.util.function.BiFunction;
+import java.util.function.LongFunction;
 
 public class Group {
     private String name;
@@ -29,27 +29,27 @@ public class Group {
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value> Item<V> makeItem(String name, Function.Unary<V, Long> valueFactory,
+    synchronized <V extends Value> Item<V> makeItem(String name, LongFunction<V> valueFactory,
             String description, long now) {
         for (Item i : items) {
             if (i.getName().equals(name)) {
                 return i;
             }
         }
-        Item i = new Item<V>(this, name, valueFactory.call(now), description);
+        Item i = new Item<V>(this, name, valueFactory.apply(now), description);
         addItem(i);
         return i;
     }
 
     /** get or create a named, top-level item */
-    synchronized <V extends Value, Arg> Item<V> makeItem(String name, Function.Binary<V, Long, Arg> valueFactory,
+    synchronized <V extends Value, Arg> Item<V> makeItem(String name, BiFunction<Long, Arg, V> valueFactory,
             String description, long now, Arg arg) {
         for (Item i : items) {
             if (i.getName().equals(name)) {
                 return i;
             }
         }
-        Item i = new Item<V>(this, name, valueFactory.call(now, arg), description);
+        Item i = new Item<V>(this, name, valueFactory.apply(now, arg), description);
         addItem(i);
         return i;
     }

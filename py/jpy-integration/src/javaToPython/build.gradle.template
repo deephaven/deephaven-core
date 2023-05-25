@@ -7,9 +7,9 @@ test.classpath = fileTree('/classpath/').plus(files('/classpath'))
 test.testClassesDirs = files('/classes')
 
 test.systemProperties([
-        'jpy.jpyLib':'/opt/deephaven-venv/lib/python3.7/site-packages/jpy.cpython-37m-x86_64-linux-gnu.so',
-        'jpy.jdlLib':'/opt/deephaven-venv/lib/python3.7/site-packages/jdl.cpython-37m-x86_64-linux-gnu.so',
-        'jpy.pythonLib':'/usr/lib/x86_64-linux-gnu/libpython3.7m.so.1.0',
+        'jpy.jpyLib':'/opt/deephaven/venv/lib/python3.10/site-packages/jpy.cpython-310-x86_64-linux-gnu.so',
+        'jpy.jdlLib':'/opt/deephaven/venv/lib/python3.10/site-packages/jdl.cpython-310-x86_64-linux-gnu.so',
+        'jpy.pythonLib':'/usr/lib/python3.10/config-3.10-x86_64-linux-gnu/libpython3.10.so',
         // Cleaning up on a dedicated thread has some issues when there is frequent starting
         // and stopping of the python virtual environment. We'll rely on cleaning up inline
         // when necessary.

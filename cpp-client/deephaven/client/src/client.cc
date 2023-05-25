@@ -6,6 +6,7 @@
 #include <arrow/array.h>
 #include <arrow/scalar.h>
 #include "deephaven/client/columns.h"
+#include "deephaven/client/flight.h"
 #include "deephaven/client/impl/columns_impl.h"
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/aggregate_impl.h"
@@ -13,7 +14,8 @@
 #include "deephaven/client/impl/table_handle_impl.h"
 #include "deephaven/client/impl/table_handle_manager_impl.h"
 #include "deephaven/client/subscription/subscription_handle.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/client/utility/arrow_util.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -33,11 +35,11 @@ using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
-using deephaven::client::utility::SimpleOstringstream;
-using deephaven::client::utility::SFCallback;
-using deephaven::client::utility::separatedList;
-using deephaven::client::utility::stringf;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::utility::separatedList;
+using deephaven::dhcore::utility::SFCallback;
+using deephaven::dhcore::utility::SimpleOstringstream;
+using deephaven::dhcore::utility::stringf;
 
 namespace deephaven::client {
 namespace {
@@ -52,7 +54,10 @@ Client Client::connect(const std::string &target) {
   return Client(std::move(impl));
 }
 
-Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {}
+Client::Client() = default;
+
+Client::Client(std::shared_ptr<impl::ClientImpl> impl) : impl_(std::move(impl)) {
+}
 Client::Client(Client &&other) noexcept = default;
 Client &Client::operator=(Client &&other) noexcept = default;
 Client::~Client() = default;
@@ -61,6 +66,7 @@ TableHandleManager Client::getManager() const {
   return TableHandleManager(impl_->managerImpl());
 }
 
+TableHandleManager::TableHandleManager() = default;
 TableHandleManager::TableHandleManager(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
 TableHandleManager::TableHandleManager(TableHandleManager &&other) noexcept = default;
 TableHandleManager &TableHandleManager::operator=(TableHandleManager &&other) noexcept = default;
@@ -81,10 +87,10 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-std::tuple<TableHandle, arrow::flight::FlightDescriptor> TableHandleManager::newTableHandleAndFlightDescriptor() const {
+TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor() const {
   auto [thImpl, fd] = impl_->newTicket();
   TableHandle th(std::move(thImpl));
-  return std::make_tuple(std::move(th), std::move(fd));
+  return {std::move(th), std::move(fd)};
 }
 
 TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point startTime,
@@ -92,10 +98,6 @@ TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point 
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
-}
-
-FlightWrapper TableHandleManager::createFlightWrapper() const {
-  return FlightWrapper(impl_);
 }
 
 namespace {
@@ -223,7 +225,8 @@ AggregateCombo &AggregateCombo::operator=(AggregateCombo &&other) noexcept = def
 AggregateCombo::~AggregateCombo() = default;
 
 TableHandle::TableHandle() = default;
-TableHandle::TableHandle(std::shared_ptr<impl::TableHandleImpl> impl) : impl_(std::move(impl)) {}
+TableHandle::TableHandle(std::shared_ptr<impl::TableHandleImpl> impl) : impl_(std::move(impl)) {
+}
 TableHandle::TableHandle(const TableHandle &other) = default;
 TableHandle &TableHandle::operator=(const TableHandle &other) = default;
 TableHandle::TableHandle(TableHandle &&other) noexcept = default;
@@ -417,33 +420,6 @@ TableHandle TableHandle::merge(std::string keyColumn, std::vector<TableHandle> s
   return TableHandle(std::move(qtImpl));
 }
 
-FlightWrapper::FlightWrapper(std::shared_ptr<impl::TableHandleManagerImpl> impl) : impl_(std::move(impl)) {}
-FlightWrapper::~FlightWrapper() = default;
-
-std::shared_ptr<arrow::flight::FlightStreamReader> FlightWrapper::getFlightStreamReader(
-    const TableHandle &table) const {
-  const auto *server = impl_->server().get();
-
-  arrow::flight::FlightCallOptions options;
-  options.headers.push_back(server->makeBlessing());
-  std::unique_ptr<arrow::flight::FlightStreamReader> fsr;
-  arrow::flight::Ticket tkt;
-  tkt.ticket = table.impl()->ticket().ticket();
-
-  okOrThrow(DEEPHAVEN_EXPR_MSG(server->flightClient()->DoGet(options, tkt, &fsr)));
-  return fsr;
-}
-
-void FlightWrapper::addAuthHeaders(arrow::flight::FlightCallOptions *options) {
-  const auto *server = impl_->server().get();
-  options->headers.push_back(server->makeBlessing());
-}
-
-arrow::flight::FlightClient *FlightWrapper::flightClient() const {
-  const auto *server = impl_->server().get();
-  return server->flightClient();
-}
-
 namespace {
 template<typename T>
 std::vector<std::string> toIrisRepresentation(const std::vector<T> &items) {
@@ -528,12 +504,24 @@ std::shared_ptr<SubscriptionHandle> TableHandle::subscribe(
   return impl_->subscribe(std::move(callback));
 }
 
+std::shared_ptr<SubscriptionHandle>
+TableHandle::subscribe(onTickCallback_t onTick, void *onTickUserData,
+    onErrorCallback_t onError, void *onErrorUserData) {
+  return impl_->subscribe(onTick, onTickUserData, onError, onErrorUserData);
+}
+
 void TableHandle::unsubscribe(std::shared_ptr<SubscriptionHandle> callback) {
   impl_->unsubscribe(std::move(callback));
 }
 
 const std::string &TableHandle::getTicketAsString() const {
   return impl_->ticket().ticket();
+}
+
+std::string TableHandle::toString(bool wantHeaders) const {
+  SimpleOstringstream oss;
+  oss << stream(true);
+  return std::move(oss.str());
 }
 
 namespace internal {
@@ -590,4 +578,3 @@ void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHe
 }
 }  // namespace
 }  // namespace deephaven::client
-

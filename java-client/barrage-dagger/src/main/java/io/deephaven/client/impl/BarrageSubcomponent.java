@@ -10,15 +10,14 @@ import io.deephaven.client.SessionImplModule;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 
-import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
+import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class, BarrageSessionModule.class})
 public interface BarrageSubcomponent extends BarrageSessionFactory {
 
     BarrageSession newBarrageSession();
-
-    CompletableFuture<? extends BarrageSession> newBarrageSessionFuture();
 
     @Module(subcomponents = {BarrageSubcomponent.class})
     interface DeephavenClientSubcomponentModule {
@@ -32,6 +31,9 @@ public interface BarrageSubcomponent extends BarrageSessionFactory {
         Builder scheduler(@BindsInstance ScheduledExecutorService scheduler);
 
         Builder allocator(@BindsInstance BufferAllocator bufferAllocator);
+
+        Builder authenticationTypeAndValue(
+                @BindsInstance @Nullable @Named("authenticationTypeAndValue") String authenticationTypeAndValue);
 
         BarrageSubcomponent build();
     }

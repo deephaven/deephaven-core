@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.time.DateTimeUtils;
@@ -16,9 +16,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -28,7 +25,7 @@ public class TestDownsampledWhereFilter {
 
     @Before
     public void setUp() throws Exception {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @After
@@ -37,10 +34,8 @@ public class TestDownsampledWhereFilter {
     }
 
     @Test
-    public void testDownsampledWhere() throws IOException {
+    public void testDownsampledWhere() {
         Random random = new Random(42);
-        List<Table> tables = new ArrayList<>();
-
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
@@ -55,15 +50,12 @@ public class TestDownsampledWhereFilter {
         TableTools.showWithRowSet(downsampled);
         TableTools.showWithRowSet(standardWay);
 
-        String diff = TableTools.diff(downsampled, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(downsampled, standardWay);
     }
 
     @Test
-    public void testDownsampledWhereLowerFirst() throws IOException {
+    public void testDownsampledWhereLowerFirst() {
         Random random = new Random(42);
-        List<Table> tables = new ArrayList<>();
-
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
@@ -79,7 +71,6 @@ public class TestDownsampledWhereFilter {
         TableTools.showWithRowSet(downsampled);
         TableTools.showWithRowSet(standardWay);
 
-        String diff = TableTools.diff(downsampled, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(downsampled, standardWay);
     }
 }

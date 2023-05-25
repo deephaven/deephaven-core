@@ -17,18 +17,6 @@ from deephaven.table import Table
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 
 
-def freeze_table(table: Table) -> Table:
-    """ Returns a static snapshot of the source ticking table.
-
-    Args:
-        table (Table): the source table
-
-    Returns:
-        a new table
-    """
-    return empty_table(0).snapshot(table, True)
-
-
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
     tmp_name = re.sub(r"\W+", " ", str(name)).strip()
@@ -109,7 +97,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
 
     try:
         if table.is_refreshing:
-            table = freeze_table(table)
+            table = table.snapshot()
 
         col_def_dict = {col.name: col for col in table.columns}
         if not cols:
@@ -131,7 +119,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, "failed to create a Numpy array from the table column.") from e
+        raise DHError(e, "failed to create a numpy array from the table column.") from e
 
 
 def to_table(np_array: np.ndarray, cols: List[str]) -> Table:

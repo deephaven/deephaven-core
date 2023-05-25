@@ -26,6 +26,8 @@ import java.util.Arrays;
 // region BufferImports
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.util.Arrays;
  */
 public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableObjectChunk[] EMPTY_WRITABLE_OBJECT_CHUNK_ARRAY = new WritableObjectChunk[0];
 
     static <T, ATTR extends Any> WritableObjectChunk<T, ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
     }
 
     public static <T, ATTR extends Any> WritableObjectChunk<T, ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getObjectChunkPool().takeWritableObjectChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getObjectChunkPool().takeWritableObjectChunk(size);
+        }
+        return new WritableObjectChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableObjectChunk makeWritableChunkForPool(int size) {
         return new WritableObjectChunk(makeArray(size), 0, size) {
             @Override
@@ -61,7 +68,7 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         return new WritableObjectChunk<>(data, offset, size);
     }
 
-    WritableObjectChunk(T[] data, int offset, int capacity) {
+    protected WritableObjectChunk(T[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -76,6 +83,31 @@ public class WritableObjectChunk<T, ATTR extends Any> extends ObjectChunk<T, ATT
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableObjectChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableObjectChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableObjectChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final T[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableObjectChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

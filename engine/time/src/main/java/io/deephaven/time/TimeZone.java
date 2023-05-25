@@ -3,8 +3,10 @@
  */
 package io.deephaven.time;
 
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTimeZone;
 
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 
@@ -15,113 +17,115 @@ public enum TimeZone {
     /**
      * America/New_York
      */
-    TZ_NY(DateTimeZone.forID("America/New_York")),
+    TZ_NY("America/New_York"),
     /**
      * America/New_York
      */
-    TZ_ET(DateTimeZone.forID("America/New_York")),
+    TZ_ET("America/New_York"),
     /**
      * America/Chicago
      */
-    TZ_MN(DateTimeZone.forID("America/Chicago")),
+    TZ_MN("America/Chicago"),
     /**
      * America/Chicago
      */
-    TZ_CT(DateTimeZone.forID("America/Chicago")),
+    TZ_CT("America/Chicago"),
     /**
      * America/Denver
      */
-    TZ_MT(DateTimeZone.forID("America/Denver")),
+    TZ_MT("America/Denver"),
     /**
      * America/Los_Angeles
      */
-    TZ_PT(DateTimeZone.forID("America/Los_Angeles")),
+    TZ_PT("America/Los_Angeles"),
     /**
      * Pacific/Honolulu
      */
-    TZ_HI(DateTimeZone.forID("Pacific/Honolulu")),
+    TZ_HI("Pacific/Honolulu"),
     /**
      * America/Sao_Paulo
      */
-    TZ_BT(DateTimeZone.forID("America/Sao_Paulo")),
+    TZ_BT("America/Sao_Paulo"),
     /**
      * Asia/Seoul
      */
-    TZ_KR(DateTimeZone.forID("Asia/Seoul")),
+    TZ_KR("Asia/Seoul"),
     /**
      * Asia/Hong_Kong
      */
-    TZ_HK(DateTimeZone.forID("Asia/Hong_Kong")),
+    TZ_HK("Asia/Hong_Kong"),
     /**
      * Asia/Tokyo
      */
-    TZ_JP(DateTimeZone.forID("Asia/Tokyo")),
+    TZ_JP("Asia/Tokyo"),
     /**
      * Canada/Atlantic
      */
-    TZ_AT(DateTimeZone.forID("Canada/Atlantic")),
+    TZ_AT("Canada/Atlantic"),
     /**
      * Canada/Newfoundland
      */
-    TZ_NF(DateTimeZone.forID("Canada/Newfoundland")),
+    TZ_NF("Canada/Newfoundland"),
     /**
      * America/Anchorage
      */
-    TZ_AL(DateTimeZone.forID("America/Anchorage")),
+    TZ_AL("America/Anchorage"),
     /**
      * Asia/Kolkata
      */
-    TZ_IN(DateTimeZone.forID("Asia/Kolkata")),
+    TZ_IN("Asia/Kolkata"),
     /**
      * Europe/Berlin
      */
-    TZ_CE(DateTimeZone.forID("Europe/Berlin")),
+    TZ_CE("Europe/Berlin"),
     /**
      * Asia/Singapore
      */
-    TZ_SG(DateTimeZone.forID("Asia/Singapore")),
+    TZ_SG("Asia/Singapore"),
     /**
      * Europe/London
      */
-    TZ_LON(DateTimeZone.forID("Europe/London")),
+    TZ_LON("Europe/London"),
     /**
      * Europe/Moscow
      */
-    TZ_MOS(DateTimeZone.forID("Europe/Moscow")),
+    TZ_MOS("Europe/Moscow"),
     /**
      * Asia/Shanghai
      */
-    TZ_SHG(DateTimeZone.forID("Asia/Shanghai")),
+    TZ_SHG("Asia/Shanghai"),
     /**
      * Europe/Zurich
      */
-    TZ_CH(DateTimeZone.forID("Europe/Zurich")),
+    TZ_CH("Europe/Zurich"),
     /**
      * Europe/Amsterdam
      */
-    TZ_NL(DateTimeZone.forID("Europe/Amsterdam")),
+    TZ_NL("Europe/Amsterdam"),
     /**
      * Asia/Taipei
      */
-    TZ_TW(DateTimeZone.forID("Asia/Taipei")),
+    TZ_TW("Asia/Taipei"),
     /**
      * Australia/Sydney
      */
-    TZ_SYD(DateTimeZone.forID("Australia/Sydney")),
+    TZ_SYD("Australia/Sydney"),
     /**
      * UTC
      */
-    TZ_UTC(DateTimeZone.UTC);
+    TZ_UTC("UTC");
 
     /**
      * The default time zone for display purposes.
      */
     public static TimeZone TZ_DEFAULT = TZ_NY;
 
-    private DateTimeZone timeZone;
+    private final DateTimeZone timeZone;
+    private final ZoneId zoneId;
 
-    TimeZone(DateTimeZone timeZone) {
-        this.timeZone = timeZone;
+    TimeZone(final @NotNull String timeZone) {
+        this.timeZone = DateTimeZone.forID(timeZone);
+        this.zoneId = ZoneId.of(timeZone);
     }
 
     /**
@@ -131,6 +135,15 @@ public enum TimeZone {
      */
     public DateTimeZone getTimeZone() {
         return timeZone;
+    }
+
+    /**
+     * Returns the Java ZoneID for this DBTimeZone;
+     * 
+     * @return the ZoneId
+     */
+    public ZoneId getZoneId() {
+        return zoneId;
     }
 
     /**
@@ -193,7 +206,7 @@ public enum TimeZone {
 
     /**
      * Set the default time zone.
-     * 
+     *
      * @param tzDefault the {@link TimeZone} to be used as the default.
      */
     public static void setTzDefault(TimeZone tzDefault) {

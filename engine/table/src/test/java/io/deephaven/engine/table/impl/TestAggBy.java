@@ -9,6 +9,9 @@ import gnu.trove.set.hash.TDoubleHashSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.object.UnionObject;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -52,8 +55,8 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     public void testBy() {
-        ColumnHolder aHolder = c("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
-        ColumnHolder bHolder = c("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        ColumnHolder<?> aHolder = col("A", 0, 0, 1, 1, 0, 0, 1, 1, 0, 0);
+        ColumnHolder<?> bHolder = col("B", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
         Table table = TableTools.newTable(aHolder, bHolder);
         show(table);
         assertEquals(10, table.size());
@@ -66,7 +69,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                 "A");
         show(minMax);
         assertEquals(2, minMax.size());
-        DataColumn dc = minMax.getColumn("Min");
+        DataColumn<?> dc = minMax.getColumn("Min");
         assertEquals(1, dc.get(0));
         assertEquals(3, dc.get(1));
         dc = minMax.getColumn("Max");
@@ -117,11 +120,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                 AggPct(0.50, false, "Pct50F_B=B", "Pct50F_C=C"));
 
         Double[] doubles = new Double[10];
-        int bLength = Array.getLength(bHolder.data);
-        for (int ii = 0; ii < bLength; ++ii) {
-            doubles[ii] = 1.1 * Array.getInt(bHolder.data, ii);
+        final IntChunk<Values> bChunk = bHolder.getChunk().asIntChunk();
+        for (int ii = 0; ii < bChunk.size(); ++ii) {
+            doubles[ii] = 1.1 * bChunk.get(ii);
         }
-        ColumnHolder cHolder = c("C", doubles);
+        ColumnHolder<?> cHolder = col("C", doubles);
         table = TableTools.newTable(aHolder, bHolder, cHolder);
         show(table);
         Table summary = table.aggBy(summaryStatistics, "A");
@@ -365,7 +368,7 @@ public class TestAggBy extends RefreshingTableTestCase {
     public void testComboByDoubleClaim() {
         final int size = 10;
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d"),
@@ -479,7 +482,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
     public void testComboByCountDistinct() {
         QueryTable dataTable = TstUtils.testRefreshingTable(
-                c("USym", "AAPL", "AAPL", "AAPL", "GOOG", "GOOG", "SPY", "SPY", "SPY", "SPY", "VXX"),
+                col("USym", "AAPL", "AAPL", "AAPL", "GOOG", "GOOG", "SPY", "SPY", "SPY", "SPY", "VXX"),
                 longCol("Account", 1, 1, 2, 1, 3, 2, 4, 2, 5, 5),
                 intCol("Qty", 100, 100, 200, 300, 50, 100, 150, 200, 50, 50));
 
@@ -494,7 +497,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 10),
-                    c("USym", "AAPL", "VXX"),
+                    col("USym", "AAPL", "VXX"),
                     longCol("Account", QueryConstants.NULL_LONG, 1),
                     intCol("Qty", 100, QueryConstants.NULL_INT));
             dataTable.notifyListeners(i(10), i(), i(1));
@@ -508,7 +511,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(2),
-                    c("USym", "AAPL"),
+                    col("USym", "AAPL"),
                     longCol("Account", QueryConstants.NULL_LONG),
                     intCol("Qty", 200));
             dataTable.notifyListeners(i(), i(), i(2));
@@ -521,7 +524,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 2, 11),
-                    c("USym", "AAPL", "AAPL", "SPY"),
+                    col("USym", "AAPL", "AAPL", "SPY"),
                     longCol("Account", 1, 2, QueryConstants.NULL_LONG),
                     intCol("Qty", 100, 200, 200));
 
@@ -541,18 +544,18 @@ public class TestAggBy extends RefreshingTableTestCase {
         final DateTime dt2 = convertDateTime("2021-01-01T00:00:02.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
-                c("USym", "AAPL", "AAPL", "AAPL", /**/ "GOOG", "GOOG", /**/ "SPY", "SPY", "SPY", "SPY", /**/ "VXX"),
+                col("USym", "AAPL", "AAPL", "AAPL", /**/ "GOOG", "GOOG", /**/ "SPY", "SPY", "SPY", "SPY", /**/ "VXX"),
                 longCol("Account", 1, 1, 2, /**/ 1, 3, /**/ 2, 4, 2, 5, /**/ 5),
                 intCol("Qty", 100, 100, 100, /**/ 300, 50, /**/ 100, 150, 200, 50, /**/ 50),
-                c("Whee", dt1, dt1, dt1, /**/ dt1, dt2, /**/ dt2, dt2, dt2, dt2, /**/ null));
+                col("Whee", dt1, dt1, dt1, /**/ dt1, dt2, /**/ dt2, dt2, dt2, dt2, /**/ null));
 
         Table result = dataTable.aggBy(List.of(
-                AggUnique(false, Sentinel(-1), "Account", "Qty"),
-                AggUnique(false, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
+                AggUnique(false, UnionObject.of(-1), "Account", "Qty"),
+                AggUnique(false, UnionObject.of(dtDefault), "Whee")), "USym").sort("USym");
 
         Table countNulls = dataTable.aggBy(List.of(
-                AggUnique(true, Sentinel(-1), "Account", "Qty"),
-                AggUnique(true, Sentinel(dtDefault), "Whee")), "USym").sort("USym");
+                AggUnique(true, UnionObject.of(-1), "Account", "Qty"),
+                AggUnique(true, UnionObject.of(dtDefault), "Whee")), "USym").sort("USym");
 
         assertEquals(4, result.size());
         assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, result.getRecord(0));
@@ -563,10 +566,10 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(2, 10),
-                    c("USym", "AAPL", "VXX"),
+                    col("USym", "AAPL", "VXX"),
                     longCol("Account", 1, 5),
                     intCol("Qty", 100, QueryConstants.NULL_INT),
-                    c("Whee", null, (DateTime) null));
+                    col("Whee", null, (DateTime) null));
             dataTable.notifyListeners(i(10), i(), i(2));
         });
 
@@ -580,10 +583,10 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11),
-                    c("USym", "USO"),
+                    col("USym", "USO"),
                     longCol("Account", 2),
                     intCol("Qty", 200),
-                    c("Whee", dt1));
+                    col("Whee", dt1));
             removeRows(dataTable, i(9, 10));
             dataTable.notifyListeners(i(11), i(9, 10), i());
         });
@@ -598,10 +601,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         //
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11),
-                    c("USym", "USO"),
+                    col("USym", "USO"),
                     longCol("Account", QueryConstants.NULL_LONG),
                     intCol("Qty", QueryConstants.NULL_INT),
-                    c("Whee", dt2));
+                    col("Whee", dt2));
             dataTable.notifyListeners(i(), i(), i(11));
         });
         assertArrayEquals(new Object[] {"USO", null, null, dt2}, result.getRecord(3));
@@ -609,10 +612,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         //
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(3, 4, 9, 10),
-                    c("USym", "GOOG", "GOOG", "VXX", "VXX"),
+                    col("USym", "GOOG", "GOOG", "VXX", "VXX"),
                     longCol("Account", 2L, 2L, QueryConstants.NULL_LONG, 99),
                     intCol("Qty", 350, 350, 50, 50),
-                    c("Whee", dt2, dt2, null, dt1));
+                    col("Whee", dt2, dt2, null, dt1));
             dataTable.notifyListeners(i(9, 10), i(), i(3, 4));
         });
 
@@ -626,10 +629,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         final DateTime dt2 = convertDateTime("2021-02-02T00:02:03.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
-                c("USym", "NoKey", "SingleVal", "NonUnique", "NonUnique"),
-                c("StringCol", null, "Apple", "Bacon", "Pancake"),
-                c("BoolCol", null, true, true, false),
-                c("DateTime", null, dt1, dt1, dt2),
+                col("USym", "NoKey", "SingleVal", "NonUnique", "NonUnique"),
+                col("StringCol", null, "Apple", "Bacon", "Pancake"),
+                col("BoolCol", null, true, true, false),
+                col("DateTime", null, dt1, dt1, dt2),
                 charCol("CharCol", NULL_CHAR, 'a', 'b', 'c'),
                 byteCol("ByteCol", NULL_BYTE, (byte) 100, (byte) 110, (byte) 120),
                 shortCol("ShortCol", NULL_SHORT, (short) 1234, (short) 4321, (short) 1324),
@@ -637,11 +640,11 @@ public class TestAggBy extends RefreshingTableTestCase {
                 longCol("LongCol", NULL_LONG, 44444444L, 55555555L, 66666666L),
                 floatCol("FloatCol", NULL_FLOAT, 1.2345f, 2.3456f, 3.4567f),
                 doubleCol("DoubleCol", NULL_DOUBLE, 1.1E22d, 2.2E22d, 3.3E22d),
-                c("BigIntCol", null,
+                col("BigIntCol", null,
                         BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.valueOf(2)),
                         BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(1)),
                         BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(2))),
-                c("BigDecCol", null,
+                col("BigDecCol", null,
                         BigDecimal.valueOf(MAX_FINITE_DOUBLE).add(BigDecimal.valueOf(2)),
                         BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(1)),
                         BigDecimal.valueOf(MIN_FINITE_DOUBLE).subtract(BigDecimal.valueOf(2))));
@@ -649,18 +652,20 @@ public class TestAggBy extends RefreshingTableTestCase {
         // First try mixing column types and values
         expectException(IllegalArgumentException.class,
                 "Attempted to use no key/non unique values of incorrect types for aggregated columns!",
-                () -> dataTable.aggBy(AggUnique(false, Sentinel(2), "StringCol", "BoolCol", "DatTime", "CharCol",
-                        "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "BigIntCol",
-                        "BigDecCol"), "USym").sort("USym"));
+                () -> dataTable
+                        .aggBy(AggUnique(false, UnionObject.of(2), "StringCol", "BoolCol", "DatTime", "CharCol",
+                                "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol", "DoubleCol", "BigIntCol",
+                                "BigDecCol"), "USym")
+                        .sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, Sentinel(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
+        dataTable.aggBy(AggUnique(false, UnionObject.of(-2), "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
-        dataTable.aggBy(AggUnique(false, Sentinel(BigInteger.valueOf(-2)),
+        dataTable.aggBy(AggUnique(false, UnionObject.of(BigInteger.valueOf(-2)),
                 "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
-        dataTable.aggBy(AggUnique(false, Sentinel(BigDecimal.valueOf(-2)),
+        dataTable.aggBy(AggUnique(false, UnionObject.of(BigDecimal.valueOf(-2)),
                 "ByteCol", "ShortCol", "IntCol", "LongCol", "FloatCol",
                 "DoubleCol", "BigIntCol", "BigDecCol"), "USym").sort("USym");
 
@@ -686,14 +691,16 @@ public class TestAggBy extends RefreshingTableTestCase {
         // Byte out of range
         expectException(IllegalArgumentException.class,
                 "Attempted to non unique values too small for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidLow), aggCols), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, UnionObject.from(invalidLow), aggCols), "USym")
+                        .sort("USym"));
 
         expectException(IllegalArgumentException.class,
                 "Attempted to use non unique values too large for " + type.getName() + "!",
-                () -> dataTable.aggBy(AggUnique(false, Sentinel(invalidHigh), aggCols), "USym").sort("USym"));
+                () -> dataTable.aggBy(AggUnique(false, UnionObject.from(invalidHigh), aggCols), "USym")
+                        .sort("USym"));
 
-        dataTable.aggBy(AggUnique(false, Sentinel(validLow), aggCols), "USym").sort("USym");
-        dataTable.aggBy(AggUnique(false, Sentinel(validHigh), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, UnionObject.from(validLow), aggCols), "USym").sort("USym");
+        dataTable.aggBy(AggUnique(false, UnionObject.from(validHigh), aggCols), "USym").sort("USym");
     }
 
     private static <T extends Throwable> void expectException(@SuppressWarnings("SameParameterValue") Class<T> excType,
@@ -781,5 +788,4 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         return keys.size() == 1 ? keys.iterator().next() : NULL_DOUBLE;
     }
-
 }

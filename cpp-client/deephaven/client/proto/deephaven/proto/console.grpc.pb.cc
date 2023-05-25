@@ -29,11 +29,13 @@ namespace grpc {
 static const char* ConsoleService_method_names[] = {
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetConsoleTypes",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole",
+  "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/ExecuteCommand",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelCommand",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/BindTableToVariable",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream",
+  "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelAutoComplete",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream",
   "/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream",
 };
@@ -47,13 +49,15 @@ std::unique_ptr< ConsoleService::Stub> ConsoleService::NewStub(const std::shared
 ConsoleService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& channel, const ::grpc::StubOptions& options)
   : channel_(channel), rpcmethod_GetConsoleTypes_(ConsoleService_method_names[0], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_StartConsole_(ConsoleService_method_names[1], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_SubscribeToLogs_(ConsoleService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_ExecuteCommand_(ConsoleService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_CancelCommand_(ConsoleService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_BindTableToVariable_(ConsoleService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_AutoCompleteStream_(ConsoleService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
-  , rpcmethod_OpenAutoCompleteStream_(ConsoleService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_NextAutoCompleteStream_(ConsoleService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_GetHeapInfo_(ConsoleService_method_names[2], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_SubscribeToLogs_(ConsoleService_method_names[3], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_ExecuteCommand_(ConsoleService_method_names[4], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CancelCommand_(ConsoleService_method_names[5], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_BindTableToVariable_(ConsoleService_method_names[6], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_AutoCompleteStream_(ConsoleService_method_names[7], options.suffix_for_stats(),::grpc::internal::RpcMethod::BIDI_STREAMING, channel)
+  , rpcmethod_CancelAutoComplete_(ConsoleService_method_names[8], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_OpenAutoCompleteStream_(ConsoleService_method_names[9], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_NextAutoCompleteStream_(ConsoleService_method_names[10], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   {}
 
 ::grpc::Status ConsoleService::Stub::GetConsoleTypes(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesRequest& request, ::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesResponse* response) {
@@ -98,6 +102,29 @@ void ConsoleService::Stub::async::StartConsole(::grpc::ClientContext* context, c
 ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::StartConsoleResponse>* ConsoleService::Stub::AsyncStartConsoleRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::StartConsoleRequest& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncStartConsoleRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
+::grpc::Status ConsoleService::Stub::GetHeapInfo(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest& request, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_GetHeapInfo_, context, request, response);
+}
+
+void ConsoleService::Stub::async::GetHeapInfo(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest* request, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetHeapInfo_, context, request, response, std::move(f));
+}
+
+void ConsoleService::Stub::async::GetHeapInfo(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest* request, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_GetHeapInfo_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse>* ConsoleService::Stub::PrepareAsyncGetHeapInfoRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_GetHeapInfo_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse>* ConsoleService::Stub::AsyncGetHeapInfoRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncGetHeapInfoRaw(context, request, cq);
   result->StartCall();
   return result;
 }
@@ -203,6 +230,29 @@ void ConsoleService::Stub::async::AutoCompleteStream(::grpc::ClientContext* cont
   return ::grpc::internal::ClientAsyncReaderWriterFactory< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>::Create(channel_.get(), cq, rpcmethod_AutoCompleteStream_, context, false, nullptr);
 }
 
+::grpc::Status ConsoleService::Stub::CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_CancelAutoComplete_, context, request, response);
+}
+
+void ConsoleService::Stub::async::CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CancelAutoComplete_, context, request, response, std::move(f));
+}
+
+void ConsoleService::Stub::async::CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, ::grpc::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_CancelAutoComplete_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* ConsoleService::Stub::PrepareAsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_CancelAutoComplete_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* ConsoleService::Stub::AsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncCancelAutoCompleteRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::ClientReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* ConsoleService::Stub::OpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request) {
   return ::grpc::internal::ClientReaderFactory< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>::Create(channel_.get(), rpcmethod_OpenAutoCompleteStream_, context, request);
 }
@@ -265,6 +315,16 @@ ConsoleService::Service::Service() {
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ConsoleService_method_names[2],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ConsoleService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest* req,
+             ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* resp) {
+               return service->GetHeapInfo(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ConsoleService_method_names[3],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::LogSubscriptionRequest, ::io::deephaven::proto::backplane::script::grpc::LogSubscriptionData>(
           [](ConsoleService::Service* service,
@@ -274,7 +334,7 @@ ConsoleService::Service::Service() {
                return service->SubscribeToLogs(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[3],
+      ConsoleService_method_names[4],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest, ::io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ConsoleService::Service* service,
@@ -284,7 +344,7 @@ ConsoleService::Service::Service() {
                return service->ExecuteCommand(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[4],
+      ConsoleService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::CancelCommandRequest, ::io::deephaven::proto::backplane::script::grpc::CancelCommandResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ConsoleService::Service* service,
@@ -294,7 +354,7 @@ ConsoleService::Service::Service() {
                return service->CancelCommand(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[5],
+      ConsoleService_method_names[6],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest, ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ConsoleService::Service* service,
@@ -304,7 +364,7 @@ ConsoleService::Service::Service() {
                return service->BindTableToVariable(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[6],
+      ConsoleService_method_names[7],
       ::grpc::internal::RpcMethod::BIDI_STREAMING,
       new ::grpc::internal::BidiStreamingHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>(
           [](ConsoleService::Service* service,
@@ -314,7 +374,17 @@ ConsoleService::Service::Service() {
                return service->AutoCompleteStream(ctx, stream);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[7],
+      ConsoleService_method_names[8],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](ConsoleService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* req,
+             ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* resp) {
+               return service->CancelAutoComplete(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      ConsoleService_method_names[9],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>(
           [](ConsoleService::Service* service,
@@ -324,7 +394,7 @@ ConsoleService::Service::Service() {
                return service->OpenAutoCompleteStream(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      ConsoleService_method_names[8],
+      ConsoleService_method_names[10],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< ConsoleService::Service, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ConsoleService::Service* service,
@@ -346,6 +416,13 @@ ConsoleService::Service::~Service() {
 }
 
 ::grpc::Status ConsoleService::Service::StartConsole(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::StartConsoleRequest* request, ::io::deephaven::proto::backplane::script::grpc::StartConsoleResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ConsoleService::Service::GetHeapInfo(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest* request, ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* response) {
   (void) context;
   (void) request;
   (void) response;
@@ -383,6 +460,13 @@ ConsoleService::Service::~Service() {
 ::grpc::Status ConsoleService::Service::AutoCompleteStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest>* stream) {
   (void) context;
   (void) stream;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status ConsoleService::Service::CancelAutoComplete(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 

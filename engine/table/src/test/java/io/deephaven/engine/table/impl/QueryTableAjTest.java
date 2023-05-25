@@ -6,9 +6,8 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.TstUtils;
@@ -17,8 +16,6 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -38,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -64,10 +62,10 @@ public class QueryTableAjTest {
     @Test
     public void testAjConflict() {
         final Table left = TableTools.newTable(
-                c("Bucket", "A", "B", "A", "C", "D", "A"),
+                col("Bucket", "A", "B", "A", "C", "D", "A"),
                 longCol("LeftStamp", 1L, 10L, 50L, 3L, 4L, 60L));
         final Table right = TableTools.newTable(
-                c("Bucket", "A", "B", "A", "B", "A", "D", "E"),
+                col("Bucket", "A", "B", "A", "B", "A", "D", "E"),
                 longCol("RightStamp", 1L, 5L, 10L, 25L, 50L, 5L, 3L),
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
 
@@ -82,7 +80,7 @@ public class QueryTableAjTest {
     @Test
     public void testAjNull() {
         final Table left = TableTools.newTable(
-                c("Bucket", "A", "B", "A", "C", "D", "A"),
+                col("Bucket", "A", "B", "A", "C", "D", "A"),
                 longCol("LeftStamp", 1L, 10L, 50L, 3L, 4L, 60L));
 
         try {
@@ -95,19 +93,19 @@ public class QueryTableAjTest {
 
     private interface MakeColumn {
         @SuppressWarnings("unchecked")
-        <T> ColumnHolder make(String name, T... data);
+        <T> ColumnHolder<T> make(String name, T... data);
     }
 
     @Test
     public void testAjStatic() {
         // noinspection unchecked
-        testAjStatic(TstUtils::c, TstUtils::c);
+        testAjStatic(TableTools::col, TableTools::col);
     }
 
     @Test
     public void testAjStaticGrouped() {
         // noinspection unchecked
-        testAjStatic(TstUtils::cG, TstUtils::cG);
+        testAjStatic(TstUtils::colGrouped, TstUtils::colGrouped);
     }
 
     public void testAjStatic(MakeColumn leftMaker, MakeColumn rightMaker) {
@@ -163,12 +161,12 @@ public class QueryTableAjTest {
     @Test
     public void testAjBoolean() {
         final Table left = TableTools.newTable(
-                c("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
-                c("LeftStamp", true, false, true, false, false, true, false, null));
+                col("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
+                col("LeftStamp", true, false, true, false, false, true, false, null));
 
         final Table right = TableTools.newTable(
-                c("Bucket", "A", "A", "A", "B", "C"),
-                c("RightStamp", null, false, true, true, false),
+                col("Bucket", "A", "A", "A", "B", "C"),
+                col("RightStamp", null, false, true, true, false),
                 intCol("Sentinel", 1, 2, 3, 4, 5));
 
         System.out.println("Left");
@@ -217,12 +215,12 @@ public class QueryTableAjTest {
         final DateTime second = DateTimeUtils.convertDateTime("2019-06-14T19:30:00 NY");
 
         final Table left = TableTools.newTable(
-                c("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
-                c("LeftStamp", second, first, second, first, first, second, first, null));
+                col("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
+                col("LeftStamp", second, first, second, first, first, second, first, null));
 
         final Table right = TableTools.newTable(
-                c("Bucket", "A", "A", "A", "B", "C"),
-                c("RightStamp", null, first, second, second, first),
+                col("Bucket", "A", "A", "A", "B", "C"),
+                col("RightStamp", null, first, second, second, first),
                 intCol("Sentinel", 1, 2, 3, 4, 5));
 
         System.out.println("Left");
@@ -268,11 +266,11 @@ public class QueryTableAjTest {
     @Test
     public void testAjEmpty() {
         final Table left = TableTools.newTable(
-                c("Bucket"),
+                col("Bucket"),
                 intCol("LeftStamp"));
 
         final Table right = TableTools.newTable(
-                c("Bucket", "A", "A", "A", "B", "C"),
+                col("Bucket", "A", "A", "A", "B", "C"),
                 intCol("RightStamp", 1, 2, 3, 4, 5),
                 intCol("Sentinel", 1, 2, 3, 4, 5));
 
@@ -288,11 +286,11 @@ public class QueryTableAjTest {
     @Test
     public void testAjMissingState() {
         final Table left = TableTools.newTable(
-                c("Bucket", 1, 1, 2),
+                col("Bucket", 1, 1, 2),
                 intCol("LeftStamp", 1, 1, 1));
 
         final Table right = TableTools.newTable(
-                c("Bucket", 2, 3),
+                col("Bucket", 2, 3),
                 intCol("RightStamp", 1, 1),
                 intCol("Sentinel", 1, 2));
 
@@ -303,11 +301,11 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {NULL_INT, NULL_INT, 1}, intColumn(result, "Sentinel"));
 
         final Table left2 = TableTools.newTable(
-                c("Bucket", 1, 2),
+                col("Bucket", 1, 2),
                 intCol("LeftStamp", 1, 1));
 
         final Table right2 = TableTools.newTable(
-                c("Bucket", 2, 3, 3),
+                col("Bucket", 2, 3, 3),
                 intCol("RightStamp", 1, 1, 1),
                 intCol("Sentinel", 1, 2, 3));
 
@@ -321,12 +319,12 @@ public class QueryTableAjTest {
     @Test
     public void testAjStrings() {
         final Table left = TableTools.newTable(
-                c("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
-                c("LeftStamp", "t", "f", "t", "f", "f", "t", "f", null));
+                col("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),
+                col("LeftStamp", "t", "f", "t", "f", "f", "t", "f", null));
 
         final Table right = TableTools.newTable(
-                c("Bucket", "A", "A", "A", "B", "C"),
-                c("RightStamp", null, "f", "t", "t", "f"),
+                col("Bucket", "A", "A", "A", "B", "C"),
+                col("RightStamp", null, "f", "t", "t", "f"),
                 intCol("Sentinel", 1, 2, 3, 4, 5));
 
         System.out.println("Left");
@@ -533,8 +531,6 @@ public class QueryTableAjTest {
 
     @SuppressWarnings("SameParameterValue")
     private void testAjRandomStaticOverflow(int seed, int leftSize, int rightSize) {
-        final Logger log = new StreamLoggerImpl();
-
         final Random random = new Random(seed);
 
         final QueryTable leftTable = getTable(false, leftSize, random,
@@ -819,7 +815,7 @@ public class QueryTableAjTest {
     }
 
     private void testAjRandomBothIncremental(int seed, int leftNodeSize, int rightNodeSize, int leftSize, int rightSize,
-            JoinIncrement joinIncrement, Class stampType) {
+            JoinIncrement joinIncrement, Class<?> stampType) {
         // zero keys
         testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement, true,
                 true, false, true, false, false, stampType);
@@ -831,7 +827,7 @@ public class QueryTableAjTest {
     @SuppressWarnings("SameParameterValue")
     private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
             int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
-            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, Class stampType) {
+            boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, Class<?> stampType) {
         testAjRandomIncrementalWithInitial(seed, leftNodeSize, rightNodeSize, leftSize, rightSize, joinIncrement,
                 leftRefreshing, rightRefreshing, initialOnly, withZeroKeys, withBuckets, withReverse,
                 getJoinControlWithNodeSize(leftNodeSize, rightNodeSize), stampType);
@@ -841,13 +837,11 @@ public class QueryTableAjTest {
     private void testAjRandomIncrementalWithInitial(int seed, int leftNodeSize, int rightNodeSize, int leftSize,
             int rightSize, JoinIncrement joinIncrement, boolean leftRefreshing, boolean rightRefreshing,
             boolean initialOnly, boolean withZeroKeys, boolean withBuckets, boolean withReverse, JoinControl control,
-            Class stampType) {
-        final Logger log = new StreamLoggerImpl();
-
+            Class<?> stampType) {
         final Random random = new Random(seed);
         final int maxSteps = 10;
 
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final String[] smallSet = {"Alpha", "Bravo", "Charlie", "Delta", "Echo"};
         final Set<String> set1;
         final Set<String> set2;
@@ -862,8 +856,8 @@ public class QueryTableAjTest {
                     .collect(Collectors.toSet());
         }
 
-        final Generator leftStampGenerator;
-        final Generator rightStampGenerator;
+        final TestDataGenerator<?, ?> leftStampGenerator;
+        final TestDataGenerator<?, ?> rightStampGenerator;
         final boolean sortRight;
 
         if (stampType == int.class) {
@@ -884,7 +878,7 @@ public class QueryTableAjTest {
                         new SetGenerator<>(String.class, set1),
                         leftStampGenerator,
                         new IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Truthiness", "Bucket", "RightStamp", "RightSentinel"},
                         new BooleanGenerator(),
@@ -1011,8 +1005,6 @@ public class QueryTableAjTest {
 
     private void doInitialAjComparison(QueryTable leftTable, QueryTable rightTable, String columnsToMatch,
             boolean reverse, boolean disallowMatch, JoinControl control) {
-        final Logger log = new StreamLoggerImpl();
-
         final Table staticResult =
                 reverse ? leftTable.silent().raj(rightTable.silent(), columnsToMatch, "RightSentinel")
                         : leftTable.silent().aj(rightTable.silent(), columnsToMatch, "RightSentinel");
@@ -1071,13 +1063,13 @@ public class QueryTableAjTest {
         final Random random = new Random(seed);
         final int maxSteps = 10;
 
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftRefreshing, leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Bucket", "LeftStamp", "LeftSentinel"},
                         new SetGenerator<>("Alpha", "Bravo", "Charlie", "Delta"),
                         new IntGenerator(0, 10000),
                         new IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightRefreshing, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
                         new SetGenerator<>("Alpha", "Bravo", "Charlie", "Echo"),
@@ -1150,14 +1142,12 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjRandomLeftIncrementalRightStaticOverflow() {
-        final Logger log = new StreamLoggerImpl();
-
         final JoinIncrement joinIncrement = base.leftStepShift;
         final int seed = 0;
         final Random random = new Random(seed);
         final int maxSteps = 3;
 
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final int leftSize = 32000;
         final int rightSize = 32000;
         final QueryTable leftTable = getTable(true, 100000, random,
@@ -1165,7 +1155,7 @@ public class QueryTableAjTest {
                         new StringGenerator(leftSize),
                         new IntGenerator(0, 100000),
                         new IntGenerator(10_000_000, 10_010_000)));
-        final ColumnInfo[] rightColumnInfo;
+        final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(false, 100000, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
                         new StringGenerator(leftSize),
@@ -1202,10 +1192,10 @@ public class QueryTableAjTest {
         final Table correlated = bucketResults.table()
                 .naturalJoin(leftBucket.table(), "Bucket", "Left=" + leftBucket.constituentColumnName())
                 .naturalJoin(rightBucket.table(), "Bucket", "Right=" + rightBucket.constituentColumnName());
-        try (final ObjectColumnIterator<Table> results =
+        try (final CloseableIterator<Table> results =
                 correlated.objectColumnIterator(bucketResults.constituentColumnName());
-                final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
-                final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
+                final CloseableIterator<Table> lefts = correlated.objectColumnIterator("Left");
+                final CloseableIterator<Table> rights = correlated.objectColumnIterator("Right")) {
             while (results.hasNext()) {
                 checkAjResult(lefts.next(), rights.next(), results.next(), reverse, noexact);
             }
@@ -1213,6 +1203,8 @@ public class QueryTableAjTest {
     }
 
     private void checkAjResult(Table leftTable, Table rightTable, Table result, boolean reverse, boolean noexact) {
+        leftTable = leftTable.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
+
         final TIntArrayList expectedStamp = new TIntArrayList();
         final TIntArrayList expectedSentinel = new TIntArrayList();
 
@@ -1372,14 +1364,12 @@ public class QueryTableAjTest {
     @Test
     public void testIds6898() {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Logger log = new StreamLoggerImpl();
-
             final JoinIncrement joinIncrement = base.leftRightStep;
             final int seed = 0;
             final Random random = new Random(seed);
             final int maxSteps = 5;
 
-            final ColumnInfo[] leftColumnInfo;
+            final ColumnInfo<?, ?>[] leftColumnInfo;
             final int leftSize = 32000;
             final int rightSize = 32000;
             final QueryTable leftTable = getTable(true, 100000, random,
@@ -1387,7 +1377,7 @@ public class QueryTableAjTest {
                             new StringGenerator(leftSize),
                             new IntGenerator(0, 100000),
                             new IntGenerator(10_000_000, 10_010_000)));
-            final ColumnInfo[] rightColumnInfo;
+            final ColumnInfo<?, ?>[] rightColumnInfo;
             final QueryTable rightTable = getTable(true, 100000, random,
                     rightColumnInfo = initColumnInfos(new String[] {"Bucket", "RightStamp", "RightSentinel"},
                             new StringGenerator(leftSize),
@@ -1427,8 +1417,6 @@ public class QueryTableAjTest {
     @Test
     public void testIds3080() {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            final Logger log = new StreamLoggerImpl();
-
             final int seed = 0;
             final Random random = new Random(seed);
 

@@ -91,11 +91,13 @@ const char descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto[] PROTOB
   "aven.proto.backplane.grpc\"\030\n\006Ticket\022\016\n\006t"
   "icket\030\001 \001(\014\"V\n\013TypedTicket\0229\n\006ticket\030\001 \001"
   "(\0132).io.deephaven.proto.backplane.grpc.T"
-  "icket\022\014\n\004type\030\002 \001(\tB\004H\001P\001b\006proto3"
+  "icket\022\014\n\004type\030\002 \001(\tBBH\001P\001Z<github.com/de"
+  "ephaven/deephaven-core/go/internal/proto"
+  "/ticketb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fticket_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fticket_2eproto = {
-    false, false, 193, descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto,
+    false, false, 255, descriptor_table_protodef_deephaven_2fproto_2fticket_2eproto,
     "deephaven/proto/ticket.proto",
     &descriptor_table_deephaven_2fproto_2fticket_2eproto_once, nullptr, 0, 2,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fticket_2eproto::offsets,

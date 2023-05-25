@@ -15,8 +15,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -32,7 +30,6 @@ import java.util.Random;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 import static junit.framework.TestCase.*;
-import static junit.framework.TestCase.assertEquals;
 
 public abstract class AbstractByteColumnSourceTest {
     @NotNull
@@ -216,7 +213,8 @@ public abstract class AbstractByteColumnSourceTest {
 
     private void checkRandomFillUnordered(WritableColumnSource<Byte> source, ColumnSource.FillContext fillContext,
                                           WritableByteChunk dest, byte[] expectations, LongChunk<RowKeys> keys, boolean usePrev) {
-        final FillUnordered fillUnordered = (FillUnordered)source;
+        //noinspection unchecked
+        final FillUnordered<Values> fillUnordered = (FillUnordered<Values>)source;
         if (usePrev) {
             fillUnordered.fillChunkUnordered(fillContext, dest, keys);
         } else {

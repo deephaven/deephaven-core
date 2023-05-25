@@ -7,8 +7,8 @@ import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -40,10 +40,8 @@ import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -51,6 +49,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -84,19 +83,19 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
         scope = new LivenessScope();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         LivenessScopeStack.push(scope);
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
 
         table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).toTracking(),
-                TstUtils.c("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
-                TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
+                col("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
+                col("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).toTracking(),
-                TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
-                TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
-        emptyTable = testRefreshingTable(TstUtils.c("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                TstUtils.c("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+                col("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
+                col("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
+        emptyTable = testRefreshingTable(col("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                col("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
 
     }
 
@@ -114,12 +113,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     @Override
-    public void reportUpdateError(Throwable t) throws IOException {
+    public void reportUpdateError(Throwable t) {
         System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
         TestCase.fail(t.getMessage());
     }
 
-    @Test
     public void testMerge() {
         final Table result = TableTools.merge(table1, table1, table1);
         tableRangesAreEqual(table1, result, 0, 0, table1.size());
@@ -127,7 +125,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1, result, 0, table1.size() * 2, table1.size());
     }
 
-    @Test
     public void testMergeWithNullTables() {
         assertThrows(TableTools::merge);
         assertThrows(() -> TableTools.merge(null, null));
@@ -143,7 +140,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table2, result, 0, 0, table2.size());
     }
 
-    @Test
     public void testMergeOfMismatchedTables() {
         try {
             TableTools.merge(table1, table2);
@@ -176,7 +172,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    @Test
     public void testMergeWithWhere() {
         Table t1 = TableTools.emptyTable(1).update("Col=`A`");
         Table t2 = TableTools.emptyTable(1).update("Col=`B`");
@@ -202,10 +197,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TableTools.show(t_all);
 
         assertEquals(t_all.size(), 3);
-        assertTrue(Arrays.equals((Object[]) t_all.getColumn("Col").getDirect(), new String[] {"A", "B", "D"}));
+        assertArrayEquals((Object[]) t_all.getColumn("Col").getDirect(), new String[] {"A", "B", "D"});
     }
 
-    @Test
     public void testDiff() {
         assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2 expected null\n",
@@ -269,7 +263,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                         TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
     }
 
-    @Test
     public void testRoundDecimalColumns() {
         Table table = newTable(
                 col("String", "c", "e", "g"),
@@ -280,10 +273,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Test whether we're rounding all columns properly
         Table roundedColumns = TableTools.roundDecimalColumns(table);
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) table.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(),
-                (int[]) table.getColumn("Int").getDirect()));
+        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
+                (String[]) table.getColumn("String").getDirect());
+        assertArrayEquals((int[]) roundedColumns.getColumn("Int").getDirect(),
+                (int[]) table.getColumn("Int").getDirect());
         assertEquals(Math.round((double) table.getColumn("Double").get(0)), roundedColumns.getColumn("Double").get(0));
         assertEquals(Math.round((double) table.getColumn("Double").get(1)), roundedColumns.getColumn("Double").get(1));
         assertEquals(Math.round((double) table.getColumn("Double").get(2)), roundedColumns.getColumn("Double").get(2));
@@ -297,25 +290,25 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Test whether it works when we specify the columns, by comparing to the validated results from before
         Table specificRoundedColums = TableTools.roundDecimalColumns(table, "Double", "Float");
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) specificRoundedColums.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) roundedColumns.getColumn("Int").getDirect(),
-                (int[]) specificRoundedColums.getColumn("Int").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(),
-                (long[]) specificRoundedColums.getColumn("Double").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Float").getDirect(),
-                (long[]) specificRoundedColums.getColumn("Float").getDirect()));
+        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
+                (String[]) specificRoundedColums.getColumn("String").getDirect());
+        assertArrayEquals((int[]) roundedColumns.getColumn("Int").getDirect(),
+                (int[]) specificRoundedColums.getColumn("Int").getDirect());
+        assertArrayEquals((long[]) roundedColumns.getColumn("Double").getDirect(),
+                (long[]) specificRoundedColums.getColumn("Double").getDirect());
+        assertArrayEquals((long[]) roundedColumns.getColumn("Float").getDirect(),
+                (long[]) specificRoundedColums.getColumn("Float").getDirect());
 
         // Test whether it works properly when we specify what NOT to round
         Table onlyOneRoundedColumn = TableTools.roundDecimalColumnsExcept(table, "Float");
-        assertTrue(Arrays.equals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) onlyOneRoundedColumn.getColumn("String").getDirect()));
-        assertTrue(Arrays.equals((int[]) table.getColumn("Int").getDirect(),
-                (int[]) onlyOneRoundedColumn.getColumn("Int").getDirect()));
-        assertTrue(Arrays.equals((long[]) roundedColumns.getColumn("Double").getDirect(),
-                (long[]) onlyOneRoundedColumn.getColumn("Double").getDirect()));
-        assertTrue(Arrays.equals((float[]) table.getColumn("Float").getDirect(),
-                (float[]) onlyOneRoundedColumn.getColumn("Float").getDirect()));
+        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
+                (String[]) onlyOneRoundedColumn.getColumn("String").getDirect());
+        assertArrayEquals((int[]) table.getColumn("Int").getDirect(),
+                (int[]) onlyOneRoundedColumn.getColumn("Int").getDirect());
+        assertArrayEquals((long[]) roundedColumns.getColumn("Double").getDirect(),
+                (long[]) onlyOneRoundedColumn.getColumn("Double").getDirect());
+        assertArrayEquals((float[]) table.getColumn("Float").getDirect(),
+                (float[]) onlyOneRoundedColumn.getColumn("Float").getDirect(), 0.0f);
 
 
         try { // Make sure we complain if you try to round the unroundable
@@ -325,18 +318,16 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    @Test
-    public void testDateTimeColumnHolder() throws Exception {
+    public void testDateTimeColumnHolder() {
 
         // create two columns with the same data
         final DateTime[] data = new DateTime[] {new DateTime(100), new DateTime(100), null};
-        final long[] longData =
-                new long[] {data[0] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[0].getNanos(),
-                        data[1] == null ? io.deephaven.util.QueryConstants.NULL_LONG : data[1].getNanos(),
-                        data[2] == null ? QueryConstants.NULL_LONG : data[2].getNanos()};
+        final long[] longData = Arrays.stream(data)
+                .mapToLong(dt -> dt == null ? QueryConstants.NULL_LONG : dt.getNanos())
+                .toArray();
 
-        final ColumnHolder dateTimeCol = c("DateTimeColumn", data);
-        final ColumnHolder dateTimeCol2 = ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
+        final ColumnHolder<?> dateTimeCol = col("DateTimeColumn", data);
+        final ColumnHolder<?> dateTimeCol2 = ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
 
         final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
 
@@ -362,7 +353,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertEquals(longData[2], table.getColumn(1).getLong(2));
     }
 
-    @Test
     public void testSimpleDiffRegression() {
         final Table expected = emptyTable(1).update("Sym=`AXP`");
         final Table result = emptyTable(1).update("Sym=`BAC`");
@@ -372,7 +362,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertNotEquals(0, diffInfo.length());
     }
 
-    @Test
     public void testMerge2() {
         Random random = new Random(0);
         int size = random.nextInt(10);
@@ -401,7 +390,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table3, result, 0, table1.size() + table2.size(), table3.size());
     }
 
-    @Test
     public void testMergeIterative() {
         Random random = new Random(0);
         int size = 3;
@@ -428,7 +416,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
 
-        EvalNugget en[] = new EvalNugget[] {
+        EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget("Single Table Merge") {
                     protected Table e() {
                         return TableTools.merge(table1);
@@ -491,26 +479,25 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    @Test
     public void testMergeIterative2() {
         LogicalClock clock = LogicalClock.DEFAULT;
         Random random = new Random(0);
 
-        ColumnInfo[] info1;
+        ColumnInfo<?, ?>[] info1;
         final QueryTable table1 = getTable(random.nextInt(20), random,
                 info1 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new StringGenerator(),
                         new IntGenerator(10, 100),
                         new DoubleGenerator(0, 100)));
 
-        ColumnInfo[] info2;
+        ColumnInfo<?, ?>[] info2;
         final QueryTable table2 = getTable(random.nextInt(10), random,
                 info2 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new StringGenerator(),
                         new IntGenerator(10, 100),
                         new DoubleGenerator(0, 100)));
 
-        ColumnInfo[] info3;
+        ColumnInfo<?, ?>[] info3;
         final int size = random.nextInt(40);
         final QueryTable table3 = getTable(size, random,
                 info3 = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -518,7 +505,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                         new IntGenerator(10, 100),
                         new DoubleGenerator(0, 100)));
 
-        EvalNugget en[] = new EvalNugget[] {
+        EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget("Single table merge") {
                     protected Table e() {
                         return TableTools.merge(table1);
@@ -546,7 +533,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 },
                 new EvalNuggetSet("Merge With Views") {
                     protected Table e() {
-                        // noinspection ConstantConditions
                         return TableTools.merge(
                                 TableTools.merge(table1.updateView("lk=k"), table2.updateView("lk=k+100000000L"))
                                         .view("Sym", "intCol", "lk"),
@@ -597,7 +583,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
 
     // This merge should work out nicely, we'll end up collapsing it into a single broad merge.
-    @Test
     public void testMergeRecursive() {
         Table result = null;
 
@@ -617,7 +602,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     // This test does a merge, followed by a view, then another merge.
-    @Test
     public void testMergeRecursive2() {
         Table merge1 =
                 TableTools.merge(table1, table2.renameColumns("GroupedInts=GroupedInts1", "StringKeys=StringKeys1"))
@@ -635,7 +619,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         tableRangesAreEqual(table1.view("StringKeys"), merge2, 0, table1.size() + table2.size(), table1.size());
     }
 
-    @Test
     public void testUncollapsableMerge() {
         final int numRecursions = 128;
 
@@ -657,10 +640,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    @Test
     public void testMergeWithNestedShift() {
         // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         // must be uncollapsable s.t. inner table shifts at the same time as outer table
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final Table result = TableTools.merge(table, m2);
@@ -672,7 +654,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 10; ++ii) {
             final int fii = PRIME * ii;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(fii), c("Sentinel", fii));
+                addToTable(table, i(fii), col("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
         }
@@ -680,18 +662,17 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TableTools.show(result, 100);
     }
 
-    @Test
     public void testMergeWithShiftBoundary() {
         // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
         final int ONE_MILLION = 1024 * 1024;
-        final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1).toTracking(), c("Sentinel", 1));
-        final QueryTable table2 = testRefreshingTable(i(0).toTracking(), c("Sentinel", 2));
+        final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1).toTracking(), col("Sentinel", 1));
+        final QueryTable table2 = testRefreshingTable(i(0).toTracking(), col("Sentinel", 2));
         final Table result = TableTools.merge(table, table2);
 
         showWithRowSet(result);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(ONE_MILLION - 11), c("Sentinel", 1));
+            addToTable(table, i(ONE_MILLION - 11), col("Sentinel", 1));
             removeRows(table, i(ONE_MILLION - 1));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
@@ -707,11 +688,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         showWithRowSet(result);
     }
 
-    @Test
     public void testMergeShiftsEmptyTable() {
         // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
-        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
+        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), intCol("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
 
         final EvalNugget[] ev = new EvalNugget[] {
@@ -730,7 +710,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final long currKey = table.getRowSet().lastRowKey();
                 removeRows(table, i(currKey));
-                addToTable(table, i(fii), c("Sentinel", 1));
+                addToTable(table, i(fii), col("Sentinel", 1));
 
                 TableUpdateImpl update = new TableUpdateImpl();
                 update.added = i(fii);
@@ -744,14 +724,13 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    @Test
     public void testMergeShiftBoundary() {
         // DH-11032
         // Test that when our inner table has a shift that is begins beyond the last key for our subtable (because
         // it has been filtered and the reserved address space is less than the address space of the full unfiltered
         // table) we do not remove elements that should not be removed. This is distilled from a broken fuzzer test.
-        final QueryTable table1 = testRefreshingTable(i(10000, 65538).toTracking(), c("Sentinel", 1, 2));
-        final QueryTable table2 = testRefreshingTable(i(2).toTracking(), c("Sentinel", 3));
+        final QueryTable table1 = testRefreshingTable(i(10000, 65538).toTracking(), col("Sentinel", 1, 2));
+        final QueryTable table2 = testRefreshingTable(i(2).toTracking(), col("Sentinel", 3));
         final Table table1Filtered = table1.where("Sentinel == 1");
         final Table m2 = TableTools.merge(table1Filtered, table2);
 
@@ -762,7 +741,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table1, i(65538));
-            addToTable(table1, i(65537), c("Sentinel", 2));
+            addToTable(table1, i(65537), col("Sentinel", 2));
 
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
             shiftBuilder.shiftRange(65538, 65539, +1);
@@ -780,11 +759,10 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         assertTableEquals(expected, m2);
     }
 
-    @Test
     public void testMergeDeepShifts() {
         // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
-        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
+        final QueryTable emptyTable = testRefreshingTable(i().toTracking(), intCol("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)
                 .updateView("Sentinel=Sentinel+1");
 
@@ -807,7 +785,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 final long currKey = table.getRowSet().lastRowKey();
                 // Manually apply shift.
                 removeRows(table, i(currKey));
-                addToTable(table, i(fii), c("Sentinel", 1));
+                addToTable(table, i(fii), col("Sentinel", 1));
 
                 TableUpdateImpl update = new TableUpdateImpl();
                 update.added = i();
@@ -833,7 +811,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         table1.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
     }
 
-    @Test
     public void testMergeWithEmptyTables() {
         Table emptyLikeTable1 = TableTools.newTable(table1.getDefinition());
         Table result = TableTools.merge(table1, emptyLikeTable1);
@@ -844,24 +821,20 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TestCase.assertEquals(0, result.size());
     }
 
-    @Test
-    public void testMergeSorted() throws IOException {
-        Table table1 = testTable(i(1, 3, 5, 6, 7).toTracking(), c("Key", "a", "c", "d", "e", "f"))
+    public void testMergeSorted() {
+        Table table1 = testTable(i(1, 3, 5, 6, 7).toTracking(), col("Key", "a", "c", "d", "e", "f"))
                 .updateView("Sentinel=k");
-        Table table2 = testTable(i(2, 4, 8, 9).toTracking(), c("Key", "b", "c", "g", "h"))
+        Table table2 = testTable(i(2, 4, 8, 9).toTracking(), col("Key", "b", "c", "g", "h"))
                 .updateView("Sentinel=k");
         Table merged = TableTools.mergeSorted("Key", table1, table2);
         showWithRowSet(merged);
 
-        // noinspection ConstantConditions
         Table standardWay = TableTools.merge(table1, table2).sort("Key");
 
-        String diff = TableTools.diff(merged, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(merged, standardWay);
     }
 
-    @Test
-    public void testMergeSorted2() throws IOException {
+    public void testMergeSorted2() {
         Random random = new Random(42);
         List<Table> tables = new ArrayList<>();
 
@@ -879,13 +852,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         Table standardWay = TableTools.merge(tables).sort("Key");
 
-        String diff = TableTools.diff(merged, standardWay, 10);
-        TestCase.assertEquals("", diff);
+        assertTableEquals(merged, standardWay);
     }
 
-    @Test
     public void testMergeGetChunk() {
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -898,14 +869,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final RowSet resRowSet = usePrev ? result.getRowSet().copyPrev() : result.getRowSet();
             final int numElements = origRowSet.intSize();
 
-            // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Values> origContent = usePrev
                     ? origCol.getPrevChunk(origContext, origRowSet).asIntChunk()
                     : origCol.getChunk(origContext, origRowSet).asIntChunk();
 
-            // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Values> resContent = usePrev
@@ -937,15 +906,14 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         for (int ii = 1; ii < 100; ++ii) {
             final int fii = PRIME * ii;
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                addToTable(table, i(fii), c("Sentinel", fii));
+                addToTable(table, i(fii), col("Sentinel", fii));
                 table.notifyListeners(i(fii), i(), i());
             });
         }
     }
 
-    @Test
     public void testMergeGetChunkEmpty() {
-        final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
+        final QueryTable table = testRefreshingTable(i(1).toTracking(), col("Sentinel", 1));
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
         final QueryTable result = (QueryTable) TableTools.merge(table, m2);
 
@@ -953,14 +921,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final RowSet rowSet = RowSetFactory.empty();
             final int numElements = 1024;
 
-            // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
             final IntChunk<? extends Values> origContent = usePrev
                     ? origCol.getPrevChunk(origContext, rowSet).asIntChunk()
                     : origCol.getChunk(origContext, rowSet).asIntChunk();
 
-            // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
             final IntChunk<? extends Values> resContent = usePrev
@@ -975,14 +941,13 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         validate.accept(true);
     }
 
-    @Test
-    public void testEmptyTable() throws IOException {
+    public void testEmptyTable() {
         Table emptyTable = TableTools.emptyTable(2);
         TestCase.assertEquals(2, emptyTable.size());
 
         Table emptyTable2 = TableTools.emptyTable(2).update("col=1");
         TestCase.assertEquals(2, emptyTable2.size());
-        DataColumn dataColumn = emptyTable2.getColumn("col");
+        DataColumn<?> dataColumn = emptyTable2.getColumn("col");
         TestCase.assertEquals(2, dataColumn.size());
         TestCase.assertEquals(1, dataColumn.get(0));
         TestCase.assertEquals(1, dataColumn.get(1));
@@ -999,7 +964,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TableTools.show(emptyTable3);
     }
 
-    @Test
     public void testMergeIndexShiftingPerformance() {
         final QueryTable testRefreshingTable =
                 TstUtils.testRefreshingTable(i(0).toTracking(), intCol("IntCol", 0), charCol("CharCol", 'a'));

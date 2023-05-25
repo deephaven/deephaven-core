@@ -345,6 +345,10 @@ public class QueryLanguageFunctionGenerator {
                 "        return obj1.compareTo(obj2);\n" +
                 "    }\n" +
                 "\n" +
+                "    public static boolean not(boolean a){\n" +
+                "        return !a;\n" +
+                "    }\n" +
+                "\n" +
                 "    public static Boolean not(Boolean a){\n" +
                 "        return a==QueryConstants.NULL_BOOLEAN ? QueryConstants.NULL_BOOLEAN : Boolean.valueOf(!a);\n" +
                 "    }\n\n");

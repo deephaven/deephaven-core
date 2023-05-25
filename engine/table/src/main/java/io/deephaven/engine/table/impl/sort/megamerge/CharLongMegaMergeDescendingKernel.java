@@ -3,10 +3,10 @@
  */
 package io.deephaven.engine.table.impl.sort.megamerge;
 
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.attributes.Any;
@@ -27,7 +27,7 @@ public class CharLongMegaMergeDescendingKernel {
         private static final CharLongMegaMergeDescendingKernelContext INSTANCE = new CharLongMegaMergeDescendingKernelContext();
 
         @Override
-        public void merge(LongArraySource indexDestinationSource, ArrayBackedColumnSource<?> valuesDestinationSource,
+        public void merge(LongArraySource indexDestinationSource, WritableColumnSource<?> valuesDestinationSource,
                 long destinationOffset, long destinationSize, LongChunk<KEY_INDICES> indexKeys,
                 Chunk<ATTR> valuesToMerge) {
             CharLongMegaMergeDescendingKernel.merge(indexDestinationSource, (CharacterArraySource) valuesDestinationSource,

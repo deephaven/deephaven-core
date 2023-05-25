@@ -7,7 +7,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.iterators.ColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.type.TypeUtils;
@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
-import java.util.function.LongConsumer;
 import java.util.stream.StreamSupport;
 
 /**
@@ -74,7 +73,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     }
 
     @Override
-    public Class getComponentType() {
+    public Class<?> getComponentType() {
         return columnSource.getComponentType();
     }
 
@@ -108,7 +107,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     @Override
     public TYPE[] get(final long startPosInclusive, final long endPosExclusive) {
         final Iterable<TYPE> iterable =
-                () -> ColumnIterator.make(columnSource, getSubIndexByPos(startPosInclusive, endPosExclusive));
+                () -> ChunkedColumnIterator.make(columnSource, getSubIndexByPos(startPosInclusive, endPosExclusive));
         // noinspection unchecked
         return StreamSupport.stream(iterable.spliterator(), false).toArray(s -> (TYPE[]) Array
                 .newInstance(io.deephaven.util.type.TypeUtils.getBoxedType(columnSource.getType()), s));
@@ -415,157 +414,5 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
             result[pi] = getShort(positions[pi]);
         }
         return result;
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // Set method implementations - will cast columnSource to a WritableColumnSource internally
-    // ------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public void set(final long pos, final TYPE value) {
-        ((WritableColumnSource<TYPE>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    @SafeVarargs
-    public final void setArray(final long startPos, final TYPE... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setBoolean(final long pos, final Boolean value) {
-        ((WritableColumnSource<Boolean>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setBooleans(final long startPos, final Boolean... values) {
-        // noinspection unchecked
-        setArray(startPos, (TYPE[]) values);
-    }
-
-    @Override
-    public void setByte(final long pos, final byte value) {
-        ((WritableColumnSource<Byte>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setBytes(final long startPos, final byte... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setChar(final long pos, final char value) {
-        ((WritableColumnSource<Character>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setChars(final long startPos, final char... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setDouble(final long pos, final double value) {
-        ((WritableColumnSource<Double>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setDoubles(final long startPos, final double... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setFloat(final long pos, final float value) {
-        ((WritableColumnSource<Float>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setFloats(final long startPos, final float... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setInt(final long pos, final int value) {
-        ((WritableColumnSource<Integer>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setInts(final long startPos, final int... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setLong(final long pos, final long value) {
-        ((WritableColumnSource<Long>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setLongs(final long startPos, final long... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
-    }
-
-    @Override
-    public void setShort(final long pos, final short value) {
-        ((WritableColumnSource<Short>) columnSource).set(rowSet.get(pos), value);
-    }
-
-    @Override
-    public void setShorts(final long startPos, final short... values) {
-        getSubIndexByPos(startPos, startPos + values.length).forAllRowKeys(new LongConsumer() {
-            int vi;
-
-            @Override
-            public void accept(final long key) {
-                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
-            }
-        });
     }
 }

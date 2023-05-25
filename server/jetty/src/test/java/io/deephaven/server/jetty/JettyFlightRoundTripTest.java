@@ -7,12 +7,18 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.config.ConfigServiceModule;
+import io.deephaven.server.console.ConsoleModule;
+import io.deephaven.server.log.LogModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.session.SessionModule;
-import io.deephaven.server.test.AuthTestModule;
+import io.deephaven.server.table.TableModule;
+import io.deephaven.server.test.TestAuthModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 
 import javax.inject.Singleton;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
@@ -20,19 +26,26 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     public interface JettyTestConfig {
         @Provides
         static JettyConfig providesJettyConfig() {
-            return JettyConfig.defaultConfig();
+            return JettyConfig.builder()
+                    .port(0)
+                    .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
+                    .build();
         }
     }
 
     @Singleton
     @Component(modules = {
-            FlightTestModule.class,
             ArrowModule.class,
-            SessionModule.class,
-            AuthTestModule.class,
+            ConfigServiceModule.class,
+            ConsoleModule.class,
+            ExecutionContextUnitTestModule.class,
+            FlightTestModule.class,
             JettyServerModule.class,
             JettyTestConfig.class,
-            ExecutionContextUnitTestModule.class,
+            LogModule.class,
+            SessionModule.class,
+            TableModule.class,
+            TestAuthModule.class,
     })
     public interface JettyTestComponent extends TestComponent {
     }

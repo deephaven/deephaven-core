@@ -3,25 +3,38 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@TsInterface
+@JsType(namespace = "dh", name = "LayoutHints")
 public class JsLayoutHints {
-    private class ColumnGroup {
-        @JsProperty
-        public String name;
-        @JsProperty
-        public String[] children;
-        @JsProperty
-        public String color;
+    @TsInterface
+    @JsType(namespace = "dh")
+    public static class ColumnGroup {
+        @JsNullable
+        public final String name;
+        @JsNullable
+        public final String[] children;
+        @JsNullable
+        public final String color;
 
+        @JsIgnore
         public ColumnGroup(String groupStr) {
             if (groupStr == null || groupStr.isEmpty()) {
+                name = null;
+                children = null;
+                color = null;
                 return;
             }
 
@@ -32,21 +45,29 @@ public class JsLayoutHints {
             final String nameStr = options.get("name");
             if (nameStr != null && !nameStr.isEmpty()) {
                 name = nameStr;
+            } else {
+                name = null;
             }
 
             final String childrenStr = options.get("children");
             if (childrenStr != null && !childrenStr.isEmpty()) {
                 children = JsObject.freeze(childrenStr.split(","));
+            } else {
+                children = null;
             }
 
             final String colorStr = options.get("color");
             if (colorStr != null && !colorStr.isEmpty()) {
                 color = colorStr;
+            } else {
+                color = null;
             }
         }
     }
 
     private boolean savedLayoutsAllowed = true;
+
+    private String searchDisplayMode = SearchDisplayMode.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;
     private String[] hiddenColumns;
@@ -54,6 +75,7 @@ public class JsLayoutHints {
 
     private ColumnGroup[] columnGroups;
 
+    @JsIgnore
     public JsLayoutHints parse(String hints) {
         if (hints == null || hints.isEmpty()) {
             return this;
@@ -88,6 +110,11 @@ public class JsLayoutHints {
             frozenColumns = JsObject.freeze(freezeStr.split(","));
         }
 
+        final String searchableStr = options.get("searchable");
+        if (searchableStr != null && !searchableStr.isEmpty()) {
+            searchDisplayMode = searchableStr;
+        }
+
         final String groupsStr = options.get("columnGroups");
         if (groupsStr != null && !groupsStr.isEmpty()) {
             ColumnGroup[] groups =
@@ -105,26 +132,37 @@ public class JsLayoutHints {
         return savedLayoutsAllowed;
     }
 
+    @JsNullable
+    @JsProperty
+    @TsTypeRef(SearchDisplayMode.class)
+    public String getSearchDisplayMode() {
+        return searchDisplayMode;
+    }
+
     @JsProperty
     public String[] getFrontColumns() {
         return frontColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getBackColumns() {
         return backColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getHiddenColumns() {
         return hiddenColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getFrozenColumns() {
         return frozenColumns;
     }
 
+    @JsNullable
     @JsProperty
     public ColumnGroup[] getColumnGroups() {
         return columnGroups;

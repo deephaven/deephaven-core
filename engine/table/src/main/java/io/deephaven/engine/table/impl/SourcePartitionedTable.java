@@ -83,8 +83,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         private final Predicate<ImmutableTableLocationKey> locationKeyMatcher;
 
         private final TrackingWritableRowSet resultRows;
-        private final ArrayBackedColumnSource<TableLocationKey> resultTableLocationKeys;
-        private final ArrayBackedColumnSource<Table> resultLocationTables;
+        private final WritableColumnSource<TableLocationKey> resultTableLocationKeys;
+        private final WritableColumnSource<Table> resultLocationTables;
         private final QueryTable result;
 
         private final UpdateSourceCombiner refreshCombiner;

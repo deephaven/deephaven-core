@@ -9,7 +9,6 @@ import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Immutable
@@ -23,6 +22,11 @@ public abstract class SessionImplConfig {
     public abstract ScheduledExecutorService executor();
 
     public abstract DeephavenChannel channel();
+
+    @Default
+    public String authenticationTypeAndValue() {
+        return "Anonymous";
+    }
 
     /**
      * Whether the {@link Session} implementation will implement a batch {@link TableHandleManager}. By default, is
@@ -68,12 +72,8 @@ public abstract class SessionImplConfig {
         return Duration.parse(System.getProperty("deephaven.session.closeTimeout", "PT5s"));
     }
 
-    public final SessionImpl createSession() {
+    public final SessionImpl createSession() throws InterruptedException {
         return SessionImpl.create(this);
-    }
-
-    public final CompletableFuture<SessionImpl> createSessionFuture() {
-        return SessionImpl.createFuture(this);
     }
 
     public interface Builder {
@@ -81,6 +81,8 @@ public abstract class SessionImplConfig {
         Builder executor(ScheduledExecutorService executor);
 
         Builder channel(DeephavenChannel channel);
+
+        Builder authenticationTypeAndValue(String authenticationTypeAndValue);
 
         Builder delegateToBatch(boolean delegateToBatch);
 

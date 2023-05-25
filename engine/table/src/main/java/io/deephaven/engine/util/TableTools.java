@@ -34,7 +34,6 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
@@ -44,7 +43,6 @@ import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.TableDefaults.ZERO_LENGTH_TABLE_ARRAY;
 
@@ -73,8 +71,7 @@ public class TableTools {
         return Collectors.toMap(keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new);
     }
 
-    @SuppressWarnings("unchecked")
-    private static final Collector<ColumnHolder, ?, Map<String, ColumnSource<?>>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR =
+    private static final Collector<ColumnHolder<?>, ?, Map<String, ColumnSource<?>>> COLUMN_HOLDER_LINKEDMAP_COLLECTOR =
             toLinkedMap(ColumnHolder::getName, ColumnHolder::getColumnSource);
 
     /////////// Utilities To Display Tables /////////////////
@@ -376,7 +373,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static <T> ColumnSource<T> colSource(Class<T> clazz, Collection<T> values) {
-        ArrayBackedColumnSource<T> result = ArrayBackedColumnSource.getMemoryColumnSource(values.size(), clazz);
+        WritableColumnSource<T> result = ArrayBackedColumnSource.getMemoryColumnSource(values.size(), clazz);
         int resultIndex = 0;
         for (T value : values) {
             result.set(resultIndex++, value);
@@ -393,7 +390,7 @@ public class TableTools {
      */
     @SuppressWarnings("unchecked")
     public static <T> ColumnSource<T> objColSource(T... values) {
-        ArrayBackedColumnSource<T> result = (ArrayBackedColumnSource<T>) ArrayBackedColumnSource
+        WritableColumnSource<T> result = (WritableColumnSource<T>) ArrayBackedColumnSource
                 .getMemoryColumnSource(values.length, values.getClass().getComponentType());
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -408,7 +405,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Long> colSource(long... values) {
-        ArrayBackedColumnSource<Long> result =
+        WritableColumnSource<Long> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, long.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -423,7 +420,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Integer> colSource(int... values) {
-        ArrayBackedColumnSource<Integer> result =
+        WritableColumnSource<Integer> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, int.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -438,7 +435,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Short> colSource(short... values) {
-        ArrayBackedColumnSource<Short> result =
+        WritableColumnSource<Short> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, short.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -453,7 +450,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Byte> colSource(byte... values) {
-        ArrayBackedColumnSource<Byte> result =
+        WritableColumnSource<Byte> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, byte.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -468,7 +465,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Character> colSource(char... values) {
-        ArrayBackedColumnSource<Character> result =
+        WritableColumnSource<Character> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, char.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -483,7 +480,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Double> colSource(double... values) {
-        ArrayBackedColumnSource<Double> result =
+        WritableColumnSource<Double> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, double.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -498,7 +495,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Float> colSource(float... values) {
-        ArrayBackedColumnSource<Float> result =
+        WritableColumnSource<Float> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, float.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -514,24 +511,31 @@ public class TableTools {
      * @param <T> the type of the column
      * @return a Deephaven ColumnHolder object
      */
-    public static <T> ColumnHolder col(String name, T... data) {
+    public static <T> ColumnHolder<T> col(String name, T... data) {
         if (data.getClass().getComponentType() == Long.class) {
-            return longCol(name, ArrayTypeUtils.getUnboxedArray((Long[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) longCol(name, ArrayTypeUtils.getUnboxedArray((Long[]) data));
         } else if (data.getClass().getComponentType() == Integer.class) {
-            return intCol(name, ArrayTypeUtils.getUnboxedArray((Integer[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) intCol(name, ArrayTypeUtils.getUnboxedArray((Integer[]) data));
         } else if (data.getClass().getComponentType() == Short.class) {
-            return shortCol(name, ArrayTypeUtils.getUnboxedArray((Short[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) shortCol(name, ArrayTypeUtils.getUnboxedArray((Short[]) data));
         } else if (data.getClass().getComponentType() == Byte.class) {
-            return byteCol(name, ArrayTypeUtils.getUnboxedArray((Byte[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) byteCol(name, ArrayTypeUtils.getUnboxedArray((Byte[]) data));
         } else if (data.getClass().getComponentType() == Character.class) {
-            return charCol(name, ArrayTypeUtils.getUnboxedArray((Character[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) charCol(name, ArrayTypeUtils.getUnboxedArray((Character[]) data));
         } else if (data.getClass().getComponentType() == Double.class) {
-            return doubleCol(name, ArrayTypeUtils.getUnboxedArray((Double[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) doubleCol(name, ArrayTypeUtils.getUnboxedArray((Double[]) data));
         } else if (data.getClass().getComponentType() == Float.class) {
-            return floatCol(name, ArrayTypeUtils.getUnboxedArray((Float[]) data));
+            // noinspection unchecked
+            return (ColumnHolder<T>) floatCol(name, ArrayTypeUtils.getUnboxedArray((Float[]) data));
         }
         // noinspection unchecked
-        return new ColumnHolder(name, data.getClass().getComponentType(),
+        return new ColumnHolder<T>(name, (Class<T>) data.getClass().getComponentType(),
                 data.getClass().getComponentType().getComponentType(), false, data);
     }
 
@@ -542,10 +546,10 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder stringCol(String name, String... data) {
+    public static ColumnHolder<String> stringCol(String name, String... data) {
         // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
         // noinspection RedundantCast
-        return new ColumnHolder(name, String.class, null, false, (Object[]) data);
+        return new ColumnHolder<>(name, String.class, null, false, (String[]) data);
     }
 
     /**
@@ -555,10 +559,10 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder dateTimeCol(String name, DateTime... data) {
+    public static ColumnHolder<DateTime> dateTimeCol(String name, DateTime... data) {
         // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
         // noinspection RedundantCast
-        return new ColumnHolder(name, DateTime.class, null, false, (Object[]) data);
+        return new ColumnHolder<>(name, DateTime.class, null, false, (DateTime[]) data);
     }
 
     /**
@@ -568,10 +572,10 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder booleanCol(String name, Boolean... data) {
+    public static ColumnHolder<Boolean> booleanCol(String name, Boolean... data) {
         // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
         // noinspection RedundantCast
-        return new ColumnHolder(name, Boolean.class, null, false, (Object[]) data);
+        return new ColumnHolder<>(name, Boolean.class, null, false, (Boolean[]) data);
     }
 
     /**
@@ -581,8 +585,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder longCol(String name, long... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Long> longCol(String name, long... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -592,8 +596,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder intCol(String name, int... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Integer> intCol(String name, int... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -603,8 +607,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder shortCol(String name, short... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Short> shortCol(String name, short... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -614,8 +618,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder byteCol(String name, byte... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Byte> byteCol(String name, byte... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -625,8 +629,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder charCol(String name, char... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Character> charCol(String name, char... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -636,8 +640,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder doubleCol(String name, double... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Double> doubleCol(String name, double... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /**
@@ -647,8 +651,8 @@ public class TableTools {
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder floatCol(String name, float... data) {
-        return new ColumnHolder(name, false, data);
+    public static ColumnHolder<Float> floatCol(String name, float... data) {
+        return new ColumnHolder<>(name, false, data);
     }
 
     /////////// Utilities For Creating Tables /////////////////
@@ -726,33 +730,31 @@ public class TableTools {
      * @param columnHolders a list of ColumnHolders from which to create the table
      * @return a Deephaven Table
      */
-    public static Table newTable(ColumnHolder... columnHolders) {
+    public static Table newTable(ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
-        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(rowSet.toTracking(), columns);
     }
 
-    public static Table newTable(TableDefinition definition, ColumnHolder... columnHolders) {
+    public static Table newTable(TableDefinition definition, ColumnHolder<?>... columnHolders) {
         checkSizes(columnHolders);
         WritableRowSet rowSet = getRowSet(columnHolders);
-        Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
+        Map<String, ColumnSource<?>> columns = Arrays.stream(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, rowSet.toTracking(), columns);
     }
 
-    private static void checkSizes(ColumnHolder[] columnHolders) {
-        int[] sizes = Arrays.stream(columnHolders)
-                .mapToInt(x -> x.data == null ? 0 : Array.getLength(x.data))
-                .toArray();
+    private static void checkSizes(ColumnHolder<?>[] columnHolders) {
+        final int[] sizes = Arrays.stream(columnHolders).mapToInt(ColumnHolder::size).toArray();
         if (Arrays.stream(sizes).anyMatch(size -> size != sizes[0])) {
             throw new IllegalArgumentException(
                     "All columns must have the same number of rows, but sizes are: " + Arrays.toString(sizes));
         }
     }
 
-    private static WritableRowSet getRowSet(ColumnHolder[] columnHolders) {
+    private static WritableRowSet getRowSet(ColumnHolder<?>[] columnHolders) {
         return columnHolders.length == 0 ? RowSetFactory.empty()
-                : RowSetFactory.flat(Array.getLength(columnHolders[0].data));
+                : RowSetFactory.flat(columnHolders[0].size());
     }
 
     // region Time tables
@@ -1154,7 +1156,8 @@ public class TableTools {
     private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
         if (col.getType() == DateTime.class) {
-            col = ReinterpretUtils.dateTimeToLongSource(col);
+            // noinspection unchecked
+            col = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) col);
         }
 
         final int chunkSize = 1 << 16;

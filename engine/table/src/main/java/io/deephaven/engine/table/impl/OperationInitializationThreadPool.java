@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
@@ -17,7 +18,7 @@ public class OperationInitializationThreadPool {
 
     static {
         final int numThreads =
-                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
+                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", -1);
         if (numThreads <= 0) {
             NUM_THREADS = Runtime.getRuntime().availableProcessors();
         } else {
@@ -31,6 +32,10 @@ public class OperationInitializationThreadPool {
         return isInitializationThread.get();
     }
 
+    public static boolean canParallelize() {
+        return NUM_THREADS > 1 && !isInitializationThread();
+    }
+
     public final static ExecutorService executorService;
     static {
         final ThreadGroup threadGroup = new ThreadGroup("OperationInitializationThreadPool");
@@ -39,11 +44,11 @@ public class OperationInitializationThreadPool {
                         true) {
                     @Override
                     public Thread newThread(@NotNull Runnable r) {
-                        return super.newThread(() -> {
+                        return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                             isInitializationThread.set(true);
                             MultiChunkPool.enableDedicatedPoolForThisThread();
                             r.run();
-                        });
+                        }));
                     }
                 };
         executorService = Executors.newFixedThreadPool(NUM_THREADS, threadFactory);

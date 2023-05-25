@@ -4,7 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
@@ -21,7 +21,7 @@ public class TestColorUtil extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
         t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
     }
 
@@ -290,7 +290,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testRowFormatWhere(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME)
+                colorTable.getColumn(ColumnFormatting.getRowStyleFormatColumn())
                         .getLongs(0, size);
 
         for (int i = 0; i < 6; i++) {
@@ -303,7 +303,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testFormatColumns(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn("X" + ColumnFormattingValues.TABLE_FORMAT_NAME).getLongs(0, size);
+                colorTable.getColumn(ColumnFormatting.getStyleFormatColumn("X")).getLongs(0, size);
         for (long aColorTableCol : colorTableCol) {
             assertEquals(ColorUtil.toLong(color), aColorTableCol);
         }

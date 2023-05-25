@@ -12,17 +12,17 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.sources.AbstractLongArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 class LongFreezeByHelper implements FreezeByOperator.FreezeByHelper {
-    private final AbstractLongArraySource resultSource;
+    private final LongArraySource resultSource;
     private final FreezeByCountOperator rowCount;
 
     LongFreezeByHelper(WritableColumnSource resultSource, FreezeByCountOperator rowCount) {
-        this.resultSource = (AbstractLongArraySource)resultSource;
+        this.resultSource = (LongArraySource)resultSource;
         this.rowCount = rowCount;
     }
 

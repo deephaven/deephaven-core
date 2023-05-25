@@ -19,7 +19,7 @@ func Example_fetchTable() {
 
 	// Let's start a client connection using python as the script language ("groovy" is the other option).
 	// Note that the client language must match the language the server was started with.
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("python"))
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return
@@ -44,7 +44,7 @@ func Example_fetchTable() {
 	cl.Close()
 
 	// Now let's make a new connection, completely unrelated to the old one.
-	cl, err = client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err = client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		fmt.Println("error when connecting to localhost port 10000:", err.Error())
 		return

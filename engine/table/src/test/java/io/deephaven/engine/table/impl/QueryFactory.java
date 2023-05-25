@@ -68,11 +68,9 @@ public class QueryFactory {
             {"AggSum", "AggVar", "AggStd", "AggCount", "AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_AGG = {"AggMin", "AggMax", "AggFirst", "AggLast"};
     private static final String[] SAFE_BY = {"maxBy", "minBy", "firstBy", "lastBy", "sortedFirstBy", "sortedLastBy"};
-    // TODO (https://github.com/deephaven/deephaven-core/issues/64): Re-enable treeTable
-    // TODO (https://github.com/deephaven/deephaven-core/issues/65): Re-enable rollup
     private static final String[] FINAL_OPS =
-            {"selectDistinct", "byOperation", "aggCombo", /* "treeTable", "rollup", */ "applyToAllBy"};
-    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<String, String[]>() {
+            {"selectDistinct", "byOperation", "aggCombo", "tree", "rollup", "applyToAllBy"};
+    private static final HashMap<String, String[]> DEFAULT_SWITCH_CONTROL = new HashMap<>() {
         {
             put("supportedOps", IMPLEMENTED_OPS);
             put("changingAgg", CHANGING_AGG);
@@ -161,7 +159,7 @@ public class QueryFactory {
      * @return Single string with the above format.
      */
     private String stringArrayToSingleArgumentList(Collection<String> values) {
-        return "\"" + values.stream().collect(Collectors.joining(",")) + "\"";
+        return "\"" + String.join(",", values) + "\"";
     }
 
     /**
@@ -219,7 +217,7 @@ public class QueryFactory {
                         addComboOperation(opNum, opChain, queryRandom, switchControlValues.get("changingAgg"),
                                 nameSeed);
                         break;
-                    case "treeTable":
+                    case "tree":
                         addTreeTableOperation(opNum, opChain, queryRandom, nameSeed);
                         break;
                     case "rollup":
@@ -449,7 +447,7 @@ public class QueryFactory {
 
         opChain.append(" \"Parent = `T`+").append(columnName).append("\");\n");
 
-        opChain.append("tree").append(nameSeed).append(" = merge(part1,part2).treeTable(\"ID\",\"Parent\");\n");
+        opChain.append("tree").append(nameSeed).append(" = merge(part1,part2).tree(\"ID\",\"Parent\");\n");
     }
 
     private void addPartitionByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {

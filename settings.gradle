@@ -30,7 +30,6 @@ String[] mods = [
 String[] webMods = [
         'web',
         'web-client-api', // compiled javascript api client
-        'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
@@ -122,6 +121,9 @@ project(':server-jetty').projectDir = file('server/jetty')
 include(':server-jetty-app')
 project(':server-jetty-app').projectDir = file('server/jetty-app')
 
+include(':server-jetty-app-custom')
+project(':server-jetty-app-custom').projectDir = file('server/jetty-app-custom')
+
 include(':Base')
 
 include(':base-test-utils')
@@ -162,6 +164,9 @@ project(':engine-chunk').projectDir = file('engine/chunk')
 
 include(':engine-context')
 project(':engine-context').projectDir = file('engine/context')
+
+include(':engine-primitive')
+project(':engine-primitive').projectDir = file('engine/primitive')
 
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
@@ -205,6 +210,9 @@ project(':engine-benchmark').projectDir = file('engine/benchmark')
 include(':engine-test-utils')
 project(':engine-test-utils').projectDir = file('engine/test-utils')
 
+include(':engine-query-constants')
+project(':engine-query-constants').projectDir = file('engine/query-constants')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -223,6 +231,9 @@ project(':extensions-parquet-table').projectDir = file('extensions/parquet/table
 include(':extensions-parquet-benchmark')
 project(':extensions-parquet-benchmark').projectDir = file('extensions/parquet/benchmark')
 
+include(':extensions-arrow')
+project(':extensions-arrow').projectDir = file('extensions/arrow')
+
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
 
@@ -235,6 +246,12 @@ project(':extensions-jdbc').projectDir = file('extensions/jdbc')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
+include(':extensions-performance')
+project(':extensions-performance').projectDir = file('extensions/performance')
+
+include(':extensions-source-support')
+project(':extensions-source-support').projectDir = file('extensions/source-support')
+
 include(':plugin')
 
 include(':plugin-dagger')
@@ -245,6 +262,9 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
+
+include(':plugin-hierarchicaltable')
+project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable')
 
 include(':plugin-gc-app')
 project(':plugin-gc-app').projectDir = file('plugin/gc-app')
@@ -342,6 +362,14 @@ include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
 
 include ':authentication'
+include ':authorization-codegen'
+include ':authorization'
+
+include(':authentication:example-providers')
+include(':authentication:example-providers:mtls')
+include(':authentication:example-providers:psk')
+include(':authentication:example-providers:sql-username-password')
+include(':authentication:example-providers:oidc')
 
 include ':clock'
 include ':clock-impl'

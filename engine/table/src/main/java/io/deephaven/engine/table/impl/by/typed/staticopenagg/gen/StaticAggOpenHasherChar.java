@@ -111,7 +111,7 @@ final class StaticAggOpenHasherChar extends StaticChunkedOperatorAggregationStat
         while (true) {
             final int positionValue = mainOutputPosition.getUnsafe(tableLocation);
             if (positionValue == EMPTY_OUTPUT_POSITION) {
-                return -1;
+                return UNKNOWN_ROW;
             }
             if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 return positionValue;

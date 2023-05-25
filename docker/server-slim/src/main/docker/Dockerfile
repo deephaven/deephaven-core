@@ -27,11 +27,12 @@ VOLUME /cache
 # will not attempt to start). If the server is running but trying to shut down, failure will
 # occur within about 9s, as the port will connect correctly, but respond that it isn't
 # available.
-HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
+HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /opt/grpc_health_probe/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
 ENV \
     DEEPHAVEN_CACHE_DIR="/cache" \
     DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
     DEEPHAVEN_DATA_DIR="/data" \
+    EXTRA_CLASSPATH="/apps/libs/*" \
     START_OPTS="-Ddeephaven.console.type=groovy"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 

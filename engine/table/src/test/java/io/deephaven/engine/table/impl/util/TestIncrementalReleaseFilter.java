@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.util.annotations.ScriptApi;
 import junit.framework.TestCase;
 
 import java.util.List;
@@ -62,6 +63,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         System.out.println("Cycles: " + cycles);
     }
 
+    @SuppressWarnings("unused") // used by testAutoTuneCycle via an update query
     static public <T> T sleepValue(long duration, T retVal) {
         final Object blech = new Object();
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -95,7 +97,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=ii"));
+        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=0"));
 
         int steps = 0;
 
@@ -117,10 +119,10 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
                 new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);
         incrementalReleaseFilter.start();
-        final Table filtered = source.where(incrementalReleaseFilter);
+        final Table filtered = source.updateView("I = ii").where(incrementalReleaseFilter);
 
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered
-                .update("I=io.deephaven.engine.table.impl.util.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
+                .update("I=io.deephaven.engine.table.impl.util.TestIncrementalReleaseFilter.sleepValue(100000, I)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {

@@ -125,11 +125,11 @@ public class ShortDoubleObjectColumnTupleSource extends AbstractTupleSource<Shor
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ShortDoubleObjectTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
-        DoubleChunk<Values> chunk2 = chunks[1].asDoubleChunk();
-        ObjectChunk<Object, Values> chunk3 = chunks[2].asObjectChunk();
+        ShortChunk<? extends Values> chunk1 = chunks[0].asShortChunk();
+        DoubleChunk<? extends Values> chunk2 = chunks[1].asDoubleChunk();
+        ObjectChunk<Object, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortDoubleObjectTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

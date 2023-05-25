@@ -4,8 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -13,8 +17,11 @@ import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
@@ -23,27 +30,40 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.hierarchical.RollupTableImpl;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
+import io.deephaven.engine.table.impl.util.FieldUtils;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
@@ -80,13 +100,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
  * Primary coalesced table implementation.
  */
-public class QueryTable extends BaseTable {
+public class QueryTable extends BaseTable<QueryTable> {
 
     public interface Operation<T extends DynamicNode & NotificationStepReceiver> {
 
@@ -101,7 +121,7 @@ public class QueryTable extends BaseTable {
             public final T resultNode;
             public final TableUpdateListener resultListener; // may be null if parent is non-ticking
 
-            public Result(final @NotNull T resultNode) {
+            public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
@@ -112,7 +132,7 @@ public class QueryTable extends BaseTable {
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
              */
-            public Result(final @NotNull T resultNode,
+            public Result(@NotNull final T resultNode,
                     final @Nullable TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
@@ -184,6 +204,31 @@ public class QueryTable extends BaseTable {
             Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
 
     /**
+     * For unit tests we may like to force parallel where computation to exercise the multiple notification path.
+     */
+    static boolean FORCE_PARALLEL_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.forceParallelWhere", false);
+    /**
+     * For unit tests we may like to disable parallel where computation to exercise the single notification path.
+     */
+    static boolean DISABLE_PARALLEL_WHERE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.disableParallelWhere", false);
+
+
+    private static final ThreadLocal<Boolean> disableParallelWhereForThread = ThreadLocal.withInitial(() -> null);
+
+    /**
+     * The size of parallel where segments.
+     */
+    static long PARALLEL_WHERE_ROWS_PER_SEGMENT =
+            Configuration.getInstance().getLongWithDefault("QueryTable.parallelWhereRowsPerSegment", 1 << 16);
+    /**
+     * The size of parallel where segments.
+     */
+    static int PARALLEL_WHERE_SEGMENTS =
+            Configuration.getInstance().getIntegerWithDefault("QueryTable.parallelWhereSegments", -1);
+
+    /**
      * You can chose to enable or disable the column parallel select and update.
      */
     static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =
@@ -243,7 +288,7 @@ public class QueryTable extends BaseTable {
     private volatile Map<MemoizedOperationKey, MemoizedResult<?>> cachedOperations = EMPTY_CACHED_OPERATIONS;
 
     /**
-     * Creates a new abstract table, inferring a definition but creating a new column source map.
+     * Creates a new table, inferring a definition but creating a new column source map.
      *
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
@@ -256,7 +301,7 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition but creating a new column source map.
+     * Creates a new table, reusing a definition but creating a new column source map.
      *
      * @param definition The definition to use for this table, which will be re-ordered to match the same order as
      *        {@code columns} if it does not match
@@ -272,15 +317,15 @@ public class QueryTable extends BaseTable {
     }
 
     /**
-     * Creates a new abstract table, reusing a definition and column source map.
+     * Creates a new table, reusing a definition and column source map.
      *
-     * @param definition The definition to use for this table
+     * @param definition The definition to use for this table, which will not be validated or re-ordered.
      * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
-     * @param attributes Optional value to use for {@link #attributes}
+     * @param attributes Optional value to use for initial attributes
      */
-    private QueryTable(
+    public QueryTable(
             @NotNull final TableDefinition definition,
             @NotNull final TrackingRowSet rowSet,
             @NotNull final LinkedHashMap<String, ColumnSource<?>> columns,
@@ -345,8 +390,58 @@ public class QueryTable extends BaseTable {
 
     private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
         // noinspection unchecked
-        return ensureField(INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
+                ConcurrentHashMap::new);
     }
+
+    // region Column Iterators
+
+    @Override
+    public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull final String columnName) {
+        return ChunkedColumnIterator.make(getColumnSource(columnName), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull final String columnName) {
+        return new ChunkedCharacterColumnIterator(getColumnSource(columnName, char.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull final String columnName) {
+        return new ChunkedByteColumnIterator(getColumnSource(columnName, byte.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull final String columnName) {
+        return new ChunkedShortColumnIterator(getColumnSource(columnName, short.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull final String columnName) {
+        return new ChunkedIntegerColumnIterator(getColumnSource(columnName, int.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull final String columnName) {
+        return new ChunkedLongColumnIterator(getColumnSource(columnName, long.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull final String columnName) {
+        return new ChunkedFloatColumnIterator(getColumnSource(columnName, float.class), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull final String columnName) {
+        return new ChunkedDoubleColumnIterator(getColumnSource(columnName, double.class), getRowSet());
+    }
+
+    @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
+        return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
+    }
+
+    // endregion Column Iterators
 
     /**
      * Producers of tables should use the modified column set embedded within the table for their result.
@@ -357,7 +452,7 @@ public class QueryTable extends BaseTable {
      * @return the modified column set for this table
      */
     public ModifiedColumnSet getModifiedColumnSetForUpdates() {
-        return ensureField(MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
+        return FieldUtils.ensureField(this, MODIFIED_COLUMN_SET_UPDATER, null, () -> new ModifiedColumnSet(columns));
     }
 
     /**
@@ -459,8 +554,8 @@ public class QueryTable extends BaseTable {
 
     @Override
     public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionBy");
         }
         final List<ColumnName> columns = ColumnName.from(keyColumnNames);
         return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
@@ -482,8 +577,8 @@ public class QueryTable extends BaseTable {
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
             final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionedAggBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionedAggBy");
         }
         final Optional<Partition> includedPartition = aggregations.stream()
                 .filter(agg -> agg instanceof Partition)
@@ -509,72 +604,22 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            ColumnName... groupByColumns) {
-        throw new UnsupportedOperationException("rollup is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/65): Implement rollups based on PartitionedTable
-        /*
-         * if (isStream() && includeConstituents) { throw streamUnsupported("rollup with included constituents"); }
-         * final SelectColumn[] gbsColumns = SelectColumn.from(groupByColumns); final MemoizedOperationKey rollupKey =
-         * MemoizedOperationKey.rollup(aggregations, gbsColumns, includeConstituents); return memoizeResult(rollupKey,
-         * () -> { final QueryTable baseLevel = aggNoMemo( AggregationProcessor.forRollupBase(aggregations,
-         * includeConstituents), gbsColumns);
-         *
-         * final Deque<SelectColumn> gbsColumnsToReaggregate = new ArrayDeque<>(Arrays.asList(gbsColumns)); final
-         * Deque<String> nullColumnNames = new ArrayDeque<>(groupByColumns.length); QueryTable lastLevel = baseLevel;
-         * while (!gbsColumnsToReaggregate.isEmpty()) {
-         * nullColumnNames.addFirst(gbsColumnsToReaggregate.removeLast().getName()); final TableDefinition
-         * lastLevelDefinition = lastLevel.getDefinition(); final Map<String, Class<?>> nullColumns =
-         * nullColumnNames.stream().collect(Collectors.toMap( Function.identity(), ncn ->
-         * lastLevelDefinition.getColumn(ncn).getDataType(), Assert::neverInvoked, LinkedHashMap::new)); lastLevel =
-         * lastLevel.aggNoMemo(AggregationProcessor.forRollupReaggregated(aggregations, nullColumns),
-         * gbsColumnsToReaggregate.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)); }
-         *
-         * final String[] internalColumnsToDrop = lastLevel.getDefinition().getColumnStream()
-         * .map(ColumnDefinition::getName) .filter(cn -> cn.endsWith(ROLLUP_COLUMN_SUFFIX)).toArray(String[]::new);
-         * final QueryTable finalTable = (QueryTable) lastLevel.dropColumns(internalColumnsToDrop); final Object
-         * reverseLookup = Require.neqNull(lastLevel.getAttribute(REVERSE_LOOKUP_ATTRIBUTE),
-         * "REVERSE_LOOKUP_ATTRIBUTE"); finalTable.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, reverseLookup);
-         *
-         * final Table result = HierarchicalTable.createFrom(finalTable, new RollupInfo(aggregations, gbsColumns,
-         * includeConstituents ? RollupInfo.LeafType.Constituent : RollupInfo.LeafType.Normal));
-         * result.setAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this); copyAttributes(result,
-         * CopyAttributeOperation.Rollup); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+    public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
+            final Collection<? extends ColumnName> groupByColumns) {
+        if (isBlink() && includeConstituents) {
+            throw unsupportedForBlinkTables("rollup with included constituents");
+        }
+        return memoizeResult(MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents),
+                () -> RollupTableImpl.makeRollup(this, aggregations, includeConstituents, groupByColumns));
     }
 
     @Override
-    public Table treeTable(String idColumn, String parentColumn) {
-        throw new UnsupportedOperationException("treeTable is not yet implemented in community");
-        // TODO https://github.com/deephaven/deephaven-core/issues/64): Implement treeTable based on PartitionedTable
-        /*
-         * if (isStream()) { throw streamUnsupported("treeTable"); } return
-         * memoizeResult(MemoizedOperationKey.treeTable(idColumn, parentColumn), () -> { // TODO
-         * (https://github.com/deephaven/deephaven-core/issues/64): // Need key initialization and preserve-empty
-         * support to be able to get the root reliably for // initially-empty parents. final PartitionedTable
-         * partitionedTable = partitionBy(false, parentColumn); final QueryTable rootTable = (QueryTable)
-         * partitionedTable.table().where(new MatchFilter(parentColumn, (Object) null)); final Table result =
-         * HierarchicalTable.createFrom((QueryTable) rootTable.copy(), new TreeTableInfo(idColumn, parentColumn));
-         *
-         * // If the parent table has an RLL attached to it, we can re-use it. final ReverseLookup reverseLookup; if
-         * (hasAttribute(PREPARED_RLL_ATTRIBUTE)) { reverseLookup = (ReverseLookup)
-         * getAttribute(PREPARED_RLL_ATTRIBUTE); final String[] listenerCols = reverseLookup.getKeyColumns();
-         *
-         * if (listenerCols.length != 1 || !listenerCols[0].equals(idColumn)) { final String listenerColError =
-         * StringUtils.joinStrings(Arrays.stream(listenerCols).map(col -> "'" + col + "'"), ", "); throw new
-         * IllegalStateException( "Table was prepared for Tree table with a different Id column. Expected `" + idColumn
-         * + "`, Actual " + listenerColError); } } else { reverseLookup =
-         * ReverseLookupListener.makeReverseLookupListenerWithSnapshot(QueryTable.this, idColumn); }
-         *
-         * result.setAttribute(HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, partitionedTable);
-         * result.setAttribute(HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE, QueryTable.this);
-         * result.setAttribute(REVERSE_LOOKUP_ATTRIBUTE, reverseLookup); copyAttributes(result,
-         * CopyAttributeOperation.Treetable); maybeUpdateSortableColumns(result);
-         *
-         * return result; });
-         */
+    public TreeTable tree(String idColumn, String parentColumn) {
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("tree");
+        }
+        return memoizeResult(MemoizedOperationKey.tree(idColumn, parentColumn),
+                () -> TreeTableImpl.makeTree(this, ColumnName.of(idColumn), ColumnName.of(parentColumn)));
     }
 
     @Override
@@ -606,7 +651,17 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return exactJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table exactJoinImpl(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                         + ")",
@@ -629,7 +684,7 @@ public class QueryTable extends BaseTable {
         }
         final List<ColumnName> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns = definition.getTypedColumnNames();
-        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
+        final Optional<Aggregation> agg = AggregateAllTable.singleAggregation(spec, groupByList, tableColumns);
         if (agg.isEmpty()) {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
@@ -662,8 +717,8 @@ public class QueryTable extends BaseTable {
         final Table aggregationTable = memoizeResult(aggKey, () -> aggNoMemo(
                 AggregationProcessor.forAggregation(optimized), preserveEmpty, initialGroups, groupByColumns));
 
-        final List<ColumnName> optimizedOrder = AggregationPairs.outputsOf(optimized).collect(Collectors.toList());
-        final List<ColumnName> userOrder = AggregationPairs.outputsOf(aggregations).collect(Collectors.toList());
+        final List<ColumnName> optimizedOrder = AggregationOutputs.of(optimized).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }
@@ -674,7 +729,7 @@ public class QueryTable extends BaseTable {
         return aggregationTable.view(resultOrder);
     }
 
-    private QueryTable aggNoMemo(
+    public QueryTable aggNoMemo(
             @NotNull final AggregationContextFactory aggregationContextFactory,
             final boolean preserveEmpty,
             @Nullable final Table initialGroups,
@@ -686,9 +741,9 @@ public class QueryTable extends BaseTable {
                         aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
     }
 
-    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
-        return new UnsupportedOperationException("Stream tables do not support " + operationName
-                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
+    private static UnsupportedOperationException unsupportedForBlinkTables(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Blink tables do not support " + operationName
+                + "; use BlinkTableTools.blinkToAppendOnly to accumulate full history");
     }
 
     @Override
@@ -704,6 +759,8 @@ public class QueryTable extends BaseTable {
     }
 
     private Table headOrTailBy(long nRows, boolean head, String... groupByColumns) {
+        checkInitiateOperation();
+
         Require.gtZero(nRows, "nRows");
 
         Set<String> groupByColsSet = new HashSet<>(Arrays.asList(groupByColumns)); // TODO: WTF?
@@ -774,28 +831,6 @@ public class QueryTable extends BaseTable {
         } else {
             return dataType.getName();
         }
-    }
-
-    @Override
-    public Table formatColumns(String... columnFormats) {
-        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
-
-        final Set<String> existingColumns = getDefinition().getColumnNames()
-                .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
-                .collect(Collectors.toSet());
-
-        final String[] unknownColumns = Arrays.stream(selectColumns)
-                .map(SelectColumnFactory::getFormatBaseColumn)
-                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
-                .toArray(String[]::new);
-
-        if (unknownColumns.length > 0) {
-            throw new RuntimeException(
-                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
-        }
-
-        return viewOrUpdateView(Flavor.UpdateView, selectColumns);
     }
 
     @Override
@@ -892,7 +927,14 @@ public class QueryTable extends BaseTable {
             Require.neqNull(whereListener, "whereListener").notifyChanges();
         }
 
-        private boolean refilterRequested() {
+        /**
+         * Note that refilterRequested is only accessible so that {@link WhereListener} can get to it and is not part of
+         * the public API.
+         *
+         * @return true if this table must be fully refiltered
+         */
+        @InternalUseOnly
+        boolean refilterRequested() {
             return refilterUnmatchedRequested || refilterMatchedRequested;
         }
 
@@ -910,92 +952,118 @@ public class QueryTable extends BaseTable {
         /**
          * Refilter relevant rows.
          *
-         * @param upstreamAdded RowSet of keys that were added upstream
-         * @param upstreamRemoved RowSet of keys that were removed
-         * @param upstreamModified RowSet of keys that were modified upstream
-         * @param shiftData Sequence of shifts that apply to keyspace
-         * @param modifiedColumnSet The set of columns that have any changes to indices in {@code modified}
+         * This method is not part of the public API, and is only exposed so that {@link WhereListener} can access it.
+         *
+         * @param upstream the upstream update
          */
-        private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
-                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+        @InternalUseOnly
+        void doRefilter(
+                final WhereListener listener,
+                final TableUpdate upstream) {
+            final TableUpdateImpl update = new TableUpdateImpl();
+            if (upstream == null) {
+                update.modifiedColumnSet = getModifiedColumnSetForUpdates();
+                update.modifiedColumnSet.clear();
+            } else {
+                // we need to hold on to the upstream update until we are completely done with it
+                upstream.acquire();
+                update.modifiedColumnSet = upstream.modifiedColumnSet();
+            }
 
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
             // columns have changed.
-            final WritableRowSet removed = upstreamRemoved == null ? RowSetFactory.empty()
-                    : upstreamRemoved.intersect(getRowSet());
-            getRowSet().writableCast().remove(removed);
+            update.removed = upstream == null ? RowSetFactory.empty()
+                    : upstream.removed().intersect(getRowSet());
+            getRowSet().writableCast().remove(update.removed);
 
             // Update our rowSet and compute removals due to splatting.
-            if (shiftData != null && shiftData.nonempty()) {
-                shiftData.apply(getRowSet().writableCast());
+            if (upstream != null && upstream.shifted().nonempty()) {
+                upstream.shifted().apply(getRowSet().writableCast());
             }
 
-            final WritableRowSet newMapping;
             if (refilterMatchedRequested && refilterUnmatchedRequested) {
-                newMapping = filterRows(source.getRowSet(), source.getRowSet(), false, filters);
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeFilterExecution(source.getRowSet().copy());
+                filterExecution.scheduleCompletion(
+                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
                 refilterMatchedRequested = refilterUnmatchedRequested = false;
             } else if (refilterUnmatchedRequested) {
-                // things that are added or removed are already reflected in source.build
-                try (final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet())) {
-                    // we must check rows that have been modified instead of just preserving them
-                    if (upstreamModified != null) {
-                        unmatchedRows.insert(upstreamModified);
-                    }
-                    newMapping = filterRows(unmatchedRows, unmatchedRows, false, filters);
+                // things that are added or removed are already reflected in source.getRowSet
+                final WritableRowSet unmatchedRows = source.getRowSet().minus(getRowSet());
+                // we must check rows that have been modified instead of just preserving them
+                if (upstream != null) {
+                    unmatchedRows.insert(upstream.modified());
                 }
-                // add back what we previously matched, but for modifications and removals
-                try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
-                    if (upstreamAdded != null) {
-                        previouslyMatched.remove(upstreamAdded);
+                final RowSet unmatched = unmatchedRows.copy();
+                final WhereListener.ListenerFilterExecution filterExecution = listener.makeFilterExecution(unmatched);
+                filterExecution.scheduleCompletion(fe -> {
+                    final WritableRowSet newMapping = fe.addedResult;
+                    // add back what we previously matched, but for modifications and removals
+                    try (final WritableRowSet previouslyMatched = getRowSet().copy()) {
+                        if (upstream != null) {
+                            previouslyMatched.remove(upstream.added());
+                            previouslyMatched.remove(upstream.modified());
+                        }
+                        newMapping.insert(previouslyMatched);
                     }
-                    if (upstreamModified != null) {
-                        previouslyMatched.remove(upstreamModified);
-                    }
-                    newMapping.insert(previouslyMatched);
-                }
-
+                    completeRefilterUpdate(listener, upstream, update, fe.addedResult);
+                });
                 refilterUnmatchedRequested = false;
             } else if (refilterMatchedRequested) {
                 // we need to take removed rows out of our rowSet so we do not read them, and also examine added or
                 // modified rows
-                try (final WritableRowSet matchedRows = getRowSet().copy()) {
-                    if (upstreamAdded != null) {
-                        matchedRows.insert(upstreamAdded);
-                    }
-                    if (upstreamModified != null) {
-                        matchedRows.insert(upstreamModified);
-                    }
-                    newMapping = filterRows(matchedRows, matchedRows, false, filters);
+                final WritableRowSet matchedRows = getRowSet().copy();
+                if (upstream != null) {
+                    matchedRows.insert(upstream.added());
+                    matchedRows.insert(upstream.modified());
                 }
+                final RowSet matchedClone = matchedRows.copy();
+
+                final WhereListener.ListenerFilterExecution filterExecution =
+                        listener.makeFilterExecution(matchedClone);
+                filterExecution.scheduleCompletion(
+                        fe -> completeRefilterUpdate(listener, upstream, update, fe.addedResult));
                 refilterMatchedRequested = false;
             } else {
                 throw new IllegalStateException("Refilter called when a refilter was not requested!");
             }
+        }
 
+        private void completeRefilterUpdate(
+                final WhereListener listener,
+                final TableUpdate upstream,
+                final TableUpdateImpl update,
+                final RowSet newMapping) {
             // Compute added/removed in post-shift keyspace.
-            final WritableRowSet added = newMapping.minus(getRowSet());
+            update.added = newMapping.minus(getRowSet());
             final WritableRowSet postShiftRemovals = getRowSet().minus(newMapping);
 
-            // Update our rowSet in post-shift keyspace.
-            getRowSet().writableCast().update(added, postShiftRemovals);
+            // Update our index in post-shift keyspace.
+            getRowSet().writableCast().remove(postShiftRemovals);
+            getRowSet().writableCast().insert(update.added);
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
-            if (shiftData != null) {
-                shiftData.unapply(postShiftRemovals);
+            if (upstream != null) {
+                upstream.shifted().unapply(postShiftRemovals);
             }
-            removed.insert(postShiftRemovals);
+            update.removed.writableCast().insert(postShiftRemovals);
 
-            final WritableRowSet modified;
-            if (upstreamModified == null || upstreamModified.isEmpty()) {
-                modified = RowSetFactory.empty();
+            if (upstream == null || upstream.modified().isEmpty()) {
+                update.modified = RowSetFactory.empty();
             } else {
-                modified = upstreamModified.intersect(newMapping);
-                modified.remove(added);
+                update.modified = upstream.modified().intersect(newMapping);
+                update.modified.writableCast().remove(update.added);
             }
 
-            notifyListeners(new TableUpdateImpl(added, removed, modified,
-                    shiftData == null ? RowSetShiftData.EMPTY : shiftData, modifiedColumnSet));
+            update.shifted = upstream == null ? RowSetShiftData.EMPTY : upstream.shifted();
+
+            notifyListeners(update);
+            if (upstream != null) {
+                upstream.release();
+            }
+
+            listener.setFinalExecutionStep();
         }
 
         private void setWhereListener(MergedListener whereListener) {
@@ -1004,11 +1072,18 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table where(final Collection<? extends Filter> filters) {
-        return whereInternal(WhereFilter.from(filters));
+    public Table where(Filter filter) {
+        return whereInternal(WhereFilter.fromInternal(filter));
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {
+        if (filters.length == 0) {
+            if (isRefreshing()) {
+                manageWithCurrentScope();
+            }
+            return this;
+        }
+
         return QueryPerformanceRecorder.withNugget("where(" + Arrays.toString(filters) + ")", sizeForInstrumentation(),
                 () -> {
                     for (int fi = 0; fi < filters.length; ++fi) {
@@ -1038,8 +1113,20 @@ public class QueryTable extends BaseTable {
                         return result;
                     }
 
-                    for (WhereFilter filter : filters) {
+                    List<WhereFilter> selectFilters = new LinkedList<>();
+                    List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs = new LinkedList<>();
+                    for (final WhereFilter filter : filters) {
                         filter.init(getDefinition());
+                        if (filter instanceof AbstractConditionFilter
+                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
+                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
+                        } else {
+                            selectFilters.add(filter);
+                        }
+                    }
+
+                    if (!shiftColPairs.isEmpty()) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, selectFilters);
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
@@ -1050,56 +1137,110 @@ public class QueryTable extends BaseTable {
                         initializeWithSnapshot("where", swapListener,
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
-                                    final FilteredTable filteredTable;
-                                    try (final RowSet prevIfNeeded = usePrev ? rowSet.copyPrev() : null) {
-                                        final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
-                                        final TrackingRowSet currentMapping = filterRows(rowSetToUpdate,
-                                                rowSetToUpdate, usePrev, filters).toTracking();
-                                        filteredTable = new FilteredTable(currentMapping, this, filters);
+                                    final RowSet rowSetToUse = usePrev ? rowSet.prev() : rowSet;
+
+                                    final CompletableFuture<TrackingWritableRowSet> currentMappingFuture =
+                                            new CompletableFuture<>();
+                                    final InitialFilterExecution initialFilterExecution = new InitialFilterExecution(
+                                            this, filters, rowSetToUse.copy(), 0, rowSetToUse.size(), null, 0,
+                                            usePrev) {
+                                        @Override
+                                        void handleUncaughtException(Exception throwable) {
+                                            currentMappingFuture.completeExceptionally(throwable);
+                                        }
+                                    };
+                                    initialFilterExecution.scheduleCompletion(x -> {
+                                        if (x.exceptionResult != null) {
+                                            currentMappingFuture.completeExceptionally(x.exceptionResult);
+                                        } else {
+                                            currentMappingFuture.complete(x.addedResult.toTracking());
+                                        }
+                                    });
+
+                                    boolean cancelled = false;
+                                    TrackingWritableRowSet currentMapping = null;
+                                    try {
+                                        boolean done = false;
+                                        while (!done) {
+                                            try {
+                                                currentMapping = currentMappingFuture.get();
+                                                done = true;
+                                            } catch (InterruptedException e) {
+                                                // cancel the job and wait for it to finish cancelling
+                                                cancelled = true;
+                                                initialFilterExecution.setCancelled();
+                                            }
+                                        }
+                                    } catch (ExecutionException e) {
+                                        if (cancelled) {
+                                            throw new CancellationException("interrupted while filtering");
+                                        } else if (e.getCause() instanceof RuntimeException) {
+                                            throw (RuntimeException) e.getCause();
+                                        } else {
+                                            throw new UncheckedDeephavenException(e);
+                                        }
+                                    } finally {
+                                        // account for work done in alternative threads
+                                        final BasePerformanceEntry basePerformanceEntry =
+                                                initialFilterExecution.getBasePerformanceEntry();
+                                        if (basePerformanceEntry != null) {
+                                            final QueryPerformanceNugget outerNugget =
+                                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
+                                            if (outerNugget != null) {
+                                                outerNugget.addBaseEntry(basePerformanceEntry);
+                                            }
+                                        }
                                     }
+                                    currentMapping.initializePreviousValue();
+
+                                    final FilteredTable filteredTable =
+                                            new FilteredTable(currentMapping, this, filters);
 
                                     for (final WhereFilter filter : filters) {
                                         filter.setRecomputeListener(filteredTable);
                                     }
-
                                     final boolean refreshingFilters =
                                             Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
                                     copyAttributes(filteredTable, CopyAttributeOperation.Filter);
-                                    if (!refreshingFilters && isAddOnly()) {
-                                        filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                    // as long as filters do not change, we can propagate add-only/append-only attrs
+                                    if (!refreshingFilters) {
+                                        if (isAddOnly()) {
+                                            filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        }
+                                        if (isAppendOnly()) {
+                                            filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        }
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
                                             Stream.of(filters)
                                                     .filter(f -> f instanceof NotificationQueue.Dependency)
                                                     .map(f -> (NotificationQueue.Dependency) f),
-                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                            Stream.of(filters)
+                                                    .filter(f -> f instanceof DependencyStreamProvider)
                                                     .flatMap(f -> ((DependencyStreamProvider) f)
                                                             .getDependencyStream()))
                                             .collect(Collectors.toList());
                                     if (swapListener != null) {
-                                        final ListenerRecorder recorder =
-                                                new ListenerRecorder("where(" + Arrays.toString(filters) + ")",
-                                                        QueryTable.this, filteredTable);
-                                        final WhereListener whereListener =
-                                                new WhereListener(recorder, dependencies, filteredTable);
+                                        final ListenerRecorder recorder = new ListenerRecorder(
+                                                "where(" + Arrays.toString(filters) + ")", QueryTable.this,
+                                                filteredTable);
+                                        final WhereListener whereListener = new WhereListener(
+                                                log, this, recorder, dependencies, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         recorder.setMergedListener(whereListener);
                                         swapListener.setListenerAndResult(recorder, filteredTable);
                                         filteredTable.addParentReference(swapListener);
                                         filteredTable.addParentReference(whereListener);
                                     } else if (refreshingFilters) {
-                                        final StaticWhereListener whereListener =
-                                                new StaticWhereListener(dependencies, filteredTable);
+                                        final WhereListener whereListener = new WhereListener(
+                                                log, this, null, dependencies, filteredTable, filters);
                                         filteredTable.setWhereListener(whereListener);
                                         filteredTable.addParentReference(whereListener);
                                     }
-
                                     result.setValue(filteredTable);
-
                                     return true;
                                 });
-
                         return result.getValue();
                     });
                 });
@@ -1167,10 +1308,7 @@ public class QueryTable extends BaseTable {
         }
 
         if (isFlat()) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
 
         return getResult(new FlattenOperation(this));
@@ -1198,7 +1336,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table select(Collection<? extends Selectable> columns) {
-        return selectInternal(SelectColumn.from(columns));
+        return selectInternal(SelectColumn.from(columns.isEmpty() ? definition.getTypedColumnNames() : columns));
     }
 
     private Table selectInternal(SelectColumn... selectColumns) {
@@ -1228,9 +1366,10 @@ public class QueryTable extends BaseTable {
      */
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
-        SelectAndViewAnalyzer analyzer = SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns,
-                rowSet, getModifiedColumnSetForUpdates(), true, clones);
-        return new SelectValidationResult(analyzer, clones);
+        SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
+                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns, rowSet, getModifiedColumnSetForUpdates(), true,
+                false, clones);
+        return new SelectValidationResult(analyzerWrapper.getAnalyzer(), clones);
     }
 
     private Table selectOrUpdate(Flavor flavor, final SelectColumn... selectColumns) {
@@ -1241,19 +1380,27 @@ public class QueryTable extends BaseTable {
                     checkInitiateOperation();
                     final SelectAndViewAnalyzer.Mode mode;
                     if (isRefreshing()) {
-                        if (!isFlat() && (flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
-                                || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT)) {
+                        if (!isFlat() && ((flavor == Flavor.Update && USE_REDIRECTED_COLUMNS_FOR_UPDATE)
+                                || (flavor == Flavor.Select && USE_REDIRECTED_COLUMNS_FOR_SELECT))) {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_REFRESHING;
                         } else {
                             mode = SelectAndViewAnalyzer.Mode.SELECT_REFRESHING;
                         }
                     } else {
-                        mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        if (flavor == Flavor.Update && exceedsMaximumStaticSelectOverhead()) {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_REDIRECTED_STATIC;
+                        } else {
+                            mode = SelectAndViewAnalyzer.Mode.SELECT_STATIC;
+                        }
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
-                    final SelectAndViewAnalyzer analyzer =
-                            SelectAndViewAnalyzer.create(mode, columns, rowSet, getModifiedColumnSetForUpdates(),
-                                    publishTheseSources, selectColumns);
+                    final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
+                            this, mode, columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, true,
+                            selectColumns);
+
+                    final SelectAndViewAnalyzer analyzer = analyzerWrapper.getAnalyzer();
+                    final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
+                            .toArray(SelectColumn[]::new);
 
                     // Init all the rows by cooking up a fake Update
                     final TableUpdate fakeUpdate = new TableUpdateImpl(
@@ -1262,15 +1409,13 @@ public class QueryTable extends BaseTable {
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-                    final SelectAndViewAnalyzer.JobScheduler jobScheduler;
-                    if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
-                            (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                                    && OperationInitializationThreadPool.NUM_THREADS > 1))
-                            && !OperationInitializationThreadPool.isInitializationThread()
+                    final JobScheduler jobScheduler;
+                    if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE || QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE)
+                            && OperationInitializationThreadPool.canParallelize()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
+                        jobScheduler = new OperationInitializationPoolJobScheduler();
                     } else {
-                        jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+                        jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }
 
                     final QueryTable resultTable;
@@ -1315,10 +1460,10 @@ public class QueryTable extends BaseTable {
 
                         final TrackingRowSet resultRowSet =
                                 analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
+                        resultTable = new QueryTable(resultRowSet, analyzerWrapper.getPublishedColumnResources());
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
-                            final Map<String, String[]> effects = analyzer.calcEffects();
+                            final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
                                     resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
@@ -1329,7 +1474,7 @@ public class QueryTable extends BaseTable {
                                 resultTable.setFlat();
                             }
                             if (resultTable.getRowSet() == rowSet) {
-                                propagateGrouping(selectColumns, resultTable);
+                                propagateGrouping(processedColumns, resultTable);
                             }
                             for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
                                 if (columnSource instanceof PossiblyImmutableColumnSource) {
@@ -1339,13 +1484,16 @@ public class QueryTable extends BaseTable {
                         }
                     }
                     propagateFlatness(resultTable);
-                    maybeUpdateSortableColumns(resultTable, selectColumns);
+                    copySortableColumns(resultTable, processedColumns);
                     if (publishTheseSources) {
-                        maybeCopyColumnDescriptions(resultTable, selectColumns);
+                        maybeCopyColumnDescriptions(resultTable, processedColumns);
                     } else {
                         maybeCopyColumnDescriptions(resultTable);
                     }
-                    return resultTable;
+                    SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor = flavor == Flavor.Update
+                            ? SelectAndViewAnalyzerWrapper.UpdateFlavor.Update
+                            : SelectAndViewAnalyzerWrapper.UpdateFlavor.Select;
+                    return analyzerWrapper.applyShiftsAndRemainingColumns(this, resultTable, updateFlavor);
                 }));
     }
 
@@ -1399,10 +1547,7 @@ public class QueryTable extends BaseTable {
     @Override
     public Table view(final Collection<? extends Selectable> viewColumns) {
         if (viewColumns == null || viewColumns.isEmpty()) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
         return viewOrUpdateView(Flavor.View, SelectColumn.from(viewColumns));
     }
@@ -1414,10 +1559,7 @@ public class QueryTable extends BaseTable {
 
     private Table viewOrUpdateView(Flavor flavor, final SelectColumn... viewColumns) {
         if (viewColumns == null || viewColumns.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
 
         final String humanReadablePrefix = flavor.toString();
@@ -1434,18 +1576,18 @@ public class QueryTable extends BaseTable {
                                     createSwapListenerIfRefreshing(SwapListener::new);
                             initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
-                                final SelectAndViewAnalyzer analyzer =
-                                        SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                                                columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources,
-                                                viewColumns);
-                                final QueryTable queryTable =
-                                        new QueryTable(rowSet, analyzer.getPublishedColumnSources());
+                                final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
+                                        getModifiedColumnSetForUpdates(), publishTheseSources, true, viewColumns);
+                                final SelectColumn[] processedViewColumns = analyzerWrapper.getProcessedColumns()
+                                        .toArray(SelectColumn[]::new);
+                                QueryTable queryTable = new QueryTable(
+                                        rowSet, analyzerWrapper.getPublishedColumnResources());
                                 if (swapListener != null) {
-                                    final Map<String, String[]> effects = analyzer.calcEffects();
+                                    final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                                     final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
                                     swapListener.setListenerAndResult(listener, queryTable);
-                                    queryTable.addParentReference(swapListener);
                                 }
 
                                 propagateFlatness(queryTable);
@@ -1453,12 +1595,18 @@ public class QueryTable extends BaseTable {
                                 copyAttributes(queryTable,
                                         flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
                                                 : CopyAttributeOperation.View);
-                                maybeUpdateSortableColumns(queryTable, viewColumns);
+                                copySortableColumns(queryTable, processedViewColumns);
                                 if (publishTheseSources) {
-                                    maybeCopyColumnDescriptions(queryTable, viewColumns);
+                                    maybeCopyColumnDescriptions(queryTable, processedViewColumns);
                                 } else {
                                     maybeCopyColumnDescriptions(queryTable);
                                 }
+                                final SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor =
+                                        flavor == Flavor.UpdateView
+                                                ? SelectAndViewAnalyzerWrapper.UpdateFlavor.UpdateView
+                                                : SelectAndViewAnalyzerWrapper.UpdateFlavor.View;
+                                queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(
+                                        this, queryTable, updateFlavor);
 
                                 result.setValue(queryTable);
 
@@ -1516,25 +1664,33 @@ public class QueryTable extends BaseTable {
                 sizeForInstrumentation(), () -> {
                     checkInitiateOperation();
 
-                    final SelectAndViewAnalyzer analyzer =
-                            SelectAndViewAnalyzer.create(SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                                    columns, rowSet, getModifiedColumnSetForUpdates(), true, selectColumns);
-                    final QueryTable result = new QueryTable(rowSet, analyzer.getPublishedColumnSources());
+                    final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
+                            this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet,
+                            getModifiedColumnSetForUpdates(),
+                            true, false, selectColumns);
+                    final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
+                            .toArray(SelectColumn[]::new);
+                    final QueryTable result = new QueryTable(
+                            rowSet, analyzerWrapper.getPublishedColumnResources());
                     if (isRefreshing()) {
                         addUpdateListener(new ListenerImpl(
-                                "lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
+                                "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
                     }
                     propagateFlatness(result);
                     copyAttributes(result, CopyAttributeOperation.UpdateView);
-                    maybeUpdateSortableColumns(result, selectColumns);
-                    maybeCopyColumnDescriptions(result, selectColumns);
+                    copySortableColumns(result, processedColumns);
+                    maybeCopyColumnDescriptions(result, processedColumns);
 
-                    return result;
+                    return analyzerWrapper.applyShiftsAndRemainingColumns(
+                            this, result, SelectAndViewAnalyzerWrapper.UpdateFlavor.LazyUpdate);
                 });
     }
 
     @Override
     public Table dropColumns(String... columnNames) {
+        if (columnNames == null || columnNames.length == 0) {
+            return prepareReturnThis();
+        }
         return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                 .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                     final Mutable<Table> result = new MutableObject<>();
@@ -1559,7 +1715,7 @@ public class QueryTable extends BaseTable {
                         propagateFlatness(resultTable);
 
                         copyAttributes(resultTable, CopyAttributeOperation.DropColumns);
-                        maybeUpdateSortableColumns(resultTable);
+                        copySortableColumns(resultTable, resultTable.getDefinition().getColumnNameMap()::containsKey);
                         maybeCopyColumnDescriptions(resultTable);
 
                         if (swapListener != null) {
@@ -1589,7 +1745,6 @@ public class QueryTable extends BaseTable {
                                 }
                             };
                             swapListener.setListenerAndResult(listener, resultTable);
-                            resultTable.addParentReference(swapListener);
                         }
 
                         result.setValue(resultTable);
@@ -1602,14 +1757,15 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<io.deephaven.api.Pair> pairs) {
+        return renameColumnsImpl(MatchPair.fromPairs(pairs));
+    }
+
+    private Table renameColumnsImpl(MatchPair... pairs) {
         return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
                 sizeForInstrumentation(), () -> {
                     if (pairs == null || pairs.length == 0) {
-                        if (isRefreshing()) {
-                            manageWithCurrentScope();
-                        }
-                        return this;
+                        return prepareReturnThis();
                     }
 
                     checkInitiateOperation();
@@ -1663,7 +1819,8 @@ public class QueryTable extends BaseTable {
                     }
                     propagateFlatness(queryTable);
 
-                    maybeUpdateSortableColumns(queryTable, pairs);
+                    copyAttributes(queryTable, CopyAttributeOperation.RenameColumns);
+                    copySortableColumns(queryTable, pairs);
                     maybeCopyColumnDescriptions(queryTable, pairs);
 
                     return queryTable;
@@ -1671,7 +1828,32 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    public Table aj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            AsOfJoinRule asOfJoinRule) {
+        return ajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(asOfJoinRule));
+    }
+
+    @Override
+    public Table raj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return rajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(reverseAsOfJoinRule));
+    }
+
+    private Table ajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
@@ -1683,8 +1865,7 @@ public class QueryTable extends BaseTable {
                         asOfMatchRule));
     }
 
-    @Override
-    public Table raj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    private Table rajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("raj() requires a non-null right hand side table.");
@@ -1760,7 +1941,17 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table naturalJoin(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return naturalJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
                 () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
@@ -1802,35 +1993,33 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table join(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+    public Table join(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull final Collection<? extends JoinAddition> columnsToAdd,
             int numRightBitsToReserve) {
-        return memoizeResult(
-                MemoizedOperationKey.crossJoin(rightTableCandidate, columnsToMatch, columnsToAdd,
-                        numRightBitsToReserve),
-                () -> joinNoMemo(rightTableCandidate, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+        return joinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                numRightBitsToReserve);
     }
 
-    private Table joinNoMemo(final Table rightTableCandidate, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+    private Table joinImpl(final Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
             int numRightBitsToReserve) {
-        final MatchPair[] realColumnsToAdd;
-        if (columnsToAdd.length == 0) {
-            Set<String> columnsForMatching =
-                    Arrays.stream(columnsToMatch).filter(mp -> mp.rightColumn.equals(mp.leftColumn))
-                            .map(x -> x.rightColumn).collect(Collectors.toCollection(HashSet::new));
+        return memoizeResult(
+                MemoizedOperationKey.crossJoin(rightTable, columnsToMatch, columnsToAdd,
+                        numRightBitsToReserve),
+                () -> joinNoMemo(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve));
+    }
 
-            Set<String> rightColumnNames;
-            try {
-                rightColumnNames = rightTableCandidate.getColumnSourceMap().keySet();
-            } catch (UnsupportedOperationException uoe) {
-                throw new UnsupportedOperationException("Can not join a V2 table to a V1 table on the right side.",
-                        uoe);
-            }
-
-            realColumnsToAdd = rightColumnNames.stream().filter(x -> !columnsForMatching.contains(x))
-                    .map(x -> new MatchPair(x, x)).toArray(MatchPair[]::new);
-        } else {
-            realColumnsToAdd = columnsToAdd;
-        }
+    private Table joinNoMemo(
+            final Table rightTableCandidate,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
+        final MatchPair[] realColumnsToAdd =
+                createColumnsToAddIfMissing(rightTableCandidate, columnsToMatch, columnsToAdd);
 
         if (USE_CHUNKED_CROSS_JOIN) {
             final QueryTable coalescedRightTable = (QueryTable) rightTableCandidate.coalesce();
@@ -1878,9 +2067,9 @@ public class QueryTable extends BaseTable {
 
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
-                    final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
+                    final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
-                    final Table ungroupedResult = naturalJoinResult
+                    final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
@@ -1889,137 +2078,137 @@ public class QueryTable extends BaseTable {
                 });
     }
 
+    @Override
+    public Table rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> exactMatches,
+            @NotNull final RangeJoinMatch rangeMatch,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        return getResult(new RangeJoinOperation(this, rightTable, exactMatches, rangeMatch, aggregations));
+    }
+
     /**
-     * The leftColumns are the column sources for the snapshot-triggering table. The rightColumns are the column sources
-     * for the table being snapshotted. The leftRowSet refers to snapshots that we want to take. Typically this rowSet
-     * is expected to have size 1, but in some cases it could be larger. The rightRowSet refers to the rowSet of the
-     * current table. Therefore we want to take leftRowSet.size() snapshots, each of which being rightRowSet.size() in
-     * size.
+     * The triggerColumns are the column sources for the snapshot-triggering table. The baseColumns are the column
+     * sources for the table being snapshotted. The triggerRowSet refers to snapshots that we want to take. Typically
+     * this rowSet is expected to have size 1, but in some cases it could be larger. The baseRowSet refers to the rowSet
+     * of the current table. Therefore we want to take triggerRowSet.size() snapshots, each of which being
+     * baseRowSet.size() in size.
      *
-     * @param leftColumns Columns making up the triggering data
-     * @param leftRowSet The currently triggering rows
-     * @param rightColumns Columns making up the data being snapshotted
-     * @param rightRowSet The data to snapshot
-     * @param dest The ColumnSources in which to store the data. The keys are drawn from leftColumns.keys() and\
-     *        rightColumns.keys()
+     * @param triggerColumns Columns making up the triggering data
+     * @param triggerRowSet The currently triggering rows
+     * @param baseColumns Columns making up the data being snapshotted
+     * @param baseRowSet The data to snapshot
+     * @param dest The ColumnSources in which to store the data. The keys are drawn from triggerColumns.keys() and
+     *        baseColumns.keys()
      * @param destOffset The offset in the 'dest' ColumnSources at which to write data
-     * @return The new dest ColumnSource size, calculated as {@code destOffset + leftRowSet.size() * rightRowSet.size()}
+     * @return The new dest ColumnSource size, calculated as
+     *         {@code destOffset + triggerRowSet.size() * baseRowSet.size()}
      */
     private static long snapshotHistoryInternal(
-            @NotNull Map<String, ? extends ColumnSource<?>> leftColumns, @NotNull RowSet leftRowSet,
-            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> rightColumns, @NotNull RowSet rightRowSet,
+            @NotNull Map<String, ? extends ColumnSource<?>> triggerColumns, @NotNull RowSet triggerRowSet,
+            @NotNull Map<String, ChunkSource.WithPrev<? extends Values>> baseColumns, @NotNull RowSet baseRowSet,
             @NotNull Map<String, ? extends WritableColumnSource<?>> dest, long destOffset) {
-        assert leftColumns.size() + rightColumns.size() == dest.size();
-        if (leftRowSet.isEmpty() || rightRowSet.isEmpty()) {
+        assert triggerColumns.size() + baseColumns.size() == dest.size();
+        if (triggerRowSet.isEmpty() || baseRowSet.isEmpty()) {
             // Nothing to do.
             return destOffset;
         }
 
-        final long newCapacity = destOffset + leftRowSet.size() * rightRowSet.size();
+        final long newCapacity = destOffset + triggerRowSet.size() * baseRowSet.size();
         // Ensure all the capacities
         for (WritableColumnSource<?> ws : dest.values()) {
             ws.ensureCapacity(newCapacity);
         }
 
-        final int rightSize = rightRowSet.intSize();
+        final int baseSize = baseRowSet.intSize();
         long[] destOffsetHolder = new long[] {destOffset};
         // For each key on the snapshotting side
-        leftRowSet.forAllRowKeys(snapshotKey -> {
+        triggerRowSet.forAllRowKeys(snapshotKey -> {
             final long doff = destOffsetHolder[0];
-            destOffsetHolder[0] += rightSize;
-            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + rightSize - 1)) {
-                SnapshotUtils.copyStampColumns(leftColumns, snapshotKey, dest, destRowSet);
-                SnapshotUtils.copyDataColumns(rightColumns, rightRowSet, dest, destRowSet, false);
+            destOffsetHolder[0] += baseSize;
+            try (final RowSet destRowSet = RowSetFactory.fromRange(doff, doff + baseSize - 1)) {
+                SnapshotUtils.copyStampColumns(triggerColumns, snapshotKey, dest, destRowSet);
+                SnapshotUtils.copyDataColumns(baseColumns, baseRowSet, dest, destRowSet, false);
             }
         });
         return newCapacity;
     }
 
-    public Table snapshotHistory(final Table rightTable) {
-        return QueryPerformanceRecorder.withNugget("snapshotHistory", rightTable.sizeForInstrumentation(), () -> {
-            checkInitiateOperation();
+    private Table snapshotHistory(final String nuggetName, final Table baseTable,
+            Collection<? extends JoinAddition> stampColumns) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
+                () -> maybeViewForSnapshot(stampColumns).snapshotHistoryInternal(baseTable));
+    }
 
-            // resultColumns initially contains the left columns, then we insert the right columns into it
-            final Map<String, ArrayBackedColumnSource<?>> resultColumns =
-                    SnapshotUtils.createColumnSourceMap(this.getColumnSourceMap(),
-                            ArrayBackedColumnSource::getMemoryColumnSource);
-            final Map<String, ArrayBackedColumnSource<?>> rightColumns =
-                    SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
-                            ArrayBackedColumnSource::getMemoryColumnSource);
-            resultColumns.putAll(rightColumns);
+    private Table snapshotHistoryInternal(final Table baseTable) {
+        checkInitiateBinaryOperation(this, baseTable);
 
-            // BTW, we don't track prev because these items are never modified or removed.
-            final Table leftTable = this; // For readability.
-            final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
-                    SnapshotUtils.generateTriggerStampColumns(leftTable);
-            final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
-                    SnapshotUtils.generateSnapshotDataColumns(rightTable);
-            final long initialSize = snapshotHistoryInternal(triggerStampColumns, leftTable.getRowSet(),
-                    snapshotDataColumns, rightTable.getRowSet(),
-                    resultColumns, 0);
-            final TrackingWritableRowSet resultRowSet =
-                    RowSetFactory.flat(initialSize).toTracking();
-            final QueryTable result = new QueryTable(resultRowSet, resultColumns);
-            if (isRefreshing()) {
-                addUpdateListener(new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(),
-                        this, result) {
-                    private long lastKey = rowSet.lastRowKey();
+        // resultColumns initially contains the trigger columns, then we insert the base columns into it
+        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
+                .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
+                baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
+        resultColumns.putAll(baseColumns);
 
-                    @Override
-                    public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
-                        Assert.assertion(removed.size() == 0, "removed.size() == 0",
-                                removed, "removed");
-                        Assert.assertion(modified.size() == 0, "modified.size() == 0",
-                                modified, "modified");
-                        if (added.size() == 0 || rightTable.size() == 0) {
-                            return;
+        // BTW, we don't track prev because these items are never modified or removed.
+        final Table triggerTable = this; // For readability.
+        final Map<String, ? extends ColumnSource<?>> triggerStampColumns =
+                SnapshotUtils.generateTriggerStampColumns(triggerTable);
+        final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns =
+                SnapshotUtils.generateSnapshotDataColumns(baseTable);
+        final long initialSize = snapshotHistoryInternal(triggerStampColumns, triggerTable.getRowSet(),
+                snapshotDataColumns, baseTable.getRowSet(), resultColumns, 0);
+        final TrackingWritableRowSet resultRowSet = RowSetFactory.flat(initialSize).toTracking();
+        final QueryTable result = new QueryTable(resultRowSet, resultColumns);
+        if (isRefreshing()) {
+            addUpdateListener(
+                    new ShiftObliviousListenerImpl("snapshotHistory" + resultColumns.keySet(), this, result) {
+                        private long lastKey = rowSet.lastRowKey();
+
+                        @Override
+                        public void onUpdate(final RowSet added, final RowSet removed, final RowSet modified) {
+                            Assert.assertion(removed.size() == 0, "removed.size() == 0", removed, "removed");
+                            Assert.assertion(modified.size() == 0, "modified.size() == 0", modified, "modified");
+                            if (added.size() == 0 || baseTable.size() == 0) {
+                                return;
+                            }
+                            Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey", lastKey,
+                                    "lastRowKey", added, "added");
+                            final long oldSize = resultRowSet.size();
+                            final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
+                                    snapshotDataColumns, baseTable.getRowSet(), resultColumns, oldSize);
+                            final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
+                            resultRowSet.insert(addedSnapshots);
+                            lastKey = rowSet.lastRowKey();
+                            result.notifyListeners(addedSnapshots, RowSetFactory.empty(), RowSetFactory.empty());
                         }
-                        Assert.assertion(added.firstRowKey() > lastKey, "added.firstRowKey() > lastRowKey",
-                                lastKey, "lastRowKey", added, "added");
-                        final long oldSize = resultRowSet.size();
-                        final long newSize = snapshotHistoryInternal(triggerStampColumns, added,
-                                snapshotDataColumns, rightTable.getRowSet(),
-                                resultColumns, oldSize);
-                        final RowSet addedSnapshots = RowSetFactory.fromRange(oldSize, newSize - 1);
-                        resultRowSet.insert(addedSnapshots);
-                        lastKey = rowSet.lastRowKey();
-                        result.notifyListeners(addedSnapshots, RowSetFactory.empty(),
-                                RowSetFactory.empty());
-                    }
 
-                    @Override
-                    public boolean canExecute(final long step) {
-                        return rightTable.satisfied(step) && super.canExecute(step);
-                    }
-                });
-            }
-            result.setFlat();
-            return result;
-        });
+                        @Override
+                        public boolean canExecute(final long step) {
+                            return baseTable.satisfied(step) && super.canExecute(step);
+                        }
+                    });
+        }
+        result.setFlat();
+        return result;
     }
 
     public Table silent() {
         return new QueryTable(getRowSet(), getColumnSourceMap());
     }
 
-    @Override
-    public Table snapshot(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget(
-                "snapshot(baseTable, " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")",
-                baseTable.sizeForInstrumentation(), () -> {
-
-                    // 'stampColumns' specifies a subset of this table's columns to use, but if stampColumns is empty,
-                    // we get
-                    // a view containing all of the columns (in that case, basically we get this table back).
-                    QueryTable viewTable = (QueryTable) view(stampColumns);
-                    // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
-                    // Whatever viewTable came back from the above, we do the snapshot
-                    return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
-                            viewTable.getDefinition().getColumnNamesArray());
-                });
+    private Table snapshot(String nuggetName, Table baseTable, boolean doInitialSnapshot,
+            Collection<? extends JoinAddition> stampColumns) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
+            QueryTable viewTable = maybeViewForSnapshot(stampColumns);
+            // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
+            // Whatever viewTable came back from the above, we do the snapshot
+            return viewTable.snapshotInternal(baseTable, doInitialSnapshot,
+                    viewTable.getDefinition().getColumnNamesArray());
+        });
     }
 
-    private Table snapshotInternal(Table tableToSnapshot, boolean doInitialSnapshot, String... stampColumns) {
+    private Table snapshotInternal(Table baseTable, boolean doInitialSnapshot, String... stampColumns) {
         // TODO: we would like to make this operation UGP safe, instead of requiring the lock here; there are two tables
         // but we do only need to listen to one of them; however we are dependent on two of them
         checkInitiateOperation();
@@ -2031,50 +2220,50 @@ public class QueryTable extends BaseTable {
         // to run the table only immediately before the snapshot occurs. Because we know that we are uninterested
         // in things like previous values, it can save a significant amount of CPU to only run the table when
         // needed.
-        final boolean lazySnapshot = tableToSnapshot instanceof LazySnapshotTableProvider;
+        final boolean lazySnapshot = baseTable instanceof LazySnapshotTableProvider;
         if (lazySnapshot) {
-            tableToSnapshot = ((LazySnapshotTableProvider) tableToSnapshot).getLazySnapshotTable();
-        } else if (tableToSnapshot instanceof UncoalescedTable) {
+            baseTable = ((LazySnapshotTableProvider) baseTable).getLazySnapshotTable();
+        } else if (baseTable instanceof UncoalescedTable) {
             // something that needs coalescing I guess
-            tableToSnapshot = tableToSnapshot.coalesce();
+            baseTable = baseTable.coalesce();
         }
 
         if (isRefreshing()) {
-            checkInitiateOperation(tableToSnapshot);
+            checkInitiateOperation(baseTable);
         }
 
-        // Establish the "right" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource<?>> resultRightColumns =
-                SnapshotUtils.createColumnSourceMap(tableToSnapshot.getColumnSourceMap(),
+        // Establish the "base" columns using the same names and types as the table being snapshotted
+        final Map<String, WritableColumnSource<?>> baseColumns =
+                SnapshotUtils.createColumnSourceMap(baseTable.getColumnSourceMap(),
                         ArrayBackedColumnSource::getMemoryColumnSource);
 
-        // Now make the "left" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
+        // Now make the "trigger" columns (namely, the "snapshot key" columns). Because this flavor of "snapshot" only
         // keeps a single snapshot, each snapshot key column will have the same value in every row. So for efficiency we
         // use a SingleValueColumnSource for these columns.
-        final Map<String, SingleValueColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
+        final Map<String, SingleValueColumnSource<?>> triggerColumns = new LinkedHashMap<>();
         for (String stampColumn : stampColumns) {
             final Class<?> stampColumnType = getColumnSource(stampColumn).getType();
-            resultLeftColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
+            triggerColumns.put(stampColumn, SingleValueColumnSource.getSingleValueColumnSource(stampColumnType));
         }
 
         // make our result table
-        final Map<String, ColumnSource<?>> allColumns = new LinkedHashMap<>(resultRightColumns);
-        allColumns.putAll(resultLeftColumns);
-        if (allColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-            throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
+        final Map<String, ColumnSource<?>> allColumns = new LinkedHashMap<>(baseColumns);
+        allColumns.putAll(triggerColumns);
+        if (allColumns.size() != triggerColumns.size() + baseColumns.size()) {
+            throwColumnConflictMessage(triggerColumns.keySet(), baseColumns.keySet());
         }
 
         final QueryTable result =
                 new QueryTable(RowSetFactory.empty().toTracking(), allColumns);
-        final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, tableToSnapshot,
-                result, resultLeftColumns, resultRightColumns, result.getRowSet().writableCast());
+        final SnapshotInternalListener listener = new SnapshotInternalListener(this, lazySnapshot, baseTable,
+                result, triggerColumns, baseColumns, result.getRowSet().writableCast());
 
         if (doInitialSnapshot) {
-            if (!isRefreshing() && tableToSnapshot.isRefreshing() && !lazySnapshot) {
+            if (!isRefreshing() && baseTable.isRefreshing() && !lazySnapshot) {
                 // if we are making a static copy of the table, we must ensure that it does not change out from under us
                 ConstructSnapshot.callDataSnapshotFunction("snapshotInternal",
-                        ConstructSnapshot.makeSnapshotControl(false, tableToSnapshot.isRefreshing(),
-                                (NotificationStepSource) tableToSnapshot),
+                        ConstructSnapshot.makeSnapshotControl(false, baseTable.isRefreshing(),
+                                (NotificationStepSource) baseTable),
                         (usePrev, beforeClockUnused) -> {
                             listener.doSnapshot(false, usePrev);
                             result.getRowSet().writableCast().initializePreviousValue();
@@ -2096,116 +2285,148 @@ public class QueryTable extends BaseTable {
         return result;
     }
 
-    @Override
-    public Table snapshotIncremental(final Table tableToSnapshot, final boolean doInitialSnapshot,
+    private Table snapshotIncremental(String nuggetName, Table baseTable, boolean doInitialSnapshot,
+            Collection<? extends JoinAddition> stampColumns) {
+        return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(), () -> {
+            QueryTable viewTable = maybeViewForSnapshot(stampColumns);
+            // Due to the above logic, we need to pull the actual set of column names back from the viewTable.
+            // Whatever viewTable came back from the above, we do the snapshot
+            return viewTable.snapshotIncrementalInternal(baseTable, doInitialSnapshot,
+                    viewTable.getDefinition().getColumnNamesArray());
+        });
+    }
+
+    private Table snapshotIncrementalInternal(final Table base, final boolean doInitialSnapshot,
             final String... stampColumns) {
-        return QueryPerformanceRecorder.withNugget("snapshotIncremental(tableToSnapshot, " + doInitialSnapshot + ", "
-                + Arrays.toString(stampColumns) + ")", tableToSnapshot.sizeForInstrumentation(), () -> {
-                    checkInitiateOperation();
+        checkInitiateBinaryOperation(this, base);
 
-                    final QueryTable rightTable =
-                            (QueryTable) (tableToSnapshot instanceof UncoalescedTable ? tableToSnapshot.coalesce()
-                                    : tableToSnapshot);
-                    rightTable.checkInitiateOperation();
+        final QueryTable baseTable = (QueryTable) (base instanceof UncoalescedTable ? base.coalesce() : base);
 
-                    // Use the given columns (if specified); otherwise an empty array means all of my columns
-                    final String[] useStampColumns = stampColumns.length == 0
-                            ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
-                            : stampColumns;
+        // Use the given columns (if specified); otherwise an empty array means all of my columns
+        final String[] useStampColumns = stampColumns.length == 0
+                ? getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)
+                : stampColumns;
 
-                    final Map<String, ColumnSource<?>> leftColumns = new LinkedHashMap<>();
-                    for (String stampColumn : useStampColumns) {
-                        leftColumns.put(stampColumn,
-                                SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
-                    }
+        final Map<String, ColumnSource<?>> triggerColumns = new LinkedHashMap<>();
+        for (String stampColumn : useStampColumns) {
+            triggerColumns.put(stampColumn,
+                    SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
+        }
 
-                    final Map<String, SparseArrayColumnSource<?>> resultLeftColumns = new LinkedHashMap<>();
-                    for (Map.Entry<String, ColumnSource<?>> entry : leftColumns.entrySet()) {
-                        final String name = entry.getKey();
-                        final ColumnSource<?> cs = entry.getValue();
-                        final Class<?> type = cs.getType();
-                        final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
-                                ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
-                                : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
+        final Map<String, WritableColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
+        for (Map.Entry<String, ColumnSource<?>> entry : triggerColumns.entrySet()) {
+            final String name = entry.getKey();
+            final ColumnSource<?> cs = entry.getValue();
+            final Class<?> type = cs.getType();
+            final WritableColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
+                    ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
+                    : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
-                        resultLeftColumns.put(name, stampDest);
-                    }
+            resultTriggerColumns.put(name, stampDest);
+        }
 
-                    final Map<String, SparseArrayColumnSource<?>> resultRightColumns =
-                            SnapshotUtils.createColumnSourceMap(rightTable.getColumnSourceMap(),
-                                    SparseArrayColumnSource::getSparseMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
+                baseTable.getColumnSourceMap(), SparseArrayColumnSource::getSparseMemoryColumnSource);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
+        resultColumns.putAll(resultTriggerColumns);
+        if (resultColumns.size() != resultTriggerColumns.size() + resultBaseColumns.size()) {
+            throwColumnConflictMessage(resultTriggerColumns.keySet(), resultBaseColumns.keySet());
+        }
 
-                    final Map<String, SparseArrayColumnSource<?>> resultColumns =
-                            new LinkedHashMap<>(resultRightColumns);
-                    resultColumns.putAll(resultLeftColumns);
-                    if (resultColumns.size() != resultLeftColumns.size() + resultRightColumns.size()) {
-                        throwColumnConflictMessage(resultLeftColumns.keySet(), resultRightColumns.keySet());
-                    }
+        final QueryTable resultTable = new QueryTable(RowSetFactory.empty().toTracking(), resultColumns);
 
-                    final QueryTable resultTable =
-                            new QueryTable(RowSetFactory.empty().toTracking(),
-                                    resultColumns);
+        if (isRefreshing() && baseTable.isRefreshing()) {
 
-                    if (isRefreshing() && rightTable.isRefreshing()) {
+            // What's happening here: the trigger table gets "listener" (some complicated logic that has access
+            // to the coalescer) whereas the base table (above) gets the one-liner above (but which also
+            // has access to the same coalescer). So when the base table sees updates they are simply fed
+            // to the coalescer.
+            // The coalescer's job is just to remember what rows have changed. When the *trigger* table gets
+            // updates, then the SnapshotIncrementalListener gets called, which does all the snapshotting
+            // work.
 
-                        // What's happening here: the left table gets "listener" (some complicated logic that has access
-                        // to the coalescer) whereas the right table (above) gets the one-liner above (but which also
-                        // has access to the same coalescer). So when the right table sees updates they are simply fed
-                        // to the coalescer.
-                        // The coalescer's job is just to remember what rows have changed. When the *left* table gets
-                        // updates, then the SnapshotIncrementalListener gets called, which does all the snapshotting
-                        // work.
+            final ListenerRecorder baseListenerRecorder =
+                    new ListenerRecorder("snapshotIncremental (baseTable)", baseTable, resultTable);
+            baseTable.addUpdateListener(baseListenerRecorder);
 
-                        final ListenerRecorder rightListenerRecorder =
-                                new ListenerRecorder("snapshotIncremental (rightTable)", rightTable, resultTable);
-                        rightTable.addUpdateListener(rightListenerRecorder);
+            final ListenerRecorder triggerListenerRecorder =
+                    new ListenerRecorder("snapshotIncremental (triggerTable)", this, resultTable);
+            addUpdateListener(triggerListenerRecorder);
 
-                        final ListenerRecorder leftListenerRecorder =
-                                new ListenerRecorder("snapshotIncremental (leftTable)", this, resultTable);
-                        addUpdateListener(leftListenerRecorder);
+            final SnapshotIncrementalListener listener =
+                    new SnapshotIncrementalListener(this, resultTable, resultColumns,
+                            baseListenerRecorder, triggerListenerRecorder, baseTable, triggerColumns);
 
-                        final SnapshotIncrementalListener listener =
-                                new SnapshotIncrementalListener(this, resultTable, resultColumns,
-                                        rightListenerRecorder, leftListenerRecorder, rightTable, leftColumns);
+            baseListenerRecorder.setMergedListener(listener);
+            triggerListenerRecorder.setMergedListener(listener);
+            resultTable.addParentReference(listener);
 
-                        rightListenerRecorder.setMergedListener(listener);
-                        leftListenerRecorder.setMergedListener(listener);
-                        resultTable.addParentReference(listener);
+            if (doInitialSnapshot) {
+                listener.doFirstSnapshot(true);
+            }
 
-                        if (doInitialSnapshot) {
-                            listener.doFirstSnapshot(true);
+            startTrackingPrev(resultColumns.values());
+            resultTable.getRowSet().writableCast().initializePreviousValue();
+        } else if (doInitialSnapshot) {
+            SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(), this,
+                    SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                    triggerColumns, resultColumns);
+            resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
+            resultTable.getRowSet().writableCast().initializePreviousValue();
+        } else if (isRefreshing()) {
+            // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our (static)
+            // base table on the very first tick of the triggerTable
+            addUpdateListener(
+                    new ListenerImpl("snapshotIncremental (triggerTable)", this, resultTable) {
+                        @Override
+                        public void onUpdate(TableUpdate upstream) {
+                            SnapshotIncrementalListener.copyRowsToResult(baseTable.getRowSet(),
+                                    QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(baseTable),
+                                    triggerColumns, resultColumns);
+                            resultTable.getRowSet().writableCast().insert(baseTable.getRowSet());
+                            resultTable.notifyListeners(resultTable.getRowSet().copy(),
+                                    RowSetFactory.empty(),
+                                    RowSetFactory.empty());
+                            removeUpdateListener(this);
                         }
+                    });
+        }
 
-                        startTrackingPrev(resultColumns.values());
-                        resultTable.getRowSet().writableCast().initializePreviousValue();
-                    } else if (doInitialSnapshot) {
-                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(), this,
-                                SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                                leftColumns, resultColumns);
-                        resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
-                        resultTable.getRowSet().writableCast().initializePreviousValue();
-                    } else if (isRefreshing()) {
-                        // we are not doing an initial snapshot, but are refreshing so need to take a snapshot of our
-                        // (static)
-                        // right table on the very first tick of the leftTable
-                        addUpdateListener(
-                                new ListenerImpl("snapshotIncremental (leftTable)", this, resultTable) {
-                                    @Override
-                                    public void onUpdate(TableUpdate upstream) {
-                                        SnapshotIncrementalListener.copyRowsToResult(rightTable.getRowSet(),
-                                                QueryTable.this, SnapshotUtils.generateSnapshotDataColumns(rightTable),
-                                                leftColumns, resultColumns);
-                                        resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
-                                        resultTable.notifyListeners(resultTable.getRowSet().copy(),
-                                                RowSetFactory.empty(),
-                                                RowSetFactory.empty());
-                                        removeUpdateListener(this);
-                                    }
-                                });
-                    }
+        return resultTable;
+    }
 
-                    return resultTable;
-                });
+    @Override
+    public Table snapshot() {
+        // TODO(deephaven-core#3271): Make snapshot() concurrent
+        return QueryPerformanceRecorder.withNugget("snapshot()", sizeForInstrumentation(),
+                () -> ((QueryTable) TableTools.emptyTable(1)).snapshotInternal(this, true));
+    }
+
+    @Override
+    public Table snapshotWhen(Table trigger, SnapshotWhenOptions options) {
+        final boolean initial = options.has(Flag.INITIAL);
+        final boolean incremental = options.has(Flag.INCREMENTAL);
+        final boolean history = options.has(Flag.HISTORY);
+        final String description = options.description();
+        if (history) {
+            if (initial || incremental) {
+                // noinspection ThrowableNotThrown
+                Assert.statementNeverExecuted(
+                        "SnapshotWhenOptions should disallow history with initial or incremental");
+                return null;
+            }
+            return ((QueryTable) trigger).snapshotHistory(description, this, options.stampColumns());
+        }
+        if (incremental) {
+            return ((QueryTable) trigger).snapshotIncremental(description, this, initial, options.stampColumns());
+        }
+        return ((QueryTable) trigger).snapshot(description, this, initial, options.stampColumns());
+    }
+
+    private QueryTable maybeViewForSnapshot(Collection<? extends JoinAddition> stampColumns) {
+        // When stampColumns is empty, we'll just use this table (instead of invoking view w/ empty list)
+        return stampColumns.isEmpty() ? this
+                : (QueryTable) viewOrUpdateView(Flavor.View, SourceColumn.from(stampColumns));
     }
 
     private static void throwColumnConflictMessage(Set<String> left, Set<String> right) {
@@ -2248,18 +2469,12 @@ public class QueryTable extends BaseTable {
     public Table sort(Collection<SortColumn> columnsToSortBy) {
         final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
         if (sortPairs.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         } else if (sortPairs.length == 1) {
             final String columnName = sortPairs[0].getColumn();
             final SortingOrder order = sortPairs[0].getOrder();
             if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
-                if (isRefreshing()) {
-                    manageWithCurrentScope();
-                }
-                return this;
+                return prepareReturnThis();
             }
         }
 
@@ -2312,10 +2527,7 @@ public class QueryTable extends BaseTable {
         return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
                 sizeForInstrumentation(), () -> {
                     if (columnsToUngroupBy.length == 0) {
-                        if (isRefreshing()) {
-                            manageWithCurrentScope();
-                        }
-                        return this;
+                        return prepareReturnThis();
                     }
 
                     checkInitiateOperation();
@@ -2335,7 +2547,8 @@ public class QueryTable extends BaseTable {
                     final long[] sizes = new long[intSize("ungroup")];
                     long maxSize = computeMaxSize(rowSet, arrayColumns, vectorColumns, null, sizes, nullFill);
                     final int initialBase = Math.max(64 - Long.numberOfLeadingZeros(maxSize), minimumUngroupBase);
-                    final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase);
+
+                    final CrossJoinShiftState shiftState = new CrossJoinShiftState(initialBase, true);
 
                     final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
                     for (Map.Entry<String, ColumnSource<?>> es : getColumnSourceMap().entrySet()) {
@@ -2348,7 +2561,7 @@ public class QueryTable extends BaseTable {
                             ungroupedSource.initializeBase(initialBase);
                             result = ungroupedSource;
                         } else {
-                            result = new BitShiftingColumnSource<>(shiftState, column);
+                            result = BitShiftingColumnSource.maybeWrap(shiftState, column);
                         }
                         resultMap.put(name, result);
                     }
@@ -2446,7 +2659,7 @@ public class QueryTable extends BaseTable {
                                 final WritableRowSet newRowSet = getUngroupIndex(
                                         computeSize(getRowSet(), arrayColumns, vectorColumns, nullFill),
                                         RowSetFactory.builderRandom(), newBase, getRowSet())
-                                                .build();
+                                        .build();
                                 final TrackingWritableRowSet rowSet = result.getRowSet().writableCast();
                                 final RowSet added = newRowSet.minus(rowSet);
                                 final RowSet removed = rowSet.minus(newRowSet);
@@ -2917,9 +3130,36 @@ public class QueryTable extends BaseTable {
                     }
                     final MemoizedOperationKey aggKey =
                             MemoizedOperationKey.aggBy(Collections.emptyList(), false, null, columnNames);
-                    return memoizeResult(aggKey,
-                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames));
+                    return memoizeResult(aggKey, () -> {
+                        final QueryTable result =
+                                aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames);
+                        if (isAddOnly()) {
+                            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                        }
+                        if (isAppendOnly()) {
+                            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                        }
+                        return result;
+                    });
                 });
+    }
+
+    /**
+     * <p>
+     * If this table is flat, then set the result table flat.
+     * </p>
+     *
+     * <p>
+     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
+     * must also be flat.
+     * </p>
+     *
+     * @param result the table derived from this table
+     */
+    public void propagateFlatness(QueryTable result) {
+        if (isFlat()) {
+            result.setFlat();
+        }
     }
 
     /**
@@ -2958,7 +3198,7 @@ public class QueryTable extends BaseTable {
      * @param rowSet The result's {@link #getRowSet() row set}
      * @param resultModifiedColumnSet The result's {@link #getModifiedColumnSetForUpdates() modified column set}, or
      *        {@code null} for default initialization
-     * @param attributes The result's {@link #attributes}, * or {@code null} for default initialization
+     * @param attributes The result's {@link #getAttributes() attributes}, or {@code null} for default initialization
      * @param parents Parent references for the result table
      * @return A new table sharing this table's column sources with the specified row set
      */
@@ -2983,11 +3223,11 @@ public class QueryTable extends BaseTable {
      * @return an identical table; but with a new set of attributes
      */
     @Override
-    public Table copy() {
+    public QueryTable copy() {
         return copy(StandardOptions.COPY_ALL);
     }
 
-    public Table copy(Predicate<String> shouldCopy) {
+    public QueryTable copy(Predicate<String> shouldCopy) {
         return copy(definition, shouldCopy);
     }
 
@@ -3006,9 +3246,9 @@ public class QueryTable extends BaseTable {
         }
     }
 
-    public Table copy(TableDefinition definition, Predicate<String> shouldCopy) {
+    public QueryTable copy(TableDefinition definition, Predicate<String> shouldCopy) {
         return QueryPerformanceRecorder.withNugget("copy()", sizeForInstrumentation(), () -> {
-            final Mutable<Table> result = new MutableObject<>();
+            final Mutable<QueryTable> result = new MutableObject<>();
 
             final SwapListener swapListener = createSwapListenerIfRefreshing(SwapListener::new);
             initializeWithSnapshot("copy", swapListener, (usePrev, beforeClockValue) -> {
@@ -3020,7 +3260,6 @@ public class QueryTable extends BaseTable {
                 if (swapListener != null) {
                     final ListenerImpl listener = new ListenerImpl("copy()", this, resultTable);
                     swapListener.setListenerAndResult(listener, resultTable);
-                    resultTable.addParentReference(swapListener);
                 }
 
                 result.setValue(resultTable);
@@ -3052,11 +3291,11 @@ public class QueryTable extends BaseTable {
                 return operation.get();
             }
 
-            final boolean attributesCompatible = memoKey.attributesCompatible(parent.attributes, attributes);
+            final boolean attributesCompatible = memoKey.attributesCompatible(parent.getAttributes(), getAttributes());
             final Supplier<R> computeCachedOperation = attributesCompatible ? () -> {
                 final R parentResult = parent.memoizeResult(memoKey, operation);
                 if (parentResult instanceof QueryTable) {
-                    final Table myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
+                    final QueryTable myResult = ((QueryTable) parentResult).copy(StandardOptions.COPY_NONE);
                     copyAttributes((QueryTable) parentResult, myResult, memoKey.getParentCopyType());
                     copyAttributes(myResult, memoKey.copyType());
                     // noinspection unchecked
@@ -3116,7 +3355,7 @@ public class QueryTable extends BaseTable {
 
     private Map<MemoizedOperationKey, MemoizedResult<?>> ensureCachedOperations() {
         // noinspection unchecked
-        return ensureField(CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
+        return FieldUtils.ensureField(this, CACHED_OPERATIONS_UPDATER, EMPTY_CACHED_OPERATIONS, ConcurrentHashMap::new);
     }
 
     @NotNull
@@ -3132,15 +3371,13 @@ public class QueryTable extends BaseTable {
         R getOrCompute(Supplier<R> operation) {
             final R cachedResult = getIfValid();
             if (cachedResult != null) {
-                maybeMarkSystemic(cachedResult);
-                return cachedResult;
+                return maybeMarkSystemic(cachedResult);
             }
 
             synchronized (this) {
                 final R cachedResultLocked = getIfValid();
                 if (cachedResultLocked != null) {
-                    maybeMarkSystemic(cachedResultLocked);
-                    return cachedResultLocked;
+                    return maybeMarkSystemic(cachedResultLocked);
                 }
 
                 final R result;
@@ -3152,24 +3389,32 @@ public class QueryTable extends BaseTable {
             }
         }
 
-        private void maybeMarkSystemic(R cachedResult) {
+        private R maybeMarkSystemic(R cachedResult) {
             if (cachedResult instanceof SystemicObject && SystemicObjectTracker.isSystemicThread()) {
-                ((SystemicObject) cachedResult).markSystemic();
+                // noinspection unchecked
+                return (R) ((SystemicObject) cachedResult).markSystemic();
             }
+            return cachedResult;
         }
 
         R getIfValid() {
             if (reference != null) {
                 final R cachedResult = reference.get();
-                if (!isFailedTable(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
+                if (!isFailed(cachedResult) && Liveness.verifyCachedObjectForReuse(cachedResult)) {
                     return cachedResult;
                 }
             }
             return null;
         }
 
-        private boolean isFailedTable(R cachedResult) {
-            return cachedResult instanceof Table && ((Table) cachedResult).isFailed();
+        private boolean isFailed(R cachedResult) {
+            if (cachedResult instanceof Table) {
+                return ((Table) cachedResult).isFailed();
+            }
+            if (cachedResult instanceof PartitionedTable) {
+                return ((PartitionedTable) cachedResult).table().isFailed();
+            }
+            return false;
         }
     }
 
@@ -3203,7 +3448,6 @@ public class QueryTable extends BaseTable {
                 if (swapListener != null) {
                     swapListener.setListenerAndResult(Require.neqNull(result.resultListener, "resultListener"),
                             result.resultNode);
-                    result.resultNode.addParentReference(swapListener);
                 }
 
                 return true;
@@ -3213,135 +3457,80 @@ public class QueryTable extends BaseTable {
         });
     }
 
-    private class WhereListener extends MergedListener {
-        private final FilteredTable result;
-        private final WritableRowSet currentMapping;
-        private final WhereFilter[] filters;
-        private final ModifiedColumnSet filterColumns;
-        private final ListenerRecorder recorder;
-
-        private WhereListener(ListenerRecorder recorder, Collection<NotificationQueue.Dependency> dependencies,
-                FilteredTable result) {
-            super(Collections.singleton(recorder), dependencies, "where(" + Arrays.toString(result.filters) + ")",
-                    result);
-            this.recorder = recorder;
-            this.result = result;
-            this.currentMapping = result.getRowSet().writableCast();
-            this.filters = result.filters;
-
-            boolean hasColumnArray = false;
-            final Set<String> filterColumnNames = new TreeSet<>();
-            for (WhereFilter filter : filters) {
-                hasColumnArray |= !filter.getColumnArrays().isEmpty();
-                filterColumnNames.addAll(filter.getColumns());
-            }
-            this.filterColumns = hasColumnArray ? null
-                    : newModifiedColumnSet(filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        }
-
-        @Override
-        public void process() {
-            ModifiedColumnSet sourceModColumns = recorder.getModifiedColumnSet();
-            if (sourceModColumns == null) {
-                sourceModColumns = result.getModifiedColumnSetForUpdates();
-                sourceModColumns.clear();
-            }
-
-            if (result.refilterRequested()) {
-                result.doRefilter(recorder.getAdded(), recorder.getRemoved(), recorder.getModified(),
-                        recorder.getShifted(),
-                        sourceModColumns);
-                return;
-            }
-
-            // intersect removed with pre-shift keyspace
-            final WritableRowSet removed = recorder.getRemoved().intersect(currentMapping);
-            currentMapping.remove(removed);
-
-            // shift keyspace
-            recorder.getShifted().apply(currentMapping);
-
-            // compute added against filters
-            final WritableRowSet added =
-                    filterRows(recorder.getAdded().copy().toTracking(), rowSet, false, filters);
-
-            // check which modified keys match filters (Note: filterColumns will be null if we must always check)
-            final boolean runFilters = filterColumns == null || sourceModColumns.containsAny(filterColumns);
-            final RowSet matchingModifies = !runFilters ? RowSetFactory.empty()
-                    : filterRows(recorder.getModified().copy().toTracking(), rowSet, false, filters);
-
-            // which propagate as mods?
-            final WritableRowSet modified =
-                    (runFilters ? matchingModifies : recorder.getModified()).intersect(currentMapping);
-
-            // remaining matchingModifies are adds
-            added.insert(matchingModifies.minus(modified));
-
-            final WritableRowSet modsToRemove;
-            if (!runFilters) {
-                modsToRemove = RowSetFactory.empty();
-            } else {
-                modsToRemove = recorder.getModified().minus(matchingModifies);
-                modsToRemove.retain(currentMapping);
-            }
-            // note modsToRemove is currently in post-shift keyspace
-            currentMapping.update(added, modsToRemove);
-
-            // move modsToRemove into pre-shift keyspace and add to myRemoved
-            recorder.getShifted().unapply(modsToRemove);
-            removed.insert(modsToRemove);
-
-            ModifiedColumnSet modifiedColumnSet = sourceModColumns;
-            if (modified.isEmpty()) {
-                modifiedColumnSet = result.getModifiedColumnSetForUpdates();
-                modifiedColumnSet.clear();
-            }
-
-            // note shifts are pass-through since filter will never translate keyspace
-            result.notifyListeners(
-                    new TableUpdateImpl(added, removed, modified, recorder.getShifted(), modifiedColumnSet));
-        }
-    }
-
-    private static class StaticWhereListener extends MergedListener {
-        private final FilteredTable result;
-
-        private StaticWhereListener(Collection<NotificationQueue.Dependency> dependencies, FilteredTable result) {
-            super(Collections.emptyList(), dependencies, "where(" + Arrays.toString(result.filters) + ")", result);
-            this.result = result;
-        }
-
-        @Override
-        public void process() {
-            if (result.refilterRequested()) {
-                result.doRefilter(null, null, null, null, ModifiedColumnSet.ALL);
-            }
-        }
-    }
-
     private void checkInitiateOperation() {
-        if (isRefreshing()) {
+        checkInitiateOperation(this);
+    }
+
+    public static void checkInitiateOperation(@NotNull final Table table) {
+        if (table.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
     }
 
-    static void checkInitiateOperation(Table other) {
-        if (other.isRefreshing()) {
+    public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
+        if (first.isRefreshing() || second.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        }
+    }
+
+    private <R> R applyInternal(@NotNull final Function<Table, R> function) {
+        final QueryPerformanceNugget nugget =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
+        try {
+            return function.apply(this);
+        } finally {
+            nugget.done();
         }
     }
 
     @Override
-    public <R> R apply(Function<Table, R> function) {
+    public <R> R apply(@NotNull final Function<Table, R> function) {
         if (function instanceof MemoizedOperationKey.Provider) {
-            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> super.apply(function));
+            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(),
+                    () -> applyInternal(function));
         }
 
-        return super.apply(function);
+        return applyInternal(function);
     }
 
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
     }
 
+    public static SafeCloseable disableParallelWhereForThread() {
+        final Boolean oldValue = disableParallelWhereForThread.get();
+        disableParallelWhereForThread.set(true);
+        return () -> disableParallelWhereForThread.set(oldValue);
+    }
+
+    static Boolean isParallelWhereDisabledForThread() {
+        return disableParallelWhereForThread.get();
+    }
+
+    /**
+     * Rules for the inexact matching performed on the final column to match by in {@link #aj} and {@link #raj}.
+     */
+    private enum AsOfMatchRule {
+        LESS_THAN_EQUAL, LESS_THAN, GREATER_THAN_EQUAL, GREATER_THAN;
+
+        public static AsOfMatchRule of(AsOfJoinRule rule) {
+            switch (rule) {
+                case LESS_THAN_EQUAL:
+                    return LESS_THAN_EQUAL;
+                case LESS_THAN:
+                    return LESS_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
+
+        public static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
+            switch (rule) {
+                case GREATER_THAN_EQUAL:
+                    return GREATER_THAN_EQUAL;
+                case GREATER_THAN:
+                    return GREATER_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
+    }
 }

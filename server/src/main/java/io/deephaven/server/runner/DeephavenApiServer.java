@@ -7,7 +7,7 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -25,8 +25,6 @@ import io.deephaven.uri.resolver.UriResolversInstance;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
-import io.grpc.health.v1.HealthCheckResponse;
-import io.grpc.protobuf.services.HealthStatusManager;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -53,7 +51,6 @@ public class DeephavenApiServer {
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
     private final Provider<ExecutionContext> executionContextProvider;
     private final ServerConfig serverConfig;
-    private final HealthStatusManager healthStatusManager;
 
     @Inject
     public DeephavenApiServer(
@@ -67,8 +64,7 @@ public class DeephavenApiServer {
             final SessionService sessionService,
             final Map<String, AuthenticationRequestHandler> authenticationHandlers,
             final Provider<ExecutionContext> executionContextProvider,
-            final ServerConfig serverConfig,
-            final HealthStatusManager healthStatusManager) {
+            final ServerConfig serverConfig) {
         this.server = server;
         this.ugp = ugp;
         this.logInit = logInit;
@@ -80,7 +76,6 @@ public class DeephavenApiServer {
         this.authenticationHandlers = authenticationHandlers;
         this.executionContextProvider = executionContextProvider;
         this.serverConfig = serverConfig;
-        this.healthStatusManager = healthStatusManager;
     }
 
     @VisibleForTesting
@@ -103,22 +98,19 @@ public class DeephavenApiServer {
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
      */
     public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
-        // Stop accepting new gRPC requests.
-        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
-                () -> {
-                    // healthStatusManager.enterTerminalState() must be called before server.stopWithTimeout().
-                    // If we add multiple `OrderingCategory.FIRST` callbacks, they'll execute in the wrong order.
-                    healthStatusManager.enterTerminalState();
-                    server.stopWithTimeout(10, TimeUnit.SECONDS);
-                });
 
-        // Close outstanding sessions to give any gRPCs closure.
+        // Prevent new gRPC calls from being started
+        ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
+                server::beginShutdown);
+
+        // Now that no new gRPC calls may be made, close outstanding sessions to give any clients closure
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
                 sessionService::onShutdown);
 
-        // Finally wait for gRPC to exit now.
+        // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
+                server.stopWithTimeout(10, TimeUnit.SECONDS);
                 server.join();
             } catch (final InterruptedException ignored) {
             }
@@ -138,7 +130,7 @@ public class DeephavenApiServer {
         log.info().append("Starting UGP...").endl();
         ugp.start();
 
-        MemoryTableLoggers.maybeStartStatsCollection();
+        EngineMetrics.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
@@ -161,7 +153,6 @@ public class DeephavenApiServer {
         log.info().append("Starting server...").endl();
         server.start();
         log.info().append("Server started on port ").append(server.getPort()).endl();
-        healthStatusManager.setStatus("", HealthCheckResponse.ServingStatus.SERVING);
         return this;
     }
 

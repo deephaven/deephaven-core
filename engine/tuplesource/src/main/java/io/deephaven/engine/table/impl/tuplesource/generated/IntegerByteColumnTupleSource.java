@@ -106,10 +106,10 @@ public class IntegerByteColumnTupleSource extends AbstractTupleSource<IntByteTup
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<IntByteTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        IntChunk<Values> chunk1 = chunks[0].asIntChunk();
-        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
+        IntChunk<? extends Values> chunk1 = chunks[0].asIntChunk();
+        ByteChunk<? extends Values> chunk2 = chunks[1].asByteChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new IntByteTuple(chunk1.get(ii), chunk2.get(ii)));
         }

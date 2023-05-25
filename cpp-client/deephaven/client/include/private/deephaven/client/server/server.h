@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include <chrono>
 #include <future>
 #include <memory>
 #include <vector>
@@ -11,13 +12,14 @@
 #include <cstdint>
 #include <arrow/flight/client.h>
 
-#include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/proto/ticket.pb.h"
 #include "deephaven/proto/ticket.grpc.pb.h"
 #include "deephaven/proto/application.pb.h"
 #include "deephaven/proto/application.grpc.pb.h"
+#include "deephaven/proto/config.pb.h"
+#include "deephaven/proto/config.grpc.pb.h"
 #include "deephaven/proto/console.pb.h"
 #include "deephaven/proto/console.grpc.pb.h"
 #include "deephaven/proto/session.pb.h"
@@ -28,7 +30,7 @@
 namespace deephaven::client::server {
 struct CompletionQueueCallback {
 public:
-  CompletionQueueCallback();
+  explicit CompletionQueueCallback(std::chrono::system_clock::time_point sendTime);
   CompletionQueueCallback(const CompletionQueueCallback &other) = delete;
   CompletionQueueCallback(CompletionQueueCallback &&other) = delete;
   virtual ~CompletionQueueCallback();
@@ -36,6 +38,7 @@ public:
   virtual void onSuccess() = 0;
   virtual void onFailure(std::exception_ptr eptr) = 0;
 
+  std::chrono::system_clock::time_point sendTime_;
   grpc::ClientContext ctx_;
   grpc::Status status_;
 };
@@ -43,10 +46,11 @@ public:
 template<typename Response>
 struct ServerResponseHolder final : public CompletionQueueCallback {
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
 
 public:
-  explicit ServerResponseHolder(std::shared_ptr<SFCallback<Response>> callback) :
+  ServerResponseHolder(std::chrono::system_clock::time_point sendTime,
+      std::shared_ptr<SFCallback<Response>> callback) : CompletionQueueCallback(sendTime),
       callback_(std::move(callback)) {}
 
   ~ServerResponseHolder() final = default;
@@ -63,16 +67,19 @@ public:
   Response response_;
 };
 
-class Server {
+class Server : public std::enable_shared_from_this<Server> {
   struct Private {
   };
 
   typedef io::deephaven::proto::backplane::grpc::ApplicationService ApplicationService;
   typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
+  typedef io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse AuthenticationConstantsResponse;
   typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
-  typedef io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest SelectOrUpdateRequest;
+  typedef io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse ConfigurationConstantsResponse;
+  typedef io::deephaven::proto::backplane::grpc::ConfigService ConfigService;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::HandshakeResponse HandshakeResponse;
+  typedef io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest SelectOrUpdateRequest;
   typedef io::deephaven::proto::backplane::grpc::SessionService SessionService;
   typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
@@ -84,7 +91,7 @@ class Server {
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:
@@ -96,10 +103,16 @@ public:
       std::unique_ptr<ConsoleService::Stub> consoleStub,
       std::unique_ptr<SessionService::Stub> sessionStub,
       std::unique_ptr<TableService::Stub> tableStub,
-      std::unique_ptr<arrow::flight::FlightClient> flightClient);
+      std::unique_ptr<ConfigService::Stub> configStub,
+      std::unique_ptr<arrow::flight::FlightClient> flightClient,
+      std::string sessionToken,
+      std::chrono::milliseconds expirationInterval,
+      std::chrono::system_clock::time_point nextHandshakeTime);
   ~Server();
 
   ApplicationService::Stub *applicationStub() const { return applicationStub_.get(); }
+
+  ConfigService::Stub *configStub() const { return configStub_.get(); }
 
   ConsoleService::Stub *consoleStub() const { return consoleStub_.get(); }
 
@@ -113,9 +126,9 @@ public:
   Ticket newTicket();
   std::tuple<Ticket, arrow::flight::FlightDescriptor> newTicketAndFlightDescriptor();
 
-  void setAuthentication(std::string metadataHeader, std::string sessionToken);
+  void getConfigurationConstantsAsync(
+      std::shared_ptr<SFCallback<ConfigurationConstantsResponse>> callback);
 
-  void newSessionAsync(std::shared_ptr<SFCallback<HandshakeResponse>> callback);
   void startConsoleAsync(std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
 
   Ticket emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback);
@@ -198,9 +211,12 @@ public:
 
   template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
   void sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
-      TStub *stub, const TPtrToMember &pm, bool needAuth);
+      TStub *stub, const TPtrToMember &pm);
 
-  std::pair<std::string, std::string> makeBlessing() const;
+  std::pair<std::string, std::string> getAuthHeader() const;
+
+  // TODO: make this private
+  void setExpirationInterval(std::chrono::milliseconds interval);
 
 private:
   typedef std::unique_ptr<::grpc::ClientAsyncResponseReader<ExportedTableCreationResponse>>
@@ -210,38 +226,43 @@ private:
   Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
 
-  void addMetadata(grpc::ClientContext *ctx);
+  void addSessionToken(grpc::ClientContext *ctx);
 
   static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
+
+  static void sendKeepaliveMessages(const std::shared_ptr<Server> &self);
+  bool keepaliveHelper();
 
   std::unique_ptr<ApplicationService::Stub> applicationStub_;
   std::unique_ptr<ConsoleService::Stub> consoleStub_;
   std::unique_ptr<SessionService::Stub> sessionStub_;
   std::unique_ptr<TableService::Stub> tableStub_;
+  std::unique_ptr<ConfigService::Stub> configStub_;
   std::unique_ptr<arrow::flight::FlightClient> flightClient_;
   grpc::CompletionQueue completionQueue_;
 
-  bool haveAuth_ = false;
-  std::string metadataHeader_;
-  std::string sessionToken_;
-
   std::atomic<int32_t> nextFreeTicketId_;
 
-  // We occasionally need a shared pointer to ourself.
-  std::weak_ptr<Server> self_;
+  std::mutex mutex_;
+  std::condition_variable condVar_;
+  bool cancelled_ = false;
+  std::string sessionToken_;
+  std::chrono::milliseconds expirationInterval_;
+  std::chrono::system_clock::time_point nextHandshakeTime_;
 };
 
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
-    TStub *stub, const TPtrToMember &pm, bool needAuth) {
-  using deephaven::client::utility::streamf;
-  // It is the responsibility of "processNextCompletionQueueItem" to deallocate this.
-  auto *response = new ServerResponseHolder<TResp>(std::move(responseCallback));
-  if (needAuth) {
-    addMetadata(&response->ctx_);
-  }
+    TStub *stub, const TPtrToMember &pm) {
+  auto now = std::chrono::system_clock::now();
+  // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
+  auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
+  addSessionToken(&response->ctx_);
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
-  rpc->Finish(&response->response_, &response->status_, response);
+  // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
+  // to by 'response'.
+  auto *rp = response.release();
+  rpc->Finish(&rp->response_, &rp->status_, rp);
 }
 }  // namespace deephaven::client::server

@@ -14,6 +14,9 @@ public class RequestCase {
     public static int CHANGE_DOCUMENT,
             CLOSE_DOCUMENT,
             GET_COMPLETION_ITEMS,
+            GET_DIAGNOSTIC,
+            GET_HOVER,
+            GET_SIGNATURE_HELP,
             OPEN_DOCUMENT,
             REQUEST_NOT_SET;
 }

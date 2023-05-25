@@ -3,10 +3,11 @@
  */
 package io.deephaven.base.pool;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.MockFactory;
 import io.deephaven.base.verify.RequirementFailure;
 import junit.framework.TestCase;
+
+import java.util.function.Function;
 
 // --------------------------------------------------------------------
 /**
@@ -37,7 +38,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         }
         Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, m_mockObjectFactory,
                 m_mockClearingProcedure);
-        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+        assertEquals("get()get()get()get()get()get()get()get()get()get()get()get()get()get()",
                 m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
@@ -47,13 +48,13 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
 
         // give
         pool.give(alphaObject);
-        assertEquals("call(alpha)", m_mockClearingProcedure.getActivityRecordAndReset());
+        assertEquals("accept(alpha)", m_mockClearingProcedure.getActivityRecordAndReset());
         checkNoOtherActivity();
 
         // give on full pool - should be dropped
         Object quebecObject = "quebec";
         pool.give(quebecObject);
-        assertEquals("call(quebec)", m_mockClearingProcedure.getActivityRecordAndReset());
+        assertEquals("accept(quebec)", m_mockClearingProcedure.getActivityRecordAndReset());
         checkNoOtherActivity();
 
         // give null
@@ -74,13 +75,13 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         Object romeoObject = "romeo";
         m_mockObjectFactory.add(romeoObject);
         assertSame(romeoObject, pool.take());
-        assertEquals("call()", m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("get()", m_mockObjectFactory.getActivityRecordAndReset());
         checkNoOtherActivity();
 
         // give
         for (Object object : OBJECTS) {
             pool.give(object);
-            assertEquals("call(" + object + ")", m_mockClearingProcedure.getActivityRecordAndReset());
+            assertEquals("accept(" + object + ")", m_mockClearingProcedure.getActivityRecordAndReset());
             checkNoOtherActivity();
         }
 
@@ -99,7 +100,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         Pool<Object> pool = ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()call()call()call()call()call()call()call()",
+        assertEquals("get()get()get()get()get()get()get()get()get()get()get()get()get()get()",
                 m_mockObjectFactory.getActivityRecordAndReset());
 
         // take
@@ -130,7 +131,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         RequirementFailure failure = null;
         try {
             new ThreadSafeLenientFixedSizePool<Object>(OBJECTS.length,
-                    (Function.Unary<Object, ThreadSafeLenientFixedSizePool<Object>>) null, m_mockClearingProcedure);
+                    (Function<ThreadSafeLenientFixedSizePool<Object>, Object>) null, m_mockClearingProcedure);
         } catch (RequirementFailure requirementFailure) {
             failure = requirementFailure;
             // assertTrue(requirementFailure.isThisStackFrameCulprit(0));
@@ -150,7 +151,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         new ThreadSafeLenientFixedSizePool<Object>(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("get()get()get()get()get()get()get()", m_mockObjectFactory.getActivityRecordAndReset());
 
         // no factory
         try {
@@ -171,7 +172,7 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
             m_mockObjectFactory.add(object);
         }
         ThreadSafeLenientFixedSizePool.FACTORY.create(7, m_mockObjectFactory, null);
-        assertEquals("call()call()call()call()call()call()call()", m_mockObjectFactory.getActivityRecordAndReset());
+        assertEquals("get()get()get()get()get()get()get()", m_mockObjectFactory.getActivityRecordAndReset());
     }
 
     // ----------------------------------------------------------------

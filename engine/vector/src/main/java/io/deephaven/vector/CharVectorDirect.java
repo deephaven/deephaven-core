@@ -3,41 +3,46 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
+/**
+ * A {@link CharVector} backed by an array.
+ */
 @ArrayType(type = char[].class)
-public class CharVectorDirect implements CharVector {
+public final class CharVectorDirect implements CharVector {
 
     private final static long serialVersionUID = 3636374971797603565L;
 
+    public static final CharVector ZERO_LENGTH_VECTOR = new CharVectorDirect();
+
     private final char[] data;
 
-    public CharVectorDirect(char... data){
-        this.data = data;
+    public CharVectorDirect(@NotNull final char... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
-    public static final CharVector ZERO_LEN_VECTOR = new CharVectorDirect();
-
     @Override
-    public char get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public char get(final long index) {
+        if (index < 0 || index >= data.length) {
             return NULL_CHAR;
         }
-        return data[LongSizedDataStructure.intSize("CharVectorDirect get",  i)];
+        return data[(int) index];
     }
 
     @Override
-    public CharVector subVector(long fromIndex, long toIndex) {
-        return new CharVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public CharVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new CharVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public CharVector subVectorByPositions(long [] positions) {
+    public CharVector subVectorByPositions(final long[] positions) {
         return new CharSubVector(this, positions);
     }
 
@@ -45,6 +50,19 @@ public class CharVectorDirect implements CharVector {
     @ArrayTypeGetter
     public char[] toArray() {
         return data;
+    }
+
+    @Override
+    public char[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfChar.of(data);
+        }
+        return CharVector.super.iterator(fromIndexInclusive, toIndexExclusive);
     }
 
     @Override
@@ -58,12 +76,12 @@ public class CharVectorDirect implements CharVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return CharVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof CharVectorDirect) {
             return Arrays.equals(data, ((CharVectorDirect) obj).data);
         }
@@ -71,7 +89,7 @@ public class CharVectorDirect implements CharVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return CharVector.hashCode(this);
     }
 }

@@ -4,6 +4,7 @@
 package io.deephaven.engine.liveness;
 
 import io.deephaven.base.cache.RetentionCache;
+import io.deephaven.base.reference.CleanupReference;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.hash.KeyedObjectHashMap;
@@ -140,9 +141,12 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
      */
     synchronized void transferReferencesTo(@NotNull final RetainedReferenceTracker<?> other) {
         checkOutstanding();
-        for (final LivenessReferent referent : impl) {
-            if (referent != null) {
-                other.addReference(referent);
+        for (final WeakReference<? extends LivenessReferent> retainedReference : impl) {
+            final LivenessReferent retained = retainedReference.get();
+            if (retained != null) {
+                other.addReference(retained);
+            } else if (retainedReference instanceof CleanupReference) {
+                ((CleanupReference<?>) retainedReference).cleanup();
             }
         }
         impl.clear();
@@ -207,11 +211,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         }
 
         synchronized (this) {
-            for (final LivenessReferent referent : impl) {
-                if (referent != null) {
-                    pendingDropReferences.add(referent.getWeakReference());
-                }
-            }
+            impl.forEach(pendingDropReferences::add);
             impl.clear();
         }
 
@@ -222,6 +222,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     final LivenessReferent pendingDrop = pendingDropReference.get();
                     if (pendingDrop != null) {
                         pendingDrop.dropReference();
+                    } else if (pendingDropReference instanceof CleanupReference) {
+                        ((CleanupReference<?>) pendingDropReference).cleanup();
                     }
                 }
             } finally {
@@ -244,7 +246,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         return outstandingCount.get();
     }
 
-    private interface Impl extends Iterable<LivenessReferent> {
+    private interface Impl extends Iterable<WeakReference<? extends LivenessReferent>> {
         void add(@NotNull final LivenessReferent referent);
 
         void drop(@NotNull final LivenessReferent referent);
@@ -284,6 +286,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     retainedReferences.set(rri, retainedReferences.get(rrLast));
                 }
                 retainedReferences.remove(rrLast--);
+                if (cleared && retainedReference instanceof CleanupReference) {
+                    ((CleanupReference<?>) retainedReference).cleanup();
+                }
                 if (found) {
                     referent.dropReference();
                     return;
@@ -316,6 +321,9 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
                     retainedReferences.set(rri, retainedReferences.get(rrLast));
                 }
                 retainedReferences.remove(rrLast--);
+                if (cleared && retainedReference instanceof CleanupReference) {
+                    ((CleanupReference<?>) retainedReference).cleanup();
+                }
                 if (foundState != null && foundState.doDrop()) {
                     referentsToRemove.remove(foundState.referent);
                     if (referentsToRemove.isEmpty()) {
@@ -337,22 +345,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @NotNull
         @Override
-        public Iterator<LivenessReferent> iterator() {
-            return new Iterator<>() {
-
-                private final Iterator<WeakReference<? extends LivenessReferent>> internal =
-                        retainedReferences.iterator();
-
-                @Override
-                public boolean hasNext() {
-                    return internal.hasNext();
-                }
-
-                @Override
-                public LivenessReferent next() {
-                    return internal.next().get();
-                }
-            };
+        public Iterator<WeakReference<? extends LivenessReferent>> iterator() {
+            return retainedReferences.iterator();
         }
     }
 
@@ -425,8 +419,21 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
 
         @NotNull
         @Override
-        public Iterator<LivenessReferent> iterator() {
-            return retained.iterator();
+        public Iterator<WeakReference<? extends LivenessReferent>> iterator() {
+            return new Iterator<>() {
+
+                private final Iterator<LivenessReferent> internal = retained.iterator();
+
+                @Override
+                public boolean hasNext() {
+                    return internal.hasNext();
+                }
+
+                @Override
+                public WeakReference<? extends LivenessReferent> next() {
+                    return internal.next().getWeakReference();
+                }
+            };
         }
     }
 

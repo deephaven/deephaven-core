@@ -10,7 +10,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
@@ -19,7 +18,6 @@ import io.deephaven.io.logger.Logger;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Objects;
 import java.util.TimerTask;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +27,7 @@ import java.util.concurrent.locks.Condition;
  * Replay historical data as simulated real-time data.
  */
 public class Replayer implements ReplayerInterface, Runnable {
-    private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final Logger log = LoggerFactory.getLogger(Replayer.class);
 
     protected DateTime startTime;
     protected DateTime endTime;
@@ -186,6 +184,9 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public Table replay(Table dataSource, String timeColumn) {
+        if (dataSource.isRefreshing()) {
+            dataSource = dataSource.snapshot();
+        }
         final ReplayTable result =
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);

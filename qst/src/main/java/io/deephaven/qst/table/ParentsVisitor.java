@@ -179,7 +179,12 @@ public class ParentsVisitor implements Visitor {
 
     @Override
     public void visit(SnapshotTable snapshotTable) {
-        out = Stream.of(snapshotTable.base(), snapshotTable.trigger());
+        out = single(snapshotTable);
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        out = Stream.of(snapshotWhenTable.base(), snapshotWhenTable.trigger());
     }
 
     @Override
@@ -218,6 +223,11 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        out = Stream.of(rangeJoinTable.left(), rangeJoinTable.right());
+    }
+
+    @Override
     public void visit(ViewTable viewTable) {
         out = single(viewTable);
     }
@@ -243,16 +253,16 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        out = single(aggAllByTable);
+    public void visit(AggregateAllTable aggregateAllTable) {
+        out = single(aggregateAllTable);
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        if (aggregationTable.initialGroups().isPresent()) {
-            out = Stream.of(aggregationTable.initialGroups().get(), aggregationTable.parent());
+    public void visit(AggregateTable aggregateTable) {
+        if (aggregateTable.initialGroups().isPresent()) {
+            out = Stream.of(aggregateTable.initialGroups().get(), aggregateTable.parent());
         } else {
-            out = Stream.of(aggregationTable.parent());
+            out = Stream.of(aggregateTable.parent());
         }
     }
 
@@ -282,11 +292,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        out = single(countByTable);
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         out = single(updateByTable);
     }
@@ -294,6 +299,11 @@ public class ParentsVisitor implements Visitor {
     @Override
     public void visit(UngroupTable ungroupTable) {
         out = single(ungroupTable);
+    }
+
+    @Override
+    public void visit(DropColumnsTable dropColumnsTable) {
+        out = single(dropColumnsTable);
     }
 
     private static class Search {

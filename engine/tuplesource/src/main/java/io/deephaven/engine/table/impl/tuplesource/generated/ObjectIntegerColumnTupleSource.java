@@ -106,10 +106,10 @@ public class ObjectIntegerColumnTupleSource extends AbstractTupleSource<ObjectIn
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<ObjectIntTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Object, Values> chunk1 = chunks[0].asObjectChunk();
-        IntChunk<Values> chunk2 = chunks[1].asIntChunk();
+        ObjectChunk<Object, ? extends Values> chunk1 = chunks[0].asObjectChunk();
+        IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ObjectIntTuple(chunk1.get(ii), chunk2.get(ii)));
         }

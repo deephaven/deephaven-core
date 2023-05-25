@@ -139,17 +139,18 @@ public class PlainLongChunkedWriter extends AbstractBulkValuesWriter<LongBuffer>
 
         final int currentCapacity = targetBuffer.capacity();
         final int currentPosition = targetBuffer.position();
-        final int requiredCapacity = currentPosition + valuesToAdd.remaining();
+        final long requiredCapacity = (long) currentPosition + valuesToAdd.remaining();
         if(requiredCapacity < currentCapacity) {
             return;
         }
 
         if(requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
-            throw new IllegalStateException("Unable to write " + requiredCapacity + " values");
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;
         while(newCapacity < requiredCapacity) {
+            // note: since MAXIMUM_TOTAL_CAPACITY <= Integer.MAX_VALUE / 2, doubling 'newCapacity' will never overflow
             newCapacity = Math.min(MAXIMUM_TOTAL_CAPACITY, newCapacity * 2);
         }
 

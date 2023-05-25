@@ -3,7 +3,7 @@
  */
 package io.deephaven.api.agg;
 
-import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 /**
  * A visitor to get the ordered input/output {@link Pair column name pairs} for {@link Aggregation aggregations}.
+ * Aggregations with no inputs columns do not emit pairs.
  */
 public class AggregationPairs implements Aggregation.Visitor {
 
@@ -20,14 +21,6 @@ public class AggregationPairs implements Aggregation.Visitor {
 
     public static Stream<Pair> of(Collection<? extends Aggregation> aggregations) {
         return aggregations.stream().flatMap(AggregationPairs::of);
-    }
-
-    public static Stream<ColumnName> outputsOf(Aggregation aggregation) {
-        return of(aggregation).map(Pair::output);
-    }
-
-    public static Stream<ColumnName> outputsOf(Collection<? extends Aggregation> aggregations) {
-        return of(aggregations).map(Pair::output);
     }
 
     protected Stream<Pair> out;
@@ -53,21 +46,21 @@ public class AggregationPairs implements Aggregation.Visitor {
 
     @Override
     public void visit(Count count) {
-        out = Stream.of(count.column());
+        out = Stream.empty();
     }
 
     @Override
     public void visit(FirstRowKey firstRowKey) {
-        out = Stream.of(firstRowKey.column());
+        out = Stream.empty();
     }
 
     @Override
     public void visit(LastRowKey lastRowKey) {
-        out = Stream.of(lastRowKey.column());
+        out = Stream.empty();
     }
 
     @Override
     public void visit(Partition partition) {
-        out = Stream.of(partition.column());
+        out = Stream.empty();
     }
 }

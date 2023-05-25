@@ -1,20 +1,47 @@
 plugins {
     id 'io.deephaven.project.register'
-    id 'java-library'
 }
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
+configurations {
+    js
+}
+
 dependencies {
-    api project(':web-shared-beans')
+    implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    api 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
-}
-Classpaths.inheritElemental(project, 'elemental2-core', 'api')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'api')
-Classpaths.inheritElemental(project, 'elemental2-dom', 'api')
+    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC1'
+    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:1.0.0-RC1'
 
-GwtTools.gwtLib project
+    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+
+    js project(path: ':proto:raw-js-openapi', configuration: 'js')
+}
+Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
+Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
+Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
+
+GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
+
+def jsOutput = layout.buildDirectory.dir('js')
+def gwtOutput = tasks.register('gwtOutput', Sync) {
+    includeEmptyDirs = false
+    from(tasks.getByName('gwtCompile').outputs.files) {
+        // only copy the dhapi module, and don't give it a wrapper directory
+        include 'dhapi/**'
+        eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }
+    }
+    into jsOutput
+}
+
+artifacts {
+    js(jsOutput) {
+        builtBy gwtOutput
+    }
+}
+
+project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)
 
 apply from: "$rootDir/gradle/web-gwt-test.gradle"

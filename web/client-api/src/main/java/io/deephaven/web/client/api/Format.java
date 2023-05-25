@@ -3,10 +3,15 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsNumber;
 import elemental2.core.JsString;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class Format {
     private final long cellColors;
     private final long rowColors;
@@ -33,7 +38,7 @@ public class Format {
         return (color & 0x01000000) != 0;
     }
 
-
+    @JsNullable
     @JsProperty
     public String getColor() {
         int color = getFg(cellColors);
@@ -46,6 +51,7 @@ public class Format {
         return color(color);
     }
 
+    @JsNullable
     @JsProperty
     public String getBackgroundColor() {
         int color = getBg(cellColors);
@@ -64,14 +70,16 @@ public class Format {
 
 
     /**
-     * @deprecated Prefer {@link #getFormatString()}.
+     * @deprecated Prefer formatString.
      */
     @Deprecated
+    @JsNullable
     @JsProperty
     public String getNumberFormat() {
         return numberFormat;
     }
 
+    @JsNullable
     @JsProperty
     public String getFormatString() {
         return formatString;

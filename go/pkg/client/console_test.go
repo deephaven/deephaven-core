@@ -11,7 +11,7 @@ import (
 func TestOpenTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), client.WithConsole("python"))
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 
 	err = c.RunScript(ctx,
@@ -38,7 +38,7 @@ gotesttable = empty_table(42)
 func TestNoConsole(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer c.Close()
 

@@ -10,18 +10,20 @@
 
 """
 
-from pyarrow import csv
+from pyarrow import parquet
 
-from examples.csv_downloader import download_csv
+from examples.file_downloader import download_file
 from pydeephaven import Session, Table
 from pydeephaven.utils import is_deephaven_compatible
 
 
 def import_taxi_records(dh_session: Session) -> Table:
+    parquet_file_name = "sample.parquet"
 
-    # download the CSV data and read it into a pyarrow table and prepare it for uploading into DH
-    csv_file_name = download_csv(url="https://nyc-tlc.s3.amazonaws.com/trip+data/yellow_tripdata_2020-12.csv")
-    pa_table = csv.read_csv(csv_file_name)
+    # download the parquet data and read it into a pyarrow table and prepare it for uploading into DH
+    download_file(url="https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-11.parquet",
+                  file_name=parquet_file_name, reuse_existing=True)
+    pa_table = parquet.read_table(parquet_file_name)
 
     # drop unwanted columns
     unwanted_columns = ["tpep_pickup_datetime", "tpep_dropoff_datetime", "RatecodeID",

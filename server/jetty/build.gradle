@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     api project(':authentication')
+    api project(':authorization')
     api project(':server')
     api(project(':Integrations')) {
         because 'downstream dagger compile'
@@ -19,6 +20,7 @@ dependencies {
 
     api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
     implementation 'org.eclipse.jetty:jetty-servlet'
+    implementation 'org.eclipse.jetty:jetty-servlets'
     implementation 'org.eclipse.jetty:jetty-webapp'
     implementation 'org.eclipse.jetty.http2:http2-server'
     implementation 'org.eclipse.jetty:jetty-alpn-server'
@@ -26,7 +28,9 @@ dependencies {
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
-    implementation project(':grpc-java:grpc-servlet-jakarta')
+    api(project(':grpc-java:grpc-servlet-jakarta')) {
+        because 'downstream dagger compile'
+    }
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
 

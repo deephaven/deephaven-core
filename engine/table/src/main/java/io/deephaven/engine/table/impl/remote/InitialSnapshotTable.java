@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -67,7 +69,8 @@ public class InitialSnapshotTable extends QueryTable {
             return (Setter<float[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == int.class) {
             return (Setter<int[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
-        } else if (source.getType() == long.class || source.getType() == DateTime.class) {
+        } else if (source.getType() == long.class || source.getType() == DateTime.class
+                || source.getType() == Instant.class || source.getType() == ZonedDateTime.class) {
             return (Setter<long[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == short.class) {
             return (Setter<short[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
@@ -195,7 +198,7 @@ public class InitialSnapshotTable extends QueryTable {
             writableSources[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, column.getDataType(), column.getComponentType());
             finalColumns.put(column.getName(),
-                    new WritableRedirectedColumnSource<>(rowRedirection, writableSources[ci], 0));
+                    WritableRedirectedColumnSource.maybeRedirect(rowRedirection, writableSources[ci], 0));
         }
         // This table does not run, so we don't need to tell our row redirection or column source to start
         // tracking

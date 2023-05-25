@@ -6,12 +6,12 @@ package io.deephaven.server.session;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.Exceptions;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +50,7 @@ public class TicketRouter {
             final ByteBuffer ticket,
             final String logId) {
         if (ticket.remaining() == 0) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "could not resolve '" + logId + "' it's an empty ticket");
         }
         return getResolver(ticket.get(ticket.position()), logId).resolve(session, ticket, logId);
@@ -235,7 +235,7 @@ public class TicketRouter {
     private TicketResolver getResolver(final byte route, final String logId) {
         final TicketResolver resolver = byteResolverMap.get(route);
         if (resolver == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no resolver for route '" + route + "' (byte)");
         }
         return resolver;
@@ -243,18 +243,18 @@ public class TicketRouter {
 
     private TicketResolver getResolver(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': flight descriptor is not a path");
         }
         if (descriptor.getPathCount() <= 0) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': flight descriptor does not have route path");
         }
 
         final String route = descriptor.getPath(0);
         final TicketResolver resolver = descriptorResolverMap.get(route);
         if (resolver == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
         }
 

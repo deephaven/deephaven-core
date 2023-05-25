@@ -316,7 +316,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         final ModifiedColumnSet modifiedColumnSet;
 
         final ColumnSource<?> source;
-        final SparseArrayColumnSource<?> expectedSource;
+        final WritableColumnSource<?> expectedSource;
 
         final ChunkEquals chunkEquals;
 
@@ -336,6 +336,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
             this.isPrimitive = source.getType().isPrimitive();
             this.expectedSource =
                     SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
+            Assert.eqTrue(this.expectedSource instanceof ShiftData.RowSetShiftCallback,
+                    "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
             this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
         }
@@ -384,11 +386,12 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            expectedSource.shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            ((ShiftData.RowSetShiftCallback) expectedSource).shift(
+                    rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
         public void remove(final RowSet toRemove) {
-            expectedSource.remove(toRemove);
+            expectedSource.setNull(toRemove);
         }
 
         private void updateValues(final RowSequence toUpdate, final boolean usePrev) {
@@ -420,11 +423,12 @@ public class TableUpdateValidator implements QueryTable.Operation {
             final Chunk<? extends Values> expected =
                     expectedSource.getChunk(expectedGetContext(), toValidate);
             final Chunk<? extends Values> actual = getSourceChunk(toValidate, usePrev);
+            Assert.eq(expected.size(), "expected.size()", actual.size(), "actual.size()");
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
             toValidate.forAllRowKeys((i) -> {
-                off.increment();
-                if (equalValuesDest().get(off.intValue() - 1)) {
+                final int rowOffset = off.getAndIncrement();
+                if (equalValuesDest().get(rowOffset)) {
                     return;
                 }
 
@@ -432,9 +436,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
                     Object eValue = expectedSource.get(i);
                     Object aValue = usePrev ? source.getPrev(i) : source.get(i);
                     String chunkEValue = ChunkUtils.extractKeyStringFromChunk(expectedSource.getChunkType(), expected,
-                            off.intValue() - 1);
-                    String chunkAValue =
-                            ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, off.intValue() - 1);
+                            rowOffset);
+                    String chunkAValue = ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, rowOffset);
                     return what + (usePrev ? " (previous)" : "") +
                             " columnName=" + name + " k=" + i +
                             " (from source) expected=" + eValue + " actual=" + aValue +

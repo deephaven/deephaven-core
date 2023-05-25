@@ -23,6 +23,8 @@ import java.util.Arrays;
 // region BufferImports
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -30,6 +32,7 @@ import java.util.Arrays;
  */
 public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableBooleanChunk[] EMPTY_WRITABLE_BOOLEAN_CHUNK_ARRAY = new WritableBooleanChunk[0];
 
     static <ATTR extends Any> WritableBooleanChunk<ATTR>[] getEmptyChunkArray() {
@@ -38,9 +41,13 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     }
 
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getBooleanChunkPool().takeWritableBooleanChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeWritableBooleanChunk(size);
+        }
+        return new WritableBooleanChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableBooleanChunk makeWritableChunkForPool(int size) {
         return new WritableBooleanChunk(makeArray(size), 0, size) {
             @Override
@@ -58,7 +65,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         return new WritableBooleanChunk<>(data, offset, size);
     }
 
-    WritableBooleanChunk(boolean[] data, int offset, int capacity) {
+    protected WritableBooleanChunk(boolean[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -73,6 +80,31 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableBooleanChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableBooleanChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableBooleanChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final boolean[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableBooleanChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     // endregion FillWithNullValueImpl

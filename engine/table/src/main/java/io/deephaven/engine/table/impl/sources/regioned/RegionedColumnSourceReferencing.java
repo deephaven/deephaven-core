@@ -7,10 +7,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 
@@ -19,23 +17,21 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  * underlying native column and its resources.
  */
 abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
-        extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
+        extends RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
         implements ColumnRegionReferencingImpl.Converter<ATTR> {
 
-    @FunctionalInterface
-    interface NativeSourceCreator<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>> {
-        NativeColumnSource<DATA_TYPE, ATTR, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE> create(
-                RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> outerSource);
-    }
+    @NotNull
+    private final ColumnRegionReferencing.Null<ATTR, NATIVE_REGION_TYPE> nullRegion;
 
     @NotNull
-    private final NativeColumnSource<DATA_TYPE, ATTR, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE> nativeSource;
+    private final RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> nativeSource;
 
     RegionedColumnSourceReferencing(@NotNull final NATIVE_REGION_TYPE nullRegion,
             @NotNull Class<DATA_TYPE> type,
-            @NotNull NativeSourceCreator<DATA_TYPE, ATTR, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE> nativeSourceCreator) {
-        super(new ColumnRegionReferencing.Null<>(nullRegion), type, DeferredColumnRegionReferencing::new);
-        nativeSource = nativeSourceCreator.create(this);
+            @NotNull RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> nativeSource) {
+        super(type);
+        this.nullRegion = new ColumnRegionReferencing.Null<>(nullRegion);
+        this.nativeSource = nativeSource;
     }
 
     @Override
@@ -55,55 +51,43 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, N
     }
 
     @Override
-    @Nullable
-    public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> makeRegion(@NotNull ColumnDefinition<?> columnDefinition,
-            @NotNull ColumnLocation columnLocation, int regionIndex) {
-        NATIVE_REGION_TYPE nativeRegionType = nativeSource.makeRegion(columnDefinition, columnLocation, regionIndex);
-        return nativeRegionType == null ? null : new ColumnRegionReferencingImpl<>(nativeRegionType);
+    public ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE> getRegion(int regionIndex) {
+        final NATIVE_REGION_TYPE nativeRegion = nativeSource.getRegion(regionIndex);
+        if (nativeRegion == nativeSource.getNullRegion()) {
+            return nullRegion;
+        }
+
+        return new ColumnRegionReferencingImpl<>(nativeRegion);
     }
 
-    final ChunkSource.FillContext makeFillContext(ColumnRegionReferencing.Converter<ATTR> converter, int chunkCapacity,
-            SharedContext sharedContext) {
-        return new ColumnRegionReferencingImpl.FillContext<>(nativeSource, converter, chunkCapacity, sharedContext);
+    @Override
+    public int getRegionCount() {
+        return nativeSource.getRegionCount();
+    }
+
+    @Override
+    public int addRegion(@NotNull ColumnDefinition<?> columnDefinition, @NotNull ColumnLocation columnLocation) {
+        return nativeSource.addRegion(columnDefinition, columnLocation);
+    }
+
+    @Override
+    <OTHER_REGION_TYPE> int addRegionForUnitTests(OTHER_REGION_TYPE region) {
+        return nativeSource.addRegionForUnitTests(region);
     }
 
     @Override
     public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
-        return makeFillContext(this, chunkCapacity, sharedContext);
+        return new ColumnRegionReferencingImpl.FillContext<>(nativeSource, this, chunkCapacity, sharedContext);
     }
 
-    abstract static class NativeColumnSource<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
-            extends
-            RegionedColumnSourceInner<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE, DATA_TYPE, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
-            implements MakeRegion<ATTR, NATIVE_REGION_TYPE> {
+    @NotNull
+    @Override
+    public ColumnRegionReferencing.Null<ATTR, NATIVE_REGION_TYPE> getNullRegion() {
+        return nullRegion;
+    }
 
-        NativeColumnSource(@NotNull Class<NATIVE_DATA_TYPE> type,
-                RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> outerColumnSource) {
-            super(type, outerColumnSource);
-        }
-
-        @Override
-        @NotNull
-        NATIVE_REGION_TYPE getNullRegion() {
-            return getOuterColumnSource().getNullRegion().getReferencedRegion();
-        }
-
-        @Override
-        public NATIVE_REGION_TYPE getRegion(int regionIndex) {
-            return getOuterColumnSource().getRegion(regionIndex).getReferencedRegion();
-        }
-
-        @Override
-        public final <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
-                @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            return getOuterColumnSource().getType() == alternateDataType;
-        }
-
-        @Override
-        protected final <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
-                @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-            // noinspection unchecked
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) getOuterColumnSource();
-        }
+    @NotNull
+    public RegionedColumnSourceBase<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE> getNativeSource() {
+        return nativeSource;
     }
 }

@@ -9,9 +9,8 @@
 #include "deephaven/client/impl/boolean_expression_impl.h"
 #include "deephaven/client/impl/expression_impl.h"
 #include "deephaven/client/impl/escape_utils.h"
-#include "deephaven/client/utility/utility.h"
 
-using deephaven::client::DateTime;
+using deephaven::dhcore::DateTime;
 
 namespace deephaven::client {
 namespace impl {

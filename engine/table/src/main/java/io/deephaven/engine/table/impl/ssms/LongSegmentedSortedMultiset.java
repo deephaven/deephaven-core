@@ -2281,28 +2281,28 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
 
     // region LongVector
     @Override
-    public long get(long i) {
-        if(i < 0 || i > size()) {
-            throw new IllegalArgumentException("Illegal index " + i + " current size: " + size());
+    public long get(long index) {
+        if(index < 0 || index > size()) {
+            throw new IllegalArgumentException("Illegal index " + index + " current size: " + size());
         }
 
         if(leafCount == 1) {
-            return directoryValues[(int)i];
+            return directoryValues[(int) index];
         } else {
             for(int ii = 0; ii < leafCount; ii++) {
-                if(i < leafSizes[ii]) {
-                    return leafValues[ii][(int)(i)];
+                if(index < leafSizes[ii]) {
+                    return leafValues[ii][(int)(index)];
                 }
-                i -= leafSizes[ii];
+                index -= leafSizes[ii];
             }
         }
 
-        throw new IllegalStateException("Index " + i + " not found in this SSM");
+        throw new IllegalStateException("Index " + index + " not found in this SSM");
     }
 
     @Override
-    public LongVector subVector(long fromIndex, long toIndex) {
-        return new LongVectorDirect(keyArray(fromIndex, toIndex));
+    public LongVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        return new LongVectorDirect(keyArray(fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
@@ -2319,6 +2319,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public long[] toArray() {
         return keyArray();
+    }
+
+    @Override
+    public long[] copyToArray() {
+        return toArray();
     }
 
     @Override

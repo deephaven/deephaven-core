@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   deephaven:
-    image: ghcr.io/deephaven/server-pytorch:latest
+    image: ghcr.io/deephaven/server-pytorch:${VERSION:-latest}
     ports:
       - "${DEEPHAVEN_PORT:-10000}:10000"
       - 6006:6006
@@ -12,7 +12,7 @@ services:
       - START_OPTS=-Xmx4g
 
   examples:
-    image: ghcr.io/deephaven/examples:latest
+    image: ghcr.io/deephaven/examples:${VERSION:-latest}
     volumes:
       - ./data:/data
     command: initialize

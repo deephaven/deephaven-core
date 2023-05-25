@@ -4,16 +4,18 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 /**
  * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.enableAll} configuration property, or
@@ -52,32 +54,42 @@ public class BarragePerformanceLog {
      * @param table the table that will be logged
      * @return the table key or null if no entry should not be logged
      */
-    @Nullable
-    public static String getKeyFor(Table table) {
-        final Object tableKey = table.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+    public static String getKeyFor(@NotNull final Table table) {
+        return getKeyFor(table, table::getDescription);
+    }
 
-        if (tableKey instanceof String) {
-            return (String) tableKey;
+    /**
+     * Return the performance key for the provided source.
+     *
+     * @param source the source that will be logged
+     * @param descriptionSupplier supplier for a description of the source
+     * @return the table key or null if no entry should not be logged
+     */
+    @Nullable
+    public static String getKeyFor(
+            @NotNull final AttributeMap source,
+            @NotNull final Supplier<String> descriptionSupplier) {
+        final Object statsKey = source.getAttribute(Table.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE);
+
+        if (statsKey instanceof String) {
+            return (String) statsKey;
         } else if (BarragePerformanceLog.ALL_PERFORMANCE_ENABLED) {
-            return table.getDescription();
+            return descriptionSupplier.get();
         }
 
         return null;
     }
 
-    private final MemoryTableLogger<BarrageSubscriptionPerformanceLogger> barrageSubscriptionPerformanceLogger;
-    private final MemoryTableLogger<BarrageSnapshotPerformanceLogger> barrageSnapshotPerformanceLogger;
+    private final BarrageSubscriptionPerformanceLogger barrageSubscriptionPerformanceLogger;
+    private final BarrageSnapshotPerformanceLogger barrageSnapshotPerformanceLogger;
 
     private BarragePerformanceLog() {
         final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
-        barrageSubscriptionPerformanceLogger = new MemoryTableLogger<>(
-                log, new BarrageSubscriptionPerformanceLogger(),
-                BarrageSubscriptionPerformanceLogger.getTableDefinition());
+        barrageSubscriptionPerformanceLogger = new BarrageSubscriptionPerformanceLogger();
         barrageSubscriptionPerformanceLogger.getQueryTable().setAttribute(
                 BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
                 BarrageSubscriptionPerformanceLogger.getDefaultTableName());
-        barrageSnapshotPerformanceLogger = new MemoryTableLogger<>(
-                log, new BarrageSnapshotPerformanceLogger(), BarrageSnapshotPerformanceLogger.getTableDefinition());
+        barrageSnapshotPerformanceLogger = new BarrageSnapshotPerformanceLogger();
         barrageSnapshotPerformanceLogger.getQueryTable().setAttribute(
                 BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageSnapshotPerformanceLogger.getDefaultTableName());
     }
@@ -87,7 +99,7 @@ public class BarragePerformanceLog {
     }
 
     public BarrageSubscriptionPerformanceLogger getSubscriptionLogger() {
-        return barrageSubscriptionPerformanceLogger.getTableLogger();
+        return barrageSubscriptionPerformanceLogger;
     }
 
     public QueryTable getSnapshotTable() {
@@ -95,7 +107,7 @@ public class BarragePerformanceLog {
     }
 
     public BarrageSnapshotPerformanceLogger getSnapshotLogger() {
-        return barrageSnapshotPerformanceLogger.getTableLogger();
+        return barrageSnapshotPerformanceLogger;
     }
 
     public interface WriteMetricsConsumer {

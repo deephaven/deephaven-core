@@ -89,6 +89,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * The initial size of the delta column source.
      */
     private static final int INITIAL_DELTA_CAPACITY = 256;
+
+    /**
+     * The preferred chunk size when the column source is not chunked.
+     */
+    private static final int DEFAULT_PREFERRED_CHUNK_SIZE = 4096;
+
     /**
      * In its own coordinate space
      */
@@ -144,7 +150,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     public DeltaAwareColumnSource(Class<T> type) {
         super(type);
-        final SparseArrayColumnSource<T> sparseBaseline =
+        final WritableColumnSource<T> sparseBaseline =
                 SparseArrayColumnSource.getSparseMemoryColumnSource(getType(), null);
         baseline = sparseBaseline;
         delta = baseline;
@@ -152,7 +158,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         baselineCapacityEnsurer = sparseBaseline::ensureCapacity;
         deltaCapacityEnsurer = baselineCapacityEnsurer;
 
-        preferredChunkSize = sparseBaseline.getPreferredChunkSize();
+        if (sparseBaseline instanceof SparseArrayColumnSource) {
+            preferredChunkSize = ((SparseArrayColumnSource<T>) sparseBaseline).getPreferredChunkSize();
+        } else {
+            preferredChunkSize = DEFAULT_PREFERRED_CHUNK_SIZE;
+        }
 
         deltaCapacity = 0;
         deltaRows = null;
@@ -585,7 +595,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
             throw new UnsupportedOperationException("Can't call startTrackingPrevValues() twice");
         }
         deltaCapacity = INITIAL_DELTA_CAPACITY;
-        final ArrayBackedColumnSource<T> delta =
+        final WritableColumnSource<T> delta =
                 ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, getType(), null);
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;

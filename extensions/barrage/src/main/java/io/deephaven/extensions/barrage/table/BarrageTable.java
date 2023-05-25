@@ -13,7 +13,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -36,7 +35,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,11 +98,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected boolean serverReverseViewport;
     protected BitSet serverColumns;
 
-    /** the size of the initial viewport requested from the server (-1 implies full subscription) */
-    private long initialSnapshotViewportRowCount;
-    /** have we completed the initial snapshot */
-    private boolean initialSnapshotReceived;
-
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
@@ -156,11 +149,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             serverViewport = RowSetFactory.empty();
         }
-        this.initialSnapshotViewportRowCount = initialViewPortRows;
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
-            destSources[ii] = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(writableSources[ii]);
+            destSources[ii] = ReinterpretUtils.maybeConvertToWritablePrimitive(writableSources[ii]);
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
@@ -168,8 +160,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
-
-        registrar.addSource(this);
 
         if (DEBUG_ENABLED) {
             processedData = new LinkedList<>();
@@ -180,6 +170,15 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
     }
 
+    /**
+     * Add this table to the registrar so that it can be refreshed.
+     *
+     * @implNote this cannot be performed in the constructor as the class is subclassed.
+     */
+    public void addSourceToRegistrar() {
+        registrar.addSource(this);
+    }
+
     abstract protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates);
 
     public ChunkType[] getWireChunkTypes() {
@@ -187,11 +186,12 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     public Class<?>[] getWireTypes() {
-        return Arrays.stream(destSources).map(ColumnSource::getType).toArray(Class<?>[]::new);
+        // The wire types are the expected result types of each column.
+        return getColumnSources().stream().map(ColumnSource::getType).toArray(Class<?>[]::new);
     }
 
     public Class<?>[] getWireComponentTypes() {
-        return Arrays.stream(destSources).map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
+        return getColumnSources().stream().map(ColumnSource::getComponentType).toArray(Class<?>[]::new);
     }
 
     @VisibleForTesting
@@ -207,10 +207,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @VisibleForTesting
     public BitSet getServerColumns() {
         return serverColumns;
-    }
-
-    public void setInitialSnapshotViewportRowCount(long rowCount) {
-        initialSnapshotViewportRowCount = rowCount;
     }
 
     /**
@@ -388,10 +384,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         final BarrageTable table;
 
-        Object isStreamTable = attributes.getOrDefault(Table.STREAM_TABLE_ATTRIBUTE, false);
-        if (isStreamTable instanceof Boolean && (Boolean) isStreamTable) {
+        Object isBlinkTable = attributes.getOrDefault(Table.BLINK_TABLE_ATTRIBUTE, false);
+        if (isBlinkTable instanceof Boolean && (Boolean) isBlinkTable) {
             final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
-            table = new BarrageStreamTable(
+            table = new BarrageBlinkTable(
                     registrar, queue, executor, finalColumns, writableSources, attributes, initialViewPortRows);
         } else {
             final WritableRowRedirection rowRedirection =
@@ -406,6 +402,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.
         table.setRefreshing(true);
+        table.addSourceToRegistrar();
 
         return table;
     }
@@ -427,13 +424,13 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, column.getDataType(), column.getComponentType());
             finalColumns.put(column.getName(),
-                    new WritableRedirectedColumnSource<>(emptyRowRedirection, writableSources[ii], 0));
+                    WritableRedirectedColumnSource.maybeRedirect(emptyRowRedirection, writableSources[ii], 0));
         }
         return finalColumns;
     }
 
     /**
-     * Set up the columns for the replicated stream table.
+     * Set up the columns for the replicated blink table.
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(
@@ -481,6 +478,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     @Override
+    @Nullable
     public Object getAttribute(@NotNull String key) {
         final Object localAttribute = super.getAttribute(key);
         if (localAttribute != null) {

@@ -54,9 +54,16 @@ inline OptionalAdaptor<ARROW_OPTIONAL> adaptOptional(const ARROW_OPTIONAL &optio
 }
 }  // namespace
 
-int main() {
+int main(int argc, char *argv[]) {
   try {
     const char *server = "localhost:10000";
+    if (argc > 1) {
+      if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
+        std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+        std::exit(1);
+      }
+      server = argv[1];
+    }
     auto client = Client::connect(server);
     auto manager = client.getManager();
 
@@ -169,7 +176,7 @@ void printDiffs(const TableHandleManager &manager) {
 class CallbackSumDiffs final : public deephaven::client::TickingCallback {
 public:
   void onTick(deephaven::client::TickingUpdate update) final {
-    auto colIndex = update.current()->getColumnIndex("IntValue", true);
+    auto colIndex = update.current()->getColumnIndex("Int64Value", true);
 
     processDeltas(*update.beforeRemoves(), colIndex, update.removedRows(), -1);
     processDeltas(*update.afterAdds(), colIndex, update.addedRows(), 1);

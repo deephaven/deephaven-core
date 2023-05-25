@@ -125,11 +125,11 @@ public class CharacterDoubleLongColumnTupleSource extends AbstractTupleSource<Ch
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<CharDoubleLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        CharChunk<Values> chunk1 = chunks[0].asCharChunk();
-        DoubleChunk<Values> chunk2 = chunks[1].asDoubleChunk();
-        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
+        CharChunk<? extends Values> chunk1 = chunks[0].asCharChunk();
+        DoubleChunk<? extends Values> chunk2 = chunks[1].asDoubleChunk();
+        LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new CharDoubleLongTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

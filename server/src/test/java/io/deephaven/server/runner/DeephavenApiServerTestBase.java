@@ -5,12 +5,16 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
@@ -40,6 +44,7 @@ public abstract class DeephavenApiServerTestBase {
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
             ExecutionContextUnitTestModule.class,
+            ClientDefaultsModule.class,
     })
     public interface TestComponent {
 
@@ -59,6 +64,9 @@ public abstract class DeephavenApiServerTestBase {
             @BindsInstance
             Builder withErr(@Named("err") PrintStream err);
 
+            @BindsInstance
+            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
+
             TestComponent build();
         }
     }
@@ -73,8 +81,10 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        }
 
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
@@ -87,6 +97,7 @@ public abstract class DeephavenApiServerTestBase {
 
         serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
                 .withServerConfig(config)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
                 .build();
@@ -107,10 +118,18 @@ public abstract class DeephavenApiServerTestBase {
         } finally {
             LogBufferGlobal.clear(logBuffer);
         }
+
+        if (UpdateGraphProcessor.DEFAULT.isUnitTestModeAllowed()) {
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        }
     }
 
     public DeephavenApiServer server() {
         return server;
+    }
+
+    public LogBuffer logBuffer() {
+        return logBuffer;
     }
 
     /**
@@ -135,6 +154,6 @@ public abstract class DeephavenApiServerTestBase {
     public DeephavenChannel createChannel() {
         ManagedChannel channel = channelBuilder().build();
         register(channel);
-        return new DeephavenChannel(channel);
+        return new DeephavenChannelImpl(channel);
     }
 }

@@ -4,7 +4,7 @@
 package io.deephaven.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.color.Color;
@@ -45,7 +45,7 @@ public class TestOHLCDataSeries extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override

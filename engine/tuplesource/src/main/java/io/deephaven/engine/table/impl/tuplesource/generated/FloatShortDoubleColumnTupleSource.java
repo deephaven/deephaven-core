@@ -125,11 +125,11 @@ public class FloatShortDoubleColumnTupleSource extends AbstractTupleSource<Float
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {
         WritableObjectChunk<FloatShortDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        FloatChunk<Values> chunk1 = chunks[0].asFloatChunk();
-        ShortChunk<Values> chunk2 = chunks[1].asShortChunk();
-        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
+        FloatChunk<? extends Values> chunk1 = chunks[0].asFloatChunk();
+        ShortChunk<? extends Values> chunk2 = chunks[1].asShortChunk();
+        DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new FloatShortDoubleTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

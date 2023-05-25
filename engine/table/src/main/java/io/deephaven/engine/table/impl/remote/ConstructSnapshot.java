@@ -13,7 +13,6 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.io.log.LogEntry;
@@ -40,6 +39,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -61,8 +62,7 @@ public class ConstructSnapshot {
         }
     }
 
-    private static final io.deephaven.io.logger.Logger log =
-            LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
+    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ConstructSnapshot.class);
 
     /**
      * The maximum number of allowed attempts to construct a snapshot concurrently with {@link UpdateGraphProcessor} run
@@ -248,8 +248,9 @@ public class ConstructSnapshot {
          *         inconsistent
          */
         private void failIfConcurrentAttemptInconsistent() {
-            if (concurrentAttemptInconsistent())
+            if (concurrentAttemptInconsistent()) {
                 throw new SnapshotInconsistentException();
+            }
         }
 
         /**
@@ -1091,12 +1092,14 @@ public class ConstructSnapshot {
                     // TODO: Optimization. If this exception is only used for cases when we can't use previous values,
                     // then we could simply wait for the source to become satisfied on this cycle, rather than
                     // waiting for the UGP lock. Likely requires work for all code that uses this pattern.
-                    log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
-                            .append(System.currentTimeMillis() - attemptStart).append("ms")
-                            .append(", beforeClockValue=").append(beforeClockValue)
-                            .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
-                            .append(", usePrev=").append(usePrev)
-                            .endl();
+                    if (log.isDebugEnabled()) {
+                        log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
+                                .append(System.currentTimeMillis() - attemptStart).append("ms")
+                                .append(", beforeClockValue=").append(beforeClockValue)
+                                .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
+                                .append(", usePrev=").append(usePrev)
+                                .endl();
+                    }
                     break;
                 } catch (Exception e) {
                     functionSuccessful = false;
@@ -1115,20 +1118,22 @@ public class ConstructSnapshot {
                         functionSuccessful = false;
                         caughtException = e;
                         snapshotSuccessful = true;
-                    } else {
-                        log.debug().append(logPrefix).append(" Suppressed exception from snapshot success function: ")
-                                .append(e).endl();
+                    } else if (log.isDebugEnabled()) {
+                        log.debug().append(logPrefix)
+                                .append(" Suppressed exception from snapshot success function: ").append(e).endl();
                     }
                 }
                 attemptDurationMillis = System.currentTimeMillis() - attemptStart;
-                log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
-                        .append(attemptDurationMillis).append("ms")
-                        .append(", snapshotSuccessful=").append(snapshotSuccessful)
-                        .append(", functionSuccessful=").append(functionSuccessful)
-                        .append(", beforeClockValue=").append(beforeClockValue)
-                        .append(", afterClockValue=").append(afterClockValue)
-                        .append(", usePrev=").append(usePrev)
-                        .endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
+                            .append(attemptDurationMillis).append("ms")
+                            .append(", snapshotSuccessful=").append(snapshotSuccessful)
+                            .append(", functionSuccessful=").append(functionSuccessful)
+                            .append(", beforeClockValue=").append(beforeClockValue)
+                            .append(", afterClockValue=").append(afterClockValue)
+                            .append(", usePrev=").append(usePrev)
+                            .endl();
+                }
                 if (snapshotSuccessful) {
                     if (functionSuccessful) {
                         step = usePrev ? LogicalClock.getStep(beforeClockValue) - 1
@@ -1139,9 +1144,11 @@ public class ConstructSnapshot {
                 }
             }
             if (attemptDurationMillis > MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS) {
-                log.info().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
-                        .append(attemptDurationMillis).append(" ms > ")
-                        .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" Failed concurrent execution exceeded maximum duration (")
+                            .append(attemptDurationMillis).append(" ms > ")
+                            .append(MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS).append(" ms)").endl();
+                }
                 break;
             } else {
                 try {
@@ -1165,13 +1172,14 @@ public class ConstructSnapshot {
                 }
             }
         } else {
-            if (numConcurrentAttempts == 0) {
-                log.info().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
-            } else {
-                log.info().append(logPrefix)
-                        .append(" Failed to obtain clean execution without blocking run processing").endl();
+            if (log.isDebugEnabled()) {
+                if (numConcurrentAttempts == 0) {
+                    log.debug().append(logPrefix).append(" Already held lock, proceeding to locked snapshot").endl();
+                } else {
+                    log.debug().append(logPrefix)
+                            .append(" Failed to obtain clean execution without blocking run processing").endl();
+                }
             }
-
             state.startLockedSnapshot();
             try {
                 final long beforeClockValue = LogicalClock.DEFAULT.currentValue();
@@ -1197,18 +1205,17 @@ public class ConstructSnapshot {
                             "Consistent snapshot not generated despite blocking run processing!");
                 }
 
-                log.info().append(logPrefix).append(" non-concurrent Snapshot Function took ")
-                        .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                if (log.isDebugEnabled()) {
+                    log.debug().append(logPrefix).append(" non-concurrent Snapshot Function took ")
+                            .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
+                }
                 step = LogicalClock.getStep(afterClockValue);
             } finally {
                 state.endLockedSnapshot();
             }
         }
-        final long duration = System.currentTimeMillis() - overallStart;
-        if (duration > 10) {
-            log.info().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms")
-                    .append(", step=").append(step).endl();
-        } else {
+        if (log.isDebugEnabled()) {
+            final long duration = System.currentTimeMillis() - overallStart;
             log.debug().append(logPrefix).append(" Snapshot Function elapsed time ").append(duration).append(" ms")
                     .append(", step=").append(step).endl();
         }
@@ -1260,10 +1267,12 @@ public class ConstructSnapshot {
                 }
 
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(ii);
-                    appendConcurrentAttemptClockInfo(logEntry);
-                    logEntry.endl();
+                    if (log.isDebugEnabled()) {
+                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                                .append(" Bad snapshot before column ").append(ii);
+                        appendConcurrentAttemptClockInfo(logEntry);
+                        logEntry.endl();
+                    }
                     return false;
                 }
 
@@ -1272,14 +1281,16 @@ public class ConstructSnapshot {
             }
         }
 
-        log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=")
-                .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
-                .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
-                        : FormatBitSet.arrayToLog(snapshot.dataColumns))
-                .append(", usePrev=").append(usePrev).endl();
+        if (log.isDebugEnabled()) {
+            log.debug().append(System.identityHashCode(logIdentityObject))
+                    .append(": Snapshot candidate step=")
+                    .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
+                    .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
+                    .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
+                            : FormatBitSet.arrayToLog(snapshot.dataColumns))
+                    .append(", usePrev=").append(usePrev).endl();
+        }
         return true;
     }
 
@@ -1326,10 +1337,12 @@ public class ConstructSnapshot {
                 (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ++ii) {
                 if (concurrentAttemptInconsistent()) {
-                    final LogEntry logEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(ii);
-                    appendConcurrentAttemptClockInfo(logEntry);
-                    logEntry.endl();
+                    if (log.isDebugEnabled()) {
+                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                                .append(" Bad snapshot before column ").append(ii);
+                        appendConcurrentAttemptClockInfo(logEntry);
+                        logEntry.endl();
+                    }
                     return false;
                 }
 
@@ -1343,8 +1356,8 @@ public class ConstructSnapshot {
                 // when empty
                 final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
                 acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = sourceToUse.getType();
-                acd.componentType = sourceToUse.getComponentType();
+                acd.type = columnSource.getType();
+                acd.componentType = columnSource.getComponentType();
                 acd.chunkType = sourceToUse.getChunkType();
 
                 final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
@@ -1357,17 +1370,19 @@ public class ConstructSnapshot {
             }
         }
 
-        final LogEntry infoEntry = log.info().append(System.identityHashCode(logIdentityObject))
-                .append(": Snapshot candidate step=")
-                .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                .append(", cols=");
-        if (columnsToSerialize == null) {
-            infoEntry.append("ALL");
-        } else {
-            infoEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+        if (log.isDebugEnabled()) {
+            final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                    .append(": Snapshot candidate step=")
+                    .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
+                    .append(", cols=");
+            if (columnsToSerialize == null) {
+                logEntry.append("ALL");
+            } else {
+                logEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+            }
+            logEntry.append(", usePrev=").append(usePrev).endl();
         }
-        infoEntry.append(", usePrev=").append(usePrev).endl();
 
         return true;
     }
@@ -1527,7 +1542,8 @@ public class ConstructSnapshot {
             } else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
                 sizePerRow += 4;
             } else if (definition.getDataType() == long.class || definition.getDataType() == double.class
-                    || definition.getDataType() == DateTime.class) {
+                    || definition.getDataType() == DateTime.class || definition.getDataType() == Instant.class
+                    || definition.getDataType() == ZonedDateTime.class) {
                 sizePerRow += 8;
             } else {
                 switch (definition.getName()) {

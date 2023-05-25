@@ -1,3 +1,5 @@
+import io.deephaven.tools.docker.DiffTask
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -6,6 +8,27 @@ plugins {
 }
 
 evaluationDependsOn Docker.registryProject('cpp-client-base')
+
+configurations {
+    cpp {}
+}
+dependencies {
+    cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
+}
+def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def compare = tasks.register('compareProtobuf', DiffTask) {
+    expectedContents.set configurations.cpp
+    actualContents.set protoSourceDir
+    generateTask.set ':cpp-client:updateProtobuf'
+}
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
+
+tasks.register('updateProtobuf', Sync) {
+    finalizedBy compare
+    from configurations.cpp
+    into protoSourceDir
+}
 
 license {
     header rootProject.file('license-header')
@@ -27,16 +50,23 @@ project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
+    envVars.set([
+            'START_OPTS':'-Xmx512m'
+    ])
     containerName.set "dh-server-for-cpp-${randomSuffix}"
     networkName.set "cpp-test-network-${randomSuffix}"
 }
 
 def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    // Only tested on x86, and we only build dependencies for x86
+    platform = 'linux/amd64'
+
     copyIn {
         from(layout.projectDirectory) {
             include 'cpp-tests-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
             include 'deephaven/client/**'
+            include 'deephaven/dhcore/**'
             include 'tests/CMakeLists.txt'
             include 'tests/*.cc'
             include 'tests/*.h'
@@ -51,9 +81,10 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build client library.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/build')
+        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
         copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
         copyFile('deephaven/client', '/cpp-client/deephaven/client/')
+        copyFile('deephaven/dhcore', '/cpp-client/deephaven/dhcore/')
         runCommand('''set -eux; \\
                       cd /cpp-client/deephaven/build; \\
                       . /cpp-client/deps/env.sh; \\
@@ -85,7 +116,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         // Setup for test run.
         //
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
-        environmentVariable 'DH_PORT', '8080'
+        environmentVariable 'DH_PORT', '10000'
     }
     containerDependencies.dependsOn = [deephavenDocker.healthyTask]
     containerDependencies.finalizedBy = deephavenDocker.endTask
@@ -93,4 +124,5 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
     parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
     entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
 }
+deephavenDocker.shouldLogIfTaskFails tasks.named('testCppClientRun')
 tasks.check.dependsOn(testCppClient)

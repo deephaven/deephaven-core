@@ -10,20 +10,42 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class NamingThreadFactory implements ThreadFactory {
     private final AtomicInteger threadCounter = new AtomicInteger(0);
-    public final String name;
-    private final Class clazz;
-    private boolean daemon;
+    private final String name;
+    private final Class<?> clazz;
+    private final boolean daemon;
     private final ThreadGroup threadGroup;
 
-    public NamingThreadFactory(final Class clazz, final String name) {
-        this(clazz, name, false);
+    /**
+     * Creates a thread factory using the provided class and name as part of the thread name. All created threads will
+     * be daemon threads.
+     * 
+     * @param clazz a class to use when naming each thread
+     * @param name a name component to add after the class name when naming each thread
+     */
+    public NamingThreadFactory(final Class<?> clazz, final String name) {
+        this(clazz, name, true);
     }
 
-    public NamingThreadFactory(final Class clazz, final String name, boolean daemon) {
+    /**
+     * Creates a thread factory using the provided class and name as part of the thread name.
+     * 
+     * @param clazz a class to use when naming each thread
+     * @param name a name component to add after the class name when naming each thread
+     * @param daemon true to make each thread a daemon thread
+     */
+    public NamingThreadFactory(final Class<?> clazz, final String name, boolean daemon) {
         this(null, clazz, name, daemon);
     }
 
-    public NamingThreadFactory(ThreadGroup threadGroup, final Class clazz, final String name, boolean daemon) {
+    /**
+     * Creates a thread factory using the provided class and name as part of the thread name.
+     * 
+     * @param threadGroup a thread group to add each thread to
+     * @param clazz a class to use when naming each thread
+     * @param name a name component to add after the class name when naming each thread
+     * @param daemon true to make each thread a daemon thread
+     */
+    public NamingThreadFactory(ThreadGroup threadGroup, final Class<?> clazz, final String name, boolean daemon) {
         this.threadGroup = threadGroup;
         this.clazz = clazz;
         this.name = name;

@@ -3,24 +3,37 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.BuildableStyle;
-import org.immutables.value.Value.Default;
+import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 /**
  * Specifier for a column aggregation that produces a median value from the input column's values for each group. Only
  * works for numeric or {@link Comparable} input types.
  */
 @Immutable
-@BuildableStyle
+@SimpleStyle
 public abstract class AggSpecMedian extends AggSpecBase {
 
+    public static final boolean AVERAGE_EVENLY_DIVIDED_DEFAULT = true;
+
+    /**
+     * Create a new AggSpecMedian with {@code averageEvenlyDivided} of {@value AVERAGE_EVENLY_DIVIDED_DEFAULT}.
+     *
+     * @return the agg spec
+     */
     public static AggSpecMedian of() {
-        return ImmutableAggSpecMedian.builder().build();
+        return of(AVERAGE_EVENLY_DIVIDED_DEFAULT);
     }
 
+    /**
+     * Create a new AggSpecMedian.
+     *
+     * @param averageEvenlyDivided see {@link #averageEvenlyDivided()}
+     * @return the agg spec
+     */
     public static AggSpecMedian of(boolean averageEvenlyDivided) {
-        return ImmutableAggSpecMedian.builder().averageEvenlyDivided(averageEvenlyDivided).build();
+        return ImmutableAggSpecMedian.of(averageEvenlyDivided);
     }
 
     @Override
@@ -34,10 +47,8 @@ public abstract class AggSpecMedian extends AggSpecBase {
      *
      * @return Whether to average the two result candidates for evenly-divided input sets of numeric types
      */
-    @Default
-    public boolean averageEvenlyDivided() {
-        return true;
-    }
+    @Parameter
+    public abstract boolean averageEvenlyDivided();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

@@ -3,8 +3,9 @@
  */
 package io.deephaven.base.stats;
 
-import io.deephaven.base.Function;
 import junit.framework.TestCase;
+
+import java.util.function.LongFunction;
 
 // --------------------------------------------------------------------
 /**
@@ -16,7 +17,7 @@ public class TestValue extends TestCase {
 
     // ----------------------------------------------------------------
     public void testState() {
-        State state = State.FACTORY.call(0L);
+        State state = State.FACTORY.apply(0L);
         assertEquals('S', state.getTypeTag());
         for (int nSample : SAMPLES) {
             state.sampleFromIncrement(nSample); // 3, 4, 9, 11, 15
@@ -33,7 +34,7 @@ public class TestValue extends TestCase {
 
     // ----------------------------------------------------------------
     public void testCounter() {
-        Counter counter = Counter.FACTORY.call(0L);
+        Counter counter = Counter.FACTORY.apply(0L);
         assertEquals('C', counter.getTypeTag());
         for (int nSample : SAMPLES) {
             counter.incrementFromSample(nSample); // -2, 4, -3, 2
@@ -49,8 +50,8 @@ public class TestValue extends TestCase {
     }
 
     // ----------------------------------------------------------------
-    private void checkValue(Function.Unary<? extends Value, Long> factory) {
-        Value value = factory.call(1000L);
+    private void checkValue(LongFunction<? extends Value> factory) {
+        Value value = factory.apply(1000L);
 
         for (int nSample : SAMPLES) {
             value.sample(nSample);

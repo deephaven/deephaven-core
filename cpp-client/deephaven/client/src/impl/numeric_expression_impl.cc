@@ -4,10 +4,11 @@
 #include "deephaven/client/impl/numeric_expression_impl.h"
 
 #include <iomanip>
+#include <limits>
 #include "deephaven/client/impl/boolean_expression_impl.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/utility/utility.h"
 
-using deephaven::client::utility::SimpleOstringstream;
+using deephaven::dhcore::utility::SimpleOstringstream;
 
 namespace deephaven::client::impl {
 namespace {

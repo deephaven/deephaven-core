@@ -7,13 +7,14 @@
 #include <set>
 #include <string>
 #include "deephaven/client/client.h"
-#include "deephaven/client/ticking.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/subscription_handle.h"
-#include "deephaven/client/utility/callbacks.h"
-#include "deephaven/client/utility/cbfuture.h"
 #include "deephaven/client/utility/executor.h"
-#include "deephaven/client/utility/misc.h"
+#include "deephaven/dhcore/table/schema.h"
+#include "deephaven/dhcore/ticking/ticking.h"
+#include "deephaven/dhcore/types.h"
+#include "deephaven/dhcore/utility/callbacks.h"
+#include "deephaven/dhcore/utility/cbfuture.h"
 #include "deephaven/proto/session.pb.h"
 #include "deephaven/proto/session.grpc.pb.h"
 #include "deephaven/proto/table.pb.h"
@@ -38,19 +39,18 @@ namespace internal {
 class GetColumnDefsCallback;
 
 class ExportedTableCreationCallback final
-    : public deephaven::client::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
+    : public deephaven::dhcore::utility::SFCallback<io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse> {
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   template<typename T>
-  using CBPromise = deephaven::client::utility::CBPromise<T>;
+  using CBPromise = deephaven::dhcore::utility::CBPromise<T>;
   template<typename T>
-  using CBFuture = deephaven::client::utility::CBFuture<T>;
+  using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
   explicit ExportedTableCreationCallback(CBPromise<Ticket> &&ticketPromise);
@@ -66,27 +66,26 @@ private:
 };
 
 class LazyState final {
+  typedef deephaven::dhcore::table::Schema Schema;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef deephaven::client::server::Server Server;
-  typedef deephaven::client::utility::ColumnDefinitions ColumnDefinitions;
   typedef deephaven::client::utility::Executor Executor;
 
   template<typename T>
-  using SFCallback = deephaven::client::utility::SFCallback<T>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
   template<typename T>
-  using CBPromise = deephaven::client::utility::CBPromise<T>;
+  using CBPromise = deephaven::dhcore::utility::CBPromise<T>;
   template<typename T>
-  using CBFuture = deephaven::client::utility::CBFuture<T>;
+  using CBFuture = deephaven::dhcore::utility::CBFuture<T>;
 
 public:
   LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
       CBFuture<Ticket> ticketFuture);
   ~LazyState();
 
-  std::shared_ptr<ColumnDefinitions> getColumnDefinitions();
-  void getColumnDefinitionsAsync(
-      std::shared_ptr<SFCallback<std::shared_ptr<ColumnDefinitions>>> cb);
+  std::shared_ptr<Schema> getSchema();
+  void getSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb);
 
   /**
    * Used in tests.
@@ -99,14 +98,14 @@ private:
   CBFuture<Ticket> ticketFuture_;
   std::atomic_flag requestSent_ = {};
 
-  CBPromise<std::shared_ptr<ColumnDefinitions>> colDefsPromise_;
-  CBFuture<std::shared_ptr<ColumnDefinitions>> colDefsFuture_;
+  CBPromise<std::shared_ptr<Schema>> schemaPromise_;
+  CBFuture<std::shared_ptr<Schema>> schemaFuture_;
 
   friend class GetColumnDefsCallback;
 };
 }  // namespace internal
 
-class TableHandleImpl {
+class TableHandleImpl : public std::enable_shared_from_this<TableHandleImpl> {
   struct Private {
   };
   typedef deephaven::client::SortPair SortPair;
@@ -117,12 +116,14 @@ class TableHandleImpl {
   typedef deephaven::client::impl::BooleanExpressionImpl BooleanExpressionImpl;
   typedef deephaven::client::subscription::SubscriptionHandle SubscriptionHandle;
   typedef deephaven::client::utility::Executor Executor;
+  typedef deephaven::dhcore::ticking::TickingCallback TickingCallback;
+  typedef deephaven::dhcore::ElementTypeId ElementTypeId;
   typedef io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest AsOfJoinTablesRequest;
   typedef io::deephaven::proto::backplane::grpc::ComboAggregateRequest ComboAggregateRequest;
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
 
   template<typename ...Args>
-  using SFCallback = deephaven::client::utility::SFCallback<Args...>;
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
   static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
   createEtcCallback(const TableHandleManagerImpl *thm);
@@ -192,6 +193,8 @@ public:
   void bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback);
 
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
+  std::shared_ptr<SubscriptionHandle> subscribe(TableHandle::onTickCallback_t onTick,
+      void *onTickUserData, TableHandle::onErrorCallback_t onError, void *onErrorUserData);
   void unsubscribe(std::shared_ptr<SubscriptionHandle> handle);
 
   /**
@@ -204,8 +207,7 @@ public:
   const Ticket &ticket() const { return ticket_; }
 
 private:
-  void lookupHelper(const std::string &columnName,
-      std::initializer_list<arrow::Type::type> validTypes);
+  void lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId> validTypes);
 
   std::shared_ptr<TableHandleImpl> defaultAggregateByDescriptor(
       ComboAggregateRequest::Aggregate descriptor, std::vector<std::string> groupByColumns);

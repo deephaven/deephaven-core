@@ -1,6 +1,7 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.context.ExecutionContext
+import io.deephaven.base.clock.Clock;
+import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
@@ -15,14 +16,14 @@ import spock.lang.Unroll
 
 class ColumnExpressionCompletionHandlerTest extends Specification implements ChunkerCompleterMixin {
 
-    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "las") {
+    private static String src_(String methodName = 't', String columnName = 'Date', String completion = "cur") {
         return """u = ${methodName}.update('$columnName = $completion"""
     }
 
     private SafeCloseable executionContext;
 
     void setup() {
-        executionContext = ExecutionContext.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     void cleanup() {
@@ -33,7 +34,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
     def "Completion at #position should find typesafe column completion for partially completed column expressions"(int position, Set<String> completions) {
         given:
 
-//u = t.update('Date=las
+//u = t.update('Date=cur
             String src = src_()
             CompletionParser p = new CompletionParser()
             doc = p.parse(src)
@@ -42,7 +43,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateTime'], [String, DateTime]
+                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateClock'], [DateTime, Clock]
                 )
             }
 
@@ -53,6 +54,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
                 .collect { this.doCompletion(src, it) }
 
         then: "Expect the completion result to suggest all namespaces"
+            result.forEach(System.out::println)
             result.size() == completions.size()
             // with() inside a then will assert on each removal
             with(result){
@@ -64,15 +66,15 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
 
         where:
             position | completions
-            // between `e=`, expect method name completions, and a single column name completion, for DateTime
+            // between `e=`, expect method name completions, and a single column name completion, for Clock
             19 | [
-                src_('t', 'Date', "lastBusinessDateNy()'"),
-                src_('t', 'Date', 'lastBusinessDateNy('),
+                src_('t', 'Date', "currentTime()'"),
+                src_('t', 'Date', "currentTimeMillis()'"),
             ]
             18 | [
-                src_('t', 'Date', "lastBusinessDateNy()'"),
-                src_('t', 'Date', 'lastBusinessDateNy('),
-                src_('t', 'DateTime', 'las'),
+                src_('t', 'Date', "currentTime()'"),
+                src_('t', 'Date', "currentTimeMillis()'"),
+                src_('t', 'DateClock', "cur"),
             ]
     }
 

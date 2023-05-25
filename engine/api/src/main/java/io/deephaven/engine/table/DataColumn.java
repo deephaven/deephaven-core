@@ -16,7 +16,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     /**
      * @return the type of object contained within this column.
      */
-    Class getType();
+    Class<TYPE> getType();
 
     /**
      * Get the array component type, or the type itself. For basic types, this is just the type. For example, if you
@@ -26,7 +26,7 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
      *
      * @return if type is an array, the type of object within the array. Otherwise type itself.
      */
-    Class getComponentType();
+    Class<?> getComponentType();
 
     /**
      * Get the contents of this data column in array form. Note that this will return an array of the appropriate
@@ -47,7 +47,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
      * @return An appropriately-typed array containing the contents of the specified range of this data column
      */
     default Object getDirect(final long startIndexInclusive, final long endIndexExclusive) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(startIndexInclusive, endIndexExclusive);
@@ -74,7 +73,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final long... indexes) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);
@@ -101,7 +99,6 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     }
 
     default Object getDirect(final int... indexes) {
-        // noinspection unchecked
         final Class<TYPE> type = getType();
         if (type == byte.class || type == Byte.class) {
             return getBytes(indexes);
@@ -226,64 +223,4 @@ public interface DataColumn<TYPE> extends LongSizedDataStructure {
     short[] getShorts(long... indexes);
 
     short[] getShorts(int... indexes);
-
-    default void setDirect(long startIndex, Object array) {
-        // noinspection unchecked
-        final Class<TYPE> type = getType();
-        if (type == byte.class || type == Byte.class) {
-            setBytes(startIndex, (byte[]) array);
-        } else if (type == char.class || type == Character.class) {
-            setChars(startIndex, (char[]) array);
-        } else if (type == double.class || type == Double.class) {
-            setDoubles(startIndex, (double[]) array);
-        } else if (type == float.class || type == Float.class) {
-            setFloats(startIndex, (float[]) array);
-        } else if (type == int.class || type == Integer.class) {
-            setInts(startIndex, (int[]) array);
-        } else if (type == long.class || type == Long.class) {
-            setLongs(startIndex, (long[]) array);
-        } else if (type == short.class || type == Short.class) {
-            setShorts(startIndex, (short[]) array);
-        } else {
-            // noinspection unchecked
-            setArray(startIndex, (TYPE[]) array);
-        }
-    }
-
-    void set(long index, TYPE value);
-
-    @SuppressWarnings("unchecked")
-    void setArray(long startIndex, TYPE... values);
-
-    void setBoolean(long index, Boolean value);
-
-    void setBooleans(long startIndex, Boolean... values);
-
-    void setByte(long index, byte value);
-
-    void setBytes(long startIndex, byte... values);
-
-    void setChar(long index, char value);
-
-    void setChars(long startIndex, char... values);
-
-    void setDouble(long index, double value);
-
-    void setDoubles(long startIndex, double... values);
-
-    void setFloat(long index, float value);
-
-    void setFloats(long startIndex, float... values);
-
-    void setInt(long index, int value);
-
-    void setInts(long startIndex, int... values);
-
-    void setLong(long index, long value);
-
-    void setLongs(long startIndex, long... values);
-
-    void setShort(long index, short value);
-
-    void setShorts(long startIndex, short... values);
 }

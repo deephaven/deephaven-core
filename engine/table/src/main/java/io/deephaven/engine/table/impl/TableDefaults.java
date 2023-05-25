@@ -5,26 +5,24 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.filter.Filter;
+import io.deephaven.api.snapshot.SnapshotWhenOptions;
+import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.iterators.*;
-import io.deephaven.api.expression.AsOfJoinMatchFactory;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.api.util.ConcurrentMethod;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -116,17 +114,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Attributes
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Map<String, Object> getAttributes() {
-        return getAttributes(Collections.emptySet());
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // ColumnSources for fetching data by row key
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -155,64 +142,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Column Iterators
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default <TYPE> Iterator<TYPE> columnIterator(@NotNull final String columnName) {
-        return ColumnIterator.make(getColumnSource(columnName), getRowSet());
-    }
-
-    @Override
-    default CharacterColumnIterator characterColumnIterator(@NotNull final String columnName) {
-        return new CharacterColumnIterator(this, columnName);
-    }
-
-    @Override
-    default ByteColumnIterator byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(this, columnName);
-    }
-
-    @Override
-    default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(this, columnName);
-    }
-
-    @Override
-    default IntegerColumnIterator integerColumnIterator(@NotNull final String columnName) {
-        return new IntegerColumnIterator(this, columnName);
-    }
-
-    @Override
-    default LongColumnIterator longColumnIterator(@NotNull final String columnName) {
-        return new LongColumnIterator(this, columnName);
-    }
-
-    @Override
-    default FloatColumnIterator floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(this, columnName);
-    }
-
-    @Override
-    default DoubleColumnIterator doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(this, columnName);
-    }
-
-    @Override
-    default <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
-        return new ObjectColumnIterator<>(this, columnName);
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table where(Filter... filters) {
-        return where(List.of(filters));
-    }
 
     @Override
     @ConcurrentMethod
@@ -226,53 +157,10 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    @FinalDefault
-    default Table select(Selectable... columns) {
-        return select(List.of(columns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table select() {
-        return select(getDefinition().getColumnNamesArray());
-    }
-
-    @Override
     @ConcurrentMethod
     @FinalDefault
     default Table selectDistinct() {
         return selectDistinct(getDefinition().getColumnNamesArray());
-    }
-
-    @Override
-    @FinalDefault
-    default Table update(Selectable... newColumns) {
-        return update(List.of(newColumns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table lazyUpdate(Selectable... newColumns) {
-        return lazyUpdate(List.of(newColumns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table view(Selectable... columns) {
-        return view(List.of(columns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table updateView(Selectable... newColumns) {
-        return updateView(List.of(newColumns));
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table dropColumns(Collection<String> columnNames) {
-        return dropColumns(columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
     @Override
@@ -281,7 +169,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default Table dropColumnFormats() {
         String[] columnAry = getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName)
-                .filter(ColumnFormattingValues::isFormattingColumn)
+                .filter(ColumnFormatting::isFormattingColumn)
                 .toArray(String[]::new);
         if (columnAry.length == 0) {
             if (isRefreshing()) {
@@ -294,28 +182,25 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table renameColumns(Collection<String> columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table renameColumns(String... columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
+    default Table renameColumns(String... pairs) {
+        return renameColumns(Pair.from(pairs));
     }
 
     @Override
     @FinalDefault
     default Table renameAllColumns(UnaryOperator<String> renameFunction) {
-        return renameColumns(getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                .map(n -> new MatchPair(renameFunction.apply(n), n)).toArray(MatchPair[]::new));
+        return renameColumns(getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
+                .map(n -> Pair.of(ColumnName.of(n), ColumnName.of(renameFunction.apply(n))))
+                .collect(Collectors.toList()));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
     default Table formatRowWhere(String condition, String formula) {
-        return formatColumnWhere(ColumnFormattingValues.ROW_FORMAT_NAME, condition, formula);
+        return formatColumnWhere(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD, condition, formula);
     }
 
     @Override
@@ -325,6 +210,32 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return formatColumns(
                 columnName + " = (" + condition + ") ? io.deephaven.engine.util.ColorUtil.toLong(" + formula
                         + ") : io.deephaven.engine.util.ColorUtil.toLong(NO_FORMATTING)");
+    }
+
+    @Override
+    @ConcurrentMethod
+    @FinalDefault
+    default Table formatColumns(String... columnFormats) {
+        final List<SelectColumn> selectColumns = Arrays.asList(SelectColumnFactory.getFormatExpressions(columnFormats));
+
+        final Set<String> existingColumns = getDefinition().getColumnNames()
+                .stream()
+                .filter(column -> !ColumnFormatting.isFormattingColumn(column))
+                .collect(Collectors.toSet());
+
+        final String[] unknownColumns = selectColumns.stream()
+                .map(sc -> ColumnFormatting.getFormatBaseColumn(sc.getName()))
+                .filter(column -> (column != null
+                        && !column.equals(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD)
+                        && !existingColumns.contains(column)))
+                .toArray(String[]::new);
+
+        if (unknownColumns.length > 0) {
+            throw new RuntimeException(
+                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
+        }
+
+        return updateView(selectColumns);
     }
 
     @Override
@@ -361,140 +272,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return exactJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(asOfJoinRule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, Collection<String> columnsToMatch) {
-        AsOfJoinMatchFactory.AsOfJoinResult result = AsOfJoinMatchFactory.getAjExpressions(columnsToMatch);
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(List.of(result.matches)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                AsOfMatchRule.of(result.rule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(reverseAsOfJoinRule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, Collection<String> columnsToMatch) {
-        AsOfJoinMatchFactory.ReverseAsOfJoinResult result = AsOfJoinMatchFactory.getRajExpressions(columnsToMatch);
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(List.of(result.matches)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                AsOfMatchRule.of(result.rule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return naturalJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable) {
-        return join(
-                rightTable,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, int numRightBitsToReserve) {
-        return join(rightTable, Collections.emptyList(), Collections.emptyList(), numRightBitsToReserve);
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                numRightBitsToReserve);
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToAdd)),
-                numRightBitsToReserve);
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return join(rightTable, columnsToMatch, columnsToAdd, CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
-    }
-
-    @Override
-    @FinalDefault
     default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return join(
                 rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                numRightBitsToReserve);
+                columnsToMatch,
+                columnsToAdd,
+                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -561,60 +345,44 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Hierarchical table operations (rollup and treeTable).
+    // Hierarchical table operations (rollup and tree).
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, Collection<String> groupByColumns) {
-        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations) {
+        return rollup(aggregations, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-            Collection<String> groupByColumns) {
-        return rollup(aggregations, includeConstituents,
-                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
+        return rollup(aggregations, includeConstituents, Collections.emptyList());
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
-        return rollup(aggregations, ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return rollup(aggregations, ColumnName.from(groupByColumns));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             String... groupByColumns) {
-        return rollup(aggregations, includeConstituents,
-                ColumnName.from(groupByColumns).toArray(ZERO_LENGTH_COLUMNNAME_ARRAY));
+        return rollup(aggregations, includeConstituents, ColumnName.from(groupByColumns));
     }
 
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, ColumnName... groupByColumns) {
+    default RollupTable rollup(Collection<? extends Aggregation> aggregations,
+            Collection<? extends ColumnName> groupByColumns) {
         return rollup(aggregations, false, groupByColumns);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations) {
-        return rollup(aggregations, false, ZERO_LENGTH_COLUMNNAME_ARRAY);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents) {
-        return rollup(aggregations, includeConstituents, ZERO_LENGTH_COLUMNNAME_ARRAY);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -623,8 +391,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table snapshotIncremental(Table rightTable, String... stampColumns) {
-        return snapshotIncremental(rightTable, false, stampColumns);
+    default Table snapshotWhen(Table trigger, Flag... features) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features));
+    }
+
+    @Override
+    @FinalDefault
+    default Table snapshotWhen(Table trigger, Collection<Flag> features, String... stampColumns) {
+        return snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -650,28 +424,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Miscellaneous Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default <R> R apply(Function<Table, R> function) {
-        final QueryPerformanceNugget nugget =
-                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
-        try {
-            return function.apply(this);
-        } finally {
-            nugget.done();
-        }
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table withColumnDescription(String column, String description) {
-        return withColumnDescription(Collections.singletonMap(column, description));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Resource Management
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -692,10 +444,5 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default void addUpdateListener(ShiftObliviousListener listener) {
         addUpdateListener(listener, false);
-    }
-
-    @Override
-    default boolean isFailed() {
-        return false;
     }
 }

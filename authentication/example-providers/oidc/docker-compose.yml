@@ -1,0 +1,43 @@
+version: "3.4"
+
+services:
+  db:
+    image: postgres:14.2
+    hostname: postgres
+    volumes:
+      - ./init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql
+    expose:
+      # This is only visible to other docker containers
+      - 5432
+    environment:
+      # The container requires a admin password - this is unsafe, but usable for testing
+      - POSTGRES_PASSWORD=password
+    # Specify a custom command, turning off safety features for faster LOCAL-ONLY development. Do not use this in production.
+    command: postgres -c fsync=off -c synchronous_commit=off
+  keycloak:
+    image: quay.io/keycloak/keycloak:19.0.1
+    environment:
+      - KEYCLOAK_LOGLEVEL=ALL
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - DB_VENDOR=postgres
+      - DB_ADDR=postgres
+      - DB_DATABASE=postgres
+      - DB_USER=postgres
+      - DB_SCHEMA=keycloak
+      - DB_PASSWORD=password
+    command:
+      - start-dev
+      - --db postgres
+      - --db-url-host postgres
+      - --db-url-database postgres
+      - --db-username postgres
+      - --db-password password
+      - --db-schema keycloak
+      - --import-realm
+    ports:
+      - "6060:8080"
+    volumes:
+      - ./deephaven_realm.json:/opt/keycloak/data/import/deephaven_realm.json
+    depends_on:
+      - db

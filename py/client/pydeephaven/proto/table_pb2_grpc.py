@@ -25,11 +25,6 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.FetchPandasTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
         self.ApplyPreviewColumns = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
@@ -155,14 +150,34 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.RangeJoinTables = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.RangeJoinTablesRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.ComboAggregate = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.AggregateAll = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.Aggregate = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.Snapshot = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.SnapshotWhen = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.Flatten = channel.unary_unary(
@@ -195,6 +210,16 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
                 )
+        self.SeekRow = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
+                )
+        self.MetaTable = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/MetaTable',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.MetaTableRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
 
 
 class TableServiceServicer(object):
@@ -211,14 +236,6 @@ class TableServiceServicer(object):
     def FetchTable(self, request, context):
         """
         Fetches a Table from an existing source ticket and exports it to the local session result ticket.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def FetchPandasTable(self, request, context):
-        """
-        Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -425,9 +442,38 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def RangeJoinTables(self, request, context):
+        """
+        Returns the result of a range join operation.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ComboAggregate(self, request, context):
         """
         Returns the result of an aggregate table operation.
+
+        Deprecated: Please use AggregateAll or Aggregate instead
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AggregateAll(self, request, context):
+        """
+        Aggregates all non-grouping columns against a single aggregation specification.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Aggregate(self, request, context):
+        """
+        Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+        aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+        the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+        changes.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -435,10 +481,18 @@ class TableServiceServicer(object):
 
     def Snapshot(self, request, context):
         """
-        Snapshot rightId, triggered by leftId, and export the resulting new Table.
-        The left table's change events cause a new snapshot to be taken. The result table includes a
-        "snapshot key" which is a subset (possibly all) of the left table's columns. The
-        remaining columns in the result table come from right table, the table being snapshotted.
+        Takes a single snapshot of the source_id table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SnapshotWhen(self, request, context):
+        """
+        Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+        The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+        "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+        remaining columns in the result table come from base_id table, the table being snapshotted.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -504,6 +558,22 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SeekRow(self, request, context):
+        """
+        Seek a row number within a table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def MetaTable(self, request, context):
+        """
+        Returns the meta table of a table.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -515,11 +585,6 @@ def add_TableServiceServicer_to_server(servicer, server):
             'FetchTable': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchTable,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'FetchPandasTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchPandasTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
@@ -647,14 +712,34 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
+            'RangeJoinTables': grpc.unary_unary_rpc_method_handler(
+                    servicer.RangeJoinTables,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.RangeJoinTablesRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
             'ComboAggregate': grpc.unary_unary_rpc_method_handler(
                     servicer.ComboAggregate,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
+            'AggregateAll': grpc.unary_unary_rpc_method_handler(
+                    servicer.AggregateAll,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'Aggregate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Aggregate,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
             'Snapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.Snapshot,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'SnapshotWhen': grpc.unary_unary_rpc_method_handler(
+                    servicer.SnapshotWhen,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'Flatten': grpc.unary_unary_rpc_method_handler(
@@ -686,6 +771,16 @@ def add_TableServiceServicer_to_server(servicer, server):
                     servicer.ExportedTableUpdates,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.SerializeToString,
+            ),
+            'SeekRow': grpc.unary_unary_rpc_method_handler(
+                    servicer.SeekRow,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.SerializeToString,
+            ),
+            'MetaTable': grpc.unary_unary_rpc_method_handler(
+                    servicer.MetaTable,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.MetaTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -727,23 +822,6 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTable',
             deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
-            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def FetchPandasTable(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchPandasTable',
-            deephaven_dot_proto_dot_table__pb2.FetchPandasTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -1174,6 +1252,23 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def RangeJoinTables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables',
+            deephaven_dot_proto_dot_table__pb2.RangeJoinTablesRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def ComboAggregate(request,
             target,
             options=(),
@@ -1191,6 +1286,40 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def AggregateAll(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
+            deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Aggregate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+            deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def Snapshot(request,
             target,
             options=(),
@@ -1203,6 +1332,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
             deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SnapshotWhen(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
+            deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -1306,5 +1452,39 @@ class TableService(object):
         return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates',
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def SeekRow(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
+            deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MetaTable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/MetaTable',
+            deephaven_dot_proto_dot_table__pb2.MetaTableRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

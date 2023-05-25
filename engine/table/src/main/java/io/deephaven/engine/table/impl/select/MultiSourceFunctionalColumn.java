@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
@@ -213,11 +214,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
     @Override
     public boolean isRetain() {
-        return false;
-    }
-
-    @Override
-    public boolean disallowRefresh() {
         return false;
     }
 

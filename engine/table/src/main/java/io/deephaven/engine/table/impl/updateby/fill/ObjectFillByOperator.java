@@ -5,13 +5,14 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -21,6 +22,29 @@ import org.jetbrains.annotations.Nullable;
 public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
     // region extra-fields
     // endregion extra-fields
+
+    protected class Context extends BaseObjectUpdateByOperator<T>.Context {
+        public ObjectChunk<T, ? extends Values> ObjectValueChunk;
+
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            ObjectValueChunk = valueChunks[0].asObjectChunk();
+        }
+
+        @Override
+        public void push(int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
+            T val = ObjectValueChunk.get(pos);
+            if(val != null) {
+                curVal = val;
+            }
+        }
+    }
 
     public ObjectFillByOperator(@NotNull final MatchPair fillPair,
                               @Nullable final RowRedirection rowRedirection
@@ -33,54 +57,12 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         // endregion constructor
     }
 
+    @NotNull
+    @Override
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
+    }
+
     // region extra-methods
     // endregion extra-methods
-
-    @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final ObjectChunk<T, Values> asObjects = values.asObjectChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.get(bucketPosition);
-            accumulate(asObjects, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              final long bucketPosition) {
-        ctx.curVal = singletonGroup == bucketPosition ? singletonVal : null;
-        accumulate(workingChunk.asObjectChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = bucketPosition;
-        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final ObjectChunk<T, Values> asObjects,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableObjectChunk<T, Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final T currentVal = asObjects.get(ii);
-            if(currentVal != null) {
-                ctx.curVal = currentVal;
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
-    }
 }

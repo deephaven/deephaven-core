@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.web.client.api.*;
@@ -20,6 +22,8 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator.OfLong;
 import java.util.Set;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class ViewportData implements TableData {
     private static final Any NULL_SENTINEL = Js.asAny(new JsObject());
 
@@ -179,6 +183,8 @@ public class ViewportData implements TableData {
                 }
                 return cleanData;
             }
+            case "java.time.Instant":
+            case "java.time.ZonedDateTime":
             case "io.deephaven.time.DateTime": {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 DateWrapper[] cleanData = new DateWrapper[values.length];
@@ -188,21 +194,6 @@ public class ViewportData implements TableData {
                         cleanData[i] = null;
                     } else {
                         cleanData[i] = new DateWrapper(value);
-                    }
-                }
-                return cleanData;
-            }
-            case "java.lang.Boolean": {
-                JsArray<Any> values = Js.uncheckedCast(dataColumn);
-                java.lang.Boolean[] cleanData = new java.lang.Boolean[values.length];
-                for (int i = 0; i < values.length; i++) {
-                    int value = values.getAtAsAny(i).asInt();
-                    if (value == 1) {
-                        cleanData[i] = true;
-                    } else if (value == 0) {
-                        cleanData[i] = false;
-                    } else {
-                        cleanData[i] = null;
                     }
                 }
                 return cleanData;

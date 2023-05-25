@@ -3,7 +3,6 @@
  */
 package io.deephaven.util.process;
 
-import io.deephaven.base.Procedure;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,11 +60,11 @@ public abstract class OnetimeShutdownTask implements ShutdownManager.Task {
 
     protected abstract void shutdown();
 
-    public static OnetimeShutdownTask adapt(@NotNull final Procedure.Nullary shutdown) {
+    public static OnetimeShutdownTask adapt(@NotNull final Runnable shutdown) {
         return new OnetimeShutdownTask() {
             @Override
             protected void shutdown() {
-                shutdown.call();
+                shutdown.run();
             }
         };
     }

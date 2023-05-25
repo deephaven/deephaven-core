@@ -2,23 +2,16 @@
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 import random
-import time
 import unittest
-from types import SimpleNamespace
-from typing import List, Any
 
 import numpy as np
 
 import deephaven
-
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp, dtypes
-from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition
-from deephaven.execution_context import make_user_exec_ctx
+from deephaven import DHError, empty_table, dtypes
+from deephaven import new_table
+from deephaven.column import int_col
 from deephaven.filters import Filter, and_
-from deephaven.html import to_html
-from deephaven.pandas import to_pandas
-from deephaven.table import Table, dh_vectorize
+from deephaven.table import dh_vectorize
 from tests.testbase import BaseTestCase
 
 
@@ -54,7 +47,7 @@ class VectorizationTestCase(BaseTestCase):
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update("X = auto_func(i)")
-            self.assertRegex(str(cm.exception), r".*count.*mismatch", )
+            self.assertRegex(str(cm.exception), r"missing 1 required positional argument", )
 
         with self.subTest("can't cast return value"):
             with self.assertRaises(DHError) as cm:
@@ -247,6 +240,16 @@ class VectorizationTestCase(BaseTestCase):
         self.assertEqual(t.columns[0].data_type, dtypes.string)
         t = empty_table(1).update("X = pyfunc_obj()")
         self.assertEqual(t.columns[0].data_type, dtypes.PyObject)
+
+    def test_varargs_still_work(self):
+        cols = ["A", "B", "C", "D"]
+
+        def my_sum(*args):
+            return sum(args)
+
+        source = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
+        result = source.update(f"X = my_sum({','.join(cols)})")
+        self.assertEqual(len(cols) + 1, len(result.columns))
 
 
 if __name__ == "__main__":

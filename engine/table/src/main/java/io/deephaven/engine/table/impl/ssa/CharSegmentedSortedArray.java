@@ -1464,11 +1464,11 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
      *                           one before the first value (so that next must be called)
      * @return an iterator for this SSA
      */
-    Iterator iterator(boolean disallowExactMatch, boolean isRightSide) {
+    public Iterator iterator(boolean disallowExactMatch, boolean isRightSide) {
         return new Iterator(disallowExactMatch, isRightSide);
     }
 
-    final class Iterator {
+    public final class Iterator {
         int leafIndex = 0;
         int indexWithinLeaf = 0;
         private final boolean disallowExactMatch;
@@ -1482,7 +1482,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        void next() {
+        public void next() {
             indexWithinLeaf++;
             if (leafCount > 1) {
                 if (indexWithinLeaf == leafSizes[leafIndex]) {
@@ -1492,7 +1492,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        boolean hasNext() {
+        public boolean hasNext() {
             if (leafCount == 0) {
                 return false;
             }
@@ -1502,7 +1502,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             return leafIndex < leafCount - 1 || (indexWithinLeaf < leafSizes[leafIndex] - 1);
         }
 
-        char getValue() {
+        public char getValue() {
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf];
             }
@@ -1511,7 +1511,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        char nextValue() {
+        public char nextValue() {
             Assert.assertion(hasNext(), "hasNext()");
             if (leafCount == 1) {
                 return directoryValues[indexWithinLeaf + 1];
@@ -1523,7 +1523,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        long getKey() {
+        public long getKey() {
             if (leafCount == 1) {
                 return directoryRowKeys[indexWithinLeaf];
             }
@@ -1532,7 +1532,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
             }
         }
 
-        long nextKey() {
+        public long nextKey() {
             Assert.assertion(hasNext(), "hasNext()");
             if (leafCount == 1) {
                 return directoryRowKeys[indexWithinLeaf + 1];
@@ -1550,7 +1550,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
          *
          * @param value the value we are searching for
          */
-        void advanceToLast(char value) {
+        public void advanceToLast(char value) {
             advanceToInternal(value, true);
         }
 
@@ -1559,7 +1559,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
          *
          * @param value the value we are searching for
          */
-        void advanceToBeforeFirst(char value) {
+        public void advanceToBeforeFirst(char value) {
             advanceToInternal(value, false);
             if (disallowExactMatch) {
                 if (hasNext() && nextValue() == value) {
@@ -1657,7 +1657,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
         /**
          * Advance the iterator to the last value which is equal to the current value.
          */
-        void advanceWhileEqual() {
+        public void advanceWhileEqual() {
             final char value = getValue();
             findLastInLeaf(value);
             while (leafIndex < leafCount - 1) {

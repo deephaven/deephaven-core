@@ -4,7 +4,7 @@ plugins {
     id 'com.avast.gradle.docker-compose'
 }
 
-evaluationDependsOn ':docker-server'
+evaluationDependsOn ':docker-server-jetty'
 
 configurations {
     implementation.extendsFrom dhIntegrations
@@ -57,7 +57,7 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
                 into 'python/configs'
             }
         }
-        parentContainers = [project(':docker-server').tasks.findByName('buildDocker-server-netty')] // deephaven/server-netty
+        parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
 
         imageName = 'deephaven/py-integrations:local-build'
 
@@ -65,10 +65,14 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/server-netty:local-build'
+            from 'deephaven/server-jetty:local-build'
             runCommand '''set -eux; \\
-                      pip3 install unittest-xml-reporting==3.0.4;\\
-                      mkdir -p /out/report'''
+                      pip3 install unittest-xml-reporting==3.0.4; \\
+                      mkdir -p /out/report; \\
+					  echo "[PostgreSQL]" > /etc/odbcinst.ini; \\
+					  echo "Driver      = /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so" >> /etc/odbcinst.ini; \\
+					  echo "Threading   = 2" >> /etc/odbcinst.ini'''
+
             volume '/data'
             volume '/cache'
             environmentVariable 'DEEPHAVEN_CLASSPATH', '/classpath/*:/classpath:/opt/deephaven/server/lib/*:/opt/deephaven/server/lib/'
@@ -95,9 +99,9 @@ dockerCompose {
 }
 
 Closure composeConfig = { task ->
-    task.network = dockerCompose.projectName.toLowerCase() + '_default'
-    task.containerDependencies.dependsOn = dockerCompose.upTask
-    task.containerDependencies.finalizedBy = dockerCompose.downTask
+    task.network = "${dockerCompose.projectName.get()}_default"
+    task.containerDependencies.dependsOn = dockerCompose.tasksConfigurator.upTask
+    task.containerDependencies.finalizedBy = dockerCompose.tasksConfigurator.downTask
 }
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)

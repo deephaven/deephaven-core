@@ -10,6 +10,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.*;
@@ -29,7 +30,7 @@ import java.util.function.Supplier;
 public class SsmChunkedPercentileOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
-    private final ArrayBackedColumnSource internalResult;
+    private final WritableColumnSource internalResult;
     private final ColumnSource externalResult;
     /**
      * Even slots hold the low values, odd slots hold the high values.
@@ -84,7 +85,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
     }
 
     private static PercentileTypeHelper makeTypeHelper(ChunkType chunkType, Class<?> type, double percentile,
-            boolean averageEvenlyDivided, ArrayBackedColumnSource resultColumn) {
+            boolean averageEvenlyDivided, WritableColumnSource resultColumn) {
         if (averageEvenlyDivided) {
             switch (chunkType) {
                 // for things that are not int, long, double, or float we do not actually average the median;
@@ -138,7 +139,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @NotNull
     private static PercentileTypeHelper makeObjectHelper(Class<?> type, double percentile,
-            ArrayBackedColumnSource resultColumn) {
+            WritableColumnSource resultColumn) {
         if (type == Boolean.class) {
             return new BooleanPercentileTypeHelper(percentile, resultColumn);
         } else if (type == DateTime.class) {

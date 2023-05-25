@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -89,6 +90,9 @@ final class RingColumnSource<T>
         } else if (dataType == DateTime.class) {
             throw new UnsupportedOperationException(
                     "No DateTime chunk source for RingColumnSource - use long and reinterpret");
+        } else if (dataType == Instant.class) {
+            throw new UnsupportedOperationException(
+                    "No Instant chunk source for RingColumnSource - use long and reinterpret");
         } else {
             if (componentType != null) {
                 return ofObject(dataType, componentType, capacity);

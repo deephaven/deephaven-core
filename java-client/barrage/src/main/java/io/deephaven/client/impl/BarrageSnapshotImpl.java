@@ -94,7 +94,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
+            call = session.channel().channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }
@@ -198,9 +198,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         // store this for streamreader parser
         expectedColumns = columns;
 
-        // update the viewport size for initial snapshot completion
-        resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
-
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
@@ -237,24 +234,22 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         resultTable.sealTable(() -> {
             completed = true;
-            if (completedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-            } else {
-                synchronized (BarrageSnapshotImpl.this) {
-                    BarrageSnapshotImpl.this.notifyAll();
-                }
-            }
+            signalCompletion();
         }, () -> {
             exceptionWhileCompleting = new Exception();
-            if (completedCondition != null) {
-                UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
-            } else {
-                synchronized (BarrageSnapshotImpl.this) {
-                    BarrageSnapshotImpl.this.notifyAll();
-                }
-            }
+            signalCompletion();
         });
         cleanup();
+    }
+
+    private void signalCompletion() {
+        if (completedCondition != null) {
+            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+        } else {
+            synchronized (BarrageSnapshotImpl.this) {
+                BarrageSnapshotImpl.this.notifyAll();
+            }
+        }
     }
 
     @Override

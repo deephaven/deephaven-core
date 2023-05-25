@@ -1,11 +1,13 @@
 package io.deephaven.engine.testutil.generator;
 
 import java.util.Random;
-import java.util.TreeMap;
 
+/**
+ * Generates unique strings for table test columns.
+ */
 public class UniqueStringGenerator extends AbstractUniqueGenerator<String> {
     @Override
-    public String nextValue(TreeMap<Long, String> values, long key, Random random) {
+    public String nextValue(long key, Random random) {
         return Long.toString(random.nextLong(), 'z' - 'a' + 10);
     }
 

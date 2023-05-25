@@ -28,6 +28,7 @@ import java.util.List;
  * </ul>
  */
 public class RangeConditionFilter extends WhereFilterImpl {
+
     private final String columnName;
     private final Condition condition;
     private final String value;
@@ -37,6 +38,17 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     private WhereFilter filter;
     private final FormulaParserConfiguration parserConfiguration;
+
+    /**
+     * Creates a RangeConditionFilter.
+     *
+     * @param columnName the column to filter
+     * @param condition the condition for filtering
+     * @param value a String representation of the numeric filter value
+     */
+    public RangeConditionFilter(String columnName, Condition condition, String value) {
+        this(columnName, condition, value, null, null, null);
+    }
 
     /**
      * Creates a RangeConditionFilter.
@@ -236,6 +248,11 @@ public class RangeConditionFilter extends WhereFilterImpl {
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         return filter.filter(selection, fullSet, table, usePrev);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return filter.filterInverse(selection, fullSet, table, usePrev);
     }
 
     @Override

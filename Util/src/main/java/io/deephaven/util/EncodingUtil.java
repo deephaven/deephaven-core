@@ -15,7 +15,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 public class EncodingUtil {
     @SuppressWarnings("WeakerAccess")
@@ -41,7 +41,7 @@ public class EncodingUtil {
      * @throws IllegalArgumentException if there is no associated encoding
      */
     public static EncodingInfo getEncodingInfoForCharset(@NotNull String charsetName) {
-        return Stream.of(EncodingInfo.values())
+        return Arrays.stream(EncodingInfo.values())
                 .filter(info -> info.getCharset().name().equals(charsetName))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("No EncodingInfo for " + charsetName));

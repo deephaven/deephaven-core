@@ -4,22 +4,24 @@
 package io.deephaven.web.client.api;
 
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
+@JsType(namespace = "dh")
 public class CustomColumn {
-    @JsProperty(namespace = "dh.CustomColumn")
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",
             TYPE_FORMAT_NUMBER = "FORMAT_NUMBER",
             TYPE_FORMAT_DATE = "FORMAT_DATE",
             TYPE_NEW = "NEW";
 
     // Copied from ColumnFormattingValues
-    public static final String ROW_FORMAT_NAME = "__ROWFORMATTED";
-    public static final String TABLE_FORMAT_NAME = "__WTABLE_FORMAT";
-    public static final String TABLE_NUMERIC_FORMAT_NAME = "__WTABLE_NUM_FORMAT";
-    public static final String TABLE_DATE_FORMAT_NAME = "__WTABLE_DATE_FORMAT";
+    protected static final String ROW_FORMAT_NAME = "__ROW";
+    private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
+    private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
+    private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
 
     /**
      * Get the suffix to append to the name for the provided type
@@ -29,13 +31,13 @@ public class CustomColumn {
      */
     private static String getNameSuffix(String type) {
         if (type.equals(TYPE_FORMAT_COLOR)) {
-            return TABLE_FORMAT_NAME;
+            return TABLE_STYLE_FORMAT_SUFFIX;
         }
         if (type.equals(TYPE_FORMAT_NUMBER)) {
-            return TABLE_NUMERIC_FORMAT_NAME;
+            return TABLE_NUMBER_FORMAT_SUFFIX;
         }
         if (type.equals(TYPE_FORMAT_DATE)) {
-            return TABLE_DATE_FORMAT_NAME;
+            return TABLE_DATE_FORMAT_SUFFIX;
         }
         if (type.equals(TYPE_NEW)) {
             return "";
@@ -48,23 +50,25 @@ public class CustomColumn {
     private final String type;
     private final String expression;
 
+    @JsIgnore
     public CustomColumn(String name, String type, String expression) {
         this.name = name;
         this.type = type;
         this.expression = expression;
     }
 
+    @JsIgnore
     public CustomColumn(CustomColumnDescriptor descriptor) {
         String descriptorExpression = descriptor.getExpression();
         String descriptorName = descriptor.getName();
-        if (descriptorName.endsWith(TABLE_FORMAT_NAME)) {
-            name = descriptorName.substring(0, descriptorName.length() - TABLE_FORMAT_NAME.length());
+        if (descriptorName.endsWith(TABLE_STYLE_FORMAT_SUFFIX)) {
+            name = descriptorName.substring(0, descriptorName.length() - TABLE_STYLE_FORMAT_SUFFIX.length());
             type = TYPE_FORMAT_COLOR;
-        } else if (descriptorName.endsWith(TABLE_NUMERIC_FORMAT_NAME)) {
-            name = descriptorName.substring(0, descriptorName.length() - TABLE_NUMERIC_FORMAT_NAME.length());
+        } else if (descriptorName.endsWith(TABLE_NUMBER_FORMAT_SUFFIX)) {
+            name = descriptorName.substring(0, descriptorName.length() - TABLE_NUMBER_FORMAT_SUFFIX.length());
             type = TYPE_FORMAT_NUMBER;
-        } else if (descriptorName.endsWith(TABLE_DATE_FORMAT_NAME)) {
-            name = descriptorName.substring(0, descriptorName.length() - TABLE_DATE_FORMAT_NAME.length());
+        } else if (descriptorName.endsWith(TABLE_DATE_FORMAT_SUFFIX)) {
+            name = descriptorName.substring(0, descriptorName.length() - TABLE_DATE_FORMAT_SUFFIX.length());
             type = TYPE_FORMAT_DATE;
         } else {
             name = descriptorName;
@@ -74,6 +78,7 @@ public class CustomColumn {
         expression = descriptorExpression.substring(descriptorName.length() + 1);
     }
 
+    @JsIgnore
     public CustomColumn(JsPropertyMap<Object> source) {
         if (!source.has("name") || !source.has("type") || !source.has("expression")) {
             throw new IllegalArgumentException("Unrecognized CustomColumn format: " + source);

@@ -3,9 +3,10 @@
  */
 package io.deephaven.api.agg.spec;
 
-import io.deephaven.annotations.BuildableStyle;
-import org.immutables.value.Value.Default;
+import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
 
 /**
  * Specifies an aggregation that applies a {@link #formula() formula} to each input group (as a Deephaven vector
@@ -13,15 +14,33 @@ import org.immutables.value.Value.Immutable;
  * the {@link #paramToken() param token} for evaluation.
  */
 @Immutable
-@BuildableStyle
+@SimpleStyle
 public abstract class AggSpecFormula extends AggSpecBase {
 
+    public static final String PARAM_TOKEN_DEFAULT = "each";
+
+    /**
+     * Creates a new AggSpecFormula with {@code paramToken} of {@value PARAM_TOKEN_DEFAULT}.
+     *
+     * <p>
+     * todo The
+     *
+     * @param formula the formula
+     * @return the AggSpecFormula
+     */
     public static AggSpecFormula of(String formula) {
-        return ImmutableAggSpecFormula.builder().formula(formula).build();
+        return of(formula, PARAM_TOKEN_DEFAULT);
     }
 
+    /**
+     * Creates a new AggSpecFormula.
+     *
+     * @param formula the formula
+     * @param paramToken the param token
+     * @return the AggSpecFormula
+     */
     public static AggSpecFormula of(String formula, String paramToken) {
-        return ImmutableAggSpecFormula.builder().formula(formula).paramToken(paramToken).build();
+        return ImmutableAggSpecFormula.of(formula, paramToken);
     }
 
     @Override
@@ -34,6 +53,7 @@ public abstract class AggSpecFormula extends AggSpecBase {
      *
      * @return The formula
      */
+    @Parameter
     public abstract String formula();
 
     /**
@@ -41,14 +61,26 @@ public abstract class AggSpecFormula extends AggSpecBase {
      * 
      * @return The parameter token
      */
-    @Default
-    public String paramToken() {
-        return "each";
-    }
+    @Parameter
+    public abstract String paramToken();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
+    }
+
+    @Check
+    final void checkFormula() {
+        if (formula().isEmpty()) {
+            throw new IllegalArgumentException("formula must not be empty");
+        }
+    }
+
+    @Check
+    final void checkParamToken() {
+        if (paramToken().isEmpty()) {
+            throw new IllegalArgumentException("paramToken must not be empty");
+        }
     }
 }

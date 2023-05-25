@@ -174,7 +174,7 @@ func addNewDataToAppend(
 func TestAppendOnlyFromSchema(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
@@ -210,7 +210,7 @@ func TestAppendOnlyFromSchema(t *testing.T) {
 func TestAppendOnlyFromTable(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
@@ -250,7 +250,7 @@ func TestAppendOnlyFromTable(t *testing.T) {
 func TestKeyBackedTable(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 
@@ -316,7 +316,7 @@ func TestKeyBackedTable(t *testing.T) {
 func TestInvalidInputTable(t *testing.T) {
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	test_tools.CheckError(t, "NewClient", err)
 	defer cl.Close()
 

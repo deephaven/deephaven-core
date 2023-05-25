@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   deephaven:
-    image: ghcr.io/deephaven/server-sklearn:latest
+    image: ghcr.io/deephaven/server-sklearn:${VERSION:-latest}
     ports:
       - "${DEEPHAVEN_PORT:-10000}:10000"
     volumes:
@@ -11,7 +11,7 @@ services:
       - START_OPTS=-Xmx4g
 
   examples:
-    image: ghcr.io/deephaven/examples:latest
+    image: ghcr.io/deephaven/examples:${VERSION:-latest}
     volumes:
       - ./data:/data
     command: initialize

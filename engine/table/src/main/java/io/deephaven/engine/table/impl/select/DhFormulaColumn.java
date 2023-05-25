@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.base.Pair;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
@@ -10,6 +11,7 @@ import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -40,6 +42,8 @@ import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -62,6 +66,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
 
     private FormulaAnalyzer.Result analyzedFormula;
+    private boolean hasConstantValue;
+    private Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -189,6 +195,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     timeConversionResult);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
                     timeConversionResult, result);
+            hasConstantValue = result.isConstantValueExpression();
+            formulaShiftColPair = result.getFormulaShiftColPair();
 
             log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
@@ -625,7 +633,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateIntSize() {
         final CodeGenerator g = CodeGenerator.create(
                 "private int __intSize(final long l)", CodeGenerator.block(
-                        "return LongSizedDataStructure.intSize(\"FormulaColumn ii usage\", l);"));
+                        "return LongSizedDataStructure.intSize(\"FormulaColumn i usage\", l);"));
         return g.freeze();
     }
 
@@ -728,11 +736,23 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
         if (formulaFactory != null) {
             copy.analyzedFormula = analyzedFormula;
+            copy.hasConstantValue = hasConstantValue;
             copy.returnedType = returnedType;
             copy.formulaColumnPython = formulaColumnPython;
+            copy.formulaShiftColPair = formulaShiftColPair;
             onCopy(copy);
         }
         return copy;
+    }
+
+    @Override
+    public boolean hasConstantValue() {
+        return hasConstantValue;
+    }
+
+    @Override
+    public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
+        return formulaShiftColPair;
     }
 
     private FormulaFactory createFormulaFactory() {
@@ -827,8 +847,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             return true;
         }
         final Class<?> type = value.getClass();
-        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class ||
-                Table.class.isAssignableFrom(type)) {
+        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class
+                || type == Instant.class || type == ZonedDateTime.class || Table.class.isAssignableFrom(type)) {
             return true;
         }
         // if it is a boxed type, then it is immutable; otherwise we don't know what to do with it

@@ -5,6 +5,7 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.BarrageSessionFactory;
+import io.deephaven.client.impl.BarrageSubcomponent.Builder;
 import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
@@ -21,6 +22,9 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
 
+    @ArgGroup(exclusive = true)
+    AuthenticationOptions authenticationOptions;
+
     protected abstract void execute(BarrageSession session) throws Exception;
 
     @Override
@@ -32,15 +36,15 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        final BarrageSessionFactory barrageFactory =
-                DaggerDeephavenBarrageRoot.create().factoryBuilder()
-                        .managedChannel(managedChannel)
-                        .scheduler(scheduler)
-                        .allocator(bufferAllocator)
-                        .build();
-
+        final Builder builder = DaggerDeephavenBarrageRoot.create().factoryBuilder()
+                .managedChannel(managedChannel)
+                .scheduler(scheduler)
+                .allocator(bufferAllocator);
+        if (authenticationOptions != null) {
+            authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
+        }
+        final BarrageSessionFactory barrageFactory = builder.build();
         final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
-
         try {
             try {
                 execute(deephavenSession);

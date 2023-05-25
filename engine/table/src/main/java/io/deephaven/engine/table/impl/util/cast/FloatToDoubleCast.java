@@ -34,7 +34,8 @@ public class FloatToDoubleCast implements ToDoubleCast {
     }
 
     public static <T2 extends Any> void castInto(FloatChunk<? extends T2> input, WritableDoubleChunk<T2> result) {
-        for (int ii = 0; ii < input.size(); ++ii) {
+        final int size = input.size();
+        for (int ii = 0; ii < size; ++ii) {
             final float value = input.get(ii);
             if (value == QueryConstants.NULL_FLOAT) {
                 result.set(ii, QueryConstants.NULL_DOUBLE);

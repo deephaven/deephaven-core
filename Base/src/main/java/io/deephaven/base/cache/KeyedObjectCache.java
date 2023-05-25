@@ -4,13 +4,13 @@
 package io.deephaven.base.cache;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.Procedure;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Require;
 import gnu.trove.impl.PrimeFinder;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Random;
+import java.util.function.Consumer;
 
 /**
  * The central idea is that we can use an open-addressed map as a bounded cache with concurrent get and synchronized put
@@ -39,7 +39,7 @@ public class KeyedObjectCache<KEY_TYPE, VALUE_TYPE> {
     /**
      * The procedure to invoke on values after they've been evicted.
      */
-    private final Procedure.Unary<VALUE_TYPE> postEvictionProcedure;
+    private final Consumer<VALUE_TYPE> postEvictionProcedure;
 
     /**
      * A source of pseudo-random numbers for choosing which slot in a bounded probe sequence to evict if no empty slots
@@ -68,7 +68,7 @@ public class KeyedObjectCache<KEY_TYPE, VALUE_TYPE> {
     public KeyedObjectCache(final int capacity,
             final int probeSequenceLength,
             final KeyedObjectKey<KEY_TYPE, VALUE_TYPE> keyDefinition,
-            @Nullable final Procedure.Unary<VALUE_TYPE> postEvictionProcedure,
+            @Nullable final Consumer<VALUE_TYPE> postEvictionProcedure,
             final Random random) {
         Require.gtZero(capacity, "capacity");
         Require.inRange(probeSequenceLength, "probeSequenceLength", capacity / 2, "capacity / 2");
@@ -175,7 +175,7 @@ public class KeyedObjectCache<KEY_TYPE, VALUE_TYPE> {
         }
 
         if (postEvictionProcedure != null) {
-            postEvictionProcedure.call(evictedValue);
+            postEvictionProcedure.accept(evictedValue);
         }
         return value;
     }

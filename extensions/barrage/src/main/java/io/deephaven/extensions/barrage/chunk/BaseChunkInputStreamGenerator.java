@@ -64,7 +64,17 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
      * @return number of bytes to represent the validity buffer for numElements
      */
     protected static int getValidityMapSerializationSizeFor(final int numElements) {
-        return ((numElements + 63) / 64) * 8;
+        return getNumLongsForBitPackOfSize(numElements) * 8;
+    }
+
+    /**
+     * Returns the number of longs needed to represent a single bit per element.
+     *
+     * @param numElements the number of rows
+     * @return number of longs needed to represent numElements bits rounded up to the nearest long
+     */
+    protected static int getNumLongsForBitPackOfSize(final int numElements) {
+        return ((numElements + 63) / 64);
     }
 
     abstract class BaseChunkInputStream extends DrainableColumn {

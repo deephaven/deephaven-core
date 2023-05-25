@@ -4,6 +4,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.Strings;
 import org.junit.jupiter.api.Test;
 

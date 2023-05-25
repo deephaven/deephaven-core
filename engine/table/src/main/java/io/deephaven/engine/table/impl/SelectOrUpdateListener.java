@@ -3,19 +3,18 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 
-import java.io.IOException;
 import java.util.BitSet;
 import java.util.Map;
 
@@ -67,6 +66,11 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
 
     @Override
     public void onUpdate(final TableUpdate upstream) {
+        if (!tryIncrementReferenceCount()) {
+            // If we're no longer live, there's no work to do here.
+            return;
+        }
+
         // Attempt to minimize work by sharing computation across all columns:
         // - clear only the keys that no longer exist
         // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
@@ -79,12 +83,12 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                 new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
         toClear.remove(resultRowSet);
-        SelectAndViewAnalyzer.JobScheduler jobScheduler;
+        JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
-            jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
+            jobScheduler = new UpdateGraphProcessorJobScheduler();
         } else {
-            jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+            jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
 
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
@@ -102,33 +106,44 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     }
 
     private void handleException(Exception e) {
-        onFailure(e, getEntry());
-        updateInProgress = false;
+        try {
+            onFailure(e, getEntry());
+        } finally {
+            updateInProgress = false;
+            // Note that this isn't really needed, since onFailure forces reference count to zero, but it seems
+            // reasonable to pair with the tryIncrementReferenceCount invocation in onUpdate and match
+            // completionRoutine. This also has the effect of "future proofing" this code against changes to onFailure.
+            decrementReferenceCount();
+        }
     }
 
-    private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler,
+    private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
-        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
-        transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
-        dependent.notifyListeners(downstream);
-        upstream.release();
-        toClear.close();
-        updateHelper.close();
-        final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-        // if the entry exists, then we install a terminal notification so that we don't lose the performance from this
-        // execution
-        if (accumulated != null) {
-            UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
-                @Override
-                public void run() {
-                    synchronized (accumulated) {
-                        getEntry().accumulate(accumulated);
+        try {
+            final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                    upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+            dependent.notifyListeners(downstream);
+            upstream.release();
+            toClear.close();
+            updateHelper.close();
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            // if the entry exists, then we install a terminal notification so that we don't lose the performance from
+            // this execution
+            if (accumulated != null) {
+                UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                    @Override
+                    public void run() {
+                        synchronized (accumulated) {
+                            getEntry().accumulate(accumulated);
+                        }
                     }
-                }
-            });
+                });
+            }
+        } finally {
+            updateInProgress = false;
+            decrementReferenceCount();
         }
-        updateInProgress = false;
     }
 
     @Override

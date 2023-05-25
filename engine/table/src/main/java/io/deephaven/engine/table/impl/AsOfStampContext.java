@@ -60,7 +60,8 @@ class AsOfStampContext implements Context {
         }
         this.stampType = leftType;
         this.stampKernel = StampKernel.makeStampKernel(stampType, order, disallowExactMatch);
-        this.rightDupCompact = DupCompactKernel.makeDupCompact(stampType, order == SortingOrder.Descending);
+        this.rightDupCompact =
+                DupCompactKernel.makeDupCompactDeephavenOrdering(stampType, order == SortingOrder.Descending);
     }
 
     private void ensureSortCapacity(int length) {
@@ -152,7 +153,6 @@ class AsOfStampContext implements Context {
     @Override
     public void close() {
         stampKernel.close();
-        rightDupCompact.close();
         if (rightFillContext != null) {
             rightFillContext.close();
         }
