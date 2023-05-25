@@ -1009,10 +1009,10 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(sortedL3R.where("L3 < 20 && true"), sortedL3R.where("B8 < 20")),
                 new TableComparator(sortedL3R.where("L3 < 20 && true"), sortedL3R.where("S7 < 20")),
                 new TableComparator(
-                        sortedDT.where("DT == null || DT.getNanos() < " + DateTimeUtils.epochNanos(filterTime)),
+                        sortedDT.where("epochNanos(DT) < " + DateTimeUtils.epochNanos(filterTime)),
                         sortedDT.where("DT < '" + filterTimeString + "'")),
                 new TableComparator(
-                        sortedDT.where("DT != null && DT.getNanos() >= " + DateTimeUtils.epochNanos(filterTime)),
+                        sortedDT.where("epochNanos(DT) >= " + DateTimeUtils.epochNanos(filterTime)),
                         sortedDT.where("DT >= '" + filterTimeString + "'")),
                 new TableComparator(sortedCH.where("true && CH > 'M'"), sortedCH.where("CH > 'M'")),
                 new TableComparator(sortedCH.where("CH==null || CH <= 'O'"), sortedCH.where("CH <= 'O'")),
