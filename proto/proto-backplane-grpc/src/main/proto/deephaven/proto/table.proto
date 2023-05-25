@@ -374,19 +374,19 @@ message UpdateByEmaTimescale {
 // Reusable options for the UpdateBy exponential moving operations.
 message UpdateByEmaOptions {
   // If unset, defaults to server-provided defaults.
-  BadDataBehavior on_null_value = 1;
+  optional BadDataBehavior on_null_value = 1;
 
   // If unset, defaults to server-provided defaults.
-  BadDataBehavior on_nan_value = 2;
+  optional BadDataBehavior on_nan_value = 2;
 
   // If unset, defaults to server-provided defaults.
-  BadDataBehavior on_null_time = 3;
+  optional BadDataBehavior on_null_time = 3;
 
   // If unset, defaults to server-provided defaults.
-  BadDataBehavior on_negative_delta_time = 4;
+  optional BadDataBehavior on_negative_delta_time = 4;
 
   // If unset, defaults to server-provided defaults.
-  BadDataBehavior on_zero_delta_time = 5;
+  optional BadDataBehavior on_zero_delta_time = 5;
 
   // If unset, defaults to server-provided defaults.
   MathContext big_value_context = 6;
@@ -407,33 +407,33 @@ message UpdateByRequest {
   message UpdateByOptions {
     // If redirections should be used for output sources instead of sparse array sources.
     // If unset, defaults to server-provided defaults.
-    bool use_redirection = 1;
+    optional bool use_redirection = 1;
 
     // The maximum chunk capacity.
     // If unset, defaults to server-provided defaults.
-    int32 chunk_capacity = 2;
+    optional int32 chunk_capacity = 2;
 
     // The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
     // overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
     // value of zero results in never using the sparse structure.
     // If unset, defaults to server-provided defaults.
-    double max_static_sparse_memory_overhead = 3;
+    optional double max_static_sparse_memory_overhead = 3;
 
     // The initial hash table size.
     // If unset, defaults to server-provided defaults.
-    int32 initial_hash_table_size = 4;
+    optional int32 initial_hash_table_size = 4;
 
     // The maximum load factor for the hash table.
     // If unset, defaults to server-provided defaults.
-    double maximum_load_factor = 5;
+    optional double maximum_load_factor = 5;
 
     // The target load factor for the hash table.
     // If unset, defaults to server-provided defaults.
-    double target_load_factor = 6;
+    optional double target_load_factor = 6;
 
     // The math context.
     // If unset, defaults to server-provided defaults.
-    MathContext math_context = 7;
+    optional MathContext math_context = 7;
   }
 
   message UpdateByOperation {
