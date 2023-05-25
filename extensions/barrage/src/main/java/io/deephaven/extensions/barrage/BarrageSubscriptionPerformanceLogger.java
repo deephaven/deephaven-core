@@ -9,9 +9,9 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.WritableRowContainer;
-import io.deephaven.time.DateTime;
 
 import java.io.IOException;
+import java.time.Instant;
 
 public class BarrageSubscriptionPerformanceLogger
         extends MemoryTableLogger<BarrageSubscriptionPerformanceLogger.ISetter> {
@@ -24,7 +24,7 @@ public class BarrageSubscriptionPerformanceLogger
 
     @SuppressWarnings("rawtypes")
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, String tableId, String tableKey, String statType, DateTime time,
+        void log(Row.Flags flags, String tableId, String tableKey, String statType, Instant time,
                 long count, double pct50, double pct75, double pct90, double pct95, double pct99, double max)
                 throws IOException;
     }
@@ -38,7 +38,7 @@ public class BarrageSubscriptionPerformanceLogger
         RowSetter<String> TableId;
         RowSetter<String> TableKey;
         RowSetter<String> StatType;
-        RowSetter<DateTime> Time;
+        RowSetter<Instant> Time;
         RowSetter<Long> Count;
         RowSetter<Double> Pct50;
         RowSetter<Double> Pct75;
@@ -51,7 +51,7 @@ public class BarrageSubscriptionPerformanceLogger
             TableId = row.getSetter("TableId", String.class);
             TableKey = row.getSetter("TableKey", String.class);
             StatType = row.getSetter("StatType", String.class);
-            Time = row.getSetter("Time", DateTime.class);
+            Time = row.getSetter("Time", Instant.class);
             Count = row.getSetter("Count", long.class);
             Pct50 = row.getSetter("Pct50", double.class);
             Pct75 = row.getSetter("Pct75", double.class);
@@ -62,7 +62,7 @@ public class BarrageSubscriptionPerformanceLogger
         }
 
         @Override
-        public void log(Row.Flags flags, String tableId, String tableKey, String statType, DateTime time,
+        public void log(Row.Flags flags, String tableId, String tableKey, String statType, Instant time,
                 long count, double pct50, double pct75, double pct90, double pct95, double pct99, double max)
                 throws IOException {
             setRowFlags(flags);
@@ -94,7 +94,7 @@ public class BarrageSubscriptionPerformanceLogger
                 .add("TableId", String.class)
                 .add("TableKey", String.class)
                 .add("StatType", String.class)
-                .add("Time", DateTime.class)
+                .add("Time", Instant.class)
 
                 .add("Count", long.class)
                 .add("Pct50", double.class)
@@ -117,7 +117,7 @@ public class BarrageSubscriptionPerformanceLogger
     }
 
     public void log(
-            String tableId, String tableKey, String statType, DateTime time,
+            String tableId, String tableKey, String statType, Instant time,
             long count, double pct50, double pct75, double pct90, double pct95, double pct99, double max)
             throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, tableId, tableKey, statType, time,
@@ -125,7 +125,7 @@ public class BarrageSubscriptionPerformanceLogger
     }
 
     public void log(
-            Row.Flags flags, String tableId, String tableKey, String statType, DateTime time,
+            Row.Flags flags, String tableId, String tableKey, String statType, Instant time,
             long count, double pct50, double pct75, double pct90, double pct95, double pct99, double max)
             throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");

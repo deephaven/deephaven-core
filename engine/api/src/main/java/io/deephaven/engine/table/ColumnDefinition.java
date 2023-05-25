@@ -7,7 +7,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.vector.*;
-import io.deephaven.time.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.type.ArrayType;
 import io.deephaven.qst.type.BooleanType;
@@ -30,6 +29,7 @@ import io.deephaven.qst.type.Type;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -95,8 +95,8 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
         return new ColumnDefinition<>(name, String.class);
     }
 
-    public static ColumnDefinition<DateTime> ofTime(@NotNull final String name) {
-        return new ColumnDefinition<>(name, DateTime.class);
+    public static ColumnDefinition<Instant> ofTime(@NotNull final String name) {
+        return new ColumnDefinition<>(name, Instant.class);
     }
 
     public static ColumnDefinition<?> of(String name, Type<?> type) {

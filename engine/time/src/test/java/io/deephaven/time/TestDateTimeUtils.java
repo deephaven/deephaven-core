@@ -61,51 +61,66 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("01/02/10", DateTimeUtils.DateStyle.MDY));
         assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDate("02/01/10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(DateTimeUtils.parseLocalDate("01/02/03"), DateTimeUtils.parseLocalDate("01/02/03", DateTimeUtils.DateStyle.MDY));
+        assertEquals(DateTimeUtils.parseLocalDate("01/02/03"),
+                DateTimeUtils.parseLocalDate("01/02/03", DateTimeUtils.DateStyle.MDY));
 
         try {
             DateTimeUtils.parseLocalDate("JUNK", DateTimeUtils.DateStyle.YMD);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseLocalDate(null, DateTimeUtils.DateStyle.YMD);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.parseLocalDate("JUNK", null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
     public void testParseLocalDateQuiet() {
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("20100102", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("20100102", DateTimeUtils.DateStyle.YMD));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("2010-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01-02-2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02-01-2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("2010-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("01-02-2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("02-01-2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("2010/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01/02/2010", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02/01/2010", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("2010/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("01/02/2010", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("02/01/2010", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("10-01-02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01-02-10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02-01-10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("10-01-02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("01-02-10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("02-01-10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("10/01/02", DateTimeUtils.DateStyle.YMD));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("01/02/10", DateTimeUtils.DateStyle.MDY));
-        assertEquals(LocalDate.of(2010, 1, 2), DateTimeUtils.parseLocalDateQuiet("02/01/10", DateTimeUtils.DateStyle.DMY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("10/01/02", DateTimeUtils.DateStyle.YMD));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("01/02/10", DateTimeUtils.DateStyle.MDY));
+        assertEquals(LocalDate.of(2010, 1, 2),
+                DateTimeUtils.parseLocalDateQuiet("02/01/10", DateTimeUtils.DateStyle.DMY));
 
-        assertEquals(DateTimeUtils.parseLocalDateQuiet("01/02/03"), DateTimeUtils.parseLocalDateQuiet("01/02/03", DateTimeUtils.DateStyle.MDY));
+        assertEquals(DateTimeUtils.parseLocalDateQuiet("01/02/03"),
+                DateTimeUtils.parseLocalDateQuiet("01/02/03", DateTimeUtils.DateStyle.MDY));
 
         assertNull(DateTimeUtils.parseLocalDateQuiet("JUNK", DateTimeUtils.DateStyle.YMD));
         assertNull(DateTimeUtils.parseLocalDateQuiet(null, DateTimeUtils.DateStyle.YMD));
@@ -153,15 +168,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseLocalTime("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseLocalTime(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
@@ -215,15 +230,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseTimeZone("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseTimeZone(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
@@ -267,29 +282,29 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseInstant("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.parseInstant("2010-01-01T12:11");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.parseInstant("2010-01-01T12:11 JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseInstant(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
@@ -319,7 +334,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
-                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstantQuiet(s));
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(),
+                        DateTimeUtils.parseInstantQuiet(s));
             }
         }
 
@@ -363,29 +379,29 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseZonedDateTime("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.parseZonedDateTime("2010-01-01T12:11");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.parseZonedDateTime("2010-01-01T12:11 JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseZonedDateTime(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
@@ -444,7 +460,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "15:25:49.064106107",
         };
 
-        for (boolean isNeg : new boolean[]{false, true}) {
+        for (boolean isNeg : new boolean[] {false, true}) {
             for (String t : times) {
                 long offset = 0;
                 String lts = t;
@@ -458,7 +474,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 }
 
                 final long sign = isNeg ? -1 : 1;
-                TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanos(t));
+                TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
+                        DateTimeUtils.parseNanos(t));
             }
         }
 
@@ -482,15 +499,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseNanos("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseNanos(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
     }
@@ -511,7 +528,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "15:25:49.064106107",
         };
 
-        for (boolean isNeg : new boolean[]{false, true}) {
+        for (boolean isNeg : new boolean[] {false, true}) {
             for (String t : times) {
                 long offset = 0;
                 String lts = t;
@@ -525,7 +542,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 }
 
                 final long sign = isNeg ? -1 : 1;
-                TestCase.assertEquals(t, sign * (LocalTime.parse(lts).toNanoOfDay() + offset), DateTimeUtils.parseNanosQuiet(t));
+                TestCase.assertEquals(t, sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
+                        DateTimeUtils.parseNanosQuiet(t));
             }
         }
 
@@ -561,11 +579,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parsePeriod(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
@@ -609,11 +627,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseDuration(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
@@ -648,7 +666,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("2021-02-03T11:14:32.1"));
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("2021-02-03T11:14:32.12"));
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("2021-02-03T11:14:32.123"));
-        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("2021-02-03T11:14:32.1234"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND,
+                DateTimeUtils.parseTimePrecision("2021-02-03T11:14:32.1234"));
 
         TestCase.assertEquals(ChronoField.MINUTE_OF_HOUR, DateTimeUtils.parseTimePrecision("11:14"));
         TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE, DateTimeUtils.parseTimePrecision("11:14:32"));
@@ -661,15 +680,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.parseTimePrecision("JUNK");
             TestCase.fail("Should have thrown an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
 
         try {
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             DateTimeUtils.parseTimePrecision(null);
             TestCase.fail("Should have thrown an exception");
         } catch (Exception ex) {
-            //pass
+            // pass
         }
     }
 
@@ -677,11 +696,16 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ChronoField.DAY_OF_MONTH, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03"));
         TestCase.assertEquals(ChronoField.HOUR_OF_DAY, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11"));
         TestCase.assertEquals(ChronoField.MINUTE_OF_HOUR, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14"));
-        TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32"));
-        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.1"));
-        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.12"));
-        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.123"));
-        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.1234"));
+        TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE,
+                DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND,
+                DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.1"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND,
+                DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.12"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND,
+                DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.123"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND,
+                DateTimeUtils.parseTimePrecisionQuiet("2021-02-03T11:14:32.1234"));
 
         TestCase.assertEquals(ChronoField.MINUTE_OF_HOUR, DateTimeUtils.parseTimePrecisionQuiet("11:14"));
         TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE, DateTimeUtils.parseTimePrecisionQuiet("11:14:32"));
@@ -716,16 +740,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final ZonedDateTime dt3 = dt2.atZone(TZ_NY);
         final ZonedDateTime dt4 = dt2.atZone(TZ_JP);
 
-        TestCase.assertEquals("2021-02-04T01:00:00.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:00 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:00.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:01.000000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:01 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:01.300000000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:01.3 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456700000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.4567 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456780000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.45678 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456789000 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.456789 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456789100 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.4567891 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.45678912 NY"), TZ_JP));
-        TestCase.assertEquals("2021-02-04T01:23:32.456789123 JP", DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.456789123 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:00:00.000000000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:00 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:00.000000000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:01.000000000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:01 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:01.300000000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:01.3 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456700000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.4567 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456780000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.45678 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789000 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.456789 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789100 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.4567891 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.45678912 NY"), TZ_JP));
+        TestCase.assertEquals("2021-02-04T01:23:32.456789123 JP",
+                DateTimeUtils.formatDateTime(DateTimeUtils.parseInstant("2021-02-03T11:23:32.456789123 NY"), TZ_JP));
 
         TestCase.assertEquals("2021-02-03T11:23:32.456789120 NY", DateTimeUtils.formatDateTime(dt2, TZ_NY));
         TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(dt2, TZ_JP));
@@ -734,8 +768,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals("2021-02-04T01:23:32.456789120 JP", DateTimeUtils.formatDateTime(dt4));
 
 
-        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan", DateTimeUtils.formatDateTime(dt2, ZoneId.of("Asia/Yerevan")));
-        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan", DateTimeUtils.formatDateTime(dt3.withZoneSameInstant(ZoneId.of("Asia/Yerevan"))));
+        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan",
+                DateTimeUtils.formatDateTime(dt2, ZoneId.of("Asia/Yerevan")));
+        TestCase.assertEquals("2021-02-03T20:23:32.456789120 Asia/Yerevan",
+                DateTimeUtils.formatDateTime(dt3.withZoneSameInstant(ZoneId.of("Asia/Yerevan"))));
 
         TestCase.assertNull(DateTimeUtils.formatDateTime(null, TZ_NY));
         TestCase.assertNull(DateTimeUtils.formatDateTime(dt2, null));
@@ -750,16 +786,20 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals("0:00:02", DateTimeUtils.formatNanos(2 * DateTimeUtils.SECOND));
         TestCase.assertEquals("0:00:00.002000000", DateTimeUtils.formatNanos(2 * DateTimeUtils.MILLI));
         TestCase.assertEquals("0:00:00.000000002", DateTimeUtils.formatNanos(2));
-        TestCase.assertEquals("23:45:39.123456789", DateTimeUtils.formatNanos(23 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
-        TestCase.assertEquals("123:45:39.123456789", DateTimeUtils.formatNanos(123 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
+        TestCase.assertEquals("23:45:39.123456789", DateTimeUtils.formatNanos(
+                23 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
+        TestCase.assertEquals("123:45:39.123456789", DateTimeUtils.formatNanos(
+                123 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
 
         TestCase.assertEquals("-2:00:00", DateTimeUtils.formatNanos(-2 * DateTimeUtils.HOUR));
         TestCase.assertEquals("-0:02:00", DateTimeUtils.formatNanos(-2 * DateTimeUtils.MINUTE));
         TestCase.assertEquals("-0:00:02", DateTimeUtils.formatNanos(-2 * DateTimeUtils.SECOND));
         TestCase.assertEquals("-0:00:00.002000000", DateTimeUtils.formatNanos(-2 * DateTimeUtils.MILLI));
         TestCase.assertEquals("-0:00:00.000000002", DateTimeUtils.formatNanos(-2));
-        TestCase.assertEquals("-23:45:39.123456789", DateTimeUtils.formatNanos(-23 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
-        TestCase.assertEquals("-123:45:39.123456789", DateTimeUtils.formatNanos(-123 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
+        TestCase.assertEquals("-23:45:39.123456789", DateTimeUtils.formatNanos(
+                -23 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
+        TestCase.assertEquals("-123:45:39.123456789", DateTimeUtils.formatNanos(
+                -123 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
 
         TestCase.assertNull(DateTimeUtils.formatNanos(NULL_LONG));
     }
@@ -779,14 +819,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.millisToNanos(Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.microsToNanos(-Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
     }
 
@@ -811,14 +851,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.millisToNanos(Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.millisToNanos(-Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
     }
 
@@ -855,14 +895,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             DateTimeUtils.secondsToNanos(Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
 
         try {
             DateTimeUtils.secondsToNanos(-Long.MAX_VALUE / 2);
             TestCase.fail("Should throw an exception");
         } catch (DateTimeUtils.DateTimeOverflowException ex) {
-            //pass
+            // pass
         }
     }
 
@@ -906,7 +946,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.toInstant(ld, null, TZ_JP));
         TestCase.assertNull(DateTimeUtils.toInstant(ld, lt, null));
 
-        TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI), DateTimeUtils.toInstant(d));
+        TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
+                DateTimeUtils.toInstant(d));
         TestCase.assertNull(DateTimeUtils.toInstant((Date) null));
     }
 
@@ -920,7 +961,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.toLocalDate(null, TZ_JP));
 
         TestCase.assertEquals(ld, DateTimeUtils.toLocalDate(dt3));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertNull(DateTimeUtils.toLocalDate(null));
     }
 
@@ -934,7 +975,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.toLocalTime(null, TZ_JP));
 
         TestCase.assertEquals(lt, DateTimeUtils.toLocalTime(dt3));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertNull(DateTimeUtils.toLocalTime(null));
     }
 
@@ -1074,9 +1115,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dt1s = DateTimeUtils.epochSecondsToInstant(seconds);
 
         TestCase.assertEquals(nanos, DateTimeUtils.epochAutoToEpochNanos(nanos));
-        TestCase.assertEquals((nanos / DateTimeUtils.MICRO) * DateTimeUtils.MICRO, DateTimeUtils.epochAutoToEpochNanos(micros));
-        TestCase.assertEquals((nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI, DateTimeUtils.epochAutoToEpochNanos(millis));
-        TestCase.assertEquals((nanos / DateTimeUtils.SECOND) * DateTimeUtils.SECOND, DateTimeUtils.epochAutoToEpochNanos(seconds));
+        TestCase.assertEquals((nanos / DateTimeUtils.MICRO) * DateTimeUtils.MICRO,
+                DateTimeUtils.epochAutoToEpochNanos(micros));
+        TestCase.assertEquals((nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI,
+                DateTimeUtils.epochAutoToEpochNanos(millis));
+        TestCase.assertEquals((nanos / DateTimeUtils.SECOND) * DateTimeUtils.SECOND,
+                DateTimeUtils.epochAutoToEpochNanos(seconds));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.epochAutoToEpochNanos(NULL_LONG));
 
         TestCase.assertEquals(dt1, DateTimeUtils.epochAutoToInstant(nanos));
@@ -1085,10 +1129,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt1s, DateTimeUtils.epochAutoToInstant(seconds));
         TestCase.assertNull(DateTimeUtils.epochAutoToInstant(NULL_LONG));
 
-        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1, TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(nanos, TZ_JP));
-        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1u, TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(micros, TZ_JP));
-        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1m, TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(millis, TZ_JP));
-        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1s, TZ_JP), DateTimeUtils.epochAutoToZonedDateTime(seconds, TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1, TZ_JP),
+                DateTimeUtils.epochAutoToZonedDateTime(nanos, TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1u, TZ_JP),
+                DateTimeUtils.epochAutoToZonedDateTime(micros, TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1m, TZ_JP),
+                DateTimeUtils.epochAutoToZonedDateTime(millis, TZ_JP));
+        TestCase.assertEquals(DateTimeUtils.toZonedDateTime(dt1s, TZ_JP),
+                DateTimeUtils.epochAutoToZonedDateTime(seconds, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(NULL_LONG, TZ_JP));
         TestCase.assertNull(DateTimeUtils.epochAutoToZonedDateTime(nanos, null));
     }
@@ -1116,11 +1164,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final ZonedDateTime dt3 = dt2.atZone(TZ_AL);
 
         TestCase.assertEquals(dt2, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL));
-        TestCase.assertTrue(DateTimeUtils.epochMillis(dt2) - DateTimeUtils.epochMillis(DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL)) <= 1);
+        TestCase.assertTrue(DateTimeUtils.epochMillis(dt2) - DateTimeUtils
+                .epochMillis(DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL)) <= 1);
         TestCase.assertNull(DateTimeUtils.excelToInstant(123.4, null));
 
         TestCase.assertEquals(dt3, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL));
-        TestCase.assertTrue(DateTimeUtils.epochMillis(dt3) - DateTimeUtils.epochMillis(DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL)) <= 1);
+        TestCase.assertTrue(DateTimeUtils.epochMillis(dt3) - DateTimeUtils
+                .epochMillis(DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dt2, TZ_AL), TZ_AL)) <= 1);
         TestCase.assertNull(DateTimeUtils.excelToZonedDateTime(123.4, null));
 
         // Test daylight savings time
@@ -1130,11 +1180,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final ZonedDateTime dstZdt1 = DateTimeUtils.toZonedDateTime(dstI1, ZoneId.of("America/Denver"));
         final ZonedDateTime dstZdt2 = DateTimeUtils.toZonedDateTime(dstI2, ZoneId.of("America/Denver"));
 
-        TestCase.assertEquals(dstI1, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dstI1, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
-        TestCase.assertEquals(dstI2, DateTimeUtils.excelToInstant(DateTimeUtils.toExcelTime(dstI2, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstI1, DateTimeUtils.excelToInstant(
+                DateTimeUtils.toExcelTime(dstI1, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstI2, DateTimeUtils.excelToInstant(
+                DateTimeUtils.toExcelTime(dstI2, ZoneId.of("America/Denver")), ZoneId.of("America/Denver")));
 
-        TestCase.assertEquals(dstZdt1, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt1), ZoneId.of("America/Denver")));
-        TestCase.assertEquals(dstZdt2, DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt2), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstZdt1,
+                DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt1), ZoneId.of("America/Denver")));
+        TestCase.assertEquals(dstZdt2,
+                DateTimeUtils.excelToZonedDateTime(DateTimeUtils.toExcelTime(dstZdt2), ZoneId.of("America/Denver")));
     }
 
     public void testIsBefore() {
@@ -1146,11 +1200,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertFalse(DateTimeUtils.isBefore(i2, i1));
         TestCase.assertFalse(DateTimeUtils.isBefore(i2, i3));
         TestCase.assertFalse(DateTimeUtils.isBefore(i3, i2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isBefore(null, i2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isBefore((Instant) null, null));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isBefore(i1, null));
 
         final ZonedDateTime z1 = i1.atZone(TZ_AL);
@@ -1162,7 +1216,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertFalse(DateTimeUtils.isBefore(z2, z3));
         TestCase.assertFalse(DateTimeUtils.isBefore(z3, z2));
         TestCase.assertFalse(DateTimeUtils.isBefore(null, z2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isBefore((Instant) null, null));
         TestCase.assertFalse(DateTimeUtils.isBefore(z1, null));
     }
@@ -1202,11 +1256,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertTrue(DateTimeUtils.isAfter(i2, i1));
         TestCase.assertFalse(DateTimeUtils.isAfter(i2, i3));
         TestCase.assertFalse(DateTimeUtils.isAfter(i3, i2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isAfter(null, i2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isAfter((Instant) null, null));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isAfter(i1, null));
 
         final ZonedDateTime z1 = i1.atZone(TZ_AL);
@@ -1218,7 +1272,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertFalse(DateTimeUtils.isAfter(z2, z3));
         TestCase.assertFalse(DateTimeUtils.isAfter(z3, z2));
         TestCase.assertFalse(DateTimeUtils.isAfter(null, z2));
-        //noinspection ConstantConditions
+        // noinspection ConstantConditions
         TestCase.assertFalse(DateTimeUtils.isAfter((Instant) null, null));
         TestCase.assertFalse(DateTimeUtils.isAfter(z1, null));
     }
@@ -1278,19 +1332,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
                 @Override
                 public Instant instantMillis() {
-                    return Instant.ofEpochMilli(nanos/DateTimeUtils.MILLI);
+                    return Instant.ofEpochMilli(nanos / DateTimeUtils.MILLI);
                 }
             };
             DateTimeUtils.setClock(clock);
             TestCase.assertEquals(clock, DateTimeUtils.currentClock());
 
-            TestCase.assertEquals(Instant.ofEpochSecond(0,nanos), DateTimeUtils.now());
-            TestCase.assertEquals(Instant.ofEpochSecond(0,(nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI), DateTimeUtils.nowMillisResolution());
+            TestCase.assertEquals(Instant.ofEpochSecond(0, nanos), DateTimeUtils.now());
+            TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
+                    DateTimeUtils.nowMillisResolution());
 
-            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos() - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
-            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()  - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L);
+            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
+                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
+            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
+                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L);
 
-            TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0,nanos), TZ_AL), DateTimeUtils.today(TZ_AL));
+            TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
+                    DateTimeUtils.today(TZ_AL));
             TestCase.assertEquals(DateTimeUtils.today(ZoneId.systemDefault()), DateTimeUtils.today());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
@@ -1407,11 +1465,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
-        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:14:02 NY").withZoneSameInstant( TZ_AL),
+        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:14:02 NY").withZoneSameInstant(TZ_AL),
                 DateTimeUtils.upperBin(zdt, second));
-        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:15:00 NY").withZoneSameInstant( TZ_AL),
+        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:15:00 NY").withZoneSameInstant(TZ_AL),
                 DateTimeUtils.upperBin(zdt, 5 * minute));
-        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T07:00:00 NY").withZoneSameInstant( TZ_AL),
+        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T07:00:00 NY").withZoneSameInstant(TZ_AL),
                 DateTimeUtils.upperBin(zdt, hour));
         TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute));
         TestCase.assertNull(DateTimeUtils.upperBin(zdt, NULL_LONG));
@@ -1437,7 +1495,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
-        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:16:00 NY").withZoneSameInstant( TZ_AL),
+        TestCase.assertEquals(DateTimeUtils.parseZonedDateTime("2010-06-15T06:16:00 NY").withZoneSameInstant(TZ_AL),
                 DateTimeUtils.upperBin(zdt, 5 * minute, minute));
         TestCase.assertNull(DateTimeUtils.upperBin((ZonedDateTime) null, 5 * minute, minute));
         TestCase.assertNull(DateTimeUtils.upperBin(zdt, NULL_LONG, minute));
@@ -1451,29 +1509,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant instant = DateTimeUtils.parseInstant("2010-01-01T12:13:14.999123456 JP");
         final ZonedDateTime zdt = DateTimeUtils.toZonedDateTime(instant, TZ_AL);
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, 54321L)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, -54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, 54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, -54321L)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, 54321L)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, -54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, 54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, -54321L)));
 
         Period period = Period.parse("P1D");
         Duration duration = Duration.parse("PT1h");
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) + 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
 
         period = Period.parse("-P1D");
         duration = Duration.parse("PT-1h");
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(instant, duration)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant) - 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.plus(zdt, duration)));
 
         TestCase.assertNull(DateTimeUtils.plus(instant, NULL_LONG));
         TestCase.assertNull(DateTimeUtils.plus(instant, (Period) null));
@@ -1509,21 +1579,25 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
-        DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999 - 10), ZoneId.of("UTC")), 10); // edge at max
+        DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                LocalTime.of(23, 59, 59, 999_999_999 - 10), ZoneId.of("UTC")), 10); // edge at max
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), 1);
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), 1);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Period.ofDays(1));
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Duration.ofNanos(1));
+            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Duration.ofNanos(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1549,21 +1623,29 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
-        DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 10), ZoneId.of("UTC")), -10); // edge at max
+        // edge at max
+        DateTimeUtils.plus(
+                ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 10), ZoneId.of("UTC")), -10);
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), -1);
+            DateTimeUtils.plus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    -1);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), Period.ofDays(-1));
+            DateTimeUtils.plus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.plus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), Duration.ofNanos(-1));
+            DateTimeUtils.plus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    Duration.ofNanos(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1577,11 +1659,15 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final ZonedDateTime zdt1 = DateTimeUtils.toZonedDateTime(instant1, TZ_AL);
         final ZonedDateTime zdt2 = DateTimeUtils.toZonedDateTime(instant2, TZ_AL);
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, 54321L)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant2) + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant2, -54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, 54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant2) + 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant2, -54321L)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, 54321L)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant2) + 54321L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt2, -54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, 54321L)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant2) + 54321L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt2, -54321L)));
 
         TestCase.assertEquals(-3600000000000L, DateTimeUtils.minus(instant1, instant2));
         TestCase.assertEquals(3600000000000L, DateTimeUtils.minus(instant2, instant1));
@@ -1592,20 +1678,28 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         Period period = Period.parse("P1D");
         Duration duration = Duration.parse("PT1h");
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) - 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
 
         period = Period.parse("-P1D");
         duration = Duration.parse("PT-1h");
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(instant1, duration)));
 
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + DateTimeUtils.DAY, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
-        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + 3600000000000L, DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + DateTimeUtils.DAY,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, period)));
+        TestCase.assertEquals(DateTimeUtils.epochNanos(instant1) + 3600000000000L,
+                DateTimeUtils.epochNanos(DateTimeUtils.minus(zdt1, duration)));
 
         TestCase.assertNull(DateTimeUtils.minus(instant1, NULL_LONG));
         TestCase.assertNull(DateTimeUtils.minus(instant1, (Period) null));
@@ -1643,21 +1737,25 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
-        DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999 - 10), ZoneId.of("UTC")), 10); // edge at max
+        DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                LocalTime.of(23, 59, 59, 999_999_999 - 10), ZoneId.of("UTC")), 10); // edge at max
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), -1);
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), -1);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Period.ofDays(-1));
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Period.ofDays(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31), LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Duration.ofNanos(-1));
+            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MAX_VALUE, 12, 31),
+                    LocalTime.of(23, 59, 59, 999_999_999), ZoneId.of("UTC")), Duration.ofNanos(-1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1683,21 +1781,30 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
-        DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 10), ZoneId.of("UTC")), -10); // edge at max
+        DateTimeUtils.minus(
+                ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 10), ZoneId.of("UTC")), -10); // edge
+                                                                                                                         // at
+                                                                                                                         // max
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), 1);
+            DateTimeUtils.minus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    1);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), Period.ofDays(1));
+            DateTimeUtils.minus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    Period.ofDays(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
         try {
-            DateTimeUtils.minus(ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")), Duration.ofNanos(1));
+            DateTimeUtils.minus(
+                    ZonedDateTime.of(LocalDate.of(Year.MIN_VALUE, 1, 1), LocalTime.of(0, 0, 0, 0), ZoneId.of("UTC")),
+                    Duration.ofNanos(1));
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
@@ -1765,7 +1872,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffSeconds() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.SECOND;
+        final double delta =
+                (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.SECOND;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffSeconds(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffSeconds(i2, i1));
@@ -1784,7 +1892,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffMinutes() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.MINUTE;
+        final double delta =
+                (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.MINUTE;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffMinutes(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffMinutes(i2, i1));
@@ -1803,7 +1912,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffDays() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.DAY;
+        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.DAY;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffDays(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffDays(i2, i1));
@@ -1822,7 +1931,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffYears() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.YEAR;
+        final double delta =
+                (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.YEAR;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffYears(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffYears(i2, i1));
@@ -1997,11 +2107,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dt2 = DateTimeUtils.parseInstant("2023-01-02T11:23:45.123456789 JP");
         final ZonedDateTime dt3 = dt2.atZone(TZ_JP);
 
-        TestCase.assertEquals(123456789L + 1_000_000_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.nanosOfDay(dt2, TZ_JP));
+        TestCase.assertEquals(123456789L + 1_000_000_000L * (45 + 23 * 60 + 11 * 60 * 60),
+                DateTimeUtils.nanosOfDay(dt2, TZ_JP));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(dt2, null));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null, TZ_JP));
 
-        TestCase.assertEquals(123456789L + 1_000_000_000L * (45 + 23 * 60 + 11 * 60 * 60), DateTimeUtils.nanosOfDay(dt3));
+        TestCase.assertEquals(123456789L + 1_000_000_000L * (45 + 23 * 60 + 11 * 60 * 60),
+                DateTimeUtils.nanosOfDay(dt3));
         TestCase.assertEquals(NULL_LONG, DateTimeUtils.nanosOfDay(null));
     }
 

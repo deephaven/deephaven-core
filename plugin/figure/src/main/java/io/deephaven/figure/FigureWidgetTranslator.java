@@ -56,7 +56,6 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesPlotStyle
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceType;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.StringMapWithDefault;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
 import java.time.format.DateTimeFormatter;
@@ -568,12 +567,12 @@ public class FigureWidgetTranslator {
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
-                        //noinspection ConstantConditions
+                        // noinspection ConstantConditions
                         final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
-                                .format(DateTimeUtils.toInstant(bp.getStartTime()));
-                        //noinspection ConstantConditions
+                                .format(bp.getStartTime());
+                        // noinspection ConstantConditions
                         final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
-                                .format(DateTimeUtils.toInstant(bp.getEndTime()));
+                                .format(bp.getEndTime());
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);
                         businessPeriod.setClose(close);

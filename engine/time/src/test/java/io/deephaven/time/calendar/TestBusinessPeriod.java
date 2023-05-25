@@ -42,10 +42,14 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
         assertEquals(DateTimeUtils.HOUR, period.getLength());
 
         assertTrue(period.contains(open1));
-        assertTrue(period.contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) + DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) - DateTimeUtils.MINUTE)));
+        assertTrue(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) + DateTimeUtils.MINUTE)));
+        assertFalse(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) - DateTimeUtils.MINUTE)));
         assertTrue(period.contains(close1));
-        assertTrue(period.contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) - DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) + DateTimeUtils.MINUTE)));
+        assertTrue(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) - DateTimeUtils.MINUTE)));
+        assertFalse(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) + DateTimeUtils.MINUTE)));
     }
 }

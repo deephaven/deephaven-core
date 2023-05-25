@@ -375,7 +375,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, TimeLiteralReplacedExpression timeConversionResult,
+    protected void generateFilterCode(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
@@ -413,7 +415,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, TimeLiteralReplacedExpression timeConversionResult,
+    private StringBuilder getClassBody(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;
@@ -541,7 +545,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             if (columnType.isPrimitive() && columnType != boolean.class) {
                 chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
             } else {
-                // TODO: Reinterpret Boolean and DateTime to byte and long
+                // TODO: Reinterpret Boolean and Instant to byte and long
                 chunkType = "ObjectChunk";
             }
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)

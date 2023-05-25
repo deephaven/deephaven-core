@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope.MissingVariableException;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.api.HasScope;
@@ -22,6 +21,7 @@ import io.deephaven.proto.backplane.script.grpc.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
@@ -1395,7 +1395,7 @@ public class ChunkerCompleter implements CompletionHandler {
             case "Date":
                 return String.class;
             case "Timestamp":
-                return DateTime.class;
+                return Instant.class;
         }
 
         // failure; allow anything...

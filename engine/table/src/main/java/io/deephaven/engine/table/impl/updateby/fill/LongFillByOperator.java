@@ -5,11 +5,11 @@
  */
 package io.deephaven.engine.table.impl.updateby.fill;
 
-import io.deephaven.engine.table.ColumnSource;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Collections;
-import io.deephaven.time.DateTime;
-import java.time.Instant;
+
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 
 import io.deephaven.base.verify.Assert;
@@ -76,8 +76,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     @Override
     public Map<String, ColumnSource<?>> getOutputColumns() {
         final ColumnSource<?> actualOutput;
-        if(type == DateTime.class) {
-            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);
+        if(type == Instant.class) {
+            actualOutput = ReinterpretUtils.longToInstantSource(outputSource);
         } else {
             actualOutput = outputSource;
         }

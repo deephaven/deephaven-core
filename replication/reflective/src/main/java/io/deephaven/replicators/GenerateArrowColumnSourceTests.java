@@ -113,8 +113,8 @@ public class GenerateArrowColumnSourceTests {
                         "21, 59, 29, 26000000")));
 
         generateTests("ArrowTimestampVectorTest", "/timestamp_vector.arrow", "get", "WritableObjectChunk",
-                null, ClassName.get("io.deephaven.time", "DateTime"), null, expectedRows,
-                addWrapper("new DateTime(%s)", Arrays.asList(
+                null, ClassName.get("java.time", "Instant"), null, expectedRows,
+                addWrapper("io.deephaven.time.DateTimeUtils.epochNanosToInstant(%s)", Arrays.asList(
                         "1670443801", "1570443532", null, "0", "170443801", "-72309740")));
 
         generateTests("ArrowDecimalVectorTest", "/decimal_vector.arrow", "get", "WritableObjectChunk",

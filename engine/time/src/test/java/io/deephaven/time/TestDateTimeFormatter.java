@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 
 public class TestDateTimeFormatter extends BaseArrayTestCase {
-    
+
     private static final ZoneId TZ_MN = ZoneId.of("America/Chicago");
 
     private Instant t;

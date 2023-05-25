@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * String formatter for {@link Instant}.
+ * String formatter for {@link Instant} and {@link ZonedDateTime}.
  */
 public class DateTimeFormatter {
 
@@ -61,7 +61,7 @@ public class DateTimeFormatter {
     /**
      * Returns a ZonedDateTime formatted as a string.
      *
-     * @param dateTime time to format as a string.
+     * @param dateTime date time to format as a string.
      * @return date time formatted as a string.
      */
     @NotNull
@@ -72,25 +72,25 @@ public class DateTimeFormatter {
     /**
      * Returns an Instant formatted as a string.
      *
-     * @param dateTime time to format as a string.
+     * @param instant time to format as a string.
      * @param timeZone time zone to use when formatting the string.
      * @return date time formatted as a string.
      */
     @NotNull
-    public String format(@NotNull final Instant dateTime, @NotNull final ZoneId timeZone) {
-        return format(dateTime.atZone(timeZone));
+    public String format(@NotNull final Instant instant, @NotNull final ZoneId timeZone) {
+        return format(instant.atZone(timeZone));
     }
 
     /**
      * Returns an Instant formatted as a string using the default time zone.
      *
-     * @param dateTime time to format as a string.
+     * @param instant time to format as a string.
      * @return date time formatted as a string.
      * @see ZoneId#systemDefault()
      */
     @NotNull
-    public String format(@NotNull final Instant dateTime) {
-        return format(dateTime, ZoneId.systemDefault());
+    public String format(@NotNull final Instant instant) {
+        return format(instant, ZoneId.systemDefault());
     }
 
     @Override

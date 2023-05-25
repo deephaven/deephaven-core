@@ -165,7 +165,7 @@ class ParquetTestCase(BaseTestCase):
             "someByteColumn = (byte)i",
             "someCharColumn = (char)i",
             # TODO(deephaven-core#3151) pyarrow indicates this value is out of the allowed range
-            # "someTime = DateTime.now() + i",
+            # "someTime = XYZTimeUtils.now() + i",
             "someKey = `` + (int)(i /100)",
             "nullKey = i < -1?`123`:null",
             "nullIntColumn = (int)null",

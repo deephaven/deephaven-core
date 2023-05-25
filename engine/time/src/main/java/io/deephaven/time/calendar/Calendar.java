@@ -16,7 +16,7 @@ import java.time.ZoneId;
  * To comply with the ISO-8601 standard for Dates, Strings should be of the form "yyyy-MM-dd",
  *
  *
- * Methods on Instant may not be precisely defined enough to return a DateTime, e.g nextDay(). In these cases, the
+ * Methods on Instant may not be precisely defined enough to return an Instant, e.g nextDay(). In these cases, the
  * method will return a String as discussed above.
  *
  *
@@ -24,9 +24,9 @@ import java.time.ZoneId;
  * a different time zone is considered a different calendar.
  *
  *
- * Frequently, the default implementation for methods on DateTimes is to call the corresponding method on a String with
- * {@code DateTime.toDateString}. This can be slower than methods written explicitly for DateTimes. If performance is an
- * issue, consider overriding these methods with other behavior.
+ * Frequently, the default implementation for methods on Instants is to call the corresponding method on a String with
+ * {@code DateTimeUtils.formatDate}. This can be slower than methods written explicitly for DateTimes. If performance is
+ * an issue, consider overriding these methods with other behavior.
  */
 public interface Calendar {
 

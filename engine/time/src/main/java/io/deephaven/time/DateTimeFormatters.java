@@ -68,7 +68,7 @@ public enum DateTimeFormatters {
     private final DateTimeFormatter formatter;
 
     DateTimeFormatters(final boolean isISO, final boolean hasDate, final boolean hasTime, final int subsecondDigits,
-                       final boolean hasTZ) {
+            final boolean hasTZ) {
         this.formatter = new DateTimeFormatter(isISO, hasDate, hasTime, subsecondDigits, hasTZ);
     }
 

@@ -359,28 +359,6 @@ public interface Table extends
     @ConcurrentMethod
     Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
-    /**
-     * Produce a new table with the same columns as this table, but with a new column presenting the specified DateTime
-     * column as a Long column (with each DateTime represented instead as the corresponding number of nanos since the
-     * epoch).
-     * <p>
-     * NOTE: This is a really just an updateView(), and behaves accordingly for column ordering and (re)placement. This
-     * doesn't work on data that has been brought fully into memory (e.g. via select()). Use a view instead.
-     *
-     * @param dateTimeColumnName Name of date time column
-     * @param nanosColumnName Name of nanos column
-     * @return The new table, constructed as explained above.
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
-
-    /**
-     * @param columnName name of column to convert from DateTime to nanos
-     * @return The result of dateTimeColumnAsNanos(columnName, columnName).
-     */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String columnName);
-
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations
     // -----------------------------------------------------------------------------------------------------------------

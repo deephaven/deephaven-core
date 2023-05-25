@@ -3,14 +3,12 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.text.Convert;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
@@ -43,7 +41,7 @@ import static io.deephaven.util.QueryConstants.*;
  * @param <T>
  */
 public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
-        implements UngroupableColumnSource, ConvertableTimeSource {
+        implements UngroupableColumnSource, ConvertibleTimeSource {
     /**
      * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
      *
@@ -377,7 +375,6 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if ((alternateDataType == long.class
                 || alternateDataType == Long.class
-                || alternateDataType == DateTime.class
                 || alternateDataType == Instant.class)
                 && supportsTimeConversion()) {
             return true;
@@ -388,43 +385,37 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     @Override
     public boolean supportsTimeConversion() {
-        return innerSource instanceof ConvertableTimeSource
-                && ((ConvertableTimeSource) innerSource).supportsTimeConversion();
+        return innerSource instanceof ConvertibleTimeSource
+                && ((ConvertibleTimeSource) innerSource).supportsTimeConversion();
     }
 
     @Override
     public ColumnSource<Long> toEpochNano() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toEpochNano());
     }
 
     @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
-                .toDateTime());
-    }
-
-    @Override
     public ColumnSource<Instant> toInstant() {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toInstant());
     }
 
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toZonedDateTime(zone));
     }
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toLocalDate(zone));
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
-        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertibleTimeSource) innerSource)
                 .toLocalTime(zone));
     }
 
@@ -439,8 +430,6 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
         if (supportsTimeConversion()) {
             if (alternateDataType == long.class || alternateDataType == Long.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
-            } else if (alternateDataType == DateTime.class) {
-                return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
             } else if (alternateDataType == Instant.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
             }

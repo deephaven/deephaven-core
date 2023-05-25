@@ -7,13 +7,13 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
-import io.deephaven.time.DateTime;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableLoggerImpl2;
 import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
+import java.time.Instant;
 
 class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter>
         implements ServerStateLogLogger {
@@ -43,7 +43,7 @@ class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLog
     }
 
     class DirectSetter extends TableLoggerImpl2.BaseSetter implements ISetter {
-        RowSetter<DateTime> IntervalStartTime;
+        RowSetter<Instant> IntervalStartTime;
         RowSetter<Integer> IntervalDurationMicros;
         RowSetter<Integer> TotalMemoryMiB;
         RowSetter<Integer> FreeMemoryMiB;
@@ -55,7 +55,7 @@ class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLog
         RowSetter<Integer> IntervalUGPCyclesSafePointTimeMicros;
 
         DirectSetter() {
-            IntervalStartTime = row.getSetter("IntervalStartTime", DateTime.class);
+            IntervalStartTime = row.getSetter("IntervalStartTime", Instant.class);
             IntervalDurationMicros = row.getSetter("IntervalDurationMicros", int.class);
             TotalMemoryMiB = row.getSetter("TotalMemoryMiB", int.class);
             FreeMemoryMiB = row.getSetter("FreeMemoryMiB", int.class);
@@ -82,7 +82,7 @@ class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLog
                 final short intervalUGPCyclesSafePoints,
                 final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
             setRowFlags(flags);
-            this.IntervalStartTime.set(DateTimeUtils.epochMillisToDateTime(intervalStartTime));
+            this.IntervalStartTime.set(DateTimeUtils.epochMillisToInstant(intervalStartTime));
             this.IntervalDurationMicros.set(intervalDurationMicros);
             this.TotalMemoryMiB.set(totalMemoryMiB);
             this.FreeMemoryMiB.set(freeMemoryMiB);
@@ -105,7 +105,7 @@ class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLog
 
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
-                .add("IntervalStartTime", DateTime.class)
+                .add("IntervalStartTime", Instant.class)
                 .add("IntervalDurationMicros", int.class)
                 .add("TotalMemoryMiB", int.class)
                 .add("FreeMemoryMiB", int.class)

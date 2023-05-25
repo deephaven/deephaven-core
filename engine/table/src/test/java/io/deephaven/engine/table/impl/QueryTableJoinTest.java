@@ -9,8 +9,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedIntGenerator;
-import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.testutil.generator.UnsortedInstantGenerator;
 import io.deephaven.time.DateTimeFormatter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
@@ -25,6 +24,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 
 import java.text.ParseException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Random;
@@ -240,20 +240,20 @@ public class QueryTableJoinTest {
         final Random random = new Random(seed);
         QueryScope.addParam("f", new DateTimeFormatter("dd HH:mm:ss"));
 
-        final DateTime start = DateTimeUtils.toDateTime(
-                DateTimeUtils.parseLocalDate("2011-02-02").atStartOfDay().atZone(ZoneId.of("America/New_York")));
-        final DateTime end = DateTimeUtils.toDateTime(
-                DateTimeUtils.parseLocalDate("2011-02-03").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+        final Instant start = DateTimeUtils.parseLocalDate("2011-02-02").atStartOfDay()
+                .atZone(ZoneId.of("America/New_York")).toInstant();
+        final Instant end = DateTimeUtils.parseLocalDate("2011-02-03").atStartOfDay()
+                .atZone(ZoneId.of("America/New_York")).toInstant();
         final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new UnsortedDateTimeGenerator(start, end),
+                        new UnsortedInstantGenerator(start, end),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30)));
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new UnsortedDateTimeGenerator(start, end),
+                        new UnsortedInstantGenerator(start, end),
                         new SetGenerator<>("a", "b", "c"),
                         new SetGenerator<>(20, 30, 40)));
 

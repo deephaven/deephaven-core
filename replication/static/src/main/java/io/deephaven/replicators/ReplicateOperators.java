@@ -67,10 +67,7 @@ public class ReplicateOperators {
     }
 
     private static final String resultInitReplacementForLong = "" +
-            "        if (type == DateTime.class) {\n" +
-            "            actualResult = new DateTimeArraySource();\n" +
-            "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
-            "        } else if (type == Instant.class) {\n" +
+            "        if (type == Instant.class) {\n" +
             "            actualResult = new InstantArraySource();\n" +
             "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
             "        } else {\n" +
@@ -89,11 +86,7 @@ public class ReplicateOperators {
                 Collections.singletonList("            Class<?> type,"));
         lines = ReplicationUtils.addImport(lines,
                 "import java.time.Instant;",
-                "import io.deephaven.time.DateTime;",
-                "import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;",
-                "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
                 "import io.deephaven.engine.table.impl.sources.InstantArraySource;",
-                "import io.deephaven.engine.table.impl.sources.LongArraySource;",
                 "import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;");
         lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization",
                 Collections.singletonList(resultInitReplacementForLong));

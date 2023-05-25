@@ -1147,7 +1147,8 @@ public class TestFormulaArrayEvaluation {
 
         for (String[] formulaPair : formulas) {
             try {
-                final TimeLiteralReplacedExpression timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaPair[0]);
+                final TimeLiteralReplacedExpression timeConversionResult =
+                        TimeLiteralReplacedExpression.convertExpression(formulaPair[0]);
                 final String convertedFilterFormula = timeConversionResult.getConvertedFormula();
                 final String shiftedFilterFormula = ShiftedColumnsFactory.convertToShiftedFormula(formulaPair[0]);
 

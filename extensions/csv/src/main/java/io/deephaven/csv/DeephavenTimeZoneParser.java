@@ -22,8 +22,7 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
     private int lastTzKey = -1;
     private ZoneId lastZoneId = null;
 
-    public DeephavenTimeZoneParser() {
-    }
+    public DeephavenTimeZoneParser() {}
 
     @Override
     public boolean tryParse(ByteSlice bs, MutableObject<ZoneId> zoneId, MutableLong offsetSeconds) {
@@ -102,7 +101,7 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
 
             final ZoneId previous = zoneIdMap.put(tzKey, zoneId);
 
-            if(previous != null){
+            if (previous != null) {
                 throw new RuntimeException("Time zone hashing collision: " + zname + " " + tzKey);
             }
         }

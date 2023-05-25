@@ -6,7 +6,6 @@ package io.deephaven.engine.tablelogger.impl.memory;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.*;
@@ -14,6 +13,7 @@ import io.deephaven.tablelogger.*;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
+import java.time.Instant;
 
 class QueryOperationPerformanceLogLoggerMemoryImpl
         extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter>
@@ -45,8 +45,8 @@ class QueryOperationPerformanceLogLoggerMemoryImpl
         RowSetter<String> CallerLine;
         RowSetter<Boolean> IsTopLevel;
         RowSetter<Boolean> IsCompilation;
-        RowSetter<DateTime> StartTime;
-        RowSetter<DateTime> EndTime;
+        RowSetter<Instant> StartTime;
+        RowSetter<Instant> EndTime;
         RowSetter<Long> DurationNanos;
         RowSetter<Long> CpuNanos;
         RowSetter<Long> UserCpuNanos;
@@ -68,8 +68,8 @@ class QueryOperationPerformanceLogLoggerMemoryImpl
             CallerLine = row.getSetter("CallerLine", String.class);
             IsTopLevel = row.getSetter("IsTopLevel", Boolean.class);
             IsCompilation = row.getSetter("IsCompilation", Boolean.class);
-            StartTime = row.getSetter("StartTime", DateTime.class);
-            EndTime = row.getSetter("EndTime", DateTime.class);
+            StartTime = row.getSetter("StartTime", Instant.class);
+            EndTime = row.getSetter("EndTime", Instant.class);
             DurationNanos = row.getSetter("DurationNanos", long.class);
             CpuNanos = row.getSetter("CpuNanos", long.class);
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
@@ -95,10 +95,10 @@ class QueryOperationPerformanceLogLoggerMemoryImpl
             this.CallerLine.set(nugget.getCallerLine());
             this.IsTopLevel.setBoolean(nugget.isTopLevel());
             this.IsCompilation.setBoolean(nugget.getName().startsWith("Compile:"));
-            this.StartTime.set(DateTimeUtils.epochMillisToDateTime(nugget.getStartClockTime()));
+            this.StartTime.set(DateTimeUtils.epochMillisToInstant(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
-                    : DateTimeUtils.epochMillisToDateTime(
+                    : DateTimeUtils.epochMillisToInstant(
                             nugget.getStartClockTime() + DateTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
             this.DurationNanos.setLong(
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
@@ -133,8 +133,8 @@ class QueryOperationPerformanceLogLoggerMemoryImpl
                 .add("CallerLine", String.class)
                 .add("IsTopLevel", Boolean.class)
                 .add("IsCompilation", Boolean.class)
-                .add("StartTime", DateTime.class)
-                .add("EndTime", DateTime.class)
+                .add("StartTime", Instant.class)
+                .add("EndTime", Instant.class)
                 .add("DurationNanos", long.class)
                 .add("CpuNanos", long.class)
                 .add("UserCpuNanos", long.class)

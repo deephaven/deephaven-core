@@ -576,9 +576,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)
                 }).t;
@@ -622,9 +622,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)
                 }).t;
@@ -661,18 +661,18 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         weightCol = "bigIntWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
 
         doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
 
         weightCol = "bigDecWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
 
         doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
@@ -1081,9 +1081,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1120,9 +1120,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
@@ -1341,9 +1341,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1379,9 +1379,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
@@ -1497,9 +1497,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1534,9 +1534,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                                DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 

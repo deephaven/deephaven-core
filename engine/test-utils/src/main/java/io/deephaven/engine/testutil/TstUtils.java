@@ -21,15 +21,12 @@ import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.testutil.sources.ByteTestSource;
-import io.deephaven.engine.testutil.sources.DateTimeTestSource;
 import io.deephaven.engine.testutil.sources.DoubleTestSource;
 import io.deephaven.engine.testutil.sources.FloatTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableByteTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableCharTestSource;
-import io.deephaven.engine.testutil.sources.ImmutableDateTimeTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.engine.testutil.sources.CharTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableDoubleTestSource;
@@ -50,7 +47,7 @@ import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -150,7 +147,7 @@ public class TstUtils {
                         + rowSet.size() + ", arraySize=" + columnHolder.size());
             }
 
-            if (!(columnSource instanceof DateTimeTestSource && columnHolder.dataType == long.class)
+            if (!(columnSource instanceof InstantTestSource && columnHolder.dataType == long.class)
                     && !(columnSource.getType() == Boolean.class && columnHolder.dataType == Boolean.class)
                     && (columnSource.getType() != TypeUtils.getUnboxedTypeIfBoxed(columnHolder.dataType))) {
                 throw new UnsupportedOperationException(columnHolder.name + ": Adding invalid type: source.getType()="
@@ -401,10 +398,10 @@ public class TstUtils {
         return TableTools.col(colName, data);
     }
 
-    public static ColumnHolder<DateTime> getRandomDateTimeCol(String colName, int size, Random random) {
-        final DateTime[] data = new DateTime[size];
+    public static ColumnHolder<Instant> getRandomInstantCol(String colName, int size, Random random) {
+        final Instant[] data = new Instant[size];
         for (int i = 0; i < data.length; i++) {
-            data[i] = new DateTime(random.nextLong());
+            data[i] = DateTimeUtils.epochAutoToInstant(random.nextLong());
         }
         return ColumnHolder.createColumnHolder(colName, false, data);
     }
@@ -629,9 +626,6 @@ public class TstUtils {
             } else if (unboxedType == double.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new ImmutableDoubleTestSource(rowSet, chunkData);
-            } else if (unboxedType == DateTime.class) {
-                // noinspection unchecked
-                result = (AbstractColumnSource<T>) new ImmutableDateTimeTestSource(rowSet, chunkData);
             } else if (unboxedType == Instant.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new ImmutableInstantTestSource(rowSet, chunkData);
@@ -661,9 +655,6 @@ public class TstUtils {
             } else if (unboxedType == double.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new DoubleTestSource(rowSet, chunkData);
-            } else if (unboxedType == DateTime.class) {
-                // noinspection unchecked
-                result = (AbstractColumnSource<T>) new DateTimeTestSource(rowSet, chunkData);
             } else if (unboxedType == Instant.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new InstantTestSource(rowSet, chunkData);

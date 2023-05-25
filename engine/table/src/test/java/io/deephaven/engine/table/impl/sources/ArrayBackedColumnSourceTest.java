@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.time.DateTime;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.GenericArray;
 import io.deephaven.qst.array.PrimitiveArray;
@@ -70,8 +69,7 @@ public class ArrayBackedColumnSourceTest {
 
     @Test
     public void fromInstants() {
-        check(ArrayBackedColumnSourceTest::checkInstant, Type.instantType(), Instant.ofEpochMilli(1), null,
-                Instant.ofEpochMilli(3));
+        check(Type.instantType(), Instant.ofEpochMilli(1), null, Instant.ofEpochMilli(3));
     }
 
     @Test
@@ -114,11 +112,5 @@ public class ArrayBackedColumnSourceTest {
         for (T left : values) {
             assertThat(columnSource.get(ix++)).matches((Predicate<Object>) right -> comparison.test(left, right));
         }
-    }
-
-    private static boolean checkInstant(Instant instant, Object o) {
-        return (instant == null && o == null) ||
-                (instant != null && (o instanceof DateTime)
-                        && instant.toEpochMilli() == ((DateTime) o).getMillis());
     }
 }

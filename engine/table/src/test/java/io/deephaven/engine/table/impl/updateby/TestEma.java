@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
@@ -24,13 +24,13 @@ import io.deephaven.numerics.movingaverages.AbstractMa;
 import io.deephaven.numerics.movingaverages.ByEma;
 import io.deephaven.numerics.movingaverages.ByEmaSimple;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -49,9 +49,9 @@ public class TestEma extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final OperationControl skipControl = OperationControl.builder()
                 .onNullValue(BadDataBehavior.SKIP)
@@ -82,9 +82,9 @@ public class TestEma extends BaseUpdateByTest {
 
     private void doTestStaticBucketed(boolean grouped) {
         final TableDefaults t = createTestTable(100000, true, grouped, false, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final OperationControl skipControl = OperationControl.builder()
                 .onNullValue(BadDataBehavior.SKIP)
@@ -180,10 +180,10 @@ public class TestEma extends BaseUpdateByTest {
     @Test
     public void testTimeThrowBehaviors() {
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:29:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:32:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:29:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:32:00.000 NY"),
                 null);
 
         testThrowsInternal(
@@ -242,12 +242,12 @@ public class TestEma extends BaseUpdateByTest {
                 .build();
 
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:31:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:32:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:33:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:34:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:35:00.000 NY"));
+                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:31:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:32:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:33:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:34:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:35:00.000 NY"));
 
         Table expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, NULL_DOUBLE, 2, NULL_DOUBLE, 4, NULL_DOUBLE));
@@ -338,11 +338,11 @@ public class TestEma extends BaseUpdateByTest {
         assertTableEquals(expected, input.updateBy(UpdateByOperation.Ema(nanCtl, 10)));
 
         final ColumnHolder ts = col("ts",
-                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:31:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:31:00.000 NY"),
                 null,
-                DateTimeUtils.parseDateTime("2022-03-11T09:33:00.000 NY"),
-                DateTimeUtils.parseDateTime("2022-03-11T09:34:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:33:00.000 NY"),
+                DateTimeUtils.parseInstant("2022-03-11T09:34:00.000 NY"),
                 null);
 
         expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
@@ -360,10 +360,10 @@ public class TestEma extends BaseUpdateByTest {
     /**
      * This is a hacky, inefficient way to force nulls into the timestamps while maintaining sorted-ness otherwise
      */
-    private class SortedIntGeneratorWithNulls extends SortedDateTimeGenerator {
+    private class SortedIntGeneratorWithNulls extends SortedInstantGenerator {
         final double nullFrac;
 
-        public SortedIntGeneratorWithNulls(DateTime minTime, DateTime maxTime, double nullFrac) {
+        public SortedIntGeneratorWithNulls(Instant minTime, Instant maxTime, double nullFrac) {
             super(minTime, maxTime);
             this.nullFrac = nullFrac;
         }
@@ -374,7 +374,7 @@ public class TestEma extends BaseUpdateByTest {
             if (nullFrac == 0.0) {
                 return retChunk;
             }
-            ObjectChunk<DateTime, Values> srcChunk = retChunk.asObjectChunk();
+            ObjectChunk<Instant, Values> srcChunk = retChunk.asObjectChunk();
             Object[] dateArr = new Object[srcChunk.size()];
             srcChunk.copyToArray(0, dateArr, 0, dateArr.length);
 
@@ -392,8 +392,8 @@ public class TestEma extends BaseUpdateByTest {
     public void testNullTimestamps() {
         final CreateResult timeResult = createTestTable(100, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedIntGeneratorWithNulls(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"),
                         0.25)});
 
         final OperationControl skipControl = OperationControl.builder()
@@ -446,9 +446,9 @@ public class TestEma extends BaseUpdateByTest {
     private void doTestTicking(boolean bucketed, boolean appendOnly) {
         final CreateResult tickResult = createTestTable(10000, bucketed, false, true, 0x31313131);
         final CreateResult timeResult = createTestTable(10000, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
-                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         if (appendOnly) {
             tickResult.t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);

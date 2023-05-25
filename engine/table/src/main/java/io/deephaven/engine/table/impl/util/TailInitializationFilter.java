@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 
+import java.time.Instant;
 import java.util.function.LongUnaryOperator;
 
 /**
@@ -59,13 +59,11 @@ public class TailInitializationFilter {
      */
     public static Table mostRecent(final Table table, final String timestampName, final long nanos) {
         return QueryPerformanceRecorder.withNugget("TailInitializationFilter(" + nanos + ")", () -> {
-            final ColumnSource timestampSource = table.getColumnSource(timestampName, DateTime.class);
+            final ColumnSource<Instant> timestampSource = table.getColumnSource(timestampName, Instant.class);
             if (timestampSource.allowsReinterpret(long.class)) {
-                // noinspection unchecked
                 return mostRecentLong(table, timestampSource.reinterpret(long.class), nanos);
             } else {
-                // noinspection unchecked
-                return mostRecentDateTime(table, timestampSource, nanos);
+                return mostRecentInstant(table, timestampSource, nanos);
             }
         });
     }
@@ -74,8 +72,11 @@ public class TailInitializationFilter {
         return mostRecentLong(table, reinterpret::getLong, nanos);
     }
 
-    private static Table mostRecentDateTime(final Table table, final ColumnSource<DateTime> cs, final long nanos) {
-        return mostRecentLong(table, (idx) -> cs.get(idx).getNanos(), nanos);
+    private static Table mostRecentInstant(final Table table, final ColumnSource<Instant> cs, final long nanos) {
+        return mostRecentLong(table, (idx) -> {
+            Instant instant = cs.get(idx);
+            return DateTimeUtils.epochNanos(instant);
+        }, nanos);
     }
 
     private static Table mostRecentLong(final Table table, final LongUnaryOperator getValue, final long nanos) {

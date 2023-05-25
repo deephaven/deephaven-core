@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -21,7 +20,7 @@ import java.util.concurrent.locks.Condition;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SimulationClock implements Clock {
 
-    private final DateTime endTime;
+    private final Instant endTime;
     private final long stepNanos;
 
     private final Runnable refreshTask = this::advance; // Save this in a reference so we can deregister it.
@@ -33,7 +32,7 @@ public class SimulationClock implements Clock {
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
     private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
-    private DateTime now;
+    private Instant now;
 
     /**
      * Create a simulation clock for the specified time range and step.
@@ -42,10 +41,11 @@ public class SimulationClock implements Clock {
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepSize The time to "elapse" in each run loop
      */
-    public SimulationClock(@NotNull final String startTime,
+    public SimulationClock(
+            @NotNull final String startTime,
             @NotNull final String endTime,
             @NotNull final String stepSize) {
-        this(DateTimeUtils.parseDateTime(startTime), DateTimeUtils.parseDateTime(endTime),
+        this(DateTimeUtils.parseInstant(startTime), DateTimeUtils.parseInstant(endTime),
                 DateTimeUtils.parseNanos(stepSize));
     }
 
@@ -56,8 +56,9 @@ public class SimulationClock implements Clock {
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepNanos The number of nanoseconds to "elapse" in each run loop
      */
-    public SimulationClock(@NotNull final DateTime startTime,
-            @NotNull final DateTime endTime,
+    public SimulationClock(
+            @NotNull final Instant startTime,
+            @NotNull final Instant endTime,
             final long stepNanos) {
         Require.neqNull(startTime, "startTime");
         this.endTime = Require.neqNull(endTime, "endTime");
@@ -68,27 +69,27 @@ public class SimulationClock implements Clock {
 
     @Override
     public long currentTimeMillis() {
-        return now.getMillis();
+        return DateTimeUtils.epochMillis(now);
     }
 
     @Override
     public long currentTimeMicros() {
-        return now.getMicros();
+        return DateTimeUtils.epochMicros(now);
     }
 
     @Override
     public long currentTimeNanos() {
-        return now.getNanos();
+        return DateTimeUtils.epochNanos(now);
     }
 
     @Override
     public Instant instantNanos() {
-        return now.toInstant();
+        return now;
     }
 
     @Override
     public Instant instantMillis() {
-        return now.toInstant();
+        return now;
     }
 
     /**
@@ -118,14 +119,14 @@ public class SimulationClock implements Clock {
      */
     void advance() {
         Assert.eq(state.get(), "state.get()", State.STARTED);
-        if (now.getNanos() == endTime.getNanos()) {
+        if (DateTimeUtils.epochNanos(now) == DateTimeUtils.epochNanos(endTime)) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
                     "state.compareAndSet(State.STARTED, State.DONE)");
             UpdateGraphProcessor.DEFAULT.removeSource(refreshTask);
             UpdateGraphProcessor.DEFAULT.requestSignal(ugpCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
-        final DateTime incremented = DateTimeUtils.plus(now, stepNanos);
+        final Instant incremented = DateTimeUtils.plus(now, stepNanos);
         now = DateTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
     }
 

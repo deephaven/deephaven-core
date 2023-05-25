@@ -3,8 +3,7 @@
  */
 package io.deephaven.plot.axisformatters;
 
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZoneAliases;
+import io.deephaven.time.DateTimeUtils;
 
 import java.io.Serializable;
 import java.text.FieldPosition;
@@ -15,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * A formatter for converting nanoseconds into formatted strings.
- *
+ * <p>
  * For details on the supported patterns see the javadoc for
  * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html">DateTimeFormatter</a>
  */
@@ -64,7 +63,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
     }
 
     /**
-     * Formatter for DateTime values.
+     * Formatter for date time values.
      */
     public class NanosFormat extends NumberFormat {
         private static final long serialVersionUID = 6037426284760469353L;
@@ -94,7 +93,8 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         @Override
         public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
-            return toAppendTo.append(formatter.format(new DateTime(number).toInstant()));
+            // noinspection DataFlowIssue
+            return toAppendTo.append(formatter.format(DateTimeUtils.epochNanosToInstant(number)));
         }
 
         @Override

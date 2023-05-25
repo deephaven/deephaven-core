@@ -9,10 +9,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.TimeZoneAliases;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -27,6 +26,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Scanner;
 import java.util.regex.Pattern;
@@ -211,8 +211,9 @@ public class TestCsvTools {
                         new String[] {"key11", "key11", "key21", "key21", "key22"},
                         new int[] {1, 2, 2, NULL_INT, 3},
                         new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new DateTime[] {new DateTime(100), new DateTime(10000), null,
-                                new DateTime(100000), new DateTime(1000000)}
+                        new Instant[] {
+                                DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(10000), null,
+                                DateTimeUtils.epochNanosToInstant(100000), DateTimeUtils.epochNanosToInstant(1000000)}
                 });
         long numRows = tableToTest.size();
 
@@ -223,7 +224,8 @@ public class TestCsvTools {
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
+            CsvTools.writeCsv(
+                    tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
             Scanner csvReader = new Scanner(csvFile);
 
             // Check header

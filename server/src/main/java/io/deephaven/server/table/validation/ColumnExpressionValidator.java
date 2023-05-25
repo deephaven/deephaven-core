@@ -25,12 +25,12 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.libs.GroovyStaticImports;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,9 +67,7 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
         // DateTime
         // String
         whitelistedInstanceMethods = Stream
-                .of(
-                        DateTime.class,
-                        String.class)
+                .of(Instant.class, String.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> !Modifier.isStatic(m.getModifiers()))

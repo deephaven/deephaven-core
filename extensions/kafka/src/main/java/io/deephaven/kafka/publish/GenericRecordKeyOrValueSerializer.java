@@ -9,11 +9,11 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.kafka.KafkaSchemaUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -28,6 +28,7 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -288,22 +289,24 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
                 (final int ii, final ObjectChunk<?, Values> inputChunk) -> inputChunk.get(ii));
     }
 
-    private static GenericRecordFieldProcessor makeDateTimeToMillisFieldProcessor(
+    private static GenericRecordFieldProcessor makeInstantToMillisFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((DateTime) inputChunk.get(ii)).getMillis());
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((Instant) inputChunk.get(ii))
+                        .toEpochMilli());
     }
 
-    private static GenericRecordFieldProcessor makeDateTimeToMicrosFieldProcessor(
+    private static GenericRecordFieldProcessor makeInstantToMicrosFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource) {
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Values> inputChunk) -> ((DateTime) inputChunk.get(ii)).getMicros());
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> DateTimeUtils
+                        .epochMicros((Instant) inputChunk.get(ii)));
     }
 
     private static BigInteger toBigIntegerAtPrecisionAndScale(
@@ -380,7 +383,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final Class<?> columnType,
             final ColumnSource<?> src) {
         final Schema fieldSchema = field.schema();
-        if (columnType == DateTime.class && fieldSchema.getType() == Schema.Type.LONG) {
+        if (columnType == Instant.class && fieldSchema.getType() == Schema.Type.LONG) {
             final LogicalType logicalType = fieldSchema.getLogicalType();
             if (LogicalTypes.timestampMicros().equals(logicalType)) {
                 return makeLongFieldProcessorWithInverseFactor(fieldName, src, 1000);
@@ -447,17 +450,17 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         if (type == double.class) {
             return makeDoubleFieldProcessor(fieldName, src);
         }
-        if (type == DateTime.class) {
+        if (type == Instant.class) {
             final String logicalType = getLogicalType(fieldName, field);
             if (logicalType == null) {
                 throw new IllegalArgumentException(
                         "field " + fieldName + " for column " + columnName + " has no logical type.");
             }
             if (logicalType.equals("timestamp-millis")) {
-                return makeDateTimeToMillisFieldProcessor(fieldName, src);
+                return makeInstantToMillisFieldProcessor(fieldName, src);
             }
             if (logicalType.equals("timestamp-micros")) {
-                return makeDateTimeToMicrosFieldProcessor(fieldName, src);
+                return makeInstantToMicrosFieldProcessor(fieldName, src);
             }
             throw new IllegalArgumentException("field " + fieldName + " for column " + columnName
                     + " has unrecognized logical type " + logicalType);
