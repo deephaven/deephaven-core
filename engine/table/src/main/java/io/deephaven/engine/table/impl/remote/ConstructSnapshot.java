@@ -83,7 +83,7 @@ public class ConstructSnapshot {
     // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
     // default enables more than 100MB of 8-byte values in a single record batch
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
-            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1<<24);
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
     /**
      * Holder for thread-local state.
