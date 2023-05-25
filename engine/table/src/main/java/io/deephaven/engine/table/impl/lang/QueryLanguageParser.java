@@ -127,16 +127,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -240,16 +231,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             final boolean unboxArguments,
             final boolean verifyIdempotence)
             throws QueryLanguageParseException {
-        this.packageImports = packageImports == null ? Collections.emptySet()
-                : Collections.unmodifiableCollection(Require.notContainsNull(packageImports, "packageImports"));
-        this.classImports = classImports == null ? Collections.emptySet()
-                : Collections.unmodifiableCollection(Require.notContainsNull(classImports, "classImports"));
-        this.staticImports = staticImports == null ? Collections.emptySet()
-                : Collections.unmodifiableCollection(Require.notContainsNull(staticImports, "staticImports"));
+        this.packageImports = Set.copyOf(packageImports);
+        this.classImports = Set.copyOf(classImports);
+        this.staticImports = Set.copyOf(staticImports);
         this.testOverrideClassLookups = testOverrideClassLookups;
-        this.variables = variables == null ? Collections.emptyMap() : Collections.unmodifiableMap(variables);
-        this.variableTypeArguments = variableTypeArguments == null ? Collections.emptyMap()
-                : Collections.unmodifiableMap(variableTypeArguments);
+        this.variables = Map.copyOf(variables);
+        this.variableTypeArguments = Map.copyOf(variableTypeArguments);
         this.unboxArguments = unboxArguments;
 
         // Convert backticks *before* converting single equals!
@@ -315,7 +302,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
 
-            result = new Result(type, printer.builder.toString(), variablesUsed,    isConstantValueExpression,
+            result = new Result(type, printer.builder.toString(), variablesUsed, isConstantValueExpression,
                     formulaShiftColPair);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
@@ -589,7 +576,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
             // for Python function/Groovy closure call syntax without the explicit 'call' keyword, check if it is
             // defined in Query scope
-            if (acceptableMethods.size() == 0) {
+            if (acceptableMethods.isEmpty()) {
                 // if the method name corresponds to an object in the query scope, and the type of that object
                 // is something that could be potentially implicitly call()ed (e.g. PyCallableWrapper/Closure),
                 // then try to add its call() method to the acceptableMethods list.
@@ -599,7 +586,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, typeArguments);
                     }
                 }
-                if (acceptableMethods.size() > 0) {
+                if (!acceptableMethods.isEmpty()) {
                     variablesUsed.add(methodName);
                 }
             }
@@ -914,7 +901,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
     }
 
-    private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2, Class<?>[] argExprTypes) {
+    private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2,
+            Class<?>[] argExprTypes) {
         final Boolean executableResult = isMoreSpecificExecutable(c1, c2, argExprTypes);
         if (executableResult == null) {
             throw new IllegalStateException("Ambiguous comparison between constructors " + c1 + " and " + c2);
@@ -939,10 +927,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     /**
      * Check whether {@code e2} is more specific than {@code e1}.
+     * 
      * @param e1 The current best-choice executable.
      * @param e2 A possible better-matching execuable.
      * @param argExprTypes The argument types. (Used as a tiebreaker between primitive and boxed parameters.)
-     * @return {@code true} if {@code e2} is more specific than {@code e1}, {@code false} if {@code e1} is more specific than {@code e2}, and {@code null} if no determination could be made.
+     * @return {@code true} if {@code e2} is more specific than {@code e1}, {@code false} if {@code e1} is more specific
+     *         than {@code e2}, and {@code null} if no determination could be made.
      * @param <EXECUTABLE_TYPE> The kind of executable ({@link Method} vs {@link Constructor}).
      */
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
@@ -988,7 +978,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (argExprType.isPrimitive() && e1ParamType.isPrimitive() && !e2ParamType.isPrimitive()) {
                 return false;
             }
-            if (TypeUtils.isBoxedType(argExprType) && TypeUtils.isBoxedType(e1ParamType) && !TypeUtils.isBoxedType(e2ParamType)) {
+            if (TypeUtils.isBoxedType(argExprType) && TypeUtils.isBoxedType(e1ParamType)
+                    && !TypeUtils.isBoxedType(e2ParamType)) {
                 return false;
             }
         }
@@ -1034,7 +1025,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     }
 
     /**
-     * Gets the type arguments corresponding to the {@code expressions}, if ther are any declared.
+     * Gets the type arguments corresponding to the {@code expressions}, if there are any declared.
      *
      * @param expressions The expressions to check type arguments for.
      * @return An array with the same length as {@code expressions},
@@ -1518,7 +1509,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return boolean.class;
         }
 
-        // "Replace "x!=y" with "!(x==y)")
+        // Replace `x!=y` with `!(x==y)`.
+        // (QueryLanguageFunctionUtils only has `eq()` methods, not `neq()`, since `!eq()` is sufficient.)
         if (op == BinaryExpr.Operator.NOT_EQUALS) {
             // Update the AST -- create an EQUALS BinaryExpr, then invert its result.
             final BinaryExpr equalsExpr = new BinaryExpr(n.getLeft(), n.getRight(), BinaryExpr.Operator.EQUALS);
@@ -1559,7 +1551,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if (printer.hasStringBuilder()) {
             final MethodCallExpr binaryOpOverloadMethod = new MethodCallExpr(methodName, n.getLeft(), n.getRight());
             replaceChildExpression(origParent, n, binaryOpOverloadMethod); // Replace the BinaryExpr with a method call,
-                                                                           // e.g. "x==y" --> "eq(x, y)"
+                                                                           // e.g. `x==y` --> `eq(x, y)`
 
             assertNothingPrinted.run();
             return binaryOpOverloadMethod.accept(this, printer);
