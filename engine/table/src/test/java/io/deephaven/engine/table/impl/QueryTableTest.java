@@ -60,6 +60,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
+import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -444,16 +445,16 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(Arrays.asList(-1, 1, 3), Arrays.asList(table.getColumn("t").get(0, 3)));
     }
 
-//    public void testReinterpret() {
-//        final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
-//        final Table result = source.dateTimeColumnAsNanos("dt");
-//        assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-//        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DateTime.class));
-//        assertTableEquals(reflexive, source.dropColumns("n"));
-//        final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
-//        final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
-//        assertTableEquals(sortedResult, sortedSource);
-//    }
+    public void testReinterpret() {
+        final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
+        final Table result = source.view(List.of(new ReinterpretedColumn<>("dt", Instant.class, "dt", long.class)));
+        assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
+        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class));
+        assertTableEquals(reflexive, source.dropColumns("n"));
+        final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
+        final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
+        assertTableEquals(sortedResult, sortedSource);
+    }
 
     public void testStaticSelectIntermediateColumn() {
         final Table et = emptyTable(3);

@@ -864,12 +864,6 @@ public class QueryTable extends BaseTable<QueryTable> {
         return viewOrUpdateView(Flavor.View, viewColumns);
     }
 
-//    @Override
-//    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-//        return viewOrUpdateView(Flavor.UpdateView,
-//                new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
-//    }
-
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
         private final QueryTable source;
         private final WhereFilter[] filters;
