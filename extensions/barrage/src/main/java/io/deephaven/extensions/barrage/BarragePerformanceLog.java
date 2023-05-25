@@ -15,18 +15,19 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
  * Enable barrage performance metrics by setting the {@code BarragePerformanceLog.enableAll} configuration property, or
  * by adding the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key} as an
- * {@link io.deephaven.engine.table.Table#setAttribute(String, Object) attribute} to the table.
+ * {@link Table#withAttributes(Map)} attribute} to the table.
  */
 public class BarragePerformanceLog {
     /**
      * If all barrage performance logging is enabled by default, then table's description is used as TableKey unless
      * overridden with the {@link io.deephaven.engine.table.Table#BARRAGE_PERFORMANCE_KEY_ATTRIBUTE table key}
-     * {@link io.deephaven.engine.table.Table#setAttribute(String, Object) attribute}.
+     * {@link Table#withAttributes(Map)} attribute}.
      */
     public static final boolean ALL_PERFORMANCE_ENABLED = Configuration.getInstance().getBooleanForClassWithDefault(
             BarragePerformanceLog.class, "enableAll", true);
