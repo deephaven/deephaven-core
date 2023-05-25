@@ -437,7 +437,8 @@ def dh_vectorize(fn):
 
 
 @contextlib.contextmanager
-def _query_scope_ctx():
+def _query_scope_ctx(    globals: Optional[Mapping[str, Any]] = None,
+                         locals: Optional[Mapping[str, Any]] = None,):
     """A context manager to set/unset query scope based on the scope of the most immediate caller code that invokes
     Table operations."""
 
@@ -805,7 +806,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
 
-    def view(self, formulas: Union[str, Sequence[str]]) -> Table:
+    def view(self, formulas: Union[str, Sequence[str]],     globals: Optional[Mapping[str, Any]] = None,
+             locals: Optional[Mapping[str, Any]] = None,) -> Table:
         """The view method creates a new formula table that includes one column for each formula.
 
         Args:
@@ -819,7 +821,7 @@ class Table(JObjectWrapper):
         """
         try:
             formulas = to_sequence(formulas)
-            with _query_scope_ctx():
+            with _query_scope_ctx(globals, locals):
                 return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e

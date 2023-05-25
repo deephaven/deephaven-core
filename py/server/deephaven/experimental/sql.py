@@ -1,19 +1,26 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
+import contextlib
 import inspect
 import jpy
 from typing import Dict, Union, Mapping, Optional, Any
 
 from deephaven import DHError
-from deephaven import jcompat
-from deephaven.table import Table
+from deephaven.table import Table, _j_py_script_session
 
 _JSql = jpy.get_type("io.deephaven.engine.sql.Sql")
 
 
-def _filter_tables(scope: Mapping[str, Any]) -> Dict[str, Table]:
-    return {k: v for (k, v) in scope.items() if isinstance(v, Table)}
+@contextlib.contextmanager
+def _scope(globals: Mapping[str, Any], locals: Mapping[str, Any]):
+    j_py_script_session = _j_py_script_session()
+    # Can do `globals | locals` in Python 3.9+
+    j_py_script_session.pushScope({**globals, **locals})
+    try:
+        yield
+    finally:
+        j_py_script_session.popScope()
 
 
 def eval(
@@ -24,8 +31,8 @@ def eval(
 ) -> Union[Table, jpy.JType]:
     """Experimental SQL evaluation. Subject to change.
 
-    If both globals and locals is omitted, the sql is executed with the globals and locals in the environment where
-    eval() is called.
+    If both globals and locals is omitted (the default), the sql is executed with the globals and locals in the
+    environment where eval() is called.
 
     Args:
         sql (str): the sql
@@ -47,13 +54,11 @@ def eval(
         else:
             globals = globals or {}
             locals = locals or {}
-        # Can use `globals | locals` instead when on python 3.9+
-        scope = _filter_tables({**globals, **locals})
-        j_scope = jcompat.j_hashmap(scope)
-        if dry_run:
-            # No JObjectWrapper for TableSpec
-            return _JSql.dryRun(sql, j_scope)
-        else:
-            return Table(j_table=_JSql.evaluate(sql, j_scope))
+        with _scope(globals, locals):
+            if dry_run:
+                # No JObjectWrapper for TableSpec
+                return _JSql.dryRun(sql)
+            else:
+                return Table(j_table=_JSql.evaluate(sql))
     except Exception as e:
         raise DHError(e, "failed to execute SQL.") from e

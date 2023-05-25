@@ -37,22 +37,22 @@ public final class Sql {
 
     @ScriptApi
     public static Table evaluate(String sql) {
-        return evaluate(sql, scriptSessionScope());
+        return evaluate(sql, currentScriptSessionNamedTables());
     }
 
     @ScriptApi
     public static TableSpec dryRun(String sql) {
-        return dryRun(sql, scriptSessionScope());
+        return dryRun(sql, currentScriptSessionNamedTables());
     }
 
-    public static Table evaluate(String sql, Map<String, Table> scope) {
+    private static Table evaluate(String sql, Map<String, Table> scope) {
         final Map<TicketTable, Table> map = new HashMap<>(scope.size());
         final TableSpec tableSpec = parseSql(sql, scope, map);
         log.debug().append("Executing. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
         return tableSpec.logic().create(new TableCreatorTicketInterceptor(TableCreatorImpl.INSTANCE, map));
     }
 
-    public static TableSpec dryRun(String sql, Map<String, Table> scope) {
+    private static TableSpec dryRun(String sql, Map<String, Table> scope) {
         final TableSpec tableSpec = parseSql(sql, scope, null);
         log.info().append("Dry run. Graphviz representation:").nl().append(ToGraphvizDot.INSTANCE, tableSpec).endl();
         return tableSpec;
@@ -80,7 +80,7 @@ public final class Sql {
         return builder.build();
     }
 
-    private static Map<String, Table> scriptSessionScope() {
+    private static Map<String, Table> currentScriptSessionNamedTables() {
         final Map<String, Table> scope = new HashMap<>();
         // getVariables() is inefficient
         // See SQLTODO(catalog-reader-implementation)

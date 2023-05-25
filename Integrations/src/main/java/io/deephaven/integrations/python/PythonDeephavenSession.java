@@ -23,6 +23,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,8 +61,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
 
     public static String SCRIPT_TYPE = "Python";
 
-    private final PythonScriptSessionModule module;
-
     private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
@@ -80,14 +79,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
             PythonEvaluatorJpy pythonEvaluator)
             throws IOException {
         super(objectTypeLookup, listener);
-
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
-        executionContext.getQueryLibrary().importClass(org.jpy.PyObject.class);
-        try (final SafeCloseable ignored = executionContext.open()) {
-            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
-                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
-        }
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         publishInitial();
@@ -111,7 +104,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(PythonScope<?> scope) {
         super(NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
-        this.module = null;
         this.evaluator = null;
         this.scriptFinder = null;
     }
@@ -164,6 +156,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void pushScope(PyObject pydict) {
         if (!pydict.isDict()) {
             throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
@@ -171,6 +165,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope.pushScope(pydict);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void popScope() {
         scope.popScope();
     }
@@ -190,7 +186,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     @Override
     public Map<String, Object> getVariables() {
         final Map<String, Object> outMap = new LinkedHashMap<>();
-        scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(value)));
+        try (final PythonScriptSessionModule module = module()) {
+            scope.getEntriesMap().forEach((key, value) -> outMap.put(key, maybeUnwrap(module, value)));
+        }
         return outMap;
     }
 
@@ -224,7 +222,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         // It would be great if we could push down the maybeUnwrap logic into create_change_list (it could handle the
         // unwrapping), but we are unable to tell jpy that we want to unwrap JType objects, but pass back python objects
         // as PyObject.
-        try (PyObject changes = module.create_change_list(from.dict.unwrap(), to.dict.unwrap())) {
+        try (
+                final PythonScriptSessionModule module = module();
+                final PyObject changes = module.create_change_list(from.dict.unwrap(), to.dict.unwrap())) {
             final Changes diff = new Changes();
             diff.error = e;
             for (PyObject change : changes.asList()) {
@@ -233,20 +233,25 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 final String name = change.call(String.class, "__getitem__", int.class, 0);
                 final PyObject fromValue = change.call(PyObject.class, "__getitem__", int.class, 1);
                 final PyObject toValue = change.call(PyObject.class, "__getitem__", int.class, 2);
-                applyVariableChangeToDiff(diff, name, maybeUnwrap(fromValue), maybeUnwrap(toValue));
+                applyVariableChangeToDiff(diff, name, maybeUnwrap(module, fromValue), maybeUnwrap(module, toValue));
             }
             return diff;
         }
     }
 
-    private Object maybeUnwrap(Object o) {
+    private static PythonScriptSessionModule module() {
+        return (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+                .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+    }
+
+    private Object maybeUnwrap(PythonScriptSessionModule module, Object o) {
         if (o instanceof PyObject) {
-            return maybeUnwrap((PyObject) o);
+            return maybeUnwrap(module, (PyObject) o);
         }
         return o;
     }
 
-    private Object maybeUnwrap(PyObject o) {
+    private Object maybeUnwrap(PythonScriptSessionModule module, PyObject o) {
         if (o == null) {
             return null;
         }
@@ -318,7 +323,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public Object unwrapObject(Object object) {
         if (object instanceof PyObject) {
             final PyObject pyObject = (PyObject) object;
-            final Object unwrapped = module.unwrap_to_java_type(pyObject);
+            final Object unwrapped;
+            try (final PythonScriptSessionModule module = module()) {
+                unwrapped = module.unwrap_to_java_type(pyObject);
+            }
             if (unwrapped != null) {
                 return unwrapped;
             }
