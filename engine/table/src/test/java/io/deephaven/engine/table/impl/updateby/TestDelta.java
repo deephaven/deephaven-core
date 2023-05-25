@@ -493,7 +493,8 @@ public class TestDelta extends BaseUpdateByTest {
                                 ? NULL_LONG
                                 : 0); // ZeroDominates
             } else {
-                result[ii] = DateTimeUtils.epochNanos(((Instant) expected[ii])) - DateTimeUtils.epochNanos(((Instant) expected[ii - 1]));
+                result[ii] = DateTimeUtils.epochNanos(((Instant) expected[ii]))
+                        - DateTimeUtils.epochNanos(((Instant) expected[ii - 1]));
             }
         }
 
