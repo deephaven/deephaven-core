@@ -1463,7 +1463,6 @@ public class ConstructSnapshot {
             return result;
         }
 
-        // TODO: SNAPSHOT_CHUNK_SIZE should be configurable -- and not have a limit until jsapi is updated
         final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
 
         try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
