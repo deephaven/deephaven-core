@@ -1491,6 +1491,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Class<?> lhType = getTypeWithCaching(n.getLeft());
         Class<?> rhType = getTypeWithCaching(n.getRight());
 
+        // Now get the updated left/right expressions. (We must retrieve these after running getTypeWithCaching(),
+        // since the original left/right nodes in the BinaryExpr may have been replaced while traversing the tree.)
         final Expression leftExpr = n.getLeft();
         final Expression rightExpr = n.getRight();
 
