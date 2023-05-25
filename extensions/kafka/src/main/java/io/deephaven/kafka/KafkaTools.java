@@ -35,7 +35,6 @@ import io.deephaven.kafka.KafkaTools.TableType.Append;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Stream;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.StreamTableTools;
@@ -72,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.*;
@@ -238,7 +238,7 @@ public class KafkaTools {
             fass = base.doubleType().noDefault();
         } else if (type == String.class) {
             fass = base.stringType().noDefault();
-        } else if (type == DateTime.class) {
+        } else if (type == Instant.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
             final BigDecimalUtils.PropertyNames propertyNames =
@@ -374,7 +374,7 @@ public class KafkaTools {
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
                         if (LogicalTypes.timestampMicros().equals(logicalType) ||
                                 LogicalTypes.timestampMillis().equals(logicalType)) {
-                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, DateTime[].class));
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
                         }
@@ -2010,7 +2010,7 @@ public class KafkaTools {
                 consumerProperties,
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, DateTime.class));
+                (final String colName) -> ColumnDefinition.fromGenericType(colName, Instant.class));
         return c;
     }
 

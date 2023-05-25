@@ -8,17 +8,18 @@ import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
+import io.deephaven.time.DateTimeUtils;
 
 import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
@@ -28,11 +29,11 @@ import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     public void testSimple() {
-        DateTime[] times = new DateTime[10];
+        Instant[] times = new Instant[10];
 
         final long startTime = System.currentTimeMillis() - (10 * times.length);
         for (int ii = 0; ii < times.length; ++ii) {
-            times[ii] = new DateTime((startTime + (ii * 1000)) * 1000000L);
+            times[ii] = DateTimeUtils.epochNanosToInstant((startTime + (ii * 1000)) * 1000000L);
         }
 
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
@@ -93,7 +94,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                                 new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
+                                .computeLocked(() -> table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
                                         .where(unitTestTimeSeriesFilter1));
                     }
                 },

@@ -32,13 +32,14 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -547,7 +548,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         @Override
         public void run() {
-            final DateTime now = DateTime.now();
+            final Instant now = DateTimeUtils.now();
 
             final BarrageSubscriptionPerformanceLogger logger =
                     BarragePerformanceLog.getInstance().getSubscriptionLogger();
@@ -564,8 +565,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             }
         }
 
-        private void flush(final DateTime now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                final String statType) throws IOException {
+        private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
+                           final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;
             }

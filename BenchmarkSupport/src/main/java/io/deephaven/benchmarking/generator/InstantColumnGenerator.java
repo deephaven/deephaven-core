@@ -4,32 +4,34 @@
 package io.deephaven.benchmarking.generator;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 
-public class DateColumnGenerator implements ColumnGenerator<DateTime> {
+import java.time.Instant;
+
+public class InstantColumnGenerator implements ColumnGenerator<Instant> {
+
     private NumGenerator gen;
-    private final ColumnDefinition<DateTime> def;
+    private final ColumnDefinition<Instant> def;
     private final long min;
     private final long max;
 
-    public DateColumnGenerator(String name) {
+    public InstantColumnGenerator(String name) {
         this(name, 0, Long.MAX_VALUE);
     }
 
-    public DateColumnGenerator(String name, DateTime min, DateTime max) {
-        this(name, min.getNanos(), max.getNanos());
+    public InstantColumnGenerator(String name, Instant min, Instant max) {
+        this(name, DateTimeUtils.epochNanos(min), DateTimeUtils.epochNanos(max));
     }
 
-    private DateColumnGenerator(String name, long min, long max) {
+    private InstantColumnGenerator(String name, long min, long max) {
         def = ColumnDefinition.ofTime(name);
         this.min = min;
         this.max = max;
     }
 
     @Override
-    public ColumnDefinition<DateTime> getDefinition() {
+    public ColumnDefinition<Instant> getDefinition() {
         return def;
     }
 
@@ -48,7 +50,7 @@ public class DateColumnGenerator implements ColumnGenerator<DateTime> {
         gen = new NumGenerator(min, max, random);
     }
 
-    public DateTime get() {
-        return DateTimeUtils.epochNanosToDateTime(gen.getLong());
+    public Instant get() {
+        return DateTimeUtils.epochNanosToInstant(gen.getLong());
     }
 }

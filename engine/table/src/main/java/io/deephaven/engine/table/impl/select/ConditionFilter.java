@@ -541,7 +541,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             if (columnType.isPrimitive() && columnType != boolean.class) {
                 chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
             } else {
-                // TODO: Reinterpret Boolean and DateTime to byte and long
+                // TODO: Reinterpret Boolean and Instant to byte and long
                 chunkType = "ObjectChunk";
             }
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)

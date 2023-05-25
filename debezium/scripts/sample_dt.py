@@ -4,7 +4,7 @@ import os
 import sys
 
 def onUpdate(added_unused, modified_unused, deleted_unused):
-    timestamp = dt.datetime.now().astimezone().isoformat()
+    timestamp = dt.XYZTimeUtils.now().astimezone().isoformat()
     total = pageviews_summary.j_table.getColumn('total').get(0)
     max_received_at = pageviews_summary.j_table.getColumn('max_received_at').get(0)
     dt_ms = pageviews_summary.j_table.getColumn('dt_ms').get(0)

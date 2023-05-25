@@ -7,21 +7,21 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
-import io.deephaven.time.DateTime;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.ChunkType;
 import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
 import java.time.ZoneId;
 
 /**
- * Parquet {@link ToPage} implementation for {@link DateTime}s stored as Int96s representing an Impala
+ * Parquet {@link ToPage} implementation for {@link Instant}s stored as Int96s representing an Impala
  * format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
  *
  */
-public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, long[]> {
+public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, long[]> {
     /*
      * Potential references/points of comparison for this algorithm:
      *   https://github.com/apache/iceberg/pull/1184/files
@@ -29,7 +29,7 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
      *   (last retrieved as https://github.com/apache/arrow/blob/d5a2aa2ffb1c2fc4f3ca48c829fcdba80ec67916/cpp/src/parquet/types.h)
      */
     @SuppressWarnings("rawtypes")
-    private static final ToDateTimePageFromInt96 INSTANCE = new ToDateTimePageFromInt96<>();
+    private static final ToInstantPageFromInt96 INSTANCE = new ToInstantPageFromInt96<>();
     private static final long NANOS_PER_DAY = 86400L * 1000 * 1000 * 1000;
     private static final int JULIAN_OFFSET_TO_UNIX_EPOCH_DAYS = 2_440_588;
     private static long offset;
@@ -38,26 +38,28 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
         setReferenceTimeZone(referenceTimeZone);
     }
 
-    public static <ATTR extends Any> ToDateTimePageFromInt96<ATTR> create(@NotNull Class<?> nativeType) {
-        if (DateTime.class.equals(nativeType)) {
+    public static <ATTR extends Any> ToInstantPageFromInt96<ATTR> create(@NotNull Class<?> nativeType) {
+        if (Instant.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;
         }
 
-        throw new IllegalArgumentException("The native type for a DateTime column is " + nativeType.getCanonicalName());
+        throw new IllegalArgumentException("The native type foran Instant column is " + nativeType.getCanonicalName());
     }
 
-    private ToDateTimePageFromInt96() {
+    private ToInstantPageFromInt96() {
     }
 
     /**
      * Allows overriding the time zone to be used when interpreting Int96 timestamp values.
      * Default is UTC. Can be set globally with the parameter deephaven.parquet.referenceTimeZone.
-     * Valid values are time zone Strings which would be used in convertDateTime, such as NY.
+     * Valid values are time zone Strings which would be used in {@link DateTimeUtils#parseInstant(String) parseInstant},
+     * such as NY.
+     *
      * @param timeZone
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseDateTime("1970-01-01T00:00:00 " + timeZone), ZoneId.of("UTC"));
+        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone), ZoneId.of("UTC"));
     }
 
     @Override
@@ -77,8 +79,8 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
 
     @Override
     @NotNull
-    public final Class<DateTime> getNativeComponentType() {
-        return DateTime.class;
+    public final Class<Instant> getNativeComponentType() {
+        return Instant.class;
     }
 
     @Override
@@ -100,12 +102,12 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
 
     @Override
     @NotNull
-    public final ObjectVector<DateTime> makeVector(@NotNull final long[] result) {
-        final DateTime[] to = new DateTime[result.length];
+    public final ObjectVector<Instant> makeVector(@NotNull final long[] result) {
+        final Instant[] to = new Instant[result.length];
 
         final int resultLength = result.length;
         for (int ri = 0; ri < resultLength; ++ri) {
-            to[ri] = DateTimeUtils.epochNanosToDateTime(result[ri]);
+            to[ri] = DateTimeUtils.epochNanosToInstant(result[ri]);
         }
 
         return new ObjectVectorDirect<>(to);

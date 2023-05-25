@@ -184,7 +184,7 @@ public class GenerateAxesPlotMethods {
 
             @Override
             public String getIndexableDataCode(String variableName) {
-                return "new IndexableNumericDataArrayDateTime(" + variableName + ", " + PLOT_INFO_ID + ")";
+                return "new IndexableNumericDataArrayInstant(" + variableName + ", " + PLOT_INFO_ID + ")";
             }
 
             @Override

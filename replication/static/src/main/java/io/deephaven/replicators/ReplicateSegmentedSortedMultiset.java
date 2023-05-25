@@ -254,7 +254,7 @@ public class ReplicateSegmentedSortedMultiset {
                         "        final Instant[] keyArray = new Instant[positions.length];",
                         "        int writePos = 0;",
                         "        for (long position : positions) {",
-                        "            keyArray[writePos++] = getAsDate(position);",
+                        "            keyArray[writePos++] = getAsInstant(position);",
                         "        }",
                         "",
                         "        return new ObjectVectorDirect<>(keyArray);",

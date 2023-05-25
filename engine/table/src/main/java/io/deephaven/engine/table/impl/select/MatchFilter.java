@@ -13,12 +13,12 @@ import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
+import java.time.Instant;
 import java.util.*;
 
 public class MatchFilter extends WhereFilterImpl {
@@ -321,15 +321,15 @@ public class MatchFilter extends WhereFilterImpl {
                     }
                 };
             }
-            if (cls == DateTime.class) {
+            if (cls == Instant.class) {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "DateTime literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return DateTimeUtils.parseDateTime(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.parseInstant(str.substring(1, str.length() - 1));
                     }
                 };
             }

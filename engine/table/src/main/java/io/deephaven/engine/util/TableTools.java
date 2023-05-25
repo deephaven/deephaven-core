@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -37,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.function.BinaryOperator;
@@ -112,7 +112,7 @@ public class TableTools {
      * Prints the first few rows of a table to standard output.
      *
      * @param source a Deephaven table object
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param columns varargs of column names to display
      */
     public static void show(Table source, ZoneId timeZone, String... columns) {
@@ -158,7 +158,7 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param columns varargs of column names to display
      */
     public static void show(Table source, long maxRowCount, ZoneId timeZone,
@@ -171,7 +171,7 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
@@ -186,7 +186,7 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
@@ -216,7 +216,7 @@ public class TableTools {
      *
      * @param source a Deephaven table object
      * @param maxRowCount the number of rows to return
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param delimiter a String value to use between printed values
      * @param out a PrintStream destination to which to print the data
      * @param showRowSet a boolean indicating whether to also print rowSet details
@@ -269,7 +269,7 @@ public class TableTools {
      * Returns the first few rows of a table as a pipe-delimited string.
      *
      * @param t a Deephaven table object
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
@@ -282,7 +282,7 @@ public class TableTools {
      *
      * @param table a Deephaven table object
      * @param size the number of rows to return
-     * @param timeZone a time zone constant relative to which DateTime data should be adjusted
+     * @param timeZone a time zone constant relative to which date time data should be adjusted
      * @param columns varargs of columns to include in the result
      * @return a String
      */
@@ -553,16 +553,16 @@ public class TableTools {
     }
 
     /**
-     * Returns a ColumnHolder of type DateTime that can be used when creating in-memory tables.
+     * Returns a ColumnHolder of type Instant that can be used when creating in-memory tables.
      *
      * @param name name of the column
      * @param data a list of values for the column
      * @return a Deephaven ColumnHolder object
      */
-    public static ColumnHolder<DateTime> dateTimeCol(String name, DateTime... data) {
+    public static ColumnHolder<Instant> instantCol(String name, Instant... data) {
         // NB: IntelliJ says that we do not need to cast data, but javac warns about this statement otherwise
         // noinspection RedundantCast
-        return new ColumnHolder<>(name, DateTime.class, null, false, (DateTime[]) data);
+        return new ColumnHolder<>(name, Instant.class, null, false, (Instant[]) data);
     }
 
     /**
@@ -788,7 +788,7 @@ public class TableTools {
      * @param period time interval between new row additions
      * @return time table
      */
-    public static Table timeTable(DateTime startTime, String period) {
+    public static Table timeTable(Instant startTime, String period) {
         final long periodValue = DateTimeUtils.parseNanos(period);
         return timeTable(startTime, periodValue);
     }
@@ -801,7 +801,7 @@ public class TableTools {
      * @param replayer data replayer
      * @return time table
      */
-    public static Table timeTable(DateTime startTime, String period, ReplayerInterface replayer) {
+    public static Table timeTable(Instant startTime, String period, ReplayerInterface replayer) {
         final long periodValue = DateTimeUtils.parseNanos(period);
         return timeTable(startTime, periodValue, replayer);
     }
@@ -814,7 +814,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period) {
-        return timeTable(DateTimeUtils.parseDateTime(startTime), period);
+        return timeTable(DateTimeUtils.parseInstant(startTime), period);
     }
 
     /**
@@ -826,7 +826,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtils.parseDateTime(startTime), period, replayer);
+        return timeTable(DateTimeUtils.parseInstant(startTime), period, replayer);
     }
 
     /**
@@ -847,8 +847,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
-                null, periodNanos, false);
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer), null, periodNanos, false);
     }
 
     /**
@@ -858,9 +857,8 @@ public class TableTools {
      * @param periodNanos time interval between new row additions in nanoseconds.
      * @return time table
      */
-    public static Table timeTable(DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentClock(),
-                startTime, periodNanos, false);
+    public static Table timeTable(Instant startTime, long periodNanos) {
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentClock(), startTime, periodNanos, false);
     }
 
     /**
@@ -871,9 +869,8 @@ public class TableTools {
      * @param replayer data replayer
      * @return time table
      */
-    public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
-                startTime, periodNanos, false);
+    public static Table timeTable(Instant startTime, long periodNanos, ReplayerInterface replayer) {
+        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer), startTime, periodNanos, false);
     }
 
     /**
@@ -884,7 +881,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos) {
-        return timeTable(DateTimeUtils.parseDateTime(startTime), periodNanos);
+        return timeTable(DateTimeUtils.parseInstant(startTime), periodNanos);
     }
 
     /**
@@ -896,7 +893,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtils.parseDateTime(startTime), periodNanos, replayer);
+        return timeTable(DateTimeUtils.parseInstant(startTime), periodNanos, replayer);
     }
 
     /**
@@ -907,7 +904,7 @@ public class TableTools {
      * @param periodNanos time interval between new row additions in nanoseconds.
      * @return time table
      */
-    public static Table timeTable(Clock clock, DateTime startTime, long periodNanos) {
+    public static Table timeTable(Clock clock, Instant startTime, long periodNanos) {
         return new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, periodNanos, false);
     }
 
@@ -1155,9 +1152,9 @@ public class TableTools {
 
     private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
-        if (col.getType() == DateTime.class) {
+        if (col.getType() == Instant.class) {
             // noinspection unchecked
-            col = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) col);
+            col = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) col);
         }
 
         final int chunkSize = 1 << 16;

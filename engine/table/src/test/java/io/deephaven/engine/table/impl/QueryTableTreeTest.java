@@ -3,50 +3,10 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.QueryTableTestBase;
-import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.io.log.LogLevel;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
-
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ReflexiveUse;
-import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 import org.junit.experimental.categories.Category;
-
-import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Test of Tree Tables and rollups.
@@ -1202,10 +1162,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final int size = 100;
     // final QueryTable table = getTable(size, random,
     // initColumnInfos(
-    // new String[] {"USym", "DateTime", "IntCol", "DoubleCol", "BoolCol", "BigIntCol", "BigDecCol"},
+    // new String[] {"USym", "Instant", "IntCol", "DoubleCol", "BoolCol", "BigIntCol", "BigDecCol"},
     // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new SetGenerator<>(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"), null,
-    // DateTimeUtils.convertDateTime("2020-02-28T14:30:00 NY")),
+    // new SetGenerator<>(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"), null,
+    // DateTimeUtils.parseInstant("2020-02-28T14:30:00 NY")),
     // new IntGenerator(0, 1_000_000),
     // new DoubleGenerator(-100, 100),
     // new BooleanGenerator(0.4, 0.1),
@@ -1216,13 +1176,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // TableTools.showWithRowSet(table);
     //
     // final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> table.rollup(comboAgg, "USym", "DateTime", "BoolCol", "BigIntCol", "BigDecCol"));
+    // .computeLocked(() -> table.rollup(comboAgg, "USym", "Instant", "BoolCol", "BigIntCol", "BigDecCol"));
     // verifyReverseLookup(rollup);
     //
     // verifyReverseLookup(
     // UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "USym")));
     // verifyReverseLookup(
-    // UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "DateTime")));
+    // UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "Instant")));
     // verifyReverseLookup(
     // UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.rollup(comboAgg, "BoolCol")));
     // }
@@ -1642,7 +1602,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final int size = 100;
     // final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {
-    // "USym", "Group", "IntCol", "DoubleCol", "StringCol", "StringNulls", "BoolCol", "DateTime",
+    // "USym", "Group", "IntCol", "DoubleCol", "StringCol", "StringNulls", "BoolCol", "Instant",
     // "IntSet", "LongSet", "DoubleSet", "FloatSet", "CharSet", "ShortSet", "ByteSet"},
     //
     // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
@@ -1652,8 +1612,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // new SetGenerator<>("A", "B", "C", "D"),
     // new SetGenerator<>("A", "B", "C", "D", null),
     // new BooleanGenerator(.5, .1),
-    // new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"),
-    // DateTimeUtils.convertDateTime("2020-03-17T16:00:00 NY")),
+    // new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-03-17T09:30:00 NY"),
+    // DateTimeUtils.parseInstant("2020-03-17T16:00:00 NY")),
     // new SetGenerator<>(0, 1, 2, 3, 4, 5, NULL_INT),
     // new SetGenerator<>(0L, 1L, 2L, 3L, 4L, 5L, NULL_LONG),
     // new SetGenerator<>(0.0D, 1.1D, 2.2D, 3.3D, 4.4D, 5.5D, NULL_DOUBLE),
@@ -1665,18 +1625,18 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final Collection<? extends Aggregation> rollupDefinition = List.of(
     // AggSum("IntCol", "DoubleCol"),
-    // AggMin("MinInt=IntCol", "MinDT=DateTime"),
-    // AggMax("MaxDouble=DoubleCol", "MaxDT=DateTime"),
+    // AggMin("MinInt=IntCol", "MinDT=Instant"),
+    // AggMax("MaxDouble=DoubleCol", "MaxDT=Instant"),
     // AggAvg("IntAvg=IntCol", "DoubleAvg=DoubleCol"),
     // AggStd("IntStd=IntCol", "DoubleStd=DoubleCol"),
     // AggVar("IntVar=IntCol", "DoubleVar=DoubleCol"),
     // AggFirst("IntFirst=IntCol", "DoubleFirst=DoubleCol"),
     // AggLast("IntLast=IntCol", "DoubleLast=DoubleCol"),
     // AggCount("Count"),
-    // AggCountDistinct("SCDistinct=StringCol", "CDBoolCol=BoolCol", "DTCDistinct=DateTime",
+    // AggCountDistinct("SCDistinct=StringCol", "CDBoolCol=BoolCol", "DTCDistinct=Instant",
     // "CDIntCol=IntSet", "CDLongCol=LongSet", "CDDoubleCol=DoubleSet",
     // "CDFloatCol=FloatSet", "CDCharCol=CharSet", "CDShortCol=ShortSet", "CDByteCol=ByteSet"),
-    // AggDistinct("SDistinct=StringCol", "DistinctBoolCol=BoolCol", "DTDistinct=DateTime",
+    // AggDistinct("SDistinct=StringCol", "DistinctBoolCol=BoolCol", "DTDistinct=Instant",
     // "DIntCol=IntSet", "DLongCol=LongSet", "DDoubleCol=DoubleSet",
     // "DFloatCol=FloatSet", "DCharCol=CharSet", "DShortCol=ShortSet", "DByteCol=ByteSet"),
     // AggUnique("SUnique=StringCol", "UniqueBoolCol=BoolCol",

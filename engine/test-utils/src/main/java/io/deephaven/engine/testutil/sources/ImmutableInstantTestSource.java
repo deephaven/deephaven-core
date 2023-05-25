@@ -21,7 +21,7 @@ import java.time.Instant;
 
 /**
  * DateTime column source that wraps and delegates the storage to an {@code ImmutableLongTestSource<Long>}. This also
- * provides an interface so this column can be interpreted as a long column (through UnboxedDateTimeTestSource).
+ * provides an interface so this column can be interpreted as a long column (through UnboxedInstantTestSource).
  */
 public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
         implements MutableColumnSourceGetDefaults.ForObject<Instant>, TestColumnSource<Instant> {

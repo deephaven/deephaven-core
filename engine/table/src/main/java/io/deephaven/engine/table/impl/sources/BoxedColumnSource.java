@@ -8,7 +8,6 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.chunk.*;
@@ -20,7 +19,7 @@ import java.time.Instant;
 
 /**
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type, e.g. {@code byte} as
- * {@link Boolean} or {@code long} as {@link DateTime}.
+ * {@link Boolean} or {@code long} as {@link Instant}.
  */
 public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements MutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {

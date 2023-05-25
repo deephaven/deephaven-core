@@ -1278,7 +1278,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
                 @Override
                 public Instant instantMillis() {
-                    return Instant.ofEpochMilli(nanos/DateTimeUtils.MILLI);
+                    return Instant.ofEpochMilli(nanos/ DateTimeUtils.MILLI);
                 }
             };
             DateTimeUtils.setClock(clock);
@@ -1765,7 +1765,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffSeconds() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.SECOND;
+        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.SECOND;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffSeconds(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffSeconds(i2, i1));
@@ -1784,7 +1784,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffMinutes() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.MINUTE;
+        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.MINUTE;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffMinutes(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffMinutes(i2, i1));
@@ -1803,7 +1803,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffDays() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.DAY;
+        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.DAY;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffDays(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffDays(i2, i1));
@@ -1822,7 +1822,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testDiffYears() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);
-        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double)DateTimeUtils.YEAR;
+        final double delta = (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.YEAR;
 
         TestCase.assertEquals(delta, DateTimeUtils.diffYears(i1, i2));
         TestCase.assertEquals(-delta, DateTimeUtils.diffYears(i2, i1));

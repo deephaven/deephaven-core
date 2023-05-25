@@ -14,11 +14,13 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.time.DateTime;
 import java.io.File;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -27,7 +29,14 @@ import org.junit.Test;
 public class ArrowTimestampVectorTest {
     private static final List<Long> expectedRows = Arrays.asList(0L, 1L, 2L, 4L, 8L, 9L);
 
-    private static final DateTime[] expectedValues = new DateTime[] {new DateTime(1670443801), new DateTime(1570443532), null, new DateTime(0), new DateTime(170443801), new DateTime(-72309740)};
+    private static final Instant[] expectedValues = new Instant[] {
+            DateTimeUtils.epochNanosToInstant(1670443801),
+            DateTimeUtils.epochNanosToInstant(1570443532),
+            null,
+            DateTimeUtils.epochNanosToInstant(0),
+            DateTimeUtils.epochNanosToInstant(170443801),
+            DateTimeUtils.epochNanosToInstant(-72309740)
+    };
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
@@ -50,7 +59,7 @@ public class ArrowTimestampVectorTest {
 
         Assert.assertEquals(1, table.getColumnSources().size());
         // noinspection OptionalGetWithoutIsPresent, unchecked;
-        final ColumnSource<DateTime> cs = (ColumnSource<DateTime>)table.getColumnSources().stream().findFirst().get();
+        final ColumnSource<Instant> cs = (ColumnSource<Instant>)table.getColumnSources().stream().findFirst().get();
 
         ArrowWrapperTools.Shareable.resetNumBlocksLoaded();
         final MutableInt pos = new MutableInt();
@@ -63,10 +72,10 @@ public class ArrowTimestampVectorTest {
         final QueryTable table = loadTable();
 
         // noinspection OptionalGetWithoutIsPresent, unchecked;
-        final ColumnSource<DateTime> cs = (ColumnSource<DateTime>)table.getColumnSources().stream().findFirst().get();
+        final ColumnSource<Instant> cs = (ColumnSource<Instant>)table.getColumnSources().stream().findFirst().get();
 
         try (final ChunkSource.FillContext fillContext = cs.makeFillContext(table.intSize());
-            final WritableObjectChunk<DateTime, Values> chunk = WritableObjectChunk.makeWritableChunk(table.intSize())) {
+            final WritableObjectChunk<Instant, Values> chunk = WritableObjectChunk.makeWritableChunk(table.intSize())) {
 
             ArrowWrapperTools.Shareable.resetNumBlocksLoaded();
             cs.fillChunk(fillContext, chunk, table.getRowSet());

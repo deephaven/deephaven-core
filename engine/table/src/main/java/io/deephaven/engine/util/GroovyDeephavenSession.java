@@ -510,7 +510,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.time.DateTime;\n" +
                 "import io.deephaven.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +

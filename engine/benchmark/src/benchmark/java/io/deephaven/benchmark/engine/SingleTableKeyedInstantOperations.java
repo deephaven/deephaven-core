@@ -24,7 +24,7 @@ import static io.deephaven.benchmarking.BenchmarkTools.applySparsity;
 @Measurement(iterations = 1, time = 1)
 @Timeout(time = 3)
 @Fork(1)
-public class SingleTableKeyedDateTimeOperations {
+public class SingleTableKeyedInstantOperations {
     private TableBenchmarkState state;
     BenchmarkTable bmTable;
 
@@ -47,7 +47,7 @@ public class SingleTableKeyedDateTimeOperations {
     private Table inputTable;
 
     private String[] keyColumns;
-    String[] convertToDateTime;
+    String[] convertToInstant;
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
@@ -68,19 +68,19 @@ public class SingleTableKeyedDateTimeOperations {
 
 
         keyColumns = new String[columnCount];
-        convertToDateTime = new String[columnCount + 1];
+        convertToInstant = new String[columnCount + 1];
         for (int i = 0; i < keyColumns.length; i++) {
             keyColumns[i] = "InputColumn" + i;
-            convertToDateTime[i] = keyColumns[i] + " = new DateTime(" + keyColumns[i] + ")";
+            convertToInstant[i] = keyColumns[i] + " = DateTimeUtils.epochNanosToInstant(" + keyColumns[i] + ")";
         }
-        convertToDateTime[columnCount] = "Mock";
+        convertToInstant[columnCount] = "Mock";
     }
 
 
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
-        inputTable = applySparsity(bmTable.getTable().select(convertToDateTime), tableSize, sparsity, 0);
+        inputTable = applySparsity(bmTable.getTable().select(convertToInstant), tableSize, sparsity, 0);
     }
 
 
@@ -96,7 +96,7 @@ public class SingleTableKeyedDateTimeOperations {
     }
 
     public static void main(String[] args) {
-        BenchUtil.run(SingleTableKeyedDateTimeOperations.class);
+        BenchUtil.run(SingleTableKeyedInstantOperations.class);
     }
 
 }

@@ -226,7 +226,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         final String iColName = withRename ? "R_I" : "I";
         final String zdtColName = withRename ? "R_ZDT" : "ZDT";
 
-        // Make everything a DateTime
+        // Make everything the expected type
         Table table = reinterpreter.apply(initial, lColName + "=L");
         table = reinterpreter.apply(table, iColName + "=I");
         table = reinterpreter.apply(table, zdtColName + "=ZDT");

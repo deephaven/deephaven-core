@@ -17,7 +17,6 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ShiftedColumnOperation;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
@@ -393,11 +392,6 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toDateTime(), shift);
-    }
-
-    @Override
     public ColumnSource<Long> toEpochNano() {
         return new ShiftedColumnSource<>(rowSet, ((ConvertibleTimeSource) innerSource).toEpochNano(), shift);
     }
@@ -420,8 +414,6 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
                 && ((ConvertibleTimeSource) innerSource).supportsTimeConversion()) {
             if (alternateDataType == long.class || alternateDataType == Long.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
-            } else if (alternateDataType == DateTime.class) {
-                return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
             } else if (alternateDataType == Instant.class) {
                 return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
             }

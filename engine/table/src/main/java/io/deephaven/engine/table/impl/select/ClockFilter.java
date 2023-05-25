@@ -13,13 +13,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -66,14 +66,10 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
         Require.requirement(DynamicNode.notDynamicOrNotRefreshing(table),
                 "DynamicNode.notDynamicOrNotRefreshing(table)");
 
-        final ColumnSource<DateTime> dateTimeColumnSource = table.getColumnSource(columnName);
-        // Obviously, column needs to be of date-time values.
-        Require.requirement(DateTime.class.isAssignableFrom(dateTimeColumnSource.getType()),
-                "DateTime.class.isAssignableFrom(dateTimeColumnSource.getType())");
-
-        nanosColumnSource = dateTimeColumnSource.allowsReinterpret(long.class)
+        final ColumnSource<Instant> instantColumnSource = table.getColumnSource(columnName, Instant.class);
+        nanosColumnSource = /*instantColumnSource.allowsReinterpret(long.class)
                 ? table.dateTimeColumnAsNanos(columnName).getColumnSource(columnName)
-                : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
+                : */table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
                         .getColumnSource(columnName);
 
         final WritableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);

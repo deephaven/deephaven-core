@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.ssms;
 
 import java.time.Instant;
 
-import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.vector.ObjectVectorDirect;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
@@ -2531,7 +2531,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         final Instant[] keyArray = new Instant[positions.length];
         int writePos = 0;
         for (long position : positions) {
-            keyArray[writePos++] = getAsDate(position);
+            keyArray[writePos++] = getAsInstant(position);
         }
 
         return new ObjectVectorDirect<>(keyArray);

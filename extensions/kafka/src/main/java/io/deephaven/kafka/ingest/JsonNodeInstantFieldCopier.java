@@ -7,13 +7,14 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
-public class JsonNodeDateTimeFieldCopier implements FieldCopier {
+import java.time.Instant;
+
+public class JsonNodeInstantFieldCopier implements FieldCopier {
     private final JsonPointer fieldPointer;
 
-    public JsonNodeDateTimeFieldCopier(final String fieldPointerStr) {
+    public JsonNodeInstantFieldCopier(final String fieldPointerStr) {
         this.fieldPointer = JsonPointer.compile(fieldPointerStr);
     }
 
@@ -27,8 +28,8 @@ public class JsonNodeDateTimeFieldCopier implements FieldCopier {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
-            final DateTime dateTime = JsonNodeUtil.getDateTime(node, fieldPointer, true, true);
-            output.set(ii + destOffset, DateTimeUtils.epochNanos(dateTime));
+            final Instant instant = JsonNodeUtil.getInstant(node, fieldPointer, true, true);
+            output.set(ii + destOffset, DateTimeUtils.epochNanos(instant));
         }
     }
 }

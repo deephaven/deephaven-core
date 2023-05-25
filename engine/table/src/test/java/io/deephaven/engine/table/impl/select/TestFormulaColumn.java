@@ -11,10 +11,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.After;
@@ -90,7 +90,7 @@ public class TestFormulaColumn {
 
     @Test
     public void testTimestamp() {
-        check("'2019-04-11T09:30 NY'", new DateTime(1554989400000000000L));
+        check("'2019-04-11T09:30 NY'", DateTimeUtils.epochNanosToInstant(1554989400000000000L));
     }
 
     @Test
@@ -313,8 +313,8 @@ public class TestFormulaColumn {
             result = new HashSet<String>();
             check(row, expression, result);
 
-            expression = "new io.deephaven.time.DateTime(123L)";
-            result = new DateTime(123L);
+            expression = "DateTimeUtils.epochNanosToInstant(123L)";
+            result = DateTimeUtils.epochNanosToInstant(123L);
             check(row, expression, result);
         }
     }

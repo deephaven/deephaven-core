@@ -4,12 +4,13 @@
 package io.deephaven.engine.tablelogger.impl.memory;
 
 import java.io.IOException;
+import java.time.Instant;
+
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
-import io.deephaven.time.DateTime;
 import io.deephaven.tablelogger.*;
 
 import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
@@ -44,8 +45,8 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
         RowSetter<Integer> OperationNumber;
         RowSetter<String> EntryDescription;
         RowSetter<String> EntryCallerLine;
-        RowSetter<DateTime> IntervalStartTime;
-        RowSetter<DateTime> IntervalEndTime;
+        RowSetter<Instant> IntervalStartTime;
+        RowSetter<Instant> IntervalEndTime;
         RowSetter<Long> IntervalDurationNanos;
         RowSetter<Long> EntryIntervalUsage;
         RowSetter<Long> EntryIntervalCpuNanos;
@@ -69,8 +70,8 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
             OperationNumber = row.getSetter("OperationNumber", int.class);
             EntryDescription = row.getSetter("EntryDescription", String.class);
             EntryCallerLine = row.getSetter("EntryCallerLine", String.class);
-            IntervalStartTime = row.getSetter("IntervalStartTime", DateTime.class);
-            IntervalEndTime = row.getSetter("IntervalEndTime", DateTime.class);
+            IntervalStartTime = row.getSetter("IntervalStartTime", Instant.class);
+            IntervalEndTime = row.getSetter("IntervalEndTime", Instant.class);
             IntervalDurationNanos = row.getSetter("IntervalDurationNanos", long.class);
             EntryIntervalUsage = row.getSetter("EntryIntervalUsage", long.class);
             EntryIntervalCpuNanos = row.getSetter("EntryIntervalCpuNanos", long.class);
@@ -98,8 +99,8 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
             this.OperationNumber.setInt(performanceEntry.getOperationNumber());
             this.EntryDescription.set(performanceEntry.getDescription());
             this.EntryCallerLine.set(performanceEntry.getCallerLine());
-            this.IntervalStartTime.set(DateTimeUtils.epochMillisToDateTime(intervalLevelDetails.getIntervalStartTimeMillis()));
-            this.IntervalEndTime.set(DateTimeUtils.epochMillisToDateTime(intervalLevelDetails.getIntervalEndTimeMillis()));
+            this.IntervalStartTime.set(DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalStartTimeMillis()));
+            this.IntervalEndTime.set(DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalEndTimeMillis()));
             this.IntervalDurationNanos.setLong(intervalLevelDetails.getIntervalDurationNanos());
             this.EntryIntervalUsage.setLong(performanceEntry.getIntervalUsageNanos());
             this.EntryIntervalCpuNanos.setLong(performanceEntry.getIntervalCpuNanos());
@@ -135,8 +136,8 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
                 .add("EntryDescription", String.class)
                 .add("EntryCallerLine", String.class)
 
-                .add("IntervalStartTime", DateTime.class)
-                .add("IntervalEndTime", DateTime.class)
+                .add("IntervalStartTime", Instant.class)
+                .add("IntervalEndTime", Instant.class)
 
                 .add("IntervalDurationNanos", long.class)
                 .add("EntryIntervalUsage", long.class)

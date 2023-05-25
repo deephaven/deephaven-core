@@ -9,10 +9,11 @@ import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.time.DateTime
 import io.deephaven.util.SafeCloseable
 import spock.lang.Specification
 import spock.lang.Unroll
+
+import java.time.Instant
 
 class ColumnExpressionCompletionHandlerTest extends Specification implements ChunkerCompleterMixin {
 
@@ -43,7 +44,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
-                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateClock'], [DateTime, Clock]
+                (0..1) * getTableDefinition('t') >> TableDefinition.from(['Date', 'DateClock'], [Instant, Clock]
                 )
             }
 

@@ -39,7 +39,7 @@ public interface ConvertibleTimeSource {
     /**
      * Convert this source to an {@link Instant} source.
      *
-     * @return a view of this source as a {@link Instant}
+     * @return a view of this source asan {@link Instant}
      */
     ColumnSource<Instant> toInstant();
 

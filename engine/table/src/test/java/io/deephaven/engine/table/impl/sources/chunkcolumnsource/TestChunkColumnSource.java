@@ -6,12 +6,11 @@ package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.chunk.util.hashing.IntChunkEquals;
 import io.deephaven.engine.table.impl.sources.ByteAsBooleanColumnSource;
-import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -22,6 +21,8 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.time.Instant;
 
 public class TestChunkColumnSource {
     @Before
@@ -478,44 +479,44 @@ public class TestChunkColumnSource {
         }
     }
 
-    private static DateTime makeExpectDateTime(int idx) {
-        return DateTimeUtils.plus(DateTimeUtils.parseDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
+    private static Instant makeExpectedInstant(int idx) {
+        return DateTimeUtils.plus(DateTimeUtils.parseInstant("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
     }
 
     @Test
-    public void testDateTimeWrapper() {
+    public void testInstantWrapper() {
         final WritableLongChunk<Values> longChunk = WritableLongChunk.makeWritableChunk(32);
         for (int ii = 0; ii < longChunk.size(); ++ii) {
-            longChunk.set(ii, makeExpectDateTime(ii).getNanos());
+            longChunk.set(ii, DateTimeUtils.epochNanos(makeExpectedInstant(ii)));
         }
 
         final LongChunkColumnSource columnSource = new LongChunkColumnSource();
         columnSource.addChunk(longChunk);
 
-        final LongAsDateTimeColumnSource wrapped = new LongAsDateTimeColumnSource(columnSource);
+        final LongAsInstantColumnSource wrapped = new LongAsInstantColumnSource(columnSource);
 
         TestCase.assertNull(wrapped.get(-1));
         TestCase.assertNull(wrapped.get(2048));
 
         for (int ii = 0; ii < 32; ++ii) {
-            TestCase.assertEquals(makeExpectDateTime(ii), wrapped.get(ii));
+            TestCase.assertEquals(makeExpectedInstant(ii), wrapped.get(ii));
         }
 
-        final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
+        final WritableObjectChunk<Instant, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
         try (final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
             wrapped.fillChunk(fillContext, destChunk, RowSequenceFactory.forRange(0, 31));
             TestCase.assertEquals(32, destChunk.size());
             for (int ii = 0; ii < 32; ++ii) {
-                TestCase.assertEquals(makeExpectDateTime(ii), destChunk.get(ii));
+                TestCase.assertEquals(makeExpectedInstant(ii), destChunk.get(ii));
             }
         }
 
         try (final ChunkSource.GetContext getContext = wrapped.makeGetContext(32)) {
-            final ObjectChunk<Boolean, ? extends Values> values =
+            final ObjectChunk<Instant, ? extends Values> values =
                     wrapped.getChunk(getContext, RowSequenceFactory.forRange(1, 10)).asObjectChunk();
             TestCase.assertEquals(10, values.size());
             for (int ii = 1; ii <= 10; ++ii) {
-                TestCase.assertEquals(makeExpectDateTime(ii), values.get(ii - 1));
+                TestCase.assertEquals(makeExpectedInstant(ii), values.get(ii - 1));
             }
         }
     }

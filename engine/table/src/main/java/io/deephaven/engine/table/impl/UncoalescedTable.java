@@ -276,11 +276,11 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
         return coalesce().moveColumns(index, moveToEnd, columnsToMove);
     }
 
-    @Override
-    @ConcurrentMethod
-    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return coalesce().dateTimeColumnAsNanos(dateTimeColumnName, nanosColumnName);
-    }
+//    @Override
+//    @ConcurrentMethod
+//    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
+//        return coalesce().dateTimeColumnAsNanos(dateTimeColumnName, nanosColumnName);
+//    }
 
     @Override
     @ConcurrentMethod

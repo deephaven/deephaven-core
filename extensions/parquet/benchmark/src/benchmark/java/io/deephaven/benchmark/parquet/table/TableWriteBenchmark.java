@@ -74,7 +74,7 @@ public class TableWriteBenchmark {
                 "Bl   = ii % 8192  == 0  ? null        :         ii % 2 == 0",
                 "Sym  = ii % 64    == 0  ? null        :         Long.toString(ii % 1000)",
                 "Str  = ii % 128   == 0  ? null        :         Long.toString(ii)",
-                "DT   = ii % 256   == 0  ? null        :         new DateTime(nowNanos + ii)",
+                "DT   = ii % 256   == 0  ? null        :         DateTimeUtils.epochNanosToInstant(nowNanos + ii)",
                 // "Ser = ii % 1024 == 0 ? null : new SimpleSerializable(ii)",
                 "Ext  = ii % 1024  == 0  ? null        : new SimpleExternalizable(ii)",
                 "Fix  = ii % 64    == 0  ? null        : new BigInteger(Long.toString(ii % 1000), 10)",

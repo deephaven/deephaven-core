@@ -10,10 +10,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.*;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import org.junit.After;
 import org.junit.Before;
+
+import java.time.Instant;
 
 public class TestModelFarmUtils extends BaseArrayTestCase {
 
@@ -63,13 +64,14 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
         assertNull(ModelFarmUtils.arrayString(null));
     }
 
-    public void testArrayDateTime() {
-        final DateTime[] target = {DateTimeUtils.parseDateTime("2018-01-11T01:01:01 NY"),
-                DateTimeUtils.parseDateTime("2018-02-11T01:01:01 NY"),
-                DateTimeUtils.parseDateTime("2018-03-11T01:01:01 NY")};
-        final DateTime[] result = ModelFarmUtils.arrayDateTime(new ObjectVectorDirect<>(target));
+    public void testArrayInstant() {
+        final Instant[] target = {
+                DateTimeUtils.parseInstant("2018-01-11T01:01:01 NY"),
+                DateTimeUtils.parseInstant("2018-02-11T01:01:01 NY"),
+                DateTimeUtils.parseInstant("2018-03-11T01:01:01 NY")};
+        final Instant[] result = ModelFarmUtils.arrayInstant(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
-        assertNull(ModelFarmUtils.arrayDateTime(null));
+        assertNull(ModelFarmUtils.arrayInstant(null));
     }
 
     public void testArrayFloat() {

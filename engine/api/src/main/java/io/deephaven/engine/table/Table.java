@@ -372,15 +372,15 @@ public interface Table extends
      * @param nanosColumnName Name of nanos column
      * @return The new table, constructed as explained above.
      */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
+//    @ConcurrentMethod
+//    Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName);
 
     /**
      * @param columnName name of column to convert from DateTime to nanos
      * @return The result of dateTimeColumnAsNanos(columnName, columnName).
      */
-    @ConcurrentMethod
-    Table dateTimeColumnAsNanos(String columnName);
+//    @ConcurrentMethod
+//    Table dateTimeColumnAsNanos(String columnName);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Slice Operations

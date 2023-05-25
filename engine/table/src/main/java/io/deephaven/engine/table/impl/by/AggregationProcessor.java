@@ -99,7 +99,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -107,6 +107,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -431,7 +432,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 final String resultName = pair.output().name();
                 final ColumnSource<?> rawInputSource = table.getColumnSource(inputName);
                 final Class<?> type = rawInputSource.getType();
-                final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
+                final ColumnSource<?> inputSource = maybeReinterpretInstantAsLong(rawInputSource);
 
                 addOperator(operatorFactory.apply(type, resultName), inputSource, inputName);
             }
@@ -492,7 +493,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 @NotNull final String resultName) {
             final ColumnSource<?> rawInputSource = table.getColumnSource(inputName);
             final Class<?> type = rawInputSource.getType();
-            final ColumnSource<?> inputSource = maybeReinterpretDateTimeAsLong(rawInputSource);
+            final ColumnSource<?> inputSource = maybeReinterpretInstantAsLong(rawInputSource);
 
             final int size = inputSources.size();
             for (int ii = 0; ii < size; ii++) {
@@ -1378,10 +1379,10 @@ public class AggregationProcessor implements AggregationContextFactory {
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
     }
 
-    private static ColumnSource<?> maybeReinterpretDateTimeAsLong(@NotNull final ColumnSource<?> inputSource) {
+    private static ColumnSource<?> maybeReinterpretInstantAsLong(@NotNull final ColumnSource<?> inputSource) {
         // noinspection unchecked
-        return inputSource.getType() == DateTime.class
-                ? ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) inputSource)
+        return inputSource.getType() == Instant.class
+                ? ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) inputSource)
                 : inputSource;
     }
 
@@ -1466,7 +1467,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             return new FloatChunkedAddOnlyMinMaxOperator(isMin, name);
         } else if (type == Integer.class || type == int.class) {
             return new IntChunkedAddOnlyMinMaxOperator(isMin, name);
-        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+        } else if (type == Long.class || type == long.class || type == Instant.class) {
             return new LongChunkedAddOnlyMinMaxOperator(type, isMin, name);
         } else if (type == Short.class || type == short.class) {
             return new ShortChunkedAddOnlyMinMaxOperator(isMin, name);
@@ -1503,7 +1504,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             return reaggregated
                     ? new IntRollupCountDistinctOperator(name, countNulls)
                     : new IntChunkedCountDistinctOperator(name, countNulls, exposeInternal);
-        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+        } else if (type == Long.class || type == long.class || type == Instant.class) {
             return reaggregated
                     ? new LongRollupCountDistinctOperator(name, countNulls)
                     : new LongChunkedCountDistinctOperator(name, countNulls, exposeInternal);
@@ -1544,7 +1545,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             return reaggregated
                     ? new IntRollupDistinctOperator(name, includeNulls)
                     : new IntChunkedDistinctOperator(name, includeNulls, exposeInternal);
-        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+        } else if (type == Long.class || type == long.class || type == Instant.class) {
             return reaggregated
                     ? new LongRollupDistinctOperator(type, name, includeNulls)
                     : new LongChunkedDistinctOperator(type, name, includeNulls, exposeInternal);
@@ -1599,12 +1600,12 @@ public class AggregationProcessor implements AggregationContextFactory {
             return reaggregated
                     ? new IntRollupUniqueOperator(resultName, includeNulls, onsAsType, nusAsType)
                     : new IntChunkedUniqueOperator(resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
-        } else if (type == Long.class || type == long.class || type == DateTime.class) {
+        } else if (type == Long.class || type == long.class || type == Instant.class) {
             final long onsAsType;
             final long nusAsType;
-            if (type == DateTime.class) {
-                onsAsType = dateTimeNanosValue(onlyNullsSentinel);
-                nusAsType = dateTimeNanosValue(nonUniqueSentinel);
+            if (type == Instant.class) {
+                onsAsType = instantNanosValue(onlyNullsSentinel);
+                nusAsType = instantNanosValue(nonUniqueSentinel);
             } else {
                 onsAsType = UnionObjectUtils.longValue(onlyNullsSentinel);
                 nusAsType = UnionObjectUtils.longValue(nonUniqueSentinel);
@@ -1627,8 +1628,8 @@ public class AggregationProcessor implements AggregationContextFactory {
                 : new ObjectChunkedUniqueOperator(type, resultName, includeNulls, exposeInternal, onsAsType, nusAsType);
     }
 
-    private static long dateTimeNanosValue(UnionObject obj) {
-        return obj == null ? NULL_LONG : obj.expect(DateTime.class).getNanos();
+    private static long instantNanosValue(UnionObject obj) {
+        return obj == null ? NULL_LONG : DateTimeUtils.epochNanos(obj.expect(Instant.class));
     }
 
     private static void checkType(@NotNull final String name, @NotNull final String valueIntent,

@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.function.*;
 import io.deephaven.gui.color.Color;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
@@ -58,7 +57,6 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 DataColumn.class,
                 ArrayTypeUtils.class,
                 VectorConversions.class,
-                DateTime.class,
                 DateTimeUtils.class,
                 CompressedString.class,
                 java.util.Arrays.class,

@@ -194,12 +194,12 @@ public class ColumnHolder<T> {
     /**
      * Create a column holder for an Instant column where the values are represented as longs. Whatever process produces
      * a table from this column holder should respect this and create the appropriate type of ColumnSource. Under normal
-     * conditions, this will be a InstantArraySource (see {@link #getColumnSource()}).
+     * conditions, this will bean InstantArraySource (see {@link #getColumnSource()}).
      *
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param data column data (long integers representing nanos since the epoch)
-     * @return a Instant column holder implemented with longs for storage
+     * @returnan Instant column holder implemented with longs for storage
      */
     public static ColumnHolder<Instant> getInstantColumnHolder(String name, boolean grouped, long... data) {
         return new ColumnHolder<>(name, grouped, Instant.class, null, data);
@@ -208,12 +208,12 @@ public class ColumnHolder<T> {
     /**
      * Create a column holder for an Instant column where the values are represented as longs. Whatever process produces
      * a table from this column holder should respect this and create the appropriate type of ColumnSource. Under normal
-     * conditions, this will be a InstantArraySource (see {@link #getColumnSource()}).
+     * conditions, this will bean InstantArraySource (see {@link #getColumnSource()}).
      *
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param chunkData column data (long integers representing nanos since the epoch)
-     * @return a Instant column holder implemented with longs for storage
+     * @returnan Instant column holder implemented with longs for storage
      */
     public static ColumnHolder<Instant> getInstantColumnHolder(String name, boolean grouped, Chunk<Values> chunkData) {
         return new ColumnHolder<>(true, name, Instant.class, null, grouped, chunkData);

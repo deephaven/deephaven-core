@@ -3,7 +3,6 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 

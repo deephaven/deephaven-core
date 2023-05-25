@@ -624,7 +624,7 @@ public interface BusinessCalendar extends Calendar {
      * holiday has zero business time and will therefore return 0.0. A normal business day will be of the standard
      * length and will therefore return 1.0. A half day holiday will return 0.5.
      *
-     * @see BusinessCalendar#fractionOfBusinessDayRemaining(DateTime)
+     * @see BusinessCalendar#fractionOfBusinessDayRemaining(Instant)
      * @return ratio of the business day length and the standard business day length for the current day
      */
     default double fractionOfStandardBusinessDay() {

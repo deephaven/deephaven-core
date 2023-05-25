@@ -4,14 +4,17 @@
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.base.clock.Clock;
-import io.deephaven.time.DateTime;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.time.DateTimeUtils;
 
-public class FixedStepReplayer extends Replayer {
-    private long incrementNanos;
-    private DateTime currentTime;
+import java.time.Instant;
 
-    public FixedStepReplayer(DateTime startTime, DateTime endTime, long incrementNanos) {
+public class FixedStepReplayer extends Replayer {
+
+    private long incrementNanos;
+    private Instant currentTime;
+
+    public FixedStepReplayer(Instant startTime, Instant endTime, long incrementNanos) {
         super(startTime, endTime);
         this.incrementNanos = incrementNanos;
         currentTime = startTime;
@@ -20,7 +23,7 @@ public class FixedStepReplayer extends Replayer {
     @Override
     public void run() {
         currentTime = DateTimeUtils.plus(currentTime, incrementNanos);
-        if (currentTime.getNanos() > endTime.getNanos()) {
+        if (DateTimeUtils.epochNanos(currentTime) > DateTimeUtils.epochNanos(endTime)) {
             currentTime = endTime;
         }
         super.run();
@@ -28,7 +31,7 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.epochMillisToDateTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.epochMillisToInstant(Math.max(updatedTime, currentTime.toEpochMilli()));
     }
 
     @Override
@@ -36,10 +39,10 @@ public class FixedStepReplayer extends Replayer {
         return new ClockImpl();
     }
 
-    private class ClockImpl extends DateTimeClock {
+    private class ClockImpl extends ClockNanoBase {
         @Override
-        public DateTime currentDateTime() {
-            return currentTime;
+        public long currentTimeNanos() {
+            return DateTimeUtils.epochNanos(currentTime);
         }
     }
 }

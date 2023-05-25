@@ -26,11 +26,11 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
@@ -564,7 +564,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void clearObjectsAtThisLevel(RowSet keys) {
         // Only bother doing this if we're holding on to references.
-        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DateTime.class)) {
+        if (!writableSource.getType().isPrimitive() && (writableSource.getType() != Instant.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);
         }
     }

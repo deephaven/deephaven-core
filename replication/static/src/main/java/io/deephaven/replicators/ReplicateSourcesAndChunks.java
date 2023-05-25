@@ -982,7 +982,7 @@ public class ReplicateSourcesAndChunks {
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
                 "    @Override",
                 "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
-                "        return alternateDataType == long.class || alternateDataType == Instant.class",
+                "        return alternateDataType == long.class || alternateDataType == Instant.class;",
                 "    }",
                 "",
                 "    @SuppressWarnings(\"unchecked\")",

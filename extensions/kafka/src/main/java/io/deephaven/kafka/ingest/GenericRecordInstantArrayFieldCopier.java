@@ -7,7 +7,6 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericArray;
@@ -16,9 +15,9 @@ import org.apache.avro.generic.GenericRecord;
 import java.time.Instant;
 import java.util.regex.Pattern;
 
-public class GenericRecordDateTimeArrayFieldCopier extends GenericRecordFieldCopier {
+public class GenericRecordInstantArrayFieldCopier extends GenericRecordFieldCopier {
     private final long multiplier;
-    public GenericRecordDateTimeArrayFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema, final long multiplier) {
+    public GenericRecordInstantArrayFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema, final long multiplier) {
         super(fieldPathStr, separator, schema);
         this.multiplier = multiplier;
     }
@@ -28,7 +27,7 @@ public class GenericRecordDateTimeArrayFieldCopier extends GenericRecordFieldCop
         if (gaSize == 0) {
             return DateTimeUtils.ZERO_LENGTH_INSTANT_ARRAY;
         }
-        final Instant[] out = new Instant[][ga.size()];
+        final Instant[] out = new Instant[ga.size()];
         int i = 0;
         for (Object o : ga) {
             out[i] = DateTimeUtils.epochNanosToInstant(multiplier * (long) o);

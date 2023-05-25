@@ -8,10 +8,11 @@ import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Paint;
+import io.deephaven.time.DateTimeUtils;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Date;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -384,7 +385,7 @@ public class ColumnHandlerFactory implements Serializable {
                 }
 
             };
-        } else if (type.equals(DateTime.class)) {
+        } else if (type.equals(Instant.class)) {
             return new ColumnHandlerHandle(tableHandle, columnName, type, plotInfo) {
                 @Override
                 public TypeClassification typeClassification() {
@@ -393,8 +394,8 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    final DateTime value = (DateTime) getDataColumn().get(i);
-                    return value == null ? Double.NaN : value.getNanos();
+                    final Instant value = (Instant) getDataColumn().get(i);
+                    return value == null ? Double.NaN : DateTimeUtils.epochNanos(value);
                 }
 
             };
@@ -601,7 +602,7 @@ public class ColumnHandlerFactory implements Serializable {
                 }
 
             };
-        } else if (type.equals(DateTime.class)) {
+        } else if (type.equals(Instant.class)) {
             return new ColumnHandlerTable(table, columnName, type, plotInfo) {
                 @Override
                 public TypeClassification typeClassification() {
@@ -610,8 +611,8 @@ public class ColumnHandlerFactory implements Serializable {
 
                 @Override
                 public double getDouble(int i) {
-                    final DateTime value = (DateTime) getDataColumn().get(i);
-                    return value == null ? Double.NaN : value.getNanos();
+                    final Instant value = (Instant) getDataColumn().get(i);
+                    return value == null ? Double.NaN : DateTimeUtils.epochNanos(value);
                 }
 
             };

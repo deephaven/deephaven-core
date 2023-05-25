@@ -158,7 +158,7 @@ public class CompletionRequest {
                     case "stringCol":
                         columns.add(ColumnDefinition.ofString(colName));
                         break;
-                    case "dateTimeCol":
+                    case "instantCol":
                         columns.add(ColumnDefinition.ofTime(colName));
                         break;
                     case "longCol":
