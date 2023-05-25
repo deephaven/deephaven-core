@@ -137,7 +137,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -632,7 +631,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         Method bestMethod = null;
         for (final Method method : acceptableMethods) {
-            if (bestMethod == null || isMoreSpecificMethod(bestMethod, method)) {
+            if (bestMethod == null || isMoreSpecificMethod(bestMethod, method, paramTypes)) {
                 bestMethod = method;
             }
         }
@@ -805,7 +804,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         Constructor<?> bestConstructor = null;
 
         for (final Constructor<?> constructor : acceptableConstructors) {
-            if (bestConstructor == null || isMoreSpecificConstructor(bestConstructor, constructor)) {
+            if (bestConstructor == null || isMoreSpecificConstructor(bestConstructor, constructor, paramTypes)) {
                 bestConstructor = constructor;
             }
         }
@@ -896,6 +895,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         accepted.add(candidate);
     }
 
+    /**
+     * Checks whether {@code candidateParamType} is assignable from {@code paramType}.
+     * 
+     * @see #dhqlIsAssignableFrom
+     */
     private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
         if (dhqlIsAssignableFrom(candidateParamType, paramType)) {
             return true;
@@ -910,8 +914,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
     }
 
-    private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
-        final Boolean executableResult = isMoreSpecificExecutable(c1, c2);
+    private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2, Class<?>[] argExprTypes) {
+        final Boolean executableResult = isMoreSpecificExecutable(c1, c2, argExprTypes);
         if (executableResult == null) {
             throw new IllegalStateException("Ambiguous comparison between constructors " + c1 + " and " + c2);
         }
@@ -926,15 +930,23 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *
      * @return true if m2 is more specific than m1
      */
-    private static boolean isMoreSpecificMethod(final Method m1, final Method m2) {
-        final Boolean executableResult = isMoreSpecificExecutable(m1, m2);
+    private static boolean isMoreSpecificMethod(final Method m1, final Method m2, Class<?>[] argExprTypes) {
+        final Boolean executableResult = isMoreSpecificExecutable(m1, m2, argExprTypes);
         // NB: executableResult can be null in cases where an override narrows its return type
         return executableResult == null ? dhqlIsAssignableFrom(m1.getReturnType(), m2.getReturnType())
                 : executableResult;
     }
 
+    /**
+     * Check whether {@code e2} is more specific than {@code e1}.
+     * @param e1 The current best-choice executable.
+     * @param e2 A possible better-matching execuable.
+     * @param argExprTypes The argument types. (Used as a tiebreaker between primitive and boxed parameters.)
+     * @return {@code true} if {@code e2} is more specific than {@code e1}, {@code false} if {@code e1} is more specific than {@code e2}, and {@code null} if no determination could be made.
+     * @param <EXECUTABLE_TYPE> The kind of executable ({@link Method} vs {@link Constructor}).
+     */
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
-            final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2) {
+            final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2, Class<?>[] argExprTypes) {
 
         // var args (variable arity) methods always go after fixed arity methods when determining the proper overload
         // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2
@@ -956,7 +968,27 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isTypedVector(e2ParamTypes[i])) {
+            final Class<?> e1ParamType = e1ParamTypes[i];
+            final Class<?> e2ParamType = e2ParamTypes[i];
+
+            // if the e1 param type is not a superclass of the e2 param type, then the e2 param is not more specific
+            // to the provided args. (Note that the executables passed here are only ones that match the provided
+            // arguments.)
+            // For example, let's say we have myMethod(Collection), myMethod(List), and myMethod(ArrayList), and
+            // the actual method call is myMethod(someLinkedList). Both myMethod(Collection) and myMethod(List) will
+            // match. Since Collection is assignable from List, we know that Collection is a superclass if List, and
+            // therefore is a less-specific match than List.
+            if (!canAssignType(e1ParamType, e2ParamType) && !isTypedVector(e2ParamType)) {
+                return false;
+            }
+
+            // If there are overloads for both primitive and boxed parameters, the one that matches the provided
+            // arguments should be considered more specific.
+            final Class<?> argExprType = argExprTypes[i];
+            if (argExprType.isPrimitive() && e1ParamType.isPrimitive() && !e2ParamType.isPrimitive()) {
+                return false;
+            }
+            if (TypeUtils.isBoxedType(argExprType) && TypeUtils.isBoxedType(e1ParamType) && !TypeUtils.isBoxedType(e2ParamType)) {
                 return false;
             }
         }
@@ -1609,7 +1641,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         replaceChildExpression(origParent, n, unaryOpOverloadMethod);
 
         nothingPrintedAssertion.run();
-        return unaryOpOverloadMethod.accept(this, printer);
+
+        // Descend into the new method call expression. This should not make further changes,
+        // since the original expression was visited by getTypeWithCaching at the beginning of this method.
+        final Class<?> result = unaryOpOverloadMethod.accept(this, printer);
+
+        // Verify that the operator overload method returns the original expected type:
+        Assert.equals(ret, "ret", result, "result");
+
+        return ret;
     }
 
     @Override
