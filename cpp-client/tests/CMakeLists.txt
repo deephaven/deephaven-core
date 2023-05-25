@@ -23,7 +23,7 @@ add_executable(tests
     view_test.cc
 
     third_party/catch.hpp
-    ticking_test.cc)
+    ticking_test.cc utility_test.cc script_test.cc)
 
 target_compile_options(tests PRIVATE -Wall -Werror)
 target_include_directories(tests PUBLIC "..")

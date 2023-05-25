@@ -25,6 +25,8 @@ std::vector<T> makeReservedVector(size_t n) {
   return v;
 }
 
+std::string base64Encode(const std::string &s);
+
 // A more efficient ostringstream that also allows you to grab the internal buffer if you want it.
 // Or, if you don't want to use the internal buffer, it allows you to provide your own.
 class SimpleOstringstream final : private std::basic_streambuf<char>, public std::ostream {

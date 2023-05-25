@@ -73,7 +73,7 @@ public:
   /**
    * If you just want the Client.
    */
-  static Client createClient();
+  static Client createClient(const ClientOptions &options = {});
 
   TableMakerForTests(TableMakerForTests &&) noexcept;
   TableMakerForTests &operator=(TableMakerForTests &&) noexcept;
