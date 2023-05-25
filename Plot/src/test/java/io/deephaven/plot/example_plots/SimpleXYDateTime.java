@@ -27,7 +27,7 @@ public class SimpleXYDateTime {
                 DateTimeUtils.epochNanosToInstant(time + 5 * DateTimeUtils.HOUR),
                 DateTimeUtils.epochNanosToInstant(time + 6 * DateTimeUtils.HOUR),
                 DateTimeUtils.epochNanosToInstant(time + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
-                };
+        };
 
         final double[] data = new double[] {1, 2, 3, 4, 5, 6, 7, 8};
 

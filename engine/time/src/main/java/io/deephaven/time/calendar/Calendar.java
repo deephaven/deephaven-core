@@ -25,8 +25,8 @@ import java.time.ZoneId;
  *
  *
  * Frequently, the default implementation for methods on Instants is to call the corresponding method on a String with
- * {@code DateTimeUtils.formatDate}. This can be slower than methods written explicitly for DateTimes. If performance
- * is an issue, consider overriding these methods with other behavior.
+ * {@code DateTimeUtils.formatDate}. This can be slower than methods written explicitly for DateTimes. If performance is
+ * an issue, consider overriding these methods with other behavior.
  */
 public interface Calendar {
 

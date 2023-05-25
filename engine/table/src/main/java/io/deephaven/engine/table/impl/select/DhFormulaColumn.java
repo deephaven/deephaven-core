@@ -189,7 +189,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         try {
-            final TimeLiteralReplacedExpression timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaString);
+            final TimeLiteralReplacedExpression timeConversionResult =
+                    TimeLiteralReplacedExpression.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,

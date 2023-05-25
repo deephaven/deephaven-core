@@ -936,8 +936,9 @@ public class CsvTools {
                     if (o instanceof String) {
                         out.write("" + separatorCsvEscape((String) o, separatorStr));
                     } else if (o instanceof Instant) {
-                        //noinspection DataFlowIssue; non-null input ensures non-null output
-                        out.write(separatorCsvEscape(DateTimeUtils.formatDateTime((Instant) o, timeZone), separatorStr));
+                        // noinspection DataFlowIssue; non-null input ensures non-null output
+                        out.write(separatorCsvEscape(
+                                DateTimeUtils.formatDateTime((Instant) o, timeZone), separatorStr));
                     } else {
                         out.write(nullsAsEmpty
                                 ? separatorCsvEscape(o == null ? "" : o.toString(), separatorStr)

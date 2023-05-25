@@ -477,8 +477,10 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public int numberOfBusinessDays(Instant start, Instant end, final boolean endInclusive) {
-        return numberOfBusinessDays(start == null ? null : DateTimeUtils.formatDate(start,timeZone()),
-                end == null ? null : DateTimeUtils.formatDate(end,timeZone()), endInclusive);
+        return numberOfBusinessDays(
+                start == null ? null : DateTimeUtils.formatDate(start, timeZone()),
+                end == null ? null : DateTimeUtils.formatDate(end, timeZone()),
+                endInclusive);
     }
 
     public int numberOfBusinessDays(String start, String end) {
@@ -513,8 +515,10 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
     }
 
     public int numberOfNonBusinessDays(Instant start, Instant end, final boolean endInclusive) {
-        return numberOfNonBusinessDays(start == null ? null : DateTimeUtils.formatDate(start,timeZone()),
-                end == null ? null : DateTimeUtils.formatDate(end,timeZone()), endInclusive);
+        return numberOfNonBusinessDays(
+                start == null ? null : DateTimeUtils.formatDate(start, timeZone()),
+                end == null ? null : DateTimeUtils.formatDate(end, timeZone()),
+                endInclusive);
     }
 
     public int numberOfNonBusinessDays(final String start, final String end) {

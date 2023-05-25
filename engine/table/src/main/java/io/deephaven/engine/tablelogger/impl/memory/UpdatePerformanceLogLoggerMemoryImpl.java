@@ -99,8 +99,10 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
             this.OperationNumber.setInt(performanceEntry.getOperationNumber());
             this.EntryDescription.set(performanceEntry.getDescription());
             this.EntryCallerLine.set(performanceEntry.getCallerLine());
-            this.IntervalStartTime.set(DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalStartTimeMillis()));
-            this.IntervalEndTime.set(DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalEndTimeMillis()));
+            this.IntervalStartTime.set(
+                    DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalStartTimeMillis()));
+            this.IntervalEndTime.set(
+                    DateTimeUtils.epochMillisToInstant(intervalLevelDetails.getIntervalEndTimeMillis()));
             this.IntervalDurationNanos.setLong(intervalLevelDetails.getIntervalDurationNanos());
             this.EntryIntervalUsage.setLong(performanceEntry.getIntervalUsageNanos());
             this.EntryIntervalCpuNanos.setLong(performanceEntry.getIntervalCpuNanos());

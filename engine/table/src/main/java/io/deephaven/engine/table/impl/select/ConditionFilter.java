@@ -375,7 +375,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, TimeLiteralReplacedExpression timeConversionResult,
+    protected void generateFilterCode(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
@@ -413,7 +415,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, TimeLiteralReplacedExpression timeConversionResult,
+    private StringBuilder getClassBody(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;

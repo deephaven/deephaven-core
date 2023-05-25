@@ -690,7 +690,7 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returnsan {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
      * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
@@ -706,7 +706,7 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returnsan {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
      * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      *
@@ -722,7 +722,7 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returnsan {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
      * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 

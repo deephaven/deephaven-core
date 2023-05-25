@@ -24,13 +24,14 @@ public class InstantRangeFilter extends LongRangeFilter {
         super(columnName, DateTimeUtils.epochNanos(val1), DateTimeUtils.epochNanos(val2), true, true);
     }
 
-    public InstantRangeFilter(String columnName, Instant val1, Instant val2, boolean lowerInclusive,
-                              boolean upperInclusive) {
-        super(columnName, DateTimeUtils.epochNanos(val1), DateTimeUtils.epochNanos(val2), lowerInclusive, upperInclusive);
+    public InstantRangeFilter(
+            String columnName, Instant val1, Instant val2, boolean lowerInclusive, boolean upperInclusive) {
+        super(columnName, DateTimeUtils.epochNanos(val1), DateTimeUtils.epochNanos(val2),
+                lowerInclusive, upperInclusive);
     }
 
-    public InstantRangeFilter(String columnName, long val1, long val2, boolean lowerInclusive,
-                              boolean upperInclusive) {
+    public InstantRangeFilter(
+            String columnName, long val1, long val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, val1, val2, lowerInclusive, upperInclusive);
     }
 

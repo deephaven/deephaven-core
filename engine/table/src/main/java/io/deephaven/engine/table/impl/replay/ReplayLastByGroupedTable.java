@@ -44,7 +44,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
             }
             do {
                 currentIt = currentIt.next();
-            } while (currentIt != null && DateTimeUtils.epochNanos(currentIt.lastTime) < replayer.clock().currentTimeNanos());
+            } while (currentIt != null
+                    && DateTimeUtils.epochNanos(currentIt.lastTime) < replayer.clock().currentTimeNanos());
             if (currentIt != null) {
                 allIterators.add(currentIt);
             }

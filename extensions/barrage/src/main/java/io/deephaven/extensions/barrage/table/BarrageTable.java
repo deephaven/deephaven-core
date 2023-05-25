@@ -566,7 +566,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                           final String statType) throws IOException {
+                final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;
             }

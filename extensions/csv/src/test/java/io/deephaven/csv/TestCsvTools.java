@@ -224,7 +224,8 @@ public class TestCsvTools {
             // Ignore separators in double quotes using this regex
             String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
-            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
+            CsvTools.writeCsv(
+                    tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
             Scanner csvReader = new Scanner(csvFile);
 
             // Check header

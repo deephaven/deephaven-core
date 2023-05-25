@@ -2226,7 +2226,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         private void flush(final Instant now, final BarrageSubscriptionPerformanceLogger logger, final Histogram hist,
-                           final String statType) throws IOException {
+                final String statType) throws IOException {
             if (hist.getTotalCount() == 0) {
                 return;
             }

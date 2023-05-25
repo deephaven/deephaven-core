@@ -518,7 +518,8 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseInstant(valString), ZoneId.systemDefault());
+                dateLower = DateTimeUtils.toZonedDateTime(
+                        DateTimeUtils.parseInstant(valString), ZoneId.systemDefault());
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?

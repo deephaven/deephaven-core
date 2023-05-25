@@ -31,7 +31,8 @@ public class TestColumnHandlerFactory extends BaseArrayTestCase {
     private final Double[] Doubles = {null, 2d, 3d};
     private final Number[] Numbers = {null, 2, 3};
     private final Date[] dates = {null, new Date(1), new Date(2)};
-    private final Instant[] instants = {null, DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2)};
+    private final Instant[] instants = {
+            null, DateTimeUtils.epochNanosToInstant(1), DateTimeUtils.epochNanosToInstant(2)};
     private final Paint[] paints = {null, new Color(100, 0, 0), new Color(0, 100, 0)};
     private final String[] strings = {"A", "B", "C"};
     private final Table table = TableTools.newTable(

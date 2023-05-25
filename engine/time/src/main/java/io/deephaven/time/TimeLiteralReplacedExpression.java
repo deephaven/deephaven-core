@@ -10,18 +10,20 @@ import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-//TODO: Move?
+// TODO: Move?
 
 /**
- * TimeLiteralReplacedExpression is a query expression with time, period, and datetime literals replaced by instance variables.
- * This contains the converted formula, instance variable declarations, and a map of types of the instance variables.
+ * TimeLiteralReplacedExpression is a query expression with time, period, and datetime literals replaced by instance
+ * variables. This contains the converted formula, instance variable declarations, and a map of types of the instance
+ * variables.
  */
 public class TimeLiteralReplacedExpression {
     private final String convertedFormula;
     private final String instanceVariablesString;
     private final HashMap<String, Class<?>> newVariables;
 
-    private TimeLiteralReplacedExpression(String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
+    private TimeLiteralReplacedExpression(
+            String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
         this.convertedFormula = convertedFormula;
         this.instanceVariablesString = instanceVariablesString;
         this.newVariables = newVariables;
@@ -55,11 +57,12 @@ public class TimeLiteralReplacedExpression {
     }
 
     /**
-     * Converts a query expression to a {@link TimeLiteralReplacedExpression}, where the time, period, and datetime literals
-     * are replaced by instance variables.
+     * Converts a query expression to a {@link TimeLiteralReplacedExpression}, where the time, period, and datetime
+     * literals are replaced by instance variables.
      *
      * @param expression query expression to convert.
-     * @return a {@link TimeLiteralReplacedExpression} where time, period, and datetime literals have been replaced by instance variables.
+     * @return a {@link TimeLiteralReplacedExpression} where time, period, and datetime literals have been replaced by
+     *         instance variables.
      * @throws Exception If any error occurs or a literal value cannot be parsed.
      */
     // TODO: This should probably be handled in LanguageParser.accept(CharLiteralExpr, StringBuilder).
@@ -113,8 +116,10 @@ public class TimeLiteralReplacedExpression {
                 durationIndex++;
             } else if (DateTimeUtils.parseNanosQuiet(s) != NULL_LONG) {
                 matcher.appendReplacement(convertedFormula, "_nanos" + nanosIndex);
-                instanceVariablesString.append("        private long _nanos").append(nanosIndex)
-                        .append("=DateTimeUtils.parseNanos(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
+                instanceVariablesString
+                        .append("        private long _nanos").append(nanosIndex)
+                        .append("=DateTimeUtils.parseNanos(\"")
+                        .append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_nanos" + nanosIndex, long.class);
 
@@ -122,7 +127,8 @@ public class TimeLiteralReplacedExpression {
             } else if (DateTimeUtils.parseLocalDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
-                        .append("=DateTimeUtils.parseLocalDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)
+                        .append("=DateTimeUtils.parseLocalDate(\"")
+                        .append(expression, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;
@@ -140,7 +146,8 @@ public class TimeLiteralReplacedExpression {
 
         matcher.appendTail(convertedFormula);
 
-        return new TimeLiteralReplacedExpression(convertedFormula.toString(), instanceVariablesString.toString(), newVariables);
+        return new TimeLiteralReplacedExpression(
+                convertedFormula.toString(), instanceVariablesString.toString(), newVariables);
     }
 
 }

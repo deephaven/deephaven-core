@@ -108,8 +108,10 @@ public abstract class AbstractCalendar implements Calendar {
     }
 
     public int numberOfDays(final Instant start, final Instant end, final boolean endInclusive) {
-        return numberOfDays(start == null ? null : DateTimeUtils.formatDate(start,timeZone()),
-                end == null ? null : DateTimeUtils.formatDate(end,timeZone()), endInclusive);
+        return numberOfDays(
+                start == null ? null : DateTimeUtils.formatDate(start, timeZone()),
+                end == null ? null : DateTimeUtils.formatDate(end, timeZone()),
+                endInclusive);
     }
 
     public int numberOfDays(final String start, final String end) {

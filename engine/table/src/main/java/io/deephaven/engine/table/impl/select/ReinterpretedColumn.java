@@ -122,12 +122,12 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
             }
 
             final boolean isDestTypeTimeIsh =
-                    destDataType == ZonedDateTime.class ||
-                    destDataType == LocalDate.class ||
-                    destDataType == LocalTime.class ||
-                    destDataType == Instant.class ||
-                    destDataType == long.class ||
-                    destDataType == Long.class;
+                    destDataType == ZonedDateTime.class
+                            || destDataType == LocalDate.class
+                            || destDataType == LocalTime.class
+                            || destDataType == Instant.class
+                            || destDataType == long.class
+                            || destDataType == Long.class;
 
             if (localSourceColumnSource instanceof ConvertibleTimeSource
                     && ((ConvertibleTimeSource) localSourceColumnSource).supportsTimeConversion()) {

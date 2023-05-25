@@ -13,7 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * TimeZoneAliases provides a service to look up time zones based on alias names and to format time zones to their aliased names.
+ * TimeZoneAliases provides a service to look up time zones based on alias names and to format time zones to their
+ * aliased names.
  */
 public class TimeZoneAliases {
 
@@ -40,7 +41,7 @@ public class TimeZoneAliases {
         /**
          * Adds a new time zone alias.
          *
-         * @param alias  alias name
+         * @param alias alias name
          * @param zoneId time zone id name
          */
         public void addAlias(@NotNull final String alias, @NotNull final String zoneId) {
@@ -81,10 +82,12 @@ public class TimeZoneAliases {
         }
 
         /**
-         * Gets the name for a time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+         * Gets the name for a time zone. If an alias is present, the alias is returned. If not, the zone id name is
+         * returned.
          *
          * @param timeZone time zone.
-         * @return name for the time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+         * @return name for the time zone. If an alias is present, the alias is returned. If not, the zone id name is
+         *         returned.
          */
         @NotNull
         public String zoneName(@NotNull final ZoneId timeZone) {
@@ -104,11 +107,12 @@ public class TimeZoneAliases {
     }
 
     /**
-     * Gets a reader from a property.
-     * If the property points to a file, a reader to that file is returned; otherwise, a reader to a resource in the JAR is returned.
+     * Gets a reader from a property. If the property points to a file, a reader to that file is returned; otherwise, a
+     * reader to a resource in the JAR is returned.
      *
      * @param property property.
-     * @return If the property points to a file, a reader to that file is returned; otherwise, a reader to a resource in the JAR is returned.
+     * @return If the property points to a file, a reader to that file is returned; otherwise, a reader to a resource in
+     *         the JAR is returned.
      * @throws RuntimeException if no reader can be returned.
      */
     private static Reader propertyToReader(final String property) {
@@ -127,7 +131,8 @@ public class TimeZoneAliases {
         }
 
         logger.error("Unable to open time zone alias property file: property=" + property + " location=" + location);
-        throw new RuntimeException("Unable to open time zone alias property file: property=" + property + " location=" + location);
+        throw new RuntimeException(
+                "Unable to open time zone alias property file: property=" + property + " location=" + location);
     }
 
     /**
@@ -154,14 +159,17 @@ public class TimeZoneAliases {
                     if (values.length == 2) {
                         cache.addAlias(values[0], values[1]);
                     } else if (values.length == 1) {
-                        throw new IllegalArgumentException("Line contains too few values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
+                        throw new IllegalArgumentException("Line contains too few values: property=" + property
+                                + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
                     } else if (values.length > 2) {
-                        throw new IllegalArgumentException("Line contains too many values: property=" + property + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
+                        throw new IllegalArgumentException("Line contains too many values: property=" + property
+                                + " location=" + location + " line=" + line + " values=" + Arrays.toString(values));
                     }
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unable to load time zone aliases: property=" + property + "  location=" + location, e);
+            throw new RuntimeException(
+                    "Unable to load time zone aliases: property=" + property + "  location=" + location, e);
         }
 
         return cache;
@@ -179,10 +187,12 @@ public class TimeZoneAliases {
     }
 
     /**
-     * Gets the name for a time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+     * Gets the name for a time zone. If an alias is present, the alias is returned. If not, the zone id name is
+     * returned.
      *
      * @param timeZone time zone.
-     * @return name for the time zone.  If an alias is present, the alias is returned.  If not, the zone id name is returned.
+     * @return name for the time zone. If an alias is present, the alias is returned. If not, the zone id name is
+     *         returned.
      */
     @NotNull
     public static String zoneName(@NotNull final ZoneId timeZone) {

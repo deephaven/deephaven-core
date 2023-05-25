@@ -567,10 +567,10 @@ public class FigureWidgetTranslator {
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
-                        //noinspection ConstantConditions
+                        // noinspection ConstantConditions
                         final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
                                 .format(bp.getStartTime());
-                        //noinspection ConstantConditions
+                        // noinspection ConstantConditions
                         final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
                                 .format(bp.getEndTime());
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();

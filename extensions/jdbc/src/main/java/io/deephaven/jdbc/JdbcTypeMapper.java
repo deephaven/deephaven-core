@@ -116,8 +116,8 @@ public class JdbcTypeMapper {
      *
      * <p>
      * Note that more than one type mapping is possible for each SQL type - a DATE might be converted to either a
-     * LocalDate oran Instant for example. And the same is true for the target type -an Instant might be sourced from
-     * a SQL DATE or TIMESTAMP value.
+     * LocalDate oran Instant for example. And the same is true for the target type -an Instant might be sourced from a
+     * SQL DATE or TIMESTAMP value.
      * </p>
      *
      * <p>
@@ -129,17 +129,16 @@ public class JdbcTypeMapper {
      * </p>
      *
      * <p>
-     * Instant values have a different problem - SQL and Deephaven Instant values are conceptually different.
-     * TIMESTAMP columns in SQL databases typically do not store timezone information. They are equivalent to a java
-     * LocalDateTime in this respect. However, Deephaven usually stores timestamps in Instant columns, internally
-     * represented as nanos-since-the-epoch. This means JDBC timestamps usually require the "context" of a timezone in
-     * order to be converted toan Instant properly. Writingan Instant to a JDBC datasource (via the bind mechanism)
-     * has the same issue. Unfortunately this time-zone context issue applies even when mapping JDBC DATETIME values
-     * "directly" to LocalDate, because most JDBC drivers require all Date related values to pass through a
-     * java.sql.Date object, which is also epoch-based, not "local". The latest JDBC standard deals with this problem
-     * but doesn't seem to be widely implemented. Here we handle this problem by passing a "Context" object every time a
-     * conversion occurs, which contains the timezone to be used when extracting or binding JDBC date or timestamp
-     * values.
+     * Instant values have a different problem - SQL and Deephaven Instant values are conceptually different. TIMESTAMP
+     * columns in SQL databases typically do not store timezone information. They are equivalent to a java LocalDateTime
+     * in this respect. However, Deephaven usually stores timestamps in Instant columns, internally represented as
+     * nanos-since-the-epoch. This means JDBC timestamps usually require the "context" of a timezone in order to be
+     * converted toan Instant properly. Writingan Instant to a JDBC datasource (via the bind mechanism) has the same
+     * issue. Unfortunately this time-zone context issue applies even when mapping JDBC DATETIME values "directly" to
+     * LocalDate, because most JDBC drivers require all Date related values to pass through a java.sql.Date object,
+     * which is also epoch-based, not "local". The latest JDBC standard deals with this problem but doesn't seem to be
+     * widely implemented. Here we handle this problem by passing a "Context" object every time a conversion occurs,
+     * which contains the timezone to be used when extracting or binding JDBC date or timestamp values.
      * </p>
      *
      * @param <T> the Deephaven column type this mapping handles
@@ -725,8 +724,9 @@ public class JdbcTypeMapper {
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException {
             final WritableObjectChunk<Instant, Values> objectChunk = destChunk.asWritableObjectChunk();
             final java.sql.Date date = resultSet.getDate(columnIndex, context.getSourceCalendar());
-            objectChunk.set(destOffset, date == null ? null : DateTimeUtils.epochNanosToInstant(
-                    date.getTime() * MILLIS_TO_NANOS));
+            objectChunk.set(destOffset, date == null
+                    ? null
+                    : DateTimeUtils.epochMillisToInstant(date.getTime()));
         }
 
         @Override
@@ -753,8 +753,10 @@ public class JdbcTypeMapper {
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException {
             final WritableObjectChunk<Instant, Values> objectChunk = destChunk.asWritableObjectChunk();
             final java.sql.Timestamp timestamp = resultSet.getTimestamp(columnIndex, context.getSourceCalendar());
-            objectChunk.set(destOffset, timestamp == null ? null : DateTimeUtils.epochNanosToInstant(
-                    timestamp.getTime() * MILLIS_TO_NANOS + timestamp.getNanos() % 1_000_000));
+            objectChunk.set(destOffset, timestamp == null
+                    ? null
+                    : DateTimeUtils.epochNanosToInstant(
+                            timestamp.getTime() * MILLIS_TO_NANOS + timestamp.getNanos() % 1_000_000));
         }
 
         @Override

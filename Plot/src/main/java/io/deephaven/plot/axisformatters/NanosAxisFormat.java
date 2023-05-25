@@ -93,7 +93,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         @Override
         public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
-            //noinspection DataFlowIssue
+            // noinspection DataFlowIssue
             return toAppendTo.append(formatter.format(DateTimeUtils.epochNanosToInstant(number)));
         }
 

@@ -65,7 +65,10 @@ public class JdbcToTableAdapterTest {
                     ", " + (ii % 256 == 3 ? "NULL" : ii - numRows / 2) + // long
                     ", " + (ii % 256 == 4 ? "NULL" : (ii - numRows / 2) / 256.0) + // float
                     ", " + (ii % 256 == 5 ? "NULL" : "'" + ii + "'") + // string
-                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dtf.format(DateTimeUtils.epochNanosToInstant(ii * 100_000L), TZ_UTC) + "Z'") + // date
+                    ", " + (ii % 256 == 6
+                            ? "NULL"
+                            : "'" + dtf.format(DateTimeUtils.epochNanosToInstant(ii * 100_000L), TZ_UTC) + "Z'")
+                    + // date
                     ");");
         }
     }

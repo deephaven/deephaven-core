@@ -92,7 +92,7 @@ public class ReplicateSegmentedSortedMultiset {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
         fixupObjectKernelOperator(charToObject(
-                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
                 "ssms");
 
         charToAllButBooleanAndLong(

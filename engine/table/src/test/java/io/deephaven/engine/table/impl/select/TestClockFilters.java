@@ -25,13 +25,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
     private final Table testInput3;
     {
         final Table testInputRangeA = newTable(
-                col("Timestamp", epochNanosToInstant(1000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L), epochNanosToInstant(1000L),
-                        epochNanosToInstant(2000L), epochNanosToInstant(3000L)),
+                col("Timestamp", epochNanosToInstant(1000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L),
+                        epochNanosToInstant(1000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L)),
                 intCol("Int", 1, 2, 3, 1, 2, 3));
         testInput1 = merge(testInputRangeA, testInputRangeA, testInputRangeA);
         final Table testInputRangeB = newTable(
-                col("Timestamp", epochNanosToInstant(2000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L), epochNanosToInstant(2000L),
-                        epochNanosToInstant(2000L), epochNanosToInstant(3000L)),
+                col("Timestamp", epochNanosToInstant(2000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L),
+                        epochNanosToInstant(2000L), epochNanosToInstant(2000L), epochNanosToInstant(3000L)),
                 intCol("Int", 2, 2, 3, 2, 2, 3));
         testInput2 = merge(testInputRangeA, testInputRangeB, testInputRangeA);
         testInput3 = merge(testInputRangeA, testInputRangeB, testInputRangeB);

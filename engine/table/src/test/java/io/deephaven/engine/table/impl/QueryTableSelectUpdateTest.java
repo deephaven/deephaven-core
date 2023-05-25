@@ -654,8 +654,8 @@ public class QueryTableSelectUpdateTest {
                         () -> queryTable.update("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE")
                                 .update("Diff = Time_[i]")),
                 partialEvalNuggetFrom(queryTable, true,
-                        () -> queryTable.select("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE").select("Time",
-                                "Diff = Time_[i]")),
+                        () -> queryTable.select("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE")
+                                .select("Time", "Diff = Time_[i]")),
         };
 
         final int maxSteps = numSteps.intValue();

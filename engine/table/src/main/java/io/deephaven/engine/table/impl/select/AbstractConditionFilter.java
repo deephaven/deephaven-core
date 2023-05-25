@@ -141,7 +141,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             log.debug("Expression (before) : " + formula);
 
-            final TimeLiteralReplacedExpression timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formula);
+            final TimeLiteralReplacedExpression timeConversionResult =
+                    TimeLiteralReplacedExpression.convertExpression(formula);
 
             log.debug("Expression (after time conversion) : " + timeConversionResult.getConvertedFormula());
 

@@ -48,7 +48,7 @@ public class PrettyChart1 {
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 43),
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 44),
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 46),
-                };
+        };
 
 
         Instant[] date3 = {
@@ -82,7 +82,7 @@ public class PrettyChart1 {
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 43),
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 44),
                 DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 46),
-                };
+        };
 
         Number[] y1 = {
                 100,

@@ -19,7 +19,7 @@ public class TestTimeZoneAliases extends BaseArrayTestCase {
     };
 
     public void testDefaultAliases() {
-        for(final String[] v : values){
+        for (final String[] v : values) {
             final ZoneId target = ZoneId.of(v[1]);
             final ZoneId id = TimeZoneAliases.zoneId(v[1]);
             TestCase.assertEquals(target, id);
@@ -30,7 +30,7 @@ public class TestTimeZoneAliases extends BaseArrayTestCase {
     public void testAllZones() {
         final @NotNull Map<String, ZoneId> all = TimeZoneAliases.getAllZones();
 
-        for(final String[] v : values){
+        for (final String[] v : values) {
             final ZoneId target = ZoneId.of(v[1]);
             TestCase.assertEquals(target, all.get(v[0]));
             TestCase.assertEquals(target, all.get(v[1]));

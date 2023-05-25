@@ -850,7 +850,8 @@ public class QueryFactory {
                 "}\n" +
                 "\n" +
                 "randomValues = emptyTable(size)\n" +
-                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : DateTimeUtils.epochNanosToInstant(i*1_000_000_000L)\")\n" +
+                ".update(\"Timestamp= i%nullPoints[0] == 0 ? null : DateTimeUtils.epochNanosToInstant(i*1_000_000_000L)\")\n"
+                +
                 ".update(\"MyString=(i%nullPoints[1] == 0 ? null : `a`+ (columnRandoms[0].nextInt(scale*2) - scale) )\",\n"
                 +
                 "\"MyInt=(i%nullPoints[2] == 0 ? null : columnRandoms[1].nextInt(scale*2) - scale )\",\n" +

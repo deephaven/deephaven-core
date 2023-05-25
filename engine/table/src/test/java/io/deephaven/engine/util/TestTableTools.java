@@ -322,7 +322,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testInstantColumnHolder() {
 
         // create two columns with the same data
-        final Instant[] data = new Instant[] {DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(100), null};
+        final Instant[] data =
+                new Instant[] {DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(100), null};
         final long[] longData = Arrays.stream(data)
                 .mapToLong(dt -> dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt))
                 .toArray();

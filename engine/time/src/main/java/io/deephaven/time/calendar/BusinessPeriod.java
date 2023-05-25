@@ -64,6 +64,8 @@ public class BusinessPeriod implements Serializable {
      * @return true if the time is in this period; otherwise, false.
      */
     public boolean contains(final Instant time) {
-        return time != null && (DateTimeUtils.epochNanos(startTime) <= DateTimeUtils.epochNanos(time) && DateTimeUtils.epochNanos(time) <= DateTimeUtils.epochNanos(endTime));
+        return time != null
+                && DateTimeUtils.epochNanos(startTime) <= DateTimeUtils.epochNanos(time)
+                && DateTimeUtils.epochNanos(time) <= DateTimeUtils.epochNanos(endTime);
     }
 }

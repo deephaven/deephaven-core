@@ -94,7 +94,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                                 new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
+                                .computeLocked(() -> table
+                                        .update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
                                         .where(unitTestTimeSeriesFilter1));
                     }
                 },

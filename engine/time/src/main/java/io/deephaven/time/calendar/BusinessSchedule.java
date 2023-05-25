@@ -32,7 +32,8 @@ public class BusinessSchedule implements Serializable {
 
         // make sure the periods are in order
         Arrays.sort(this.openPeriods, (o1, o2) -> {
-            final long compared = DateTimeUtils.epochNanos(o2.getStartTime()) - DateTimeUtils.epochNanos(o1.getStartTime());
+            final long compared =
+                    DateTimeUtils.epochNanos(o2.getStartTime()) - DateTimeUtils.epochNanos(o1.getStartTime());
             if (compared > 0) {
                 return -1;
             } else if (compared == 0) {
