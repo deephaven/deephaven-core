@@ -1358,7 +1358,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTimeUtils.setClock(initial);
     }
 
-    public void testTz() {
+    public void testTimeZone() {
         final String[][] values = {
                 {"NY", "America/New_York"},
                 {"MN", "America/Chicago"},
@@ -1369,11 +1369,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         for (final String[] v : values) {
-            TestCase.assertEquals(TimeZoneAliases.zoneId(v[0]), DateTimeUtils.tz(v[0]));
-            TestCase.assertEquals(TimeZoneAliases.zoneId(v[1]), DateTimeUtils.tz(v[1]));
+            TestCase.assertEquals(TimeZoneAliases.zoneId(v[0]), DateTimeUtils.timeZone(v[0]));
+            TestCase.assertEquals(TimeZoneAliases.zoneId(v[1]), DateTimeUtils.timeZone(v[1]));
         }
 
-        TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.tz());
+        TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.timeZone());
     }
 
     public void testLowerBin() {

@@ -461,7 +461,6 @@ public class DateTimeUtils {
 
     // region Time Zone
 
-    // TODO: rename timeZone?
     /**
      * Gets the time zone for a time zone name.
      *
@@ -469,18 +468,17 @@ public class DateTimeUtils {
      * @return time zone.
      * @throws RuntimeException if the time zone does not exist.
      */
-    public static ZoneId tz(@NotNull String timeZone) {
+    public static ZoneId timeZone(@NotNull String timeZone) {
         return TimeZoneAliases.zoneId(timeZone);
     }
 
-    // TODO: rename timeZone?
     /**
      * Gets the sysetm default time zone.
      *
      * @return time zone.
      * @see ZoneId#systemDefault()
      */
-    public static ZoneId tz() {
+    public static ZoneId timeZone() {
         return ZoneId.systemDefault();
     }
 
