@@ -14,6 +14,7 @@ from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
+_JDateTimeUtilsDateStyle = jpy.get_type("io.deephaven.time.DateTimeUtils$DateStyle")
 
 MICRO = 1000  #: One microsecond in nanoseconds.
 MILLI = 1000000  #: One millisecond in nanosecondsl
@@ -33,11 +34,11 @@ YEARS_PER_NANO = 1 / YEAR  #: Number of years per nanosecond.
 
 class DateStyle(Enum):
     """ A Enum for date format styles. """
-    MDY = _JDateTimeUtils.DateStyle.MDY
+    MDY = _JDateTimeUtilsDateStyle.MDY
     """ Month, day, year date format. """
-    DMY = _JDateTimeUtils.DateStyle.DMY
+    DMY = _JDateTimeUtilsDateStyle.DMY
     """ Day, month, year date format. """
-    YMD = _JDateTimeUtils.DateStyle.YMD
+    YMD = _JDateTimeUtilsDateStyle.YMD
     """ Year, month, day date format. """
 
 

@@ -22,7 +22,7 @@ class TableReplayer(JObjectWrapper):
 
     j_object_type = _JReplayer
 
-    def __init__(self, start_time: dtypes.DateTime, end_time: dtypes.DateTime):
+    def __init__(self, start_time: dtypes.Instant, end_time: dtypes.Instant):
         """Initializes the replayer.
 
         Args:
