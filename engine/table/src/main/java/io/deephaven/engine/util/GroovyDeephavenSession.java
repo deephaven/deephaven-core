@@ -164,7 +164,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String scriptName = script.substring(0, script.indexOf("."));
 
         log.info("Executing script: " + script);
-        evaluateScript(FileUtils.readTextFile(file), scriptName);
+        evaluateScript(FileUtils.readTextFile(file), scriptName).throwIfError();
     }
 
     private final Set<String> executedScripts = new HashSet<>();
