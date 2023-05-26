@@ -10,7 +10,7 @@ package io.deephaven.hotspot;
  * <li>Deoptimization</li>
  * <li>Biased lock revocation</li>
  * <li>Thread dump</li>
- * <li>Heap inspection< /li>
+ * <li>Heap inspection</li>
  * <li>Class redefinition</li> </il> And others; you can see a full list <a href=
  * "https://github.com/AdoptOpenJDK/openjdk-jdk11/blob/19fb8f93c59dfd791f62d41f332db9e306bc1422/src/hotspot/share/runtime/vm_operations.hpp#L40">
  * here </a>.
