@@ -63,6 +63,9 @@ class CsvTestCase(BaseTestCase):
         t1 = read_csv("tests/data/small_sample.csv", header_row=2)
         self.assertEqual(t.size, t1.size + 2)
 
+        with self.assertRaises(DHError):
+            t1 = read_csv("tests/data/small_sample.csv", headless=True, header_row=2)
+
 
 if __name__ == '__main__':
     unittest.main()

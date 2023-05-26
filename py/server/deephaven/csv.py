@@ -40,7 +40,8 @@ def read(
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
         headless (bool): whether the csv file doesn't have a header row, default is false
-        header_row (int): the header row number, all the rows before it will be skipped, default is 0.
+        header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
+            headless is True, otherwise an exception will be raised
         skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse
             data in chunks. Defaults to 0
         num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks.
