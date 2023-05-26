@@ -41,7 +41,7 @@ import java.util.function.Function;
 
 public class TestReinterpretedColumn extends RefreshingTableTestCase {
     final int ROW_COUNT = 60;
-    private final long baseLongTime = DateTimeUtils.parseDuratioNanos("2021-10-20T09:30:00.000 NY");
+    private final long baseLongTime = DateTimeUtils.parseEpochNanos("2021-10-20T09:30:00.000 NY");
     private final ZonedDateTime baseZDT = ZonedDateTime.of(2021, 10, 18, 11, 30, 0, 0, ZoneId.of("America/New_York"));
     private final Instant baseInstant = DateTimeUtils.parseInstant("2021-10-17T12:30:00.000 NY");
 
@@ -337,33 +337,27 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private void doTestReinterpretLocalDate(final Table initial, boolean sorted) {
         Table table = TableTimeConversions.asLocalDate(initial, "L", "America/Chicago");
-        table = TableTimeConversions.asLocalDate(table, "DT", "America/Chicago");
         table = TableTimeConversions.asLocalDate(table, "I", "America/Chicago");
         table = TableTimeConversions.asLocalDate(table, "ZDT", "America/Chicago");
 
         TableDefinition td = table.getDefinition();
         assertEquals(LocalDate.class, td.getColumn("L").getDataType());
-        assertEquals(LocalDate.class, td.getColumn("DT").getDataType());
         assertEquals(LocalDate.class, td.getColumn("I").getDataType());
         assertEquals(LocalDate.class, td.getColumn("ZDT").getDataType());
 
         for (final RowSet.Iterator it = table.getRowSet().iterator(); it.hasNext();) {
             final long key = it.nextLong();
             assertEquals(LocalDate.of(2021, 10, 20), table.getColumnSource("L").get(key));
-            assertEquals(LocalDate.of(2021, 10, 19), table.getColumnSource("DT").get(key));
-            assertEquals(LocalDate.of(2021, 10, 18), table.getColumnSource("ZDT").get(key));
             assertEquals(LocalDate.of(2021, 10, 17), table.getColumnSource("I").get(key));
+            assertEquals(LocalDate.of(2021, 10, 18), table.getColumnSource("ZDT").get(key));
         }
 
         reinterpWrappedChunkCheck(
                 table.getColumnSource("L"), table.getRowSet(), sorted, (i, s) -> LocalDate.of(2021, 10, 20));
         reinterpWrappedChunkCheck(
-                table.getColumnSource("DT"), table.getRowSet(), sorted, (i, s) -> LocalDate.of(2021, 10, 19));
+                table.getColumnSource("I"), table.getRowSet(), sorted, (i, s) -> LocalDate.of(2021, 10, 17));
         reinterpWrappedChunkCheck(
                 table.getColumnSource("ZDT"), table.getRowSet(), sorted, (i, s) -> LocalDate.of(2021, 10, 18));
-        reinterpWrappedChunkCheck(
-                table.getColumnSource("I"), table.getRowSet(), sorted, (i, s) -> LocalDate.of(2021, 10, 17));
-
         if (!sorted) {
             doTestReinterpretLocalDate(initial.sortDescending("L"), true);
         }
@@ -379,13 +373,11 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
     private void doTestReinterpretLocalTime(final Table initial, boolean sorted) {
         Table table = TableTimeConversions.asLocalTime(initial, "L", "America/Chicago");
-        table = TableTimeConversions.asLocalTime(table, "DT", "America/Chicago");
         table = TableTimeConversions.asLocalTime(table, "I", "America/Chicago");
         table = TableTimeConversions.asLocalTime(table, "ZDT", "America/Chicago");
 
         TableDefinition td = table.getDefinition();
         assertEquals(LocalTime.class, td.getColumn("L").getDataType());
-        assertEquals(LocalTime.class, td.getColumn("DT").getDataType());
         assertEquals(LocalTime.class, td.getColumn("I").getDataType());
         assertEquals(LocalTime.class, td.getColumn("ZDT").getDataType());
 
@@ -397,19 +389,16 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             final int hourOff = startIter / 30;
             final int minute = (startIter + 30) % 60;
             assertEquals(LocalTime.of(8 + hourOff, minute, 0), table.getColumnSource("L").get(key));
-            assertEquals(LocalTime.of(9 + hourOff, minute, 0), table.getColumnSource("DT").get(key));
-            assertEquals(LocalTime.of(10 + hourOff, minute, 0), table.getColumnSource("ZDT").get(key));
             assertEquals(LocalTime.of(11 + hourOff, minute, 0), table.getColumnSource("I").get(key));
+            assertEquals(LocalTime.of(10 + hourOff, minute, 0), table.getColumnSource("ZDT").get(key));
         }
 
         reinterpWrappedChunkCheck(
                 table.getColumnSource("L"), table.getRowSet(), sorted, (i, s) -> makeLocalTime(8, i, s));
         reinterpWrappedChunkCheck(
-                table.getColumnSource("DT"), table.getRowSet(), sorted, (i, s) -> makeLocalTime(9, i, s));
+                table.getColumnSource("I"), table.getRowSet(), sorted, (i, s) -> makeLocalTime(11, i, s));
         reinterpWrappedChunkCheck(
                 table.getColumnSource("ZDT"), table.getRowSet(), sorted, (i, s) -> makeLocalTime(10, i, s));
-        reinterpWrappedChunkCheck(
-                table.getColumnSource("I"), table.getRowSet(), sorted, (i, s) -> makeLocalTime(11, i, s));
 
         if (!sorted) {
             doTestReinterpretLocalTime(initial.sortDescending("L"), true);
