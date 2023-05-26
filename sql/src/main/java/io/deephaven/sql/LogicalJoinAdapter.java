@@ -43,6 +43,10 @@ final class LogicalJoinAdapter {
         // and hopefully filter pushdown where applicable.
 
         for (Filter filter : ExtractAnds.of(FilterSimplifier.of(condition))) {
+            if (!(filter instanceof FilterComparison)) {
+                postFilterConditions.add(filter);
+                continue;
+            }
             final FilterComparison fc = (FilterComparison) filter;
             if (fc.operator() != Operator.EQUALS) {
                 postFilterConditions.add(filter);

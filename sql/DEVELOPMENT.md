@@ -17,6 +17,8 @@
  * array-type
  * custom-type
  * custom-expression
+ * logical-intersect
+ * logical-minus
 
 ## DH TODO
  * [deephaven-core#3515](https://github.com/deephaven/deephaven-core/issues/3515): Count non-null / count condition aggregations

@@ -17,7 +17,7 @@ import io.deephaven.api.literal.Literal;
 import java.util.ArrayList;
 import java.util.List;
 
-public enum FilterSimplifier implements Visitor<Filter> {
+enum FilterSimplifier implements Visitor<Filter> {
     INSTANCE;
 
     public static Filter of(Filter filter) {

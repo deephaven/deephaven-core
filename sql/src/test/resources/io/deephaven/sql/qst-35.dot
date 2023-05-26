@@ -1,0 +1,3 @@
+digraph {
+"op_0" ["label"="newTable(1, TableHeader{headers={literal_bool=io.deephaven.qst.type.BooleanType, literal_char=io.deephaven.qst.type.CharType, literal_str=io.deephaven.qst.type.StringType, literal_byte=io.deephaven.qst.type.ByteType, literal_small=io.deephaven.qst.type.ShortType, literal_int=io.deephaven.qst.type.IntType, literal_long=io.deephaven.qst.type.LongType, literal_float=io.deephaven.qst.type.FloatType, literal_double=io.deephaven.qst.type.DoubleType}})"]
+}

@@ -53,9 +53,10 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
         // SELECT * FROM csv('/my/test.csv')
         // SELECT * FROM uri('dh://server/scope/table_name')
         // SELECT * FROM uri('csv:///path/to/the.csv')
+        // SELECT * FROM time_table("00:00:01")
         //
         // Potentially related to design decisions around SQLTODO(catalog-reader-implementation)
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("SQLTODO(custom-sources)");
     }
 
     @Override
@@ -100,12 +101,16 @@ final class RelNodeVisitorAdapter<T> implements RelShuttle {
 
     @Override
     public RelNode visit(LogicalIntersect intersect) {
-        throw new UnsupportedOperationException();
+        // SQLTODO(logical-intersect)
+        // table.whereIn
+        throw new UnsupportedOperationException("SQLTODO(logical-intersect)");
     }
 
     @Override
     public RelNode visit(LogicalMinus minus) {
-        throw new UnsupportedOperationException();
+        // SQLTODO(logical-minus)
+        // table.whereNotIn
+        throw new UnsupportedOperationException("SQLTODO(logical-minus)");
     }
 
     @Override

@@ -58,6 +58,11 @@ public class TableLabelVisitor extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(NewTable newTable) {
+        sb.append("newTable(").append(newTable.size()).append(", ").append(newTable.header()).append(')');
+    }
+
+    @Override
     public void visit(HeadTable headTable) {
         sb.append("head(").append(headTable.size()).append(')');
     }
@@ -145,12 +150,10 @@ public class TableLabelVisitor extends TableVisitorGeneric {
 
     @Override
     public void visit(AggregateTable aggregateTable) {
-        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("aggBy([");
         append(Strings::of, aggregateTable.groupByColumns(), sb);
         sb.append("],");
         sb.append(Strings.ofAggregations(aggregateTable.aggregations()));
-        // append(TableLabelVisitor::toString, aggregateTable.aggregations(), sb);
         sb.append(")");
     }
 

@@ -20,10 +20,22 @@ final class LiteralAdapter {
         switch (typeName) {
             case BOOLEAN:
                 return RexLiteral.booleanValue(literal) ? Literal.of(true) : Literal.of(false);
-            case BIGINT:
-                return Literal.of(literal.getValueAs(Long.class));
+            case TINYINT:
+                return Literal.of(literal.getValueAs(Byte.class));
+            case SMALLINT:
+                return Literal.of(literal.getValueAs(Short.class));
             case INTEGER:
                 return Literal.of(literal.getValueAs(Integer.class));
+            case BIGINT:
+                return Literal.of(literal.getValueAs(Long.class));
+            case REAL:
+                return Literal.of(literal.getValueAs(Float.class));
+            case DOUBLE:
+            case FLOAT:
+                return Literal.of(literal.getValueAs(Double.class));
+            case CHAR:
+            case VARCHAR:
+                return Literal.of(literal.getValueAs(String.class));
         }
         throw new UnsupportedOperationException("Literal support for " + typeName + " " + literal);
     }

@@ -113,7 +113,7 @@ final class RexNodeExpressionAdapterImpl extends RexVisitorBase<Expression> impl
         if (!call.operands.isEmpty()) {
             throw new IllegalArgumentException("Expected 0 argument operator");
         }
-        return RawString.of("DateTime.now()");
+        return RawString.of("java.time.Instant.now()");
     }
 
     private Function unaryMinus(RexCall call) {

@@ -47,9 +47,10 @@ final class LogicalValuesAdapter {
                 return fill(fieldIx, values, Integer.class);
             case BIGINT:
                 return fill(fieldIx, values, Long.class);
-            case FLOAT:
+            case REAL:
                 return fill(fieldIx, values, Float.class);
             case DOUBLE:
+            case FLOAT:
                 return fill(fieldIx, values, Double.class);
             case TIMESTAMP:
                 return fill(fieldIx, values, TimestampString.class, Instant.class, LogicalValuesAdapter::adapt);

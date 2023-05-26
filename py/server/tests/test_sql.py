@@ -6,8 +6,6 @@ import jpy
 
 from deephaven import DHError, read_csv, empty_table
 from deephaven.experimental import sql
-from deephaven.execution_context import make_user_exec_ctx
-
 from tests.testbase import BaseTestCase
 
 _JTableSpec = jpy.get_type("io.deephaven.qst.table.TableSpec")
@@ -119,6 +117,11 @@ class SqlTest(BaseTestCase):
 
         result_table = do_sql()
         self.assertEqual(result_table.size, 3)
+
+    def test_current_timestamp(self):
+        result_table = sql.eval("SELECT CURRENT_TIMESTAMP")
+        self.assertEqual(result_table.size, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
