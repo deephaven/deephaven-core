@@ -169,7 +169,8 @@ public final class BarrageTableResolver implements UriResolver {
      * @param table the table spec
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code viewport} as offsets from {@link Table#size()} rather than
+     *        {@code 0}
      * @return the subscribed table
      */
     public Table subscribe(String targetUri, TableSpec table, RowSet viewport, BitSet columns, boolean reverseViewport)

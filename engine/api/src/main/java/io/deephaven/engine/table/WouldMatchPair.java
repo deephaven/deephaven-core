@@ -33,6 +33,7 @@ public class WouldMatchPair {
      * Create a WouldMatchPair from a column name and {@link Filter}
      * <p/>
      * TODO check this before making a PR
+     * 
      * @see io.deephaven.engine.table.impl.select.WhereFilterFactory
      *
      * @param columnName the name of the resultant column
