@@ -299,7 +299,7 @@ def ring_table(parent: Table, capacity: int, initialize: bool = True) -> Table:
     Latest rows are determined solely by the new rows added to the parent table, deleted rows are ignored,
     and updated rows are not expected and will raise an exception.
 
-    Ring table is mostly used with stream tables which do not retain their own data for more than an update cycle.
+    Ring table is mostly used with blink tables which do not retain their own data for more than an update cycle.
 
     Args:
         parent (Table): the parent table

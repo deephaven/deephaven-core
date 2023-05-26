@@ -137,14 +137,14 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testStreamNoStartTimeOnBoundary() {
-        build(TimeTable.newBuilder().streamTable(true).period(10));
+    public void testBlinkNoStartTimeOnBoundary() {
+        build(TimeTable.newBuilder().blinkTable(true).period(10));
 
         tick(0);
         Assert.assertEquals(timeTable.size(), 1);
         Assert.assertEquals(column.getLong(0), 0);
 
-        // Check for stream table property that rows exist for a single tick.
+        // Check for blink table property that rows exist for a single tick.
         tick(9);
         Assert.assertEquals(timeTable.size(), 0);
 
@@ -156,8 +156,8 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testStreamNoStartTimeLowerBounds() {
-        build(TimeTable.newBuilder().streamTable(true).period(10));
+    public void testBlinkNoStartTimeLowerBounds() {
+        build(TimeTable.newBuilder().blinkTable(true).period(10));
 
         tick(15);
         Assert.assertEquals(timeTable.size(), 1);
@@ -170,9 +170,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testStreamProvidedStartTimeOnBoundary() {
+    public void testBlinkProvidedStartTimeOnBoundary() {
         build(TimeTable.newBuilder()
-                .streamTable(true)
+                .blinkTable(true)
                 .startTime(DateTimeUtils.nanosToTime(10))
                 .period(10));
 
@@ -185,9 +185,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
     }
 
     @Test
-    public void testStreamProvidedStartTimeOffsetPeriod() {
+    public void testBlinkProvidedStartTimeOffsetPeriod() {
         build(TimeTable.newBuilder()
-                .streamTable(true)
+                .blinkTable(true)
                 .startTime(DateTimeUtils.nanosToTime(15))
                 .period(10));
 

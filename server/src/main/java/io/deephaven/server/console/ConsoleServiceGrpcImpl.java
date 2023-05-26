@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.console;
 
+import com.google.common.base.Throwables;
 import com.google.rpc.Code;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
@@ -180,8 +181,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
                     changes.removed.entrySet()
                             .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
-                    responseObserver.onNext(diff.setChanges(fieldChanges).build());
-                    responseObserver.onCompleted();
+                    if (changes.error != null) {
+                        diff.setErrorMessage(Throwables.getStackTraceAsString(changes.error));
+                        log.error().append("Error running script: ").append(changes.error).endl();
+                    }
+                    safelyComplete(responseObserver, diff.setChanges(fieldChanges).build());
                 });
     }
 

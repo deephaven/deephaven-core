@@ -4,6 +4,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;

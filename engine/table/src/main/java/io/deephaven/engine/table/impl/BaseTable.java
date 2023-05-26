@@ -310,7 +310,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.PartitionBy));
 
-        tempMap.put(STREAM_TABLE_ATTRIBUTE, EnumSet.of(
+        tempMap.put(BLINK_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.Coalesce,
                 CopyAttributeOperation.Filter,
                 CopyAttributeOperation.Sort,
@@ -398,18 +398,18 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     /**
-     * Returns true if this table is a stream table.
+     * Returns true if this table is a blink table.
      *
-     * @return Whether this table is a stream table
-     * @see #STREAM_TABLE_ATTRIBUTE
+     * @return Whether this table is a blink table
+     * @see #BLINK_TABLE_ATTRIBUTE
      */
-    public boolean isStream() {
-        return StreamTableTools.isStream(this);
+    public boolean isBlink() {
+        return BlinkTableTools.isBlink(this);
     }
 
     @Override
-    public Table dropStream() {
-        return withoutAttributes(Set.of(STREAM_TABLE_ATTRIBUTE));
+    public Table removeBlink() {
+        return withoutAttributes(Set.of(BLINK_TABLE_ATTRIBUTE));
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -630,7 +630,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
                     "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
         }
-        if (isStream()) {
+        if (isBlink()) {
             Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
             Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
             Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");

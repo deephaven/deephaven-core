@@ -38,13 +38,13 @@ setup(
     license='Deephaven Community License',
     test_loader='unittest:TestLoader',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
-        'Topic :: Software Development :: Build Tools',
         'License :: Other/Proprietary License',
+        'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
@@ -56,7 +56,7 @@ setup(
         'jpy>=0.13.0',
         'deephaven-plugin',
         'numpy',
-        'pandas',
+        'pandas>=1.5.0',
         'pyarrow',
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
         # It took 6 months for numba to support 3.11 after it was released, we want to make sure deephaven-core will be

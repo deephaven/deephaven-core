@@ -48,7 +48,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     @ConcurrentMethod
     default TOPS where(String... filters) {
-        return where(Filter.from(filters));
+        return where(Filter.and(Filter.from(filters)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -79,25 +79,31 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     @ConcurrentMethod
-    default TOPS updateView(String... newColumns) {
-        return updateView(Selectable.from((newColumns)));
+    default TOPS updateView(String... columns) {
+        return updateView(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS update(String... newColumns) {
-        return update(Selectable.from((newColumns)));
+    default TOPS update(String... columns) {
+        return update(Selectable.from((columns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default TOPS lazyUpdate(String... newColumns) {
-        return lazyUpdate(Selectable.from((newColumns)));
+    default TOPS lazyUpdate(String... colummns) {
+        return lazyUpdate(Selectable.from((colummns)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+
+    @Override
+    default TOPS select() {
+        return select(Collections.emptyList());
+    }
 
     @Override
     default TOPS select(String... columns) {
@@ -134,6 +140,11 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     }
 
     // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default TOPS join(TABLE rightTable) {
+        return join(rightTable, Collections.emptyList(), Collections.emptyList());
+    }
 
     @Override
     default TOPS join(TABLE rightTable, String columnsToMatch) {
@@ -333,6 +344,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     }
 
     @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation) {
+        return updateBy(control, Collections.singletonList(operation),
+                Collections.emptyList());
+    }
+
+    @Override
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
@@ -345,6 +362,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @Override
     default TOPS updateBy(final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
+                ColumnName.from(byColumns));
+    }
+
+    @Override
+    default TOPS updateBy(final UpdateByControl control, final UpdateByOperation operation, final String... byColumns) {
+        return updateBy(control, Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
@@ -365,12 +388,6 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     @ConcurrentMethod
     default TOPS selectDistinct(String... columns) {
         return selectDistinct(Selectable.from(columns));
-    }
-
-    @Override
-    @ConcurrentMethod
-    default TOPS selectDistinct(Selectable... columns) {
-        return selectDistinct(Arrays.asList(columns));
     }
 
     // -------------------------------------------------------------------------------------------

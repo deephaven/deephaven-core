@@ -3,19 +3,19 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStreamSortedFirstOrLastChunkedOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharBlinkSortedFirstOrLastChunkedOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.compare.ByteComparisons;
+import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.ByteArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -28,17 +28,17 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Chunked aggregation operator for sorted first/last-by using a byte sort-column on stream tables.
+ * Chunked aggregation operator for sorted first/last-by using a Object sort-column on blink tables.
  */
-public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedStreamFirstOrLastChunkedOperator {
+public class ObjectBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBlinkFirstOrLastChunkedOperator {
 
     private final boolean isFirst;
     private final boolean isCombo;
-    private final ByteArraySource sortColumnValues;
+    private final ObjectArraySource sortColumnValues;
 
     private RowSetBuilderRandom changedDestinationsBuilder;
 
-    ByteStreamSortedFirstOrLastChunkedOperator(
+    ObjectBlinkSortedFirstOrLastChunkedOperator(
             final boolean isFirst,
             final boolean isCombo,
             @NotNull final MatchPair[] resultPairs,
@@ -47,7 +47,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
         this.isFirst = isFirst;
         this.isCombo = isCombo;
         // region sortColumnValues initialization
-        sortColumnValues = new ByteArraySource();
+        sortColumnValues = new ObjectArraySource<>(Object.class);
         // endregion sortColumnValues initialization
     }
 
@@ -73,7 +73,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
                          @NotNull final WritableBooleanChunk<Values> stateModified) {
-        final ByteChunk<? extends Values> typedValues = values.asByteChunk();
+        final ObjectChunk<Object, ? extends Values> typedValues = values.asObjectChunk();
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -88,10 +88,10 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
                             @NotNull final Chunk<? extends Values> values,
                             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
                             final long destination) {
-        return addChunk(values.asByteChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
+        return addChunk(values.asObjectChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
-    private boolean addChunk(@NotNull final ByteChunk<? extends Values> values,
+    private boolean addChunk(@NotNull final ObjectChunk<Object, ? extends Values> values,
                              @NotNull final LongChunk<? extends RowKeys> indices,
                              final int start,
                              final int length,
@@ -102,7 +102,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
         final boolean newDestination = redirections.getUnsafe(destination) == QueryConstants.NULL_LONG;
 
         int bestChunkPos;
-        byte bestValue;
+        Object bestValue;
         if (newDestination) {
             bestChunkPos = start;
             bestValue = values.get(start);
@@ -113,8 +113,8 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
 
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
-            final byte value = values.get(chunkPos);
-            final int comparison = ByteComparisons.compare(value, bestValue);
+            final Object value = values.get(chunkPos);
+            final int comparison = ObjectComparisons.compare(value, bestValue);
             // @formatter:off
             // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
             final boolean better =

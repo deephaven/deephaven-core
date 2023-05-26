@@ -54,7 +54,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         private Clock clock;
         private DateTime startTime;
         private long period;
-        private boolean streamTable;
+        private boolean blinkTable;
 
         public Builder registrar(UpdateSourceRegistrar registrar) {
             this.registrar = registrar;
@@ -86,15 +86,15 @@ public final class TimeTable extends QueryTable implements Runnable {
             return this;
         }
 
-        public Builder streamTable(boolean streamTable) {
-            this.streamTable = streamTable;
+        public Builder blinkTable(boolean blinkTable) {
+            this.blinkTable = blinkTable;
             return this;
         }
 
         public QueryTable build() {
             return new TimeTable(registrar,
                     Objects.requireNonNullElse(clock, DateTimeUtils.currentClock()),
-                    startTime, period, streamTable);
+                    startTime, period, blinkTable);
         }
     }
 
@@ -107,18 +107,18 @@ public final class TimeTable extends QueryTable implements Runnable {
     private final SyntheticDateTimeSource columnSource;
     private final Clock clock;
     private final PerformanceEntry entry;
-    private final boolean isStreamTable;
+    private final boolean isBlinkTable;
 
     public TimeTable(UpdateSourceRegistrar registrar, Clock clock,
-            @Nullable DateTime startTime, long period, boolean isStreamTable) {
+            @Nullable DateTime startTime, long period, boolean isBlinkTable) {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
-        this.isStreamTable = isStreamTable;
-        final String name = isStreamTable ? "TimeTableStream" : "TimeTable";
+        this.isBlinkTable = isBlinkTable;
+        final String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
         columnSource = (SyntheticDateTimeSource) getColumnSourceMap().get(TIMESTAMP);
         this.clock = clock;
-        if (isStreamTable) {
-            setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
+        if (isBlinkTable) {
+            setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
         } else {
             setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
             setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -157,7 +157,7 @@ public final class TimeTable extends QueryTable implements Runnable {
             }
 
             final boolean rowsAdded = rangeStart <= lastIndex;
-            final boolean rowsRemoved = isStreamTable && getRowSet().isNonempty();
+            final boolean rowsRemoved = isBlinkTable && getRowSet().isNonempty();
             if (rowsAdded || rowsRemoved) {
                 final RowSet addedRange = rowsAdded
                         ? RowSetFactory.fromRange(rangeStart, lastIndex)

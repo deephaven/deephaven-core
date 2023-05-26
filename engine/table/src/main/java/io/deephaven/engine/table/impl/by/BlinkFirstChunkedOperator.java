@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.*;
@@ -21,11 +22,11 @@ import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A firstBy aggregation operator for stream tables.
+ * A firstBy aggregation operator for blink tables.
  *
- * @see Table#STREAM_TABLE_ATTRIBUTE
+ * @see Table#BLINK_TABLE_ATTRIBUTE
  */
-public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOperator {
+public class BlinkFirstChunkedOperator extends BaseBlinkFirstOrLastChunkedOperator {
 
     /**
      * <p>
@@ -48,8 +49,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
      */
     private long firstDestinationThisStep;
 
-    StreamFirstChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table streamTable) {
-        super(resultPairs, streamTable);
+    BlinkFirstChunkedOperator(@NotNull final MatchPair[] resultPairs, @NotNull final Table blinkTable) {
+        super(resultPairs, blinkTable);
     }
 
     @Override

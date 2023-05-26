@@ -1002,6 +1002,7 @@ public class TstUtils {
         }
 
         private long densify(final long rowKey) {
+            Assert.eqZero(rowKey % sparsityFactor, "rowKey % sparsityFactor");
             return rowKey / sparsityFactor;
         }
 

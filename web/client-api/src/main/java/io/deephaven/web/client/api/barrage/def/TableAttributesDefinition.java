@@ -11,7 +11,7 @@ public class TableAttributesDefinition {
             TOTALS_TABLE_ATTRIBUTE = "TotalsTable",
             TABLE_DESCRIPTION_ATTRIBUTE = "TableDescription",
             LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
-            STREAM_TABLE_ATTRIBUTE = "StreamTable",
+            BLINK_TABLE_ATTRIBUTE = "BlinkTable",
             PLUGIN_NAME = "PluginName";
 
     private final Map<String, String> map;
@@ -29,8 +29,8 @@ public class TableAttributesDefinition {
         return remainingAttributeKeys.contains(INPUT_TABLE_ATTRIBUTE);
     }
 
-    public boolean isStreamTable() {
-        return "true".equals(map.get(STREAM_TABLE_ATTRIBUTE));
+    public boolean isBlinkTable() {
+        return "true".equals(map.get(BLINK_TABLE_ATTRIBUTE));
     }
 
     public String[] getKeys() {

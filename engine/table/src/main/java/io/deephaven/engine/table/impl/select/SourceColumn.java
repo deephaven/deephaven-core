@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;

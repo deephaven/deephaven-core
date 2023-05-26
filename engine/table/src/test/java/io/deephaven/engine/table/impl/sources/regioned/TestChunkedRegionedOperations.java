@@ -269,8 +269,9 @@ public class TestChunkedRegionedOperations {
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
                 ParquetInstructions.EMPTY,
                 partitionedDataDefinition).updateView(
-                        new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
-                        new ReinterpretedColumn<>("DT", DateTime.class, "DT_R", long.class))
+                        List.of(
+                                new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
+                                new ReinterpretedColumn<>("DT", DateTime.class, "DT_R", long.class)))
                 .coalesce();
     }
 

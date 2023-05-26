@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources.ring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotFunction;
@@ -31,9 +32,8 @@ public class RingTableTools {
      * Constructs a "ring" table, whereby the latest {@code capacity} rows from the {@code parent} are retained and
      * re-indexed by the resulting ring table. Latest is determined solely by the {@link TableUpdate#added()} updates,
      * {@link TableUpdate#removed()} are ignored; and {@link TableUpdate#modified()} / {@link TableUpdate#shifted()} are
-     * not expected. In particular, this is a useful construction with
-     * {@link io.deephaven.engine.table.impl.StreamTableTools#isStream(Table) stream tables} which do not retain their
-     * own data for more than an update cycle.
+     * not expected. In particular, this is a useful construction with {@link BlinkTableTools#isBlink(Table) blink
+     * tables} which do not retain their own data for more than an update cycle.
      *
      * @param parent the parent
      * @param capacity the capacity

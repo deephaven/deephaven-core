@@ -63,6 +63,8 @@
                 commandField.removeAttribute('disabled');
                 if (result.error == null) {
                     commandField.value = '';
+                } else {
+                    document.getElementById('logs').append(result.error, document.createElement('br'))
                 }
             }, err => {
                 commandField.removeAttribute('disabled');

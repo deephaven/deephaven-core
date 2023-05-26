@@ -384,10 +384,10 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         final BarrageTable table;
 
-        Object isStreamTable = attributes.getOrDefault(Table.STREAM_TABLE_ATTRIBUTE, false);
-        if (isStreamTable instanceof Boolean && (Boolean) isStreamTable) {
+        Object isBlinkTable = attributes.getOrDefault(Table.BLINK_TABLE_ATTRIBUTE, false);
+        if (isBlinkTable instanceof Boolean && (Boolean) isBlinkTable) {
             final LinkedHashMap<String, ColumnSource<?>> finalColumns = makeColumns(columns, writableSources);
-            table = new BarrageStreamTable(
+            table = new BarrageBlinkTable(
                     registrar, queue, executor, finalColumns, writableSources, attributes, initialViewPortRows);
         } else {
             final WritableRowRedirection rowRedirection =
@@ -430,7 +430,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     }
 
     /**
-     * Set up the columns for the replicated stream table.
+     * Set up the columns for the replicated blink table.
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(

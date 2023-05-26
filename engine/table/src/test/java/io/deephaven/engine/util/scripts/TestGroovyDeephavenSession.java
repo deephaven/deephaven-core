@@ -54,7 +54,7 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testNullCast() {
-        session.evaluateScript("x = null; y = emptyTable(0).update(\"X = (java.util.List)x\")");
+        session.evaluateScript("x = null; y = emptyTable(0).update(\"X = (java.util.List)x\")").throwIfError();
         final Table y = fetchTable("y");
         final TableDefinition definition = y.getDefinition();
         final Class<?> colClass = definition.getColumn("X").getDataType();
@@ -70,7 +70,7 @@ public class TestGroovyDeephavenSession {
                 "    }\n" +
                 "}\n" +
                 "obj = new MyObj(1)\n" +
-                "result = emptyTable(1).select(\"A = obj.a\")");
+                "result = emptyTable(1).select(\"A = obj.a\")").throwIfError();
         Assert.assertNotNull(fetch("obj", Object.class));
         final Table result = fetchTable("result");
         Assert.assertFalse(result.isFailed());
@@ -82,6 +82,7 @@ public class TestGroovyDeephavenSession {
                 "z=emptyTable(10)\n" +
                 "y=emptyTable(10)\n" +
                 "u=emptyTable(10)");
+        changes.throwIfError();
         final String[] names = new String[] {"x", "z", "y", "u"};
         final MutableInt offset = new MutableInt();
         changes.created.forEach((name, type) -> {
@@ -97,7 +98,7 @@ public class TestGroovyDeephavenSession {
         if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
             Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
         }
-        session.evaluateScript("import " + packageString + ".*");
+        session.evaluateScript("import " + packageString + ".*").throwIfError();
     }
 }
 

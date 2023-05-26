@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -98,7 +100,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.MatchPair.matchString;
+import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 
 /**
@@ -552,8 +554,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionBy");
         }
         final List<ColumnName> columns = ColumnName.from(keyColumnNames);
         return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
@@ -575,8 +577,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
             final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionedAggBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionedAggBy");
         }
         final Optional<Partition> includedPartition = aggregations.stream()
                 .filter(agg -> agg instanceof Partition)
@@ -604,8 +606,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
             final Collection<? extends ColumnName> groupByColumns) {
-        if (isStream() && includeConstituents) {
-            throw streamUnsupported("rollup with included constituents");
+        if (isBlink() && includeConstituents) {
+            throw unsupportedForBlinkTables("rollup with included constituents");
         }
         return memoizeResult(MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents),
                 () -> RollupTableImpl.makeRollup(this, aggregations, includeConstituents, groupByColumns));
@@ -613,8 +615,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public TreeTable tree(String idColumn, String parentColumn) {
-        if (isStream()) {
-            throw streamUnsupported("tree");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("tree");
         }
         return memoizeResult(MemoizedOperationKey.tree(idColumn, parentColumn),
                 () -> TreeTableImpl.makeTree(this, ColumnName.of(idColumn), ColumnName.of(parentColumn)));
@@ -649,7 +651,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return exactJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table exactJoinImpl(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                         + ")",
@@ -729,9 +741,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
     }
 
-    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
-        return new UnsupportedOperationException("Stream tables do not support " + operationName
-                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
+    private static UnsupportedOperationException unsupportedForBlinkTables(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Blink tables do not support " + operationName
+                + "; use BlinkTableTools.blinkToAppendOnly to accumulate full history");
     }
 
     @Override
@@ -1060,8 +1072,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table where(final Collection<? extends Filter> filters) {
-        return whereInternal(WhereFilter.from(filters));
+    public Table where(Filter filter) {
+        return whereInternal(WhereFilter.fromInternal(filter));
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {
@@ -1324,7 +1336,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table select(Collection<? extends Selectable> columns) {
-        return selectInternal(SelectColumn.from(columns));
+        return selectInternal(SelectColumn.from(columns.isEmpty() ? definition.getTypedColumnNames() : columns));
     }
 
     private Table selectInternal(SelectColumn... selectColumns) {
@@ -1745,7 +1757,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<io.deephaven.api.Pair> pairs) {
+        return renameColumnsImpl(MatchPair.fromPairs(pairs));
+    }
+
+    private Table renameColumnsImpl(MatchPair... pairs) {
         return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
                 sizeForInstrumentation(), () -> {
                     if (pairs == null || pairs.length == 0) {
@@ -1812,7 +1828,32 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table aj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    public Table aj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            AsOfJoinRule asOfJoinRule) {
+        return ajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(asOfJoinRule));
+    }
+
+    @Override
+    public Table raj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return rajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(reverseAsOfJoinRule));
+    }
+
+    private Table ajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
@@ -1824,8 +1865,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         asOfMatchRule));
     }
 
-    @Override
-    public Table raj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    private Table rajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("raj() requires a non-null right hand side table.");
@@ -1901,7 +1941,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table naturalJoin(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return naturalJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
                 () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
@@ -1945,9 +1995,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table join(
             @NotNull final Table rightTable,
-            @NotNull final MatchPair[] columnsToMatch,
-            @NotNull final MatchPair[] columnsToAdd,
-            final int numRightBitsToReserve) {
+            @NotNull final Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull final Collection<? extends JoinAddition> columnsToAdd,
+            int numRightBitsToReserve) {
+        return joinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                numRightBitsToReserve);
+    }
+
+    private Table joinImpl(final Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
         return memoizeResult(
                 MemoizedOperationKey.crossJoin(rightTable, columnsToMatch, columnsToAdd,
                         numRightBitsToReserve),
@@ -2008,7 +2067,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
-                    final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
+                    final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
@@ -3446,5 +3505,32 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     static Boolean isParallelWhereDisabledForThread() {
         return disableParallelWhereForThread.get();
+    }
+
+    /**
+     * Rules for the inexact matching performed on the final column to match by in {@link #aj} and {@link #raj}.
+     */
+    private enum AsOfMatchRule {
+        LESS_THAN_EQUAL, LESS_THAN, GREATER_THAN_EQUAL, GREATER_THAN;
+
+        public static AsOfMatchRule of(AsOfJoinRule rule) {
+            switch (rule) {
+                case LESS_THAN_EQUAL:
+                    return LESS_THAN_EQUAL;
+                case LESS_THAN:
+                    return LESS_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
+
+        public static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
+            switch (rule) {
+                case GREATER_THAN_EQUAL:
+                    return GREATER_THAN_EQUAL;
+                case GREATER_THAN:
+                    return GREATER_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
     }
 }

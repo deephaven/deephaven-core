@@ -1,11 +1,15 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -215,7 +219,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table renameColumns(MatchPair... pairs) {
+    default Table renameColumns(Collection<Pair> pairs) {
         return throwUnsupported();
     }
 
@@ -245,30 +249,32 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
         return throwUnsupported();
     }
 
     @Override
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
         return throwUnsupported();
     }
 
     @Override
-    default Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
+    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return throwUnsupported();
     }
 
@@ -294,7 +300,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table dropStream() {
+    default Table removeBlink() {
         return throwUnsupported();
     }
 
@@ -448,7 +454,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table where(Collection<? extends Filter> filters) {
+    default Table where(Filter filter) {
         return throwUnsupported();
     }
 

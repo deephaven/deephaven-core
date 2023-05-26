@@ -8,7 +8,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.CrossJoinHelper;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,14 +74,14 @@ public class OuterJoinTools {
         } while (resultColumns.containsKey(sentinelColumnName));
 
         // only need match columns from the left; rename to right names and drop remaining to avoid name conflicts
-        final SelectColumn[] leftColumns = Streams.concat(
+        final List<SelectColumn> leftColumns = Streams.concat(
                 Arrays.stream(columnsToMatch).map(mp -> new SourceColumn(mp.leftColumn(), mp.rightColumn())),
                 Stream.of(SelectColumn.of(Selectable.parse(sentinelColumnName + " = true"))))
-                .toArray(SelectColumn[]::new);
+                .collect(Collectors.toList());
 
-        final SelectColumn[] leftMatchColumns = Arrays.stream(columnsToMatch)
+        final List<SelectColumn> leftMatchColumns = Arrays.stream(columnsToMatch)
                 .map(mp -> new SourceColumn(mp.leftColumn()))
-                .toArray(SelectColumn[]::new);
+                .collect(Collectors.toList());
         final Table uniqueLeftGroups = table1.coalesce()
                 .selectDistinct(leftMatchColumns)
                 .view(leftColumns);
@@ -104,17 +103,17 @@ public class OuterJoinTools {
                 .collect(Collectors.toSet());
 
         // note that right sourced columns must be applied first to avoid any clashing column names
-        final SelectColumn[] rightColumns = Streams.concat(
+        final List<SelectColumn> rightColumns = Streams.concat(
                 identityMatchColumns.stream().map(SourceColumn::new), rightSourcedColumns,
                 table1.getColumnSourceMap().entrySet().stream()
                         .filter(entry -> !identityMatchColumns.contains(entry.getKey()))
                         .map(entry -> new NullSelectColumn<>(
                                 entry.getValue().getType(), entry.getValue().getComponentType(), entry.getKey())))
-                .toArray(SelectColumn[]::new);
+                .collect(Collectors.toList());
 
         // perform a natural join, filter for unmatched, and apply columnsToAdd / null view columns
         final Table unmatchedRightRows = table2.coalesce()
-                .naturalJoin(uniqueLeftGroups, rightMatchColumns, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY)
+                .naturalJoin(uniqueLeftGroups, Arrays.asList(rightMatchColumns), Collections.emptyList())
                 .where(sentinelColumnName + " == null")
                 .view(rightColumns);
 

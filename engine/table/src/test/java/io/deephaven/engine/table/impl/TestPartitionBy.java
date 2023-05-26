@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.PartitionedTable;
@@ -83,7 +84,7 @@ public class TestPartitionBy extends QueryTableTestBase {
                     for (int ii = 0; ii < groupByColumns.length; ++ii) {
                         filters[ii] = new MatchFilter(groupByColumns[ii], key[ii]);
                     }
-                    whereTable = originalTable.where(filters);
+                    whereTable = originalTable.where(Filter.and(filters));
                 }
 
                 if (constituent == null) {

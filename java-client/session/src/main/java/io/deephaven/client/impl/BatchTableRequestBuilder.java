@@ -289,24 +289,22 @@ class BatchTableRequestBuilder {
         }
 
         private Operation createFilterTableRequest(WhereTable whereTable) {
-            FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
+            FilterTableRequest request = FilterTableRequest.newBuilder()
                     .setResultId(ticket)
-                    .setSourceId(ref(whereTable.parent()));
-            for (Filter filter : whereTable.filters()) {
-                builder.addFilters(FilterAdapter.of(filter));
-            }
-            return op(Builder::setFilter, builder.build());
+                    .setSourceId(ref(whereTable.parent()))
+                    .addFilters(FilterAdapter.of(whereTable.filter()))
+                    .build();
+            return op(Builder::setFilter, request);
         }
 
         private Operation createUnstructuredFilterTableRequest(WhereTable whereTable) {
-            UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest.newBuilder()
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+            UnstructuredFilterTableRequest request = UnstructuredFilterTableRequest.newBuilder()
                     .setResultId(ticket)
-                    .setSourceId(ref(whereTable.parent()));
-            for (Filter filter : whereTable.filters()) {
-                // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-                builder.addFilters(Strings.of(filter));
-            }
-            return op(Builder::setUnstructuredFilter, builder.build());
+                    .setSourceId(ref(whereTable.parent()))
+                    .addFilters(Strings.of(whereTable.filter()))
+                    .build();
+            return op(Builder::setUnstructuredFilter, request);
         }
 
         @Override

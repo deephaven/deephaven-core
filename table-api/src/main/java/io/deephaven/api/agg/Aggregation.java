@@ -4,6 +4,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecApproximatePercentile;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;

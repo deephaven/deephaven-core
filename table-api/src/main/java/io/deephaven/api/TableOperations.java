@@ -104,7 +104,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS where(String... filters);
 
     @ConcurrentMethod
-    TOPS where(Collection<? extends Filter> filters);
+    TOPS where(Filter filter);
 
     // -------------------------------------------------------------------------------------------
 
@@ -217,6 +217,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS select();
+
     TOPS select(String... columns);
 
     TOPS select(Collection<? extends Selectable> columns);
@@ -313,6 +315,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
             Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
+     * Equivalent to {@code join(rightTable, emptyList(), emptyList())}.
+     *
+     * @param rightTable The right side table on the join.
+     * @return a new table joined according to the specification with zero key-columns and includes all right columns
+     * @see #join(Object, Collection, Collection)
+     */
+    TOPS join(TABLE rightTable);
 
     /**
      * Perform a cross join with the {@code rightTable}.
@@ -847,6 +861,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
      * over the entire table.
      *
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param operation the operation to apply to the table.
+     * @return a table with the same rowset, with the specified operation applied to the entire table
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * over the entire table.
+     *
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
@@ -876,6 +902,20 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      *         {@code byColumns}
      */
     TOPS updateBy(UpdateByOperation operation, final String... byColumns);
+
+    /**
+     * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
+     * aggregations are defined by the {@code operations}, which support incremental aggregation over the corresponding
+     * rows in the parent table. The aggregations will apply position or time-based windowing and compute the results
+     * for the row group (as determined by the {@code byColumns}).
+     *
+     * @param operation the operation to apply to the table.
+     * @param control the {@link UpdateByControl control} to use when updating the table.
+     * @param byColumns the columns to group by before applying.
+     * @return a table with the same rowSet, with the specified operation applied to each group defined by the
+     *         {@code byColumns}
+     */
+    TOPS updateBy(UpdateByControl control, UpdateByOperation operation, final String... byColumns);
 
     /**
      * Creates a table with additional columns calculated from window-based aggregations of columns in its parent. The
@@ -925,9 +965,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     @ConcurrentMethod
     TOPS selectDistinct(String... columns);
-
-    @ConcurrentMethod
-    TOPS selectDistinct(Selectable... columns);
 
     @ConcurrentMethod
     TOPS selectDistinct(Collection<? extends Selectable> columns);
