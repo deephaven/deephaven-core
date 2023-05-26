@@ -21,7 +21,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * Compute an exponential moving standard deviation for a BigDecimal column source. The output is expressed as a
  * BigDecimal value and is computed using the following formula:
  *
- * variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+ * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
  *
  * This function is described in the following document:
  *
@@ -58,7 +58,7 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
                             curVariance = BigDecimal.ZERO;
                             curVal = null;
                         } else {
-                            // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                            // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                             curVariance = opAlpha.multiply(
                                     curVariance.add(
                                             opOneMinusAlpha.multiply(input.subtract(curEma).pow(2, mathContext)),
@@ -100,7 +100,7 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
                                     oneMinusAlpha = computeOneMinusAlpha(alpha);
                                     lastDt = dt;
                                 }
-                                // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                                 curVariance = alpha.multiply(
                                         curVariance.add(
                                                 oneMinusAlpha.multiply(input.subtract(curEma).pow(2, mathContext)),
