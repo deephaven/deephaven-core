@@ -232,7 +232,7 @@ public class QueryTableRangeJoinTest {
         DOUBLE("double", "io.deephaven.vector.DoubleVectorDirect.ZERO_LENGTH_VECTOR",
                 new double[]{NULL_DOUBLE, -1, 1, 3, 5, 7, 9, Double.NaN},
                 new double[]{NULL_DOUBLE, 0, 1, 2, 4, 5, 6, 7, 8, Double.NaN}),
-        TIMESTAMP( "DateTime", "io.deephaven.vector.ObjectVectorDirect.empty()",
+        TIMESTAMP("Instant", "io.deephaven.vector.ObjectVectorDirect.empty()",
                 new Instant[]{null, minus(NOW, 1), plus(NOW, 1), plus(NOW, 3), plus(NOW, 5), plus(NOW, 7),
                         plus(NOW, 9)},
                 new Instant[]{null, NOW, plus(NOW, 1), plus(NOW, 2), plus(NOW, 4), plus(NOW, 5),
