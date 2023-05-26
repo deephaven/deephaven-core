@@ -274,7 +274,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
-                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()), DateTimeUtils.parseEpochNanos(s));
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()),
+                        DateTimeUtils.parseEpochNanos(s));
             }
         }
 
@@ -351,9 +352,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final long millis = DateTimeUtils.epochMillis(dt1);
         final long seconds = DateTimeUtils.epochSeconds(dt1);
         TestCase.assertEquals(nanos, DateTimeUtils.parseEpochNanos(Long.toString(nanos)));
-        TestCase.assertEquals(micros*1_000L, DateTimeUtils.parseEpochNanos(Long.toString(micros)));
-        TestCase.assertEquals(millis*1_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(millis)));
-        TestCase.assertEquals(seconds*1_000_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(seconds)));
+        TestCase.assertEquals(micros * 1_000L, DateTimeUtils.parseEpochNanos(Long.toString(micros)));
+        TestCase.assertEquals(millis * 1_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(millis)));
+        TestCase.assertEquals(seconds * 1_000_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(seconds)));
     }
 
     public void testParseEpochNanosQuiet() {
@@ -436,9 +437,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final Instant dt1m = DateTimeUtils.epochMillisToInstant(millis);
         final Instant dt1s = DateTimeUtils.epochSecondsToInstant(seconds);
         TestCase.assertEquals(nanos, DateTimeUtils.parseEpochNanosQuiet(Long.toString(nanos)));
-        TestCase.assertEquals(micros*1_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(micros)));
-        TestCase.assertEquals(millis*1_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(millis)));
-        TestCase.assertEquals(seconds*1_000_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(seconds)));
+        TestCase.assertEquals(micros * 1_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(micros)));
+        TestCase.assertEquals(millis * 1_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(millis)));
+        TestCase.assertEquals(seconds * 1_000_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(seconds)));
     }
 
     public void testParseInstant() {
@@ -619,7 +620,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstantQuiet(iso8601));
-        
+
         final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
         final long nanos = DateTimeUtils.epochNanos(dt1);
         final long micros = DateTimeUtils.epochMicros(dt1);
