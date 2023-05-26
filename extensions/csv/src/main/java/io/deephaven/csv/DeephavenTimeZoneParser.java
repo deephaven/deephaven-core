@@ -81,7 +81,7 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
             return -1;
         }
         bs.setBegin(current);
-        return res;
+        return Math.abs(res);
     }
 
     private static TIntObjectHashMap<ZoneId> createZoneIdMap() {
