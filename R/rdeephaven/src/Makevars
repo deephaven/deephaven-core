@@ -28,8 +28,10 @@ DEPENDENCY_LIBS = -lclient -lprotobufd \
 # tells the compiler where to look for additional include directories
 PKG_CXXFLAGS = -I"../lib/cpp-client/deephaven/client/include/public" \
 	-I"../lib/cpp-client/deephaven/dhcore/include/public" \
+	-I"../lib/cpp-dependencies/local/arrow/include" \
 	-I"/usr/share/R/include" \
-	-I"/usr/local/lib/R/site-library/Rcpp/include"
+	-I"/usr/local/lib/R/site-library/Rcpp/include" \
+	-I"arrow_c_api.h"
 
 # list of required libraries, including deephaven and associated dependencies
 PKG_LIBS = $(LAPACK_LIBS) \
@@ -63,3 +65,4 @@ all: $(SHLIB)
 clean:
 	find . -type f -name '*.o' -delete
 	find . -type f -name '*.so' -delete
+	rm RcppExports.cpp
