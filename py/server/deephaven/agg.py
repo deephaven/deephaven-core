@@ -212,8 +212,8 @@ def median(cols: Union[str, List[str]] = None, average_evenly_divided: bool = Tr
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         average_evenly_divided (bool): when the group size is an even number, whether to average the two middle values
-            for the output value, default is True. when set to False, use the smaller value. This flag is only valid for
-            numeric types.
+            for the output value. When set to True, average the two middle values. When set to False, use the smaller
+            value. The default is True. This flag is only valid for numeric types.
 
     Returns:
         an aggregation
@@ -230,8 +230,8 @@ def pct(percentile: float, cols: Union[str, List[str]] = None, average_evenly_di
         cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
         average_evenly_divided (bool): when the percentile splits the group into two halves, whether to average the two
-            middle values for the output value, default is False, meaning to use the smaller value. This flag is only
-            valid for numeric types.
+            middle values for the output value. When set to True, average the two middle values. When set to False, use
+            the smaller value. The default is False. This flag is only valid for numeric types.
 
     Returns:
         an aggregation
@@ -290,7 +290,7 @@ def unique(cols: Union[str, List[str]] = None, include_nulls: bool = False, non_
             default is None, only valid when used in Table agg_all_by operation
         include_nulls (bool): whether null is treated as a value for the purpose of determining if the values in the
             aggregation group are unique, default is False.
-        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists, default is None, must be
+        non_unique_sentinel (Any): the non-null sentinel value when no unique value exists, default is None. Must be
             a non-None value when include_nulls is True.
 
     Returns:
