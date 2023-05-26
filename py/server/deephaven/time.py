@@ -118,9 +118,9 @@ def time_zone(tz: Optional[str]) -> TimeZone:
     """
     try:
         if time_zone:
-            return _JDateTimeUtils.tz(tz)
+            return _JDateTimeUtils.timeZone(tz)
         else:
-            return _JDateTimeUtils.tz()
+            return _JDateTimeUtils.timeZone()
     except Exception as e:
         raise DHError(e) from e
 
@@ -441,7 +441,10 @@ def to_local_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalDate:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return None
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.toLocalDate(dt, tz)
@@ -463,7 +466,10 @@ def to_local_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> LocalTime:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return None
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.toLocalTime(dt, tz)
@@ -774,7 +780,10 @@ def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_DOUBLE
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.toExcelTime(dt, tz)
@@ -1135,7 +1144,10 @@ def nanos_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_LONG
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.nanosOfSecond(dt, tz)
@@ -1157,7 +1169,10 @@ def micros_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_LONG
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.microsOfSecond(dt, tz)
@@ -1179,7 +1194,10 @@ def millis_of_second(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.millisOfSecond(dt, tz)
@@ -1201,7 +1219,10 @@ def second_of_minute(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.secondOfMinute(dt, tz)
@@ -1223,7 +1244,10 @@ def minute_of_hour(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.minuteOfHour(dt, tz)
@@ -1245,7 +1269,10 @@ def nanos_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_LONG
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.nanosOfDay(dt, tz)
@@ -1267,7 +1294,10 @@ def millis_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.millisOfDay(dt, tz)
@@ -1289,7 +1319,10 @@ def second_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.secondOfDay(dt, tz)
@@ -1311,7 +1344,10 @@ def minute_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.minuteOfDay(dt, tz)
@@ -1333,7 +1369,10 @@ def hour_of_day(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.hourOfDay(dt, tz)
@@ -1356,7 +1395,10 @@ def day_of_week(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.dayOfWeek(dt, tz)
@@ -1379,7 +1421,10 @@ def day_of_month(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.dayOfMonth(dt, tz)
@@ -1402,7 +1447,10 @@ def day_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.dayOfYear(dt, tz)
@@ -1425,7 +1473,10 @@ def month_of_year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.monthOfYear(dt, tz)
@@ -1447,7 +1498,10 @@ def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.monthOfYear(dt, tz)
@@ -1469,7 +1523,10 @@ def year_of_century(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return NULL_INT
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.yearOfCentury(dt, tz)
@@ -1491,7 +1548,10 @@ def at_midnight(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> Union[Instan
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return None
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.atMidnight(dt, tz)
@@ -1602,7 +1662,10 @@ def format_datetime(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return None
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.formatDateTime(dt, tz)
@@ -1624,7 +1687,10 @@ def format_date(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> str:
         DHError
     """
     try:
-        if from_jtype(dt) == ZonedDateTime:
+        if not dt or not tz:
+            return None
+
+        if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
         return _JDateTimeUtils.formatDate(dt, tz)

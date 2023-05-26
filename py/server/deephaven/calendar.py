@@ -179,7 +179,7 @@ class Calendar(JObjectWrapper):
     @property
     def time_zone(self) -> TimeZone:
         """ Returns the timezone of the calendar. """
-        return TimeZone(self.j_calendar.timeZone())
+        return self.j_calendar.timeZone()
 
     def previous_day(self, date: str) -> str:
         """ Gets the day prior to the given date.
