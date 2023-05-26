@@ -97,7 +97,7 @@ public abstract class QueryScope implements LogOutputAppendable {
                     return instant;
                 }
 
-                final long localTime = DateTimeUtils.parseNanosQuiet(datetimeString);
+                final long localTime = DateTimeUtils.parseDurationNanosQuiet(datetimeString);
                 if (localTime != QueryConstants.NULL_LONG) {
                     return localTime;
                 }

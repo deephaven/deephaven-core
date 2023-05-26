@@ -444,7 +444,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(ZonedDateTime.parse(iso8601), DateTimeUtils.parseZonedDateTimeQuiet(iso8601));
     }
 
-    public void testParseNanos() {
+    public void testParseDurationNanos() {
         final String[] times = {
                 "12:00",
                 "12:00:00",
@@ -475,7 +475,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
                 final long sign = isNeg ? -1 : 1;
                 TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
-                        DateTimeUtils.parseNanos(t));
+                        DateTimeUtils.parseDuratioNanos(t));
             }
         }
 
@@ -492,11 +492,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         for (String d : durations) {
             final Duration dd = DateTimeUtils.parseDuration(d);
-            TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseNanos(d));
+            TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseDuratioNanos(d));
         }
 
         try {
-            DateTimeUtils.parseNanos("JUNK");
+            DateTimeUtils.parseDuratioNanos("JUNK");
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
             // pass
@@ -504,7 +504,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         try {
             // noinspection ConstantConditions
-            DateTimeUtils.parseNanos(null);
+            DateTimeUtils.parseDuratioNanos(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
             // pass
@@ -543,7 +543,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
                 final long sign = isNeg ? -1 : 1;
                 TestCase.assertEquals(t, sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
-                        DateTimeUtils.parseNanosQuiet(t));
+                        DateTimeUtils.parseDurationNanosQuiet(t));
             }
         }
 
@@ -554,11 +554,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         for (String d : durations) {
             final Duration dd = DateTimeUtils.parseDuration(d);
-            TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseNanos(d));
+            TestCase.assertEquals(dd.toNanos(), DateTimeUtils.parseDuratioNanos(d));
         }
 
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet("JUNK"));
-        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseNanosQuiet(null));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseDurationNanosQuiet("JUNK"));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseDurationNanosQuiet(null));
     }
 
     public void testParsePeriod() {

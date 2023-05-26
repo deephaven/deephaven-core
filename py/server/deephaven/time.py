@@ -1585,10 +1585,10 @@ def lower_bin(dt: Union[Instant, ZonedDateTime], interval: Union[int, str], offs
     """
     try:
         if isinstance(interval, str):
-            interval = parse_nanos(interval)
+            interval = parse_duration_nanos(interval)
 
         if isinstance(offset, str):
-            offset = parse_nanos(offset)
+            offset = parse_duration_nanos(offset)
 
         return _JDateTimeUtils.lowerBin(dt, interval, offset)
     except Exception as e:
@@ -1616,10 +1616,10 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
     """
     try:
         if isinstance(interval, str):
-            interval = parse_nanos(interval)
+            interval = parse_duration_nanos(interval)
 
         if isinstance(offset, str):
-            offset = parse_nanos(offset)
+            offset = parse_duration_nanos(offset)
 
         return _JDateTimeUtils.upperBin(dt, interval, offset)
     except Exception as e:
@@ -1724,7 +1724,7 @@ def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
         raise DHError(e) from e
 
 
-def parse_nanos(s: str, quiet: bool = False) -> int:
+def parse_duration_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as a time duration in nanoseconds.
 
     Time duration strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]' or as a duration string
@@ -1743,9 +1743,9 @@ def parse_nanos(s: str, quiet: bool = False) -> int:
     """
     try:
         if quiet:
-            return _JDateTimeUtils.parseNanosQuiet(s)
+            return _JDateTimeUtils.parseDurationNanosQuiet(s)
         else:
-            return _JDateTimeUtils.parseNanos(s)
+            return _JDateTimeUtils.parseDurationNanos(s)
     except Exception as e:
         raise DHError(e) from e
 

@@ -46,7 +46,7 @@ public class TailInitializationFilter {
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
-        return mostRecent(table, timestampName, DateTimeUtils.parseNanos(period));
+        return mostRecent(table, timestampName, DateTimeUtils.parseDuratioNanos(period));
     }
 
     /**

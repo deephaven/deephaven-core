@@ -300,7 +300,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
     private Instant makeInstant(String timeStr) {
         ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
-                .plus(DateTimeUtils.parseNanos(timeStr), ChronoUnit.NANOS);
+                .plus(DateTimeUtils.parseDuratioNanos(timeStr), ChronoUnit.NANOS);
         return zdt.toInstant();
     }
 

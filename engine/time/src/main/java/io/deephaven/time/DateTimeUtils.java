@@ -2999,7 +2999,7 @@ public class DateTimeUtils {
      * @see #parseDurationQuiet(String)
      */
     @ScriptApi
-    public static long parseNanos(@NotNull String s) {
+    public static long parseDuratioNanos(@NotNull String s) {
         // noinspection ConstantConditions
         if (s == null) {
             throw new RuntimeException("Cannot parse time: " + s);
@@ -3057,13 +3057,13 @@ public class DateTimeUtils {
      * @see #parseDurationQuiet(String)
      */
     @ScriptApi
-    public static long parseNanosQuiet(@Nullable String s) {
+    public static long parseDurationNanosQuiet(@Nullable String s) {
         if (s == null || s.length() <= 1) {
             return NULL_LONG;
         }
 
         try {
-            return parseNanos(s);
+            return parseDuratioNanos(s);
         } catch (Exception e) {
             return NULL_LONG;
         }

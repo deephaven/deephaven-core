@@ -777,7 +777,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtils.parseNanos(period);
+        final long periodValue = DateTimeUtils.parseDuratioNanos(period);
         return timeTable(periodValue, replayer);
     }
 
@@ -789,7 +789,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Instant startTime, String period) {
-        final long periodValue = DateTimeUtils.parseNanos(period);
+        final long periodValue = DateTimeUtils.parseDuratioNanos(period);
         return timeTable(startTime, periodValue);
     }
 
@@ -802,7 +802,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Instant startTime, String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtils.parseNanos(period);
+        final long periodValue = DateTimeUtils.parseDuratioNanos(period);
         return timeTable(startTime, periodValue, replayer);
     }
 

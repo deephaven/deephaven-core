@@ -41,7 +41,7 @@ import java.util.function.Function;
 
 public class TestReinterpretedColumn extends RefreshingTableTestCase {
     final int ROW_COUNT = 60;
-    private final long baseLongTime = DateTimeUtils.parseNanos("2021-10-20T09:30:00.000 NY");
+    private final long baseLongTime = DateTimeUtils.parseDuratioNanos("2021-10-20T09:30:00.000 NY");
     private final ZonedDateTime baseZDT = ZonedDateTime.of(2021, 10, 18, 11, 30, 0, 0, ZoneId.of("America/New_York"));
     private final Instant baseInstant = DateTimeUtils.parseInstant("2021-10-17T12:30:00.000 NY");
 

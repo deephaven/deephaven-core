@@ -527,7 +527,7 @@ public class WhereFilterFactory {
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
-                    long time = DateTimeUtils.parseNanos(valString);
+                    long time = DateTimeUtils.parseDuratioNanos(valString);
                     dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.now(), ZoneId.systemDefault())
                             .truncatedTo(ChronoUnit.DAYS).plus(time, ChronoUnit.NANOS);
                 } catch (RuntimeException ignored1) {

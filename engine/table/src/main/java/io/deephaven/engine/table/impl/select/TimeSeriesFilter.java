@@ -35,7 +35,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
 
     @SuppressWarnings("UnusedDeclaration")
     public TimeSeriesFilter(String columnName, String period) {
-        this(columnName, DateTimeUtils.parseNanos(period));
+        this(columnName, DateTimeUtils.parseDuratioNanos(period));
     }
 
     public TimeSeriesFilter(String columnName, long nanos) {
