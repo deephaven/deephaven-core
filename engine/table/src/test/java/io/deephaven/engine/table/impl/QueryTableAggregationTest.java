@@ -3244,7 +3244,7 @@ public class QueryTableAggregationTest {
         final Table randomValues = emptyTable(100)
                 .update("MyInt=(i%12==0 ? null : (int)(ids5942_scale*(Math.random()*2-1)))",
                         "MyBoolean=i%3==0 ? null : (i % 3 == 1)",
-                        "MyInstant=plus(parseInstant(\"2020-01-28T00:00:00 NY\"), + 1000000000L * i))",
+                        "MyInstant=epochNanosToInstant(epochNanos(parseInstant(\"2020-01-28T00:00:00 NY\")) + 1000000000L * i)",
                         "MyBigDecimal=(i%21==0 ? null : new java.math.BigDecimal(ids5942_scale*(Math.random()*2-1)))",
                         "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(ids5942_scale*(Math.random()*2-1)))))");
 

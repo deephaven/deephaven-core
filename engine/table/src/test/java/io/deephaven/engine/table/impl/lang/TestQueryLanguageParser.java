@@ -1764,8 +1764,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression = "new LanguageParserDummyClass.StaticNestedClass()";
         check(expression, resultExpression, LanguageParserDummyClass.StaticNestedClass.class, new String[] {});
 
-        expression = "xYZTimeUtils.epochNanosToInstant(123L)";
-        resultExpression = "xYZTimeUtils.epochNanosToInstant(123L)";
+        expression = "io.deephaven.time.DateTimeUtils.epochNanosToInstant(123L)";
+        resultExpression = "io.deephaven.time.DateTimeUtils.epochNanosToInstant(123L)";
         check(expression, resultExpression, Instant.class, new String[] {});
     }
 

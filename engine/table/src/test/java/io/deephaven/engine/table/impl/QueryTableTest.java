@@ -445,11 +445,13 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testReinterpret() {
-        final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
-        final Table result = source.view(List.of(new ReinterpretedColumn<>("dt", Instant.class, "dt", long.class)));
+        final Table source = emptyTable(5).select("dt = epochNanosToInstant(ii)", "n = ii");
+        final Table result = source.updateView(List.of(
+                new ReinterpretedColumn<>("dt", Instant.class, "dt", long.class)));
         assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-        final Table reflexive = result.view(List.of(new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class)));
-        assertTableEquals(reflexive, source.dropColumns("n"));
+        final Table reflexive = result.updateView(List.of(
+                new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class)));
+        assertTableEquals(reflexive, source);
         final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
         final Table sortedResult = result.sortDescending("dt").dropColumns("dt");
         assertTableEquals(sortedResult, sortedSource);
