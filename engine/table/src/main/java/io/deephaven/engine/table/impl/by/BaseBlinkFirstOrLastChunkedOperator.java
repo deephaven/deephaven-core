@@ -21,9 +21,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Base class with shared boilerplate for {@link StreamFirstChunkedOperator} and {@link StreamLastChunkedOperator}.
+ * Base class with shared boilerplate for {@link BlinkFirstChunkedOperator} and {@link BlinkLastChunkedOperator}.
  */
-public abstract class BaseStreamFirstOrLastChunkedOperator
+public abstract class BaseBlinkFirstOrLastChunkedOperator
         extends NoopStateChangeRecorder // We can never empty or reincarnate states since we ignore removes
         implements IterativeChunkedAggregationOperator {
 
@@ -62,15 +62,16 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
      */
     protected LongArraySource redirections;
 
-    protected BaseStreamFirstOrLastChunkedOperator(@NotNull final MatchPair[] resultPairs,
-            @NotNull final Table streamTable) {
+    protected BaseBlinkFirstOrLastChunkedOperator(
+            @NotNull final MatchPair[] resultPairs,
+            @NotNull final Table blinkTable) {
         numResultColumns = resultPairs.length;
         inputColumns = new ColumnSource[numResultColumns];
         outputColumns = new WritableColumnSource[numResultColumns];
         final Map<String, WritableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
-            final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.rightColumn());
+            final ColumnSource<?> streamSource = blinkTable.getColumnSource(resultPair.rightColumn());
             final WritableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);

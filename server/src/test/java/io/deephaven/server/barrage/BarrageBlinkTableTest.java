@@ -49,7 +49,7 @@ import java.io.StringWriter;
 import java.util.*;
 
 @Category(OutOfBandTest.class)
-public class BarrageStreamTableTest extends RefreshingTableTestCase {
+public class BarrageBlinkTableTest extends RefreshingTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
 
     private TestControlledScheduler scheduler;
@@ -60,8 +60,8 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
     private static final long NUM_ROWS = 1024;
     private static final long BATCH_SIZE = 16;
     private QueryTable sourceTable;
-    private TrackingWritableRowSet streamRowSet;
-    private QueryTable streamTable;
+    private TrackingWritableRowSet blinkRowSet;
+    private QueryTable blinkTable;
     private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
     private TableUpdateValidator originalTUV;
     private FailureListener originalTUVListener;
@@ -90,21 +90,21 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;
 
-        final TestComponent daggerRoot = DaggerBarrageStreamTableTest_TestComponent.builder()
+        final TestComponent daggerRoot = DaggerBarrageBlinkTableTest_TestComponent.builder()
                 .withScheduler(scheduler)
                 .build();
 
         sourceTable = (QueryTable) TableTools.emptyTable(NUM_ROWS).view("I = ii");
-        streamRowSet = RowSetFactory.empty().toTracking();
-        streamTable = sourceTable.getSubTable(streamRowSet);
-        streamTable.setRefreshing(true);
-        streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
+        blinkRowSet = RowSetFactory.empty().toTracking();
+        blinkTable = sourceTable.getSubTable(blinkRowSet);
+        blinkTable.setRefreshing(true);
+        blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
-        barrageMessageProducer = streamTable.getResult(new BarrageMessageProducer.Operation<>(
-                scheduler, daggerRoot.getStreamGeneratorFactory(), streamTable, UPDATE_INTERVAL, () -> {
+        barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation<>(
+                scheduler, daggerRoot.getStreamGeneratorFactory(), blinkTable, UPDATE_INTERVAL, () -> {
                 }));
 
-        originalTUV = TableUpdateValidator.make(streamTable);
+        originalTUV = TableUpdateValidator.make(blinkTable);
         originalTUVListener = new FailureListener("Original Table Update Validator");
         originalTUV.getResultTable().addUpdateListener(originalTUVListener);
     }
@@ -115,8 +115,8 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         scheduler = null;
         exceptions = null;
         sourceTable = null;
-        streamRowSet = null;
-        streamTable = null;
+        blinkRowSet = null;
+        blinkTable = null;
         barrageMessageProducer = null;
         originalTUV = null;
         originalTUVListener = null;
@@ -177,7 +177,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
             this.reverseViewport = false;
             this.subscribedColumns = subscribedColumns;
 
-            final ByteString schemaBytes = BarrageUtil.schemaBytesFromTable(streamTable);
+            final ByteString schemaBytes = BarrageUtil.schemaBytesFromTable(blinkTable);
             final Schema flatbufSchema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner, UpdateGraphProcessor.DEFAULT,
@@ -288,28 +288,28 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         }
     }
 
-    private void releaseStreamRows(int numBatches) {
+    private void releaseBlinkRows(int numBatches) {
         for (int ii = 0; ii < numBatches; ++ii) {
-            releaseStreamRows();
+            releaseBlinkRows();
         }
     }
 
-    private void releaseStreamRows() {
+    private void releaseBlinkRows() {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
-            final long lastKey = streamRowSet.lastRowKey();
-            update.removed = streamRowSet.copy();
-            streamRowSet.clear();
-            streamRowSet.insertRange(lastKey + 1, lastKey + BATCH_SIZE);
-            update.added = streamRowSet.copy();
+            final long lastKey = blinkRowSet.lastRowKey();
+            update.removed = blinkRowSet.copy();
+            blinkRowSet.clear();
+            blinkRowSet.insertRange(lastKey + 1, lastKey + BATCH_SIZE);
+            update.added = blinkRowSet.copy();
             update.modified = RowSetFactory.empty();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
             update.shifted = RowSetShiftData.EMPTY;
-            streamTable.notifyListeners(update);
+            blinkTable.notifyListeners(update);
         });
     }
 
-    public void testBasicStreamSingleUpdates() {
+    public void testBasicBlinkSingleUpdates() {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
@@ -317,7 +317,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE; ++nr) {
-            releaseStreamRows();
+            releaseBlinkRows();
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
@@ -334,7 +334,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
-            releaseStreamRows(4);
+            releaseBlinkRows(4);
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
@@ -351,7 +351,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
-            releaseStreamRows(4);
+            releaseBlinkRows(4);
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
@@ -361,7 +361,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
     }
 
     public void testBMPFlushesOnSub() {
-        barrageMessageProducer.setOnGetSnapshot(this::releaseStreamRows, false);
+        barrageMessageProducer.setOnGetSnapshot(this::releaseBlinkRows, false);
 
         final RemoteClient client1 = new RemoteClient();
         flushProducerTable(); // empty snapshot + release of BATCH_SIZE
@@ -369,7 +369,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         client1.validateBatches(0, 1);
 
-        releaseStreamRows(); // get sent to client1
+        releaseBlinkRows(); // get sent to client1
         final RemoteClient client2 = new RemoteClient();
         flushProducerTable(); // empty snapshot + release of BATCH_SIZE
         client1.flushEventsToReplicatedTable();
@@ -389,7 +389,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         updateSourceCombiner.assertRefreshRequested();
 
-        releaseStreamRows();
+        releaseBlinkRows();
         flushProducerTable();
         Assert.eqFalse(updateSourceCombiner.refreshRequested, "refreshRequested");
         client.flushEventsToReplicatedTable();
@@ -403,27 +403,27 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
     }
 
     public void testViewport() {
-        // viewports on stream tables are a little silly; but let's ensure we get the expected behavior
+        // viewports on blink tables are a little silly; but let's ensure we get the expected behavior
         final RemoteClient client = new RemoteClient(RowSetFactory.fromRange(2 * BATCH_SIZE, 3 * BATCH_SIZE - 1), null);
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
-        releaseStreamRows();
+        releaseBlinkRows();
         flushProducerTable();
         client.flushEventsToReplicatedTable();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
-        releaseStreamRows(3);
+        releaseBlinkRows(3);
         flushProducerTable();
         client.flushEventsToReplicatedTable();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(3, 4);
 
         for (long nr = 1; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
-            releaseStreamRows(4);
+            releaseBlinkRows(4);
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateSourceCombiner::run);
@@ -443,7 +443,7 @@ public class BarrageStreamTableTest extends RefreshingTableTestCase {
         client2.validate(sourceTable.getSubTable(RowSetFactory.empty().toTracking()));
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
-            releaseStreamRows(4);
+            releaseBlinkRows(4);
             flushProducerTable();
             client1.flushEventsToReplicatedTable();
             client2.flushEventsToReplicatedTable();

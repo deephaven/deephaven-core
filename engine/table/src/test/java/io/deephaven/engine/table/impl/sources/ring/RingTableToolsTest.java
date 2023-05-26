@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.StreamTableTools;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -62,7 +62,7 @@ public class RingTableToolsTest {
     }
 
     @Test
-    public void streamTableToRing() {
+    public void blinkTableToRing() {
         coprime(1, 93);
         coprime(5, 71);
         coprime(14, 25);
@@ -91,9 +91,9 @@ public class RingTableToolsTest {
                 dateTimeHolder(appendSize),
                 booleanHolder(appendSize),
         };
-        final StreamTableHelper streamHelper = new StreamTableHelper(appendSize, holders);
-        final Table tail = StreamTableTools.streamToAppendOnlyTable(streamHelper.streamTable).tail(capacity);
-        final Table ring = RingTableTools.of(streamHelper.streamTable, capacity, true);
+        final BlinkTableHelper streamHelper = new BlinkTableHelper(appendSize, holders);
+        final Table tail = BlinkTableTools.blinkToAppendOnly(streamHelper.blinkTable).tail(capacity);
+        final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
         for (int i = 0; i < times; ++i) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -203,23 +203,23 @@ public class RingTableToolsTest {
         return dateTimeCol("X_datetime", col);
     }
 
-    private static class StreamTableHelper {
+    private static class BlinkTableHelper {
 
-        private final QueryTable streamTable;
+        private final QueryTable blinkTable;
         private int prev;
 
-        public StreamTableHelper(int len, final ColumnHolder... holders) {
-            this.streamTable = TstUtils.testRefreshingTable(RowSetFactory.flat(len).toTracking(), holders);
-            this.streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
+        public BlinkTableHelper(int len, final ColumnHolder... holders) {
+            this.blinkTable = TstUtils.testRefreshingTable(RowSetFactory.flat(len).toTracking(), holders);
+            this.blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
             this.prev = len;
         }
 
         public void addAndNotify(int len, final ColumnHolder... holders) {
             final RowSet removed = RowSetFactory.flat(prev);
             final RowSet added = RowSetFactory.flat(len);
-            TstUtils.removeRows(streamTable, removed);
-            TstUtils.addToTable(streamTable, added, holders);
-            streamTable.notifyListeners(added, removed, RowSetFactory.empty());
+            TstUtils.removeRows(blinkTable, removed);
+            TstUtils.addToTable(blinkTable, added, holders);
+            blinkTable.notifyListeners(added, removed, RowSetFactory.empty());
             prev = len;
         }
     }

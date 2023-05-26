@@ -56,7 +56,7 @@ setup(
         'jpy>=0.13.0',
         'deephaven-plugin',
         'numpy',
-        'pandas',
+        'pandas>=1.5.0',
         'pyarrow',
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
         # It took 6 months for numba to support 3.11 after it was released, we want to make sure deephaven-core will be

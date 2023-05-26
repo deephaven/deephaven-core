@@ -32,16 +32,17 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * A client side {@link Table} that mirrors an upstream/server side stream {@code Table}.
- *
+ * A client side {@link Table} that mirrors an upstream/server side blink {@code Table}.
+ * <p>
  * Note that <b>viewport</b>s are defined in row positions of the upstream table.
  */
-public class BarrageStreamTable extends BarrageTable {
+public class BarrageBlinkTable extends BarrageTable {
 
     /** represents how many rows were in the previous table update */
     private long numRowsLastRefresh = 0;
 
-    protected BarrageStreamTable(final UpdateSourceRegistrar registrar,
+    protected BarrageBlinkTable(
+            final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             @Nullable final ScheduledExecutorService executorService,
             final LinkedHashMap<String, ColumnSource<?>> columns,
@@ -78,11 +79,11 @@ public class BarrageStreamTable extends BarrageTable {
         }
 
         if (update.shifted.nonempty()) {
-            throw new IllegalStateException("Barrage stream table cannot shift rows");
+            throw new IllegalStateException("Barrage blink table cannot shift rows");
         }
         for (BarrageMessage.ModColumnData mcd : update.modColumnData) {
             if (mcd.rowsModified.isNonempty()) {
-                throw new IllegalStateException("Barrage stream table cannot modify rows");
+                throw new IllegalStateException("Barrage blink table cannot modify rows");
             }
         }
 

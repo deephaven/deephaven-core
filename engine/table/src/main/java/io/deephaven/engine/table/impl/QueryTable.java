@@ -554,8 +554,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionBy");
         }
         final List<ColumnName> columns = ColumnName.from(keyColumnNames);
         return memoizeResult(MemoizedOperationKey.partitionBy(dropKeys, columns), () -> {
@@ -577,8 +577,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public PartitionedTable partitionedAggBy(final Collection<? extends Aggregation> aggregations,
             final boolean preserveEmpty, @Nullable final Table initialGroups, final String... keyColumnNames) {
-        if (isStream()) {
-            throw streamUnsupported("partitionedAggBy");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("partitionedAggBy");
         }
         final Optional<Partition> includedPartition = aggregations.stream()
                 .filter(agg -> agg instanceof Partition)
@@ -606,8 +606,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public RollupTable rollup(final Collection<? extends Aggregation> aggregations, final boolean includeConstituents,
             final Collection<? extends ColumnName> groupByColumns) {
-        if (isStream() && includeConstituents) {
-            throw streamUnsupported("rollup with included constituents");
+        if (isBlink() && includeConstituents) {
+            throw unsupportedForBlinkTables("rollup with included constituents");
         }
         return memoizeResult(MemoizedOperationKey.rollup(aggregations, groupByColumns, includeConstituents),
                 () -> RollupTableImpl.makeRollup(this, aggregations, includeConstituents, groupByColumns));
@@ -615,8 +615,8 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public TreeTable tree(String idColumn, String parentColumn) {
-        if (isStream()) {
-            throw streamUnsupported("tree");
+        if (isBlink()) {
+            throw unsupportedForBlinkTables("tree");
         }
         return memoizeResult(MemoizedOperationKey.tree(idColumn, parentColumn),
                 () -> TreeTableImpl.makeTree(this, ColumnName.of(idColumn), ColumnName.of(parentColumn)));
@@ -741,9 +741,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                         aggregationContextFactory, this, preserveEmpty, initialGroups, groupByColumns));
     }
 
-    private static UnsupportedOperationException streamUnsupported(@NotNull final String operationName) {
-        return new UnsupportedOperationException("Stream tables do not support " + operationName
-                + "; use StreamTableTools.streamToAppendOnlyTable to accumulate full history");
+    private static UnsupportedOperationException unsupportedForBlinkTables(@NotNull final String operationName) {
+        return new UnsupportedOperationException("Blink tables do not support " + operationName
+                + "; use BlinkTableTools.blinkToAppendOnly to accumulate full history");
     }
 
     @Override

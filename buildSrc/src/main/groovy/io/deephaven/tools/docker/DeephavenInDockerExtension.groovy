@@ -2,6 +2,7 @@ package io.deephaven.tools.docker
 
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerLogsContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
@@ -11,9 +12,10 @@ import com.github.dockerjava.api.command.InspectContainerResponse
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
+import org.gradle.api.specs.Spec
+import org.gradle.api.specs.Specs
 import org.gradle.api.tasks.TaskProvider
 
 import javax.inject.Inject
@@ -31,6 +33,7 @@ public abstract class DeephavenInDockerExtension {
     final TaskProvider<? extends Task> healthyTask
     final TaskProvider<DockerInspectContainer> portTask
     final TaskProvider<? extends Task> endTask
+    final TaskProvider<? extends Task> logTask
 
     final String deephavenServerProject
     final String serverTask
@@ -51,10 +54,16 @@ public abstract class DeephavenInDockerExtension {
      */
     abstract Property<Integer> getPort();
 
+    /**
+     * A condition to test to see if server logs should be printed to the build output.
+     */
+    abstract Property<Spec<Task>> getShouldLog();
+
     @Inject
     DeephavenInDockerExtension(Project project) {
         awaitStatusTimeout.set 20
         checkInterval.set 100
+        shouldLog.set Specs.satisfyNone()
 
         // irritating configuration order of operations to work out here, so just leaving
         // these as constants until we decide they aren't any more
@@ -105,13 +114,49 @@ public abstract class DeephavenInDockerExtension {
             }
         }
 
+        logTask = project.tasks.register('writeServerLogs', DockerLogsContainer) { task ->
+            task.targetContainerId containerName.get()
+
+            task.onlyIf = Specs.union(
+                    shouldLog.get(),
+                    Specs.convertClosureToSpec {
+                        return startTask.get().state.failure != null
+                    },
+                    Specs.convertClosureToSpec {
+                        return healthyTask.get().state.failure != null
+                    },
+            )
+        }
+
         endTask = project.tasks.register('stopDeephaven', DockerRemoveContainer) { task ->
             task.dependsOn createDeephavenGrpcApi
+//            task.dependsOn logTask// this seems to prevent start/healthy task from triggering logs
+            task.mustRunAfter(logTask)
             task.finalizedBy removeDeephavenGrpcApiNetwork
 
             task.targetContainerId containerName.get()
             task.force.set true
             task.removeVolumes.set true
+        }
+        // if start or health check fails, ensure that we write logs and stop before exiting
+        startTask.configure {
+            it.finalizedBy logTask, endTask
+        }
+        healthyTask.configure {
+            it.finalizedBy logTask, endTask
+        }
+    }
+
+    /**
+     * If the given task fails, print server logs to console. This implies that
+     * the log task can't run until after the provided task has ended.
+     */
+    void shouldLogIfTaskFails(TaskProvider<? extends Task> task) {
+        task.configure { Task t ->
+            t.finalizedBy logTask
+            shouldLog.set(Specs.convertClosureToSpec({
+                t.state.failure != null
+            }))
         }
     }
 }

@@ -40,14 +40,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
+ * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
+ * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} semantics.
  *
  * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
-public class StreamToTableAdapter extends ReferenceCountedLivenessNode
+public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
         implements SafeCloseable, StreamConsumer, Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(StreamToTableAdapter.class);
+    private static final Logger log = LoggerFactory.getLogger(StreamToBlinkTableAdapter.class);
 
     private final TableDefinition tableDefinition;
     private final StreamPublisher streamPublisher;
@@ -75,7 +76,8 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     private volatile Runnable shutdownCallback;
     private volatile boolean alive = true;
 
-    public StreamToTableAdapter(@NotNull final TableDefinition tableDefinition,
+    public StreamToBlinkTableAdapter(
+            @NotNull final TableDefinition tableDefinition,
             @NotNull final StreamPublisher streamPublisher,
             @NotNull final UpdateSourceRegistrar updateSourceRegistrar,
             @NotNull final String name) {
@@ -96,20 +98,21 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             {
                 setFlat();
                 setRefreshing(true);
-                setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
-                addParentReference(StreamToTableAdapter.this);
+                setAttribute(Table.BLINK_TABLE_ATTRIBUTE, Boolean.TRUE);
+                addParentReference(StreamToBlinkTableAdapter.this);
             }
         };
         tableRef = new WeakReference<>(table);
 
-        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+        log.info().append("Registering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
+                .append(name)
                 .endl();
         streamPublisher.register(this);
         updateSourceRegistrar.addSource(this);
     }
 
     /**
-     * Set a callback to be invoked when this StreamToTableAdapter will no longer deliver new data to downstream
+     * Set a callback to be invoked when this StreamToBlinkTableAdapter will no longer deliver new data to downstream
      * consumers.
      *
      * @param shutdownCallback The callback
@@ -124,7 +127,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
      * @param size the size of the chunks
      * @return an array of writable chunks
      */
-    public WritableChunk[] makeChunksForDefinition(int size) {
+    public WritableChunk<?>[] makeChunksForDefinition(int size) {
         return makeChunksForDefinition(tableDefinition, size);
     }
 
@@ -145,7 +148,10 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
      * @param size the size of the returned chunks
      * @return an array of writable chunks
      */
-    public static WritableChunk[] makeChunksForDefinition(TableDefinition definition, int size) {
+    public static <ATTR extends Any> WritableChunk<ATTR>[] makeChunksForDefinition(
+            @NotNull final TableDefinition definition,
+            final int size) {
+        // noinspection unchecked
         return definition.getColumnStream().map(cd -> makeChunk(cd, size)).toArray(WritableChunk[]::new);
     }
 
@@ -178,13 +184,12 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     private static ChunkType chunkTypeForColumn(ColumnDefinition<?> cd) {
         final Class<?> replacementType = replacementType(cd.getDataType());
         final Class<?> useType = replacementType != null ? replacementType : cd.getDataType();
-        final ChunkType chunkType = ChunkType.fromElementType(useType);
-        return chunkType;
+        return ChunkType.fromElementType(useType);
     }
 
     @NotNull
     private static NullValueColumnSource<?>[] makeNullColumnSources(TableDefinition tableDefinition) {
-        return tableDefinition.getColumnStream().map(StreamToTableAdapter::makeNullValueColumnSourceFromDefinition)
+        return tableDefinition.getColumnStream().map(StreamToBlinkTableAdapter::makeNullValueColumnSourceFromDefinition)
                 .toArray(NullValueColumnSource<?>[]::new);
     }
 
@@ -205,7 +210,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         for (int ii = 0; ii < wrapped.length; ++ii) {
             final ColumnDefinition<?> columnDefinition = columns.get(ii);
             final SwitchColumnSource<?> switchSource =
-                    new SwitchColumnSource<>(wrapped[ii], StreamToTableAdapter::maybeClearChunkColumnSource);
+                    new SwitchColumnSource<>(wrapped[ii], StreamToBlinkTableAdapter::maybeClearChunkColumnSource);
 
             final ColumnSource<?> visibleSource;
             if (columnDefinition.getDataType() == DateTime.class) {
@@ -251,11 +256,11 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
     }
 
     /**
-     * Return the {@link Table#STREAM_TABLE_ATTRIBUTE stream} {@link Table table} that this adapter is producing, and
-     * ensure that this StreamToTableAdapter no longer enforces strong reachability of the result. May return
+     * Return the {@link Table#BLINK_TABLE_ATTRIBUTE blink} {@link Table table} that this adapter is producing, and
+     * ensure that this StreamToBlinkTableAdapter no longer enforces strong reachability of the result. May return
      * {@code null} if invoked more than once and the initial caller does not enforce strong reachability of the result.
      *
-     * @return The resulting stream table
+     * @return The resulting blink table
      */
     public Table table() {
         final QueryTable localTable = tableRef.get();
@@ -273,7 +278,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
                 return;
             }
             alive = false;
-            log.info().append("Deregistering ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+            log.info().append("Deregistering ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                     .append(name)
                     .endl();
             updateSourceRegistrar.removeSource(this);
@@ -294,7 +299,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         try {
             doRefresh();
         } catch (Exception e) {
-            log.error().append("Error refreshing ").append(StreamToTableAdapter.class.getSimpleName()).append('-')
+            log.error().append("Error refreshing ").append(StreamToBlinkTableAdapter.class.getSimpleName()).append('-')
                     .append(name).append(": ").append(e).endl();
             updateSourceRegistrar.removeSource(this);
             final QueryTable localTable = tableRef.get();
@@ -339,12 +344,12 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         if (capturedBufferSources == null) {
             // null out our current values
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                // noinspection unchecked
+                // noinspection unchecked,rawtypes
                 switchSources[ii].setNewCurrent((ColumnSource) nullColumnSources[ii]);
             }
         } else {
             for (int ii = 0; ii < switchSources.length; ++ii) {
-                // noinspection unchecked
+                // noinspection unchecked,rawtypes
                 switchSources[ii].setNewCurrent((ColumnSource) capturedBufferSources[ii]);
             }
         }

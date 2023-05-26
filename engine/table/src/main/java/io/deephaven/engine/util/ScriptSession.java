@@ -74,6 +74,12 @@ public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
         public boolean isEmpty() {
             return error == null && created.isEmpty() && updated.isEmpty() && removed.isEmpty();
         }
+
+        public void throwIfError() {
+            if (error != null) {
+                throw error;
+            }
+        }
     }
 
     interface Listener {

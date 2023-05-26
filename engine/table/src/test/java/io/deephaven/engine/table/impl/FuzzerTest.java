@@ -99,7 +99,7 @@ public class FuzzerTest {
 
         System.out.println(groovyString);
 
-        session.evaluateScript(groovyString);
+        session.evaluateScript(groovyString).throwIfError();
 
         final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
 
@@ -142,9 +142,9 @@ public class FuzzerTest {
 
             System.out.println("Running test=======================\n TableSeed: " + fuzzDescriptor.tableSeed
                     + " QuerySeed: " + fuzzDescriptor.tableSeed);
-            System.out.println(query.toString());
+            System.out.println(query);
 
-            session.evaluateScript(query.toString());
+            session.evaluateScript(query.toString()).throwIfError();
 
             annotateBinding(session);
             final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
@@ -220,7 +220,7 @@ public class FuzzerTest {
 
         System.out.println(tableQuery);
 
-        session.evaluateScript(tableQuery);
+        session.evaluateScript(tableQuery).throwIfError();
 
         for (int runNum = 0; runNum <= lastRun; ++runNum) {
             final long currentSeed = sourceRandom.nextLong();
@@ -231,8 +231,8 @@ public class FuzzerTest {
                 final StringBuilder sb = new StringBuilder("//========================================\n");
                 sb.append("// Seed: ").append(currentSeed).append("L\n\n");
                 sb.append(query).append("\n");
-                System.out.println(sb.toString());
-                session.evaluateScript(query);
+                System.out.println(sb);
+                session.evaluateScript(query).throwIfError();
             }
 
         }

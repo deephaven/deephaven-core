@@ -212,7 +212,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
                     SortHelpers.getSortedKeys(sortOrder, sortColumns, parent.getRowSet(), false);
             return new Result<>(historicalSort(sortedKeys));
         }
-        if (parent.isStream()) {
+        if (parent.isBlink()) {
             try (final RowSet prevIndex = usePrev ? parent.getRowSet().copyPrev() : null) {
                 final RowSet indexToUse = usePrev ? prevIndex : parent.getRowSet();
                 final SortHelpers.SortMapping sortedKeys =
@@ -310,7 +310,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * the {@link RowSequence#NULL_ROW_KEY null row key}. This is effectively the reverse of the mapping provided by the
      * sort's {@link RowRedirection}.
      * <p>
-     * Unsupported if the sort result's parent was a {@link BaseTable#isStream() stream table}.
+     * Unsupported if the sort result's parent was a {@link BaseTable#isBlink() blink table}.
      * <p>
      * For refreshing tables, using the reverse lookup concurrently requires careful consideration. The mappings are
      * always against "current" data. It is only safe to use before the parent table notifies on a given cycle, or after
@@ -323,8 +323,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
      * @return The reverse lookup
      */
     public static LongUnaryOperator getReverseLookup(@NotNull final Table parent, @NotNull final Table sortResult) {
-        if (StreamTableTools.isStream(parent)) {
-            throw new UnsupportedOperationException("Stream tables do not support sort reverse lookup");
+        if (BlinkTableTools.isBlink(parent)) {
+            throw new UnsupportedOperationException("Blink tables do not support sort reverse lookup");
         }
         final Object value = sortResult.getAttribute(SORT_REVERSE_LOOKUP_ATTRIBUTE);
         if (sortResult.isRefreshing()) {

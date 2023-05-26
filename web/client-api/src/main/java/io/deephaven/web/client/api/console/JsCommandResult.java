@@ -10,8 +10,8 @@ import jsinterop.annotations.JsProperty;
 @TsInterface
 @TsName(namespace = "dh.ide", name = "CommandResult")
 public class JsCommandResult {
-    private JsVariableChanges changes;
-    private String error;
+    private final JsVariableChanges changes;
+    private final String error;
 
     public JsCommandResult(JsVariableChanges changes, String error) {
         this.changes = changes;
@@ -26,5 +26,13 @@ public class JsCommandResult {
     @JsProperty
     public String getError() {
         return error;
+    }
+
+    @Override
+    public String toString() {
+        if (error != null && !error.isEmpty()) {
+            return error;
+        }
+        return super.toString();
     }
 }

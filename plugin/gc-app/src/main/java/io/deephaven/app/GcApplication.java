@@ -8,7 +8,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.stream.StreamToTableAdapter;
+import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.util.SafeCloseable;
 
 import javax.management.ListenerNotFoundException;
@@ -161,7 +161,7 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
 
     private void setNotificationInfo(ApplicationState state) {
         notificationInfoPublisher = new GcNotificationPublisher();
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(GcNotificationPublisher.definition(),
+        final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(GcNotificationPublisher.definition(),
                 notificationInfoPublisher, UpdateGraphProcessor.DEFAULT, NOTIFICATION_INFO);
         final Table notificationInfo = adapter.table();
         state.setField(NOTIFICATION_INFO, notificationInfo);
@@ -176,8 +176,8 @@ public final class GcApplication implements ApplicationState.Factory, Notificati
 
     private void setPools(ApplicationState state) {
         poolsPublisher = new GcPoolsPublisher();
-        final StreamToTableAdapter adapter = new StreamToTableAdapter(GcPoolsPublisher.definition(), poolsPublisher,
-                UpdateGraphProcessor.DEFAULT, POOLS);
+        final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(GcPoolsPublisher.definition(),
+                poolsPublisher, UpdateGraphProcessor.DEFAULT, POOLS);
         final Table pools = adapter.table();
         state.setField(POOLS, pools);
         if (poolStatsEnabled()) {
