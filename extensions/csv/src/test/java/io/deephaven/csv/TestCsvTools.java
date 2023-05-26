@@ -11,6 +11,8 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeFormatter;
+import io.deephaven.time.DateTimeFormatters;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -28,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -202,10 +205,10 @@ public class TestCsvTools {
 
     @Test
     public void testWriteCsv() throws Exception {
-        File csvFile = new File(tmpDir, "tmp.csv");
-        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
-        long numCols = colNames.length;
-        Table tableToTest = new InMemoryTable(
+        final File csvFile = new File(tmpDir, "tmp.csv");
+        final String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
+        final long numCols = colNames.length;
+        final Table tableToTest = new InMemoryTable(
                 colNames,
                 new Object[] {
                         new String[] {"key11", "key11", "key21", "key21", "key22"},
@@ -215,37 +218,40 @@ public class TestCsvTools {
                                 DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(10000), null,
                                 DateTimeUtils.epochNanosToInstant(100000), DateTimeUtils.epochNanosToInstant(1000000)}
                 });
-        long numRows = tableToTest.size();
 
-        String allSeparators = ",|\tzZ- €9@";
-        for (char separator : allSeparators.toCharArray()) {
-            String separatorStr = String.valueOf(separator);
+        final long numRows = tableToTest.size();
+        final DateTimeFormatter formatter = DateTimeFormatters.ISO9TZ.getFormatter();
+        final String allSeparators = ",|\tzZ- €9@";
+        for (final char separator : allSeparators.toCharArray()) {
+            final String separatorStr = String.valueOf(separator);
 
             // Ignore separators in double quotes using this regex
-            String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
+            final String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
             CsvTools.writeCsv(
                     tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
-            Scanner csvReader = new Scanner(csvFile);
+            final Scanner csvReader = new Scanner(csvFile);
 
             // Check header
-            String header = csvReader.nextLine();
-            String[] headerLine = header.split(splitterPattern);
+            final String header = csvReader.nextLine();
+            final String[] headerLine = header.split(splitterPattern);
             Assert.assertArrayEquals(colNames, headerLine);
 
             // Check rest of values
             for (int i = 0; i < numRows; i++) {
                 Assert.assertTrue(csvReader.hasNextLine());
-                String rawLine = csvReader.nextLine();
-                String[] csvLine = rawLine.split(splitterPattern);
+                final String rawLine = csvReader.nextLine();
+                final String[] csvLine = rawLine.split(splitterPattern);
                 Assert.assertEquals(numCols, csvLine.length);
 
                 // Use separatorCsvEscape and compare the values
                 for (int j = 0; j < numCols; j++) {
-                    String valFromTable = tableToTest.getColumn(colNames[j]).get(i) == null
+                    final Object rawValFromTable = tableToTest.getColumn(colNames[j]).get(i);
+                    String valFromTable = rawValFromTable == null
                             ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
-                            : CsvTools.separatorCsvEscape(tableToTest.getColumn(colNames[j]).get(i).toString(),
-                                    separatorStr);
+                            : rawValFromTable instanceof Instant
+                            ? CsvTools.separatorCsvEscape(formatter.format((Instant) rawValFromTable), separatorStr)
+                            : CsvTools.separatorCsvEscape(rawValFromTable.toString(), separatorStr);
 
                     Assert.assertEquals(valFromTable, csvLine[j]);
                 }
