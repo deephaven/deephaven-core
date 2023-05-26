@@ -54,7 +54,7 @@ public class JdbcToTableAdapterTest {
                 "   \"DateTime Type\" DATETIME NULL" +
                 ");");
 
-        final DateTimeFormatter dtf = DateTimeFormatters.NONISO0.getFormatter();
+        final DateTimeFormatter dtf = DateTimeFormatters.NONISO9.getFormatter();
 
         for (long ii = 0; ii < numRows; ++ii) {
             stmt.executeUpdate("INSERT INTO TestTable VALUES (" +
