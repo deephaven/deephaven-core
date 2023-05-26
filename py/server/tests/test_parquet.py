@@ -14,6 +14,7 @@ from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
 from deephaven.table import Table
+from deephaven.time import epoch_nanos_to_instant
 
 from tests.testbase import BaseTestCase
 
@@ -176,7 +177,7 @@ class ParquetTestCase(BaseTestCase):
             "nullShortColumn = (short)null",
             "nullByteColumn = (byte)null",
             "nullCharColumn = (char)null",
-            "nullTime = (DateTime)null",
+            "nullTime = (Instant)null",
             "nullString = (String)null",
             # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
             # "nullBigDecColumn = (java.math.BigDecimal)null",

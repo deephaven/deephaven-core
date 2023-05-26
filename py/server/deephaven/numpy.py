@@ -29,7 +29,7 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
         if col_def.data_type.is_primitive:
             np_array = np.frombuffer(j_array, col_def.data_type.np_type)
         elif col_def.data_type == dtypes.Instant:
-            longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(j_array)
+            longs = _JPrimitiveArrayConversionUtility.translateArrayInstantToLong(j_array)
             np_long_array = np.frombuffer(longs, np.int64)
             np_array = np_long_array.view(col_def.data_type.np_type)
         elif col_def.data_type == dtypes.bool_:

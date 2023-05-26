@@ -256,7 +256,7 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
         return string
 
     if np_dtype.kind in {'M'}:
-        return DateTime
+        return Instant
 
     for _, dtype in _j_name_type_map.items():
         if np.dtype(dtype.np_type) == np_dtype and dtype.np_type != np.object_:
