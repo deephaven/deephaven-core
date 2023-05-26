@@ -98,6 +98,12 @@ public final class SqlAdapter {
         // For example, if we know that all Ids in a column are unique, either because the user has hinted as much, or
         // we know the Ids are unique because they are a "last_by" construction, we may be able to use a natural_join
         // instead of a join for an INNER JOIN conversion.
+
+        // SQLTODO(table-headers-out)
+        // In addition to parsing and creating the execution plan TableSpec, it would be reasonable to create and
+        // return the expected TableHeader, or even Map<TableSpec, TableHeader> for the full dag. This might aid in
+        // executing TableSpec; or at least, provides a way to check if the engine output matches what SQL expects the
+        // output type to be.
         return RelNodeAdapterNamed.of(SqlRootContext.of(relNode, scope), relNode);
 
         // 6. QST optimization

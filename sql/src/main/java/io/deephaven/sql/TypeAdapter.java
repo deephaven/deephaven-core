@@ -87,7 +87,7 @@ final class TypeAdapter implements Type.Visitor, GenericType.Visitor, PrimitiveT
 
     @Override
     public void visit(FloatType floatType) {
-        out = create(SqlTypeName.FLOAT);
+        out = create(SqlTypeName.REAL);
     }
 
     @Override
