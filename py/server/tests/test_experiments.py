@@ -65,7 +65,7 @@ class ExperimentalTestCase(BaseTestCase):
 
     def test_time_window(self):
         with exclusive_lock():
-            source_table = time_table("00:00:00.01").update(["TS=currentTime()"])
+            source_table = time_table("00:00:00.01").update(["TS=now()"])
             t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
 
         self.assertEqual("InWindow", t.columns[-1].name)

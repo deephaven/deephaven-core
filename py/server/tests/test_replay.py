@@ -6,15 +6,15 @@ import unittest
 
 from deephaven import DHError, new_table, TableReplayer
 from deephaven.column import int_col, datetime_col
-from deephaven.time import to_datetime
+from deephaven.time import parse_instant
 from tests.testbase import BaseTestCase
 
 
 class ReplayTestCase(BaseTestCase):
     def test_historical_table_replayer(self):
-        dt1 = to_datetime("2000-01-01T00:00:01 NY")
-        dt2 = to_datetime("2000-01-01T00:00:02 NY")
-        dt3 = to_datetime("2000-01-01T00:00:04 NY")
+        dt1 = parse_instant("2000-01-01T00:00:01 NY")
+        dt2 = parse_instant("2000-01-01T00:00:02 NY")
+        dt3 = parse_instant("2000-01-01T00:00:04 NY")
 
         hist_table = new_table(
             [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
@@ -24,8 +24,8 @@ class ReplayTestCase(BaseTestCase):
             [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
         )
 
-        start_time = to_datetime("2000-01-01T00:00:00 NY")
-        end_time = to_datetime("2000-01-01T00:00:05 NY")
+        start_time = parse_instant("2000-01-01T00:00:00 NY")
+        end_time = parse_instant("2000-01-01T00:00:05 NY")
 
         replayer = TableReplayer(start_time, end_time)
         replay_table = replayer.add_table(hist_table, "DateTime")

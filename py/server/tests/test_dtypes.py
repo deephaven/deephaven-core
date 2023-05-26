@@ -12,8 +12,8 @@ import pandas as pd
 
 from deephaven import dtypes
 from deephaven.constants import *
-from deephaven.dtypes import Instant
-from deephaven.time import now
+from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
+from deephaven.time import now, to_zdt, time_zone
 from tests.testbase import BaseTestCase
 
 
@@ -54,8 +54,8 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.TimeZone.j_type, jpy.get_type("java.time.ZoneId"))
         self.assertEqual(dtypes.PyObject.j_type, jpy.get_type("org.jpy.PyObject"))
         self.assertEqual(dtypes.JObject.j_type, jpy.get_type("java.lang.Object"))
-        self.assertEqual(dtypes.instant_array.j_type, jpy.get_type("L[java.time.Instant"))
-        self.assertEqual(dtypes.zdt_array.j_type, jpy.get_type("L[java.time.ZonedDateTime"))
+        self.assertEqual(dtypes.instant_array.j_type, jpy.get_type("[Ljava.time.Instant;"))
+        self.assertEqual(dtypes.zdt_array.j_type, jpy.get_type("[Ljava.time.ZonedDateTime;"))
 
     def test_np_type(self):
         self.assertEqual(dtypes.bool_.np_type, np.bool_)
@@ -80,14 +80,6 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.JObject.np_type, np.object_)
         self.assertEqual(dtypes.instant_array.np_type, np.object_)
         self.assertEqual(dtypes.zdt_array.np_type, np.object_)
-
-    def test_duration(self):
-        hour_duration = dtypes.Duration.j_type("PT1H")
-        self.assertTrue(isinstance(hour_duration, dtypes.Period.j_type))
-
-    def test_period(self):
-        day_period = dtypes.Period.j_type("P2D")
-        self.assertTrue(isinstance(day_period, dtypes.Period.j_type))
 
     def test_callable(self):
         big_decimal = dtypes.BigDecimal(12.88)
@@ -204,11 +196,49 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(expected, py_array)
 
     def test_instant(self):
-        dt1 = Instant(round(time.time()))
+        dt1 = Instant.j_type.ofEpochSecond(0,round(time.time()))
         dt2 = now()
         values = [dt1, dt2, None]
         j_array = dtypes.array(Instant, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
+
+    def test_local_date(self):
+        s = "2010-02-03"
+        l = LocalDate.j_type.parse(s)
+        self.assertEqual(s, str(l))
+        self.assertTrue(isinstance(l, dtypes.LocalDate.j_type))
+
+    def test_local_time(self):
+        s = "12:14"
+        l = LocalTime.j_type.parse(s)
+        self.assertEqual(s, str(l))
+        self.assertTrue(isinstance(l, dtypes.LocalTime.j_type))
+
+    def test_time_zone(self):
+        s = "America/New_York"
+        l = TimeZone.j_type.of(s)
+        self.assertEqual(s, str(l))
+        self.assertTrue(isinstance(l, dtypes.TimeZone.j_type))
+
+    def test_duration(self):
+        s = "PT2H"
+        l = Duration.j_type.parse(s)
+        self.assertEqual(s, str(l))
+        self.assertTrue(isinstance(l, dtypes.Duration.j_type))
+
+    def test_period(self):
+        s = "P3D"
+        l = Period.j_type.parse(s)
+        self.assertEqual(s, str(l))
+        self.assertTrue(isinstance(l, dtypes.Period.j_type))
+
+    def test_zdt(self):
+        dt1 = ZonedDateTime.j_type.now()
+        dt2 = to_zdt(now(),time_zone(None))
+        values = [dt1, dt2, None]
+        j_array = dtypes.array(ZonedDateTime, values)
+        self.assertTrue(all(x == y for x, y in zip(j_array, values)))
+        self.assertTrue(isinstance(dt1, dtypes.ZonedDateTime.j_type))
 
     def test_bool_array(self):
         np_array = np.array([True, False], np.bool_)
