@@ -267,9 +267,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "2010-01-01T12:00:00.123",
                 "2010-01-01T12:00:00.123",
                 "2010-01-01T12:00:00.123456789",
-//                "2023-04-30",
-//                "2023-04-30T",
-//                "2023-04-30T9:30:00",
         };
 
         for (String tz : tzs) {
@@ -278,6 +275,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
                 TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()), DateTimeUtils.parseEpochNanos(s));
+            }
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt), DateTimeUtils.parseEpochNanos(s));
             }
         }
 
@@ -340,9 +372,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "2010-01-01T12:00:00.123",
                 "2010-01-01T12:00:00.123",
                 "2010-01-01T12:00:00.123456789",
-//                "2023-04-30",
-//                "2023-04-30T",
-//                "2023-04-30T9:30:00",
         };
 
         for (String tz : tzs) {
@@ -352,6 +381,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
                 TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()),
                         DateTimeUtils.parseEpochNanosQuiet(s));
+            }
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt), DateTimeUtils.parseEpochNanosQuiet(s));
             }
         }
 
@@ -400,6 +464,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstant(s));
+            }
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
                 TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstant(s));
             }
         }
@@ -478,6 +577,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             }
         }
 
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstantQuiet(s));
+            }
+        }
+
         TestCase.assertNull(DateTimeUtils.parseInstantQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseInstantQuiet("2010-01-01T12:11"));
         TestCase.assertNull(DateTimeUtils.parseInstantQuiet("2010-01-01T12:11 JUNK"));
@@ -523,6 +657,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt, DateTimeUtils.parseZonedDateTime(s));
+            }
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
                 TestCase.assertEquals("DateTime string: " + s + "'", zdt, DateTimeUtils.parseZonedDateTime(s));
             }
         }
@@ -583,6 +752,41 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt, DateTimeUtils.parseZonedDateTimeQuiet(s));
+            }
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30,0,0),
+                LocalDateTime.of(2023,4,30, 9,30,0),
+                LocalDateTime.of(2023,4,3,9,3,6),
+                LocalDateTime.of(2023,4,3,9,3,0),
+                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
+                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+        };
+
+        for (String tz : tzs) {
+            for(int i=0; i<uglyRoots.length; i++){
+                final String root = uglyRoots[i];
+                final LocalDateTime ldt = uglyLDTs[i];
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = ldt.atZone(zid);
                 TestCase.assertEquals("DateTime string: " + s + "'", zdt, DateTimeUtils.parseZonedDateTimeQuiet(s));
             }
         }

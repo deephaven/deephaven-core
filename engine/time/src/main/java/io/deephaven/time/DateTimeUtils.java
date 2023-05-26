@@ -15,8 +15,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.*;
+import java.time.format.*;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Objects;
@@ -34,6 +34,41 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 public class DateTimeUtils {
 
     // region Format Patterns
+
+    /**
+     * Very permissive formatter / parser for local dates.
+     */
+    private static final DateTimeFormatter FORMATTER_ISO_LOCAL_DATE = new DateTimeFormatterBuilder()
+            .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
+            .appendLiteral('-')
+            .appendValue(ChronoField.MONTH_OF_YEAR, 1,2,SignStyle.NORMAL)
+            .appendLiteral('-')
+            .appendValue(ChronoField.DAY_OF_MONTH, 1,2,SignStyle.NORMAL)
+            .toFormatter();
+
+    /**
+     * Very permissive formatter / parser for local times.
+     */
+    private static final DateTimeFormatter FORMATTER_ISO_LOCAL_TIME = new DateTimeFormatterBuilder()
+            .appendValue(ChronoField.HOUR_OF_DAY, 1,2,SignStyle.NORMAL)
+            .appendLiteral(':')
+            .appendValue(ChronoField.MINUTE_OF_HOUR, 1,2,SignStyle.NORMAL)
+            .optionalStart()
+            .appendLiteral(':')
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 1,2,SignStyle.NORMAL)
+            .optionalStart()
+            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+            .toFormatter();
+
+    /**
+     * Very permissive formatter / parser for local date times.
+     */
+    private static final DateTimeFormatter FORMATTER_ISO_LOCAL_DATE_TIME = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(FORMATTER_ISO_LOCAL_DATE)
+            .appendLiteral('T')
+            .append(FORMATTER_ISO_LOCAL_TIME)
+            .toFormatter();
 
     // The following 4 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
     // the date, to avoid confusion with date time literals.
@@ -78,10 +113,10 @@ public class DateTimeUtils {
     private static final Pattern LONG_PATTERN = Pattern.compile("^-?\\d{1,19}$");
 
     /**
-     * Matches date times.
+     * Matches dates with time zones.
      */
-    private static final Pattern DATETIME_PATTERN = Pattern.compile(
-            "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z_/]+");
+    private static final Pattern DATE_TZ_PATTERN = Pattern.compile(
+            "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?) (?<timezone>[a-zA-Z_/]+)");
 
     /**
      * Matches time durations.
@@ -3360,7 +3395,19 @@ public class DateTimeUtils {
         }
 
         try {
-            if (DATETIME_PATTERN.matcher(s).matches()) {
+            final Matcher dtzMatcher = DATE_TZ_PATTERN.matcher(s);
+            if(dtzMatcher.matches()) {
+                final String dateString = dtzMatcher.group("date");
+                final String timeZoneString = dtzMatcher.group("timezone");
+                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
+
+                if (timeZone == null) {
+                    throw new RuntimeException("No matching time zone: '" + timeZoneString + "'");
+                }
+
+                return LocalDate.parse(dateString,FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0,0)).atZone(timeZone);
+            }
+
                 int spaceIndex = s.indexOf(' ');
                 if (spaceIndex == -1) {
                     throw new RuntimeException("No time zone provided");
@@ -3374,10 +3421,7 @@ public class DateTimeUtils {
                     throw new RuntimeException("No matching time zone: " + timeZoneString);
                 }
 
-                return LocalDateTime.parse(dateTimeString).atZone(timeZone);
-            }
-
-            throw new RuntimeException("Date time does not match expected pattern");
+                return LocalDateTime.parse(dateTimeString, FORMATTER_ISO_LOCAL_DATE_TIME).atZone(timeZone);
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse datetime: " + s, ex);
         }
