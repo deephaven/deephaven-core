@@ -73,6 +73,11 @@ public class DateTimeUtils {
             Pattern.compile("^L([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
 
     /**
+     * Matches long values.
+     */
+    private static final Pattern LONG_PATTERN = Pattern.compile("^-?\\d{1,19}$");
+
+    /**
      * Matches date times.
      */
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
@@ -3230,10 +3235,61 @@ public class DateTimeUtils {
     }
 
     /**
+     * Parses the string argument as nanoseconds since the Epoch.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+     * from the Epoch.  Expected date ranges are used to infer the units.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string.
+     * @throws RuntimeException if the string cannot be parsed.
+     * @see #epochAutoToEpochNanos
+     * @see #parseInstant(String)
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    public static long parseEpochNanos(@NotNull final String s) {
+        if(LONG_PATTERN.matcher(s).matches()){
+            return epochAutoToEpochNanos(Long.parseLong(s));
+        }
+
+        return epochNanos(parseZonedDateTime(s));
+    }
+
+    /**
+     * Parses the string argument as a date time.
+     *
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+     * from the Epoch.  Expected date ranges are used to infer the units.
+     *
+     * @param s date time string.
+     * @return a date time represented by the input string, or null if the string can not be parsed.
+     * @see DateTimeFormatter#ISO_INSTANT
+     */
+    @ScriptApi
+    public static long parseEpochNanosQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return NULL_LONG;
+        }
+
+        try {
+            return parseEpochNanos(s);
+        } catch (Exception e) {
+            return NULL_LONG;
+        }
+    }
+
+    /**
      * Parses the string argument as a date time.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+     * from the Epoch.  Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string.
@@ -3243,6 +3299,12 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static Instant parseInstant(@NotNull final String s) {
+        if(LONG_PATTERN.matcher(s).matches()){
+            final long nanos = epochAutoToEpochNanos(Long.parseLong(s));
+            //noinspection ConstantConditions
+            return epochNanosToInstant(nanos);
+        }
+
         return parseZonedDateTime(s).toInstant();
     }
 
@@ -3251,6 +3313,8 @@ public class DateTimeUtils {
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+     * from the Epoch.  Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string, or null if the string can not be parsed.

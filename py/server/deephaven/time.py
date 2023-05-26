@@ -1822,12 +1822,41 @@ def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
     except Exception as e:
         raise DHError(e) from e
 
+#TODO: test
+def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
+    """ Parses the string argument as nanoseconds since the Epoch.
+
+    Date time strings are formatted according to the ISO 8601 date time format
+    'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+    from the Epoch.  Expected date ranges are used to infer the units.
+
+    Args:
+        s (str): String to be converted.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause NULL_LONG to be returned.
+
+    Returns:
+        Instant represented by the string.
+
+    Raises:
+        DHError
+    """
+    try:
+        if quiet:
+            return _JDateTimeUtils.parseEpochNanosQuiet(s)
+        else:
+            return _JDateTimeUtils.parseEpochNanos(s)
+    except Exception as e:
+        raise DHError(e) from e
+
 
 def parse_instant(s: str, quiet: bool = False) -> Optional[Instant]:
     """ Parses the string argument as an Instant.
 
     Date time strings are formatted according to the ISO 8601 date time format
-    '{@code 'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+    'yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ' and others.
+    Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
+    from the Epoch.  Expected date ranges are used to infer the units.
 
     Args:
         s (str): String to be converted.

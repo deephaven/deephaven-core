@@ -251,6 +251,132 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.parseTimeZoneQuiet(null));
     }
 
+    public void testParseEpochNanos() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+//                "2023-04-30",
+//                "2023-04-30T",
+//                "2023-04-30T9:30:00",
+        };
+
+        for (String tz : tzs) {
+            for (String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()), DateTimeUtils.parseEpochNanos(s));
+            }
+        }
+
+        try {
+            DateTimeUtils.parseEpochNanos("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            DateTimeUtils.parseEpochNanos("2010-01-01T12:11");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            DateTimeUtils.parseEpochNanos("2010-01-01T12:11 JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            // noinspection ConstantConditions
+            DateTimeUtils.parseEpochNanos(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(DateTimeUtils.epochNanos(Instant.parse(iso8601)), DateTimeUtils.parseEpochNanos(iso8601));
+
+        final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
+        final long nanos = DateTimeUtils.epochNanos(dt1);
+        final long micros = DateTimeUtils.epochMicros(dt1);
+        final long millis = DateTimeUtils.epochMillis(dt1);
+        final long seconds = DateTimeUtils.epochSeconds(dt1);
+        TestCase.assertEquals(nanos, DateTimeUtils.parseEpochNanos(Long.toString(nanos)));
+        TestCase.assertEquals(micros*1_000L, DateTimeUtils.parseEpochNanos(Long.toString(micros)));
+        TestCase.assertEquals(millis*1_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(millis)));
+        TestCase.assertEquals(seconds*1_000_000_000L, DateTimeUtils.parseEpochNanos(Long.toString(seconds)));
+    }
+
+    public void testParseEpochNanosQuiet() {
+        final String[] tzs = {
+                "NY",
+                "JP",
+                "GMT",
+                "America/New_York",
+                "America/Chicago",
+        };
+
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+//                "2023-04-30",
+//                "2023-04-30T",
+//                "2023-04-30T9:30:00",
+        };
+
+        for (String tz : tzs) {
+            for (String root : roots) {
+                final String s = root + " " + tz;
+                final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
+                final ZonedDateTime zdt = LocalDateTime.parse(root).atZone(zid);
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt.toInstant()),
+                        DateTimeUtils.parseEpochNanosQuiet(s));
+            }
+        }
+
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseEpochNanosQuiet("JUNK"));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseEpochNanosQuiet("2010-01-01T12:11"));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseEpochNanosQuiet("2010-01-01T12:11 JUNK"));
+        TestCase.assertEquals(NULL_LONG, DateTimeUtils.parseEpochNanosQuiet(null));
+
+        final String iso8601 = "2022-04-26T00:30:31.087360Z";
+        assertEquals(DateTimeUtils.epochNanos(Instant.parse(iso8601)), DateTimeUtils.parseEpochNanosQuiet(iso8601));
+
+        final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
+        final long nanos = DateTimeUtils.epochNanos(dt1);
+        final long micros = DateTimeUtils.epochMicros(dt1);
+        final long millis = DateTimeUtils.epochMillis(dt1);
+        final long seconds = DateTimeUtils.epochSeconds(dt1);
+        final Instant dt1u = DateTimeUtils.epochMicrosToInstant(micros);
+        final Instant dt1m = DateTimeUtils.epochMillisToInstant(millis);
+        final Instant dt1s = DateTimeUtils.epochSecondsToInstant(seconds);
+        TestCase.assertEquals(nanos, DateTimeUtils.parseEpochNanosQuiet(Long.toString(nanos)));
+        TestCase.assertEquals(micros*1_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(micros)));
+        TestCase.assertEquals(millis*1_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(millis)));
+        TestCase.assertEquals(seconds*1_000_000_000L, DateTimeUtils.parseEpochNanosQuiet(Long.toString(seconds)));
+    }
+
     public void testParseInstant() {
         final String[] tzs = {
                 "NY",
@@ -309,6 +435,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstant(iso8601));
+
+        final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
+        final long nanos = DateTimeUtils.epochNanos(dt1);
+        final long micros = DateTimeUtils.epochMicros(dt1);
+        final long millis = DateTimeUtils.epochMillis(dt1);
+        final long seconds = DateTimeUtils.epochSeconds(dt1);
+        final Instant dt1u = DateTimeUtils.epochMicrosToInstant(micros);
+        final Instant dt1m = DateTimeUtils.epochMillisToInstant(millis);
+        final Instant dt1s = DateTimeUtils.epochSecondsToInstant(seconds);
+        TestCase.assertEquals(dt1, DateTimeUtils.parseInstant(Long.toString(nanos)));
+        TestCase.assertEquals(dt1u, DateTimeUtils.parseInstant(Long.toString(micros)));
+        TestCase.assertEquals(dt1m, DateTimeUtils.parseInstant(Long.toString(millis)));
+        TestCase.assertEquals(dt1s, DateTimeUtils.parseInstant(Long.toString(seconds)));
     }
 
     public void testParseInstantQuiet() {
@@ -346,6 +485,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstantQuiet(iso8601));
+        
+        final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
+        final long nanos = DateTimeUtils.epochNanos(dt1);
+        final long micros = DateTimeUtils.epochMicros(dt1);
+        final long millis = DateTimeUtils.epochMillis(dt1);
+        final long seconds = DateTimeUtils.epochSeconds(dt1);
+        final Instant dt1u = DateTimeUtils.epochMicrosToInstant(micros);
+        final Instant dt1m = DateTimeUtils.epochMillisToInstant(millis);
+        final Instant dt1s = DateTimeUtils.epochSecondsToInstant(seconds);
+        TestCase.assertEquals(dt1, DateTimeUtils.parseInstantQuiet(Long.toString(nanos)));
+        TestCase.assertEquals(dt1u, DateTimeUtils.parseInstantQuiet(Long.toString(micros)));
+        TestCase.assertEquals(dt1m, DateTimeUtils.parseInstantQuiet(Long.toString(millis)));
+        TestCase.assertEquals(dt1s, DateTimeUtils.parseInstantQuiet(Long.toString(seconds)));
     }
 
     public void testParseZonedDateTime() {
