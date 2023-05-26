@@ -61,7 +61,7 @@ class TableListenerTestCase(BaseTestCase):
         super().setUp()
         with exclusive_lock():
             self.test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
-            source_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            source_table = time_table("00:00:00.001").update(["TS=now()"])
             self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")
 
     def tearDown(self) -> None:

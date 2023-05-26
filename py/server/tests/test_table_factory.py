@@ -13,6 +13,7 @@ from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, l
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
 from deephaven.table_factory import DynamicTableWriter, ring_table
+from deephaven.time import epoch_nanos_to_instant, format_datetime, time_zone
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -49,25 +50,25 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
 
-        t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
+        t = time_table("00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
 
         t = time_table(1000_000_000)
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
 
-        t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 NY")
+        t = time_table(1000_1000_1000, start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
+        self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
             t = time_table("00:0a:01")
 
-        self.assertIn("IllegalArgumentException", cm.exception.root_cause)
+        self.assertIn("DateTimeParseException", cm.exception.root_cause)
 
     def test_merge(self):
         t1 = self.test_table.update(formulas=["Timestamp=epochNanosToInstant(0L)"])
@@ -102,7 +103,7 @@ class TableFactoryTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj2", data=[False, 'False']),

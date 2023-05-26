@@ -35,21 +35,21 @@ class UgpTestCase(BaseTestCase):
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         with ugp.exclusive_lock():
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            test_table = time_table("00:00:00.001").update(["TS=now()"])
 
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            test_table = time_table("00:00:00.001").update(["TS=now()"])
 
         # nested locking
         with ugp.exclusive_lock():
             with ugp.shared_lock():
-                test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+                test_table = time_table("00:00:00.001").update(["TS=now()"])
+            test_table = time_table("00:00:00.001").update(["TS=now()"])
 
         with self.assertRaises(DHError) as cm:
             with ugp.shared_lock():
                 with ugp.exclusive_lock():
-                    test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+                    test_table = time_table("00:00:00.001").update(["TS=now()"])
         self.assertRegex(str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock")
 
     def test_ugp_decorator_exclusive(self):

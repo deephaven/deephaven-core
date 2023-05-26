@@ -14,6 +14,7 @@ from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table, SearchDisplayMode
+from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -931,11 +932,11 @@ class TableTestCase(BaseTestCase):
 
     def test_callable_attrs_in_query(self):
         input_cols = [
-            datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
+            datetime_col(name="DTCol", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(10000000)]),
         ]
         test_table = new_table(cols=input_cols)
         from deephaven.time import year, TimeZone
-        rt = test_table.update("Year = (int)year(DTCol, TimeZone.NY)")
+        rt = test_table.update("Year = (int)year(DTCol, timeZone(`ET`))")
         self.assertEqual(rt.size, test_table.size)
 
         class Foo:

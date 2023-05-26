@@ -17,7 +17,7 @@ from tests.testbase import BaseTestCase
 class UpdateByTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.static_table = read_csv("tests/data/test_table.csv").update("Timestamp=currentTime()")
+        self.static_table = read_csv("tests/data/test_table.csv").update("Timestamp=now()")
         with ugp.exclusive_lock():
             self.ticking_table = time_table("00:00:00.001").update(
                 ["a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b"])
