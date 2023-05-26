@@ -170,11 +170,11 @@ public class IdeSession extends HasEventHandling {
             connection.consoleServiceClient().executeCommand(request, connection.metadata(), c::apply);
         });
         runCodePromise.then(response -> {
-            if (response.hasChanges()) {
-                JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
+            JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
+            if (response.getErrorMessage().isEmpty()) {
                 promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
             } else {
-
+                promise.fail(new JsCommandResult(changes, response.getErrorMessage()));
             }
             return null;
         }, err -> {
