@@ -210,7 +210,7 @@ public class TestChunkedRegionedOperations {
                         "Bl   = (Boolean) null",
                         "Sym  = (String) null",
                         "Str  = (String) null",
-                        "DT   = (DateTime) null",
+                        "DT   = (Instant) null",
                         "SymS = (StringSet) null",
                         "Ser  = (SimpleSerializable) null",
                         "Ext  = (SimpleExternalizable) null",
@@ -263,7 +263,7 @@ public class TestChunkedRegionedOperations {
                         inputMissingData.updateView("PC = `P` + PC"))
                 .updateView(
                         "Bl_R = booleanAsByte(Bl)",
-                        "DT_R = nanos(DT)");
+                        "DT_R = epochNanos(DT)");
 
         actual = ParquetTools.readPartitionedTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null),
