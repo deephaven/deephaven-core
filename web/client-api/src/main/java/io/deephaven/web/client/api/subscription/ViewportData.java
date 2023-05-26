@@ -264,6 +264,7 @@ public class ViewportData implements TableData {
                     return dataColumn;
                 }
         }
+
     }
 
     @JsProperty

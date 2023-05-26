@@ -250,8 +250,9 @@ public class TestCsvTools {
                     String valFromTable = rawValFromTable == null
                             ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
                             : rawValFromTable instanceof Instant
-                            ? CsvTools.separatorCsvEscape(formatter.format((Instant) rawValFromTable), separatorStr)
-                            : CsvTools.separatorCsvEscape(rawValFromTable.toString(), separatorStr);
+                                    ? CsvTools.separatorCsvEscape(formatter.format((Instant) rawValFromTable),
+                                            separatorStr)
+                                    : CsvTools.separatorCsvEscape(rawValFromTable.toString(), separatorStr);
 
                     Assert.assertEquals(valFromTable, csvLine[j]);
                 }

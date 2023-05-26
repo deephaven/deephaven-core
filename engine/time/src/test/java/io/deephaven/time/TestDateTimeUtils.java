@@ -292,25 +292,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = ldt.atZone(zid);
-                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt), DateTimeUtils.parseEpochNanos(s));
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt),
+                        DateTimeUtils.parseEpochNanos(s));
             }
         }
 
@@ -398,25 +399,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = ldt.atZone(zid);
-                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt), DateTimeUtils.parseEpochNanosQuiet(s));
+                TestCase.assertEquals("DateTime string: " + s + "'", DateTimeUtils.epochNanos(zdt),
+                        DateTimeUtils.parseEpochNanosQuiet(s));
             }
         }
 
@@ -482,19 +484,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
@@ -591,25 +593,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
                 final ZoneId zid = DateTimeUtils.parseTimeZone(tz);
                 final ZonedDateTime zdt = ldt.atZone(zid);
-                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(), DateTimeUtils.parseInstantQuiet(s));
+                TestCase.assertEquals("DateTime string: " + s + "'", zdt.toInstant(),
+                        DateTimeUtils.parseInstantQuiet(s));
             }
         }
 
@@ -675,19 +678,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
@@ -770,19 +773,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         };
 
         final LocalDateTime[] uglyLDTs = {
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30,0,0),
-                LocalDateTime.of(2023,4,30, 9,30,0),
-                LocalDateTime.of(2023,4,3,9,3,6),
-                LocalDateTime.of(2023,4,3,9,3,0),
-                LocalDateTime.of(2023,4,3,9,3,6, 100_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123_000_000),
-                LocalDateTime.of(2023,4,3,9,3,6, 123456789),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
         };
 
         for (String tz : tzs) {
-            for(int i=0; i<uglyRoots.length; i++){
+            for (int i = 0; i < uglyRoots.length; i++) {
                 final String root = uglyRoots[i];
                 final LocalDateTime ldt = uglyLDTs[i];
                 final String s = root + " " + tz;
