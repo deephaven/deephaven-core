@@ -189,7 +189,7 @@ public class JdbcToTableAdapterTest {
         final ColumnSource<Long> big_int_type = result.getColumnSource("big_int_type");
         final ColumnSource<Double> decimal_type = result.getColumnSource("decimal_type");
         final ColumnSource<String> string_type = result.getColumnSource("string_type");
-        final ColumnSource<Instant> instant_type = result.getColumnSource("instant_type");
+        final ColumnSource<Instant> instant_type = result.getColumnSource("datetime_type");
 
         // check expected column sources types
         Assert.assertEquals(Boolean.class, bool_type.getType());
@@ -253,7 +253,7 @@ public class JdbcToTableAdapterTest {
             } else {
                 final Instant dt = instant_type.get(ii);
                 // is only accurate
-                Assert.assertEquals(ii * 100_000L, dt.toEpochMilli());
+                Assert.assertEquals(ii * 100_000L, DateTimeUtils.epochNanos(dt));
             }
         }
     }
