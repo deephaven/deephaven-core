@@ -40,7 +40,7 @@ public enum DateTimeFormatters {
     NONISO6(false, true, true, 6, false),
     /** Date plus time format with a space separating the date and time, 3 sub-second digits, and no time zone. */
     NONISO3(false, true, true, 3, false),
-    /** Date plus time format with a space separating the date and time, 9 sub-second digits, and no time zone. */
+    /** Date plus time format with a space separating the date and time, 0 sub-second digits, and no time zone. */
     NONISO0(false, true, true, 0, false),
     /** Time only format with 9 sub-second digits and the time zone. */
     NODATE9TZ(true, false, true, 9, true),

@@ -20,7 +20,6 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         TestCase.assertEquals(
                 "        private Instant _instant0=DateTimeUtils.parseInstant(\"2010-01-01T12:34:56.891 NY\");\n",
                 tlre.getInstanceVariablesString());
-
     }
 
     public void testConvertExpressionLocalDate() throws Exception {
@@ -44,7 +43,7 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_nanos0", long.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n",
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseDurationNanos(\"12:00\");\n",
                 tlre.getInstanceVariablesString());
     }
 
@@ -104,8 +103,8 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_nanos1", long.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n" +
-                "        private long _nanos1=DateTimeUtils.parseNanos(\"04:21\");\n",
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseDurationNanos(\"12:00\");\n" +
+                "        private long _nanos1=DateTimeUtils.parseDurationNanos(\"04:21\");\n",
                 tlre.getInstanceVariablesString());
     }
 
@@ -118,7 +117,7 @@ public class TestTimeLiteralReplacedExpression extends BaseArrayTestCase {
         newVars.put("_duration0", Duration.class);
         TestCase.assertEquals(newVars, tlre.getNewVariables());
 
-        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseNanos(\"12:00\");\n" +
+        TestCase.assertEquals("        private long _nanos0=DateTimeUtils.parseDurationNanos(\"12:00\");\n" +
                 "        private java.time.Duration _duration0=DateTimeUtils.parseDuration(\"PT4H\");\n",
                 tlre.getInstanceVariablesString());
     }

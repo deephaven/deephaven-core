@@ -41,21 +41,21 @@ public class DateTimeUtils {
     private static final DateTimeFormatter FORMATTER_ISO_LOCAL_DATE = new DateTimeFormatterBuilder()
             .appendValue(ChronoField.YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
             .appendLiteral('-')
-            .appendValue(ChronoField.MONTH_OF_YEAR, 1,2,SignStyle.NORMAL)
+            .appendValue(ChronoField.MONTH_OF_YEAR, 1, 2, SignStyle.NORMAL)
             .appendLiteral('-')
-            .appendValue(ChronoField.DAY_OF_MONTH, 1,2,SignStyle.NORMAL)
+            .appendValue(ChronoField.DAY_OF_MONTH, 1, 2, SignStyle.NORMAL)
             .toFormatter();
 
     /**
      * Very permissive formatter / parser for local times.
      */
     private static final DateTimeFormatter FORMATTER_ISO_LOCAL_TIME = new DateTimeFormatterBuilder()
-            .appendValue(ChronoField.HOUR_OF_DAY, 1,2,SignStyle.NORMAL)
+            .appendValue(ChronoField.HOUR_OF_DAY, 1, 2, SignStyle.NORMAL)
             .appendLiteral(':')
-            .appendValue(ChronoField.MINUTE_OF_HOUR, 1,2,SignStyle.NORMAL)
+            .appendValue(ChronoField.MINUTE_OF_HOUR, 1, 2, SignStyle.NORMAL)
             .optionalStart()
             .appendLiteral(':')
-            .appendValue(ChronoField.SECOND_OF_MINUTE, 1,2,SignStyle.NORMAL)
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 1, 2, SignStyle.NORMAL)
             .optionalStart()
             .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
             .toFormatter();
@@ -3273,9 +3273,8 @@ public class DateTimeUtils {
      * Parses the string argument as nanoseconds since the Epoch.
      *
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-     * from the Epoch.  Expected date ranges are used to infer the units.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
+     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string.
@@ -3286,7 +3285,7 @@ public class DateTimeUtils {
      */
     @ScriptApi
     public static long parseEpochNanos(@NotNull final String s) {
-        if(LONG_PATTERN.matcher(s).matches()){
+        if (LONG_PATTERN.matcher(s).matches()) {
             return epochAutoToEpochNanos(Long.parseLong(s));
         }
 
@@ -3297,9 +3296,8 @@ public class DateTimeUtils {
      * Parses the string argument as a date time.
      *
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-     * from the Epoch.  Expected date ranges are used to infer the units.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
+     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string, or null if the string can not be parsed.
@@ -3322,9 +3320,8 @@ public class DateTimeUtils {
      * Parses the string argument as a date time.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-     * from the Epoch.  Expected date ranges are used to infer the units.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
+     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string.
@@ -3334,9 +3331,9 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static Instant parseInstant(@NotNull final String s) {
-        if(LONG_PATTERN.matcher(s).matches()){
+        if (LONG_PATTERN.matcher(s).matches()) {
             final long nanos = epochAutoToEpochNanos(Long.parseLong(s));
-            //noinspection ConstantConditions
+            // noinspection ConstantConditions
             return epochNanosToInstant(nanos);
         }
 
@@ -3347,9 +3344,8 @@ public class DateTimeUtils {
      * Parses the string argument as a date time.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
-     * Additionally, date time strings can be integer values that are nanoseconds, milliseconds, or seconds
-     * from the Epoch.  Expected date ranges are used to infer the units.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
+     * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
      *
      * @param s date time string.
      * @return a date time represented by the input string, or null if the string can not be parsed.
@@ -3396,7 +3392,7 @@ public class DateTimeUtils {
 
         try {
             final Matcher dtzMatcher = DATE_TZ_PATTERN.matcher(s);
-            if(dtzMatcher.matches()) {
+            if (dtzMatcher.matches()) {
                 final String dateString = dtzMatcher.group("date");
                 final String timeZoneString = dtzMatcher.group("timezone");
                 final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
@@ -3405,23 +3401,24 @@ public class DateTimeUtils {
                     throw new RuntimeException("No matching time zone: '" + timeZoneString + "'");
                 }
 
-                return LocalDate.parse(dateString,FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0,0)).atZone(timeZone);
+                return LocalDate.parse(dateString, FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0, 0))
+                        .atZone(timeZone);
             }
 
-                int spaceIndex = s.indexOf(' ');
-                if (spaceIndex == -1) {
-                    throw new RuntimeException("No time zone provided");
-                }
+            int spaceIndex = s.indexOf(' ');
+            if (spaceIndex == -1) {
+                throw new RuntimeException("No time zone provided");
+            }
 
-                final String dateTimeString = s.substring(0, spaceIndex);
-                final String timeZoneString = s.substring(spaceIndex + 1);
-                final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
+            final String dateTimeString = s.substring(0, spaceIndex);
+            final String timeZoneString = s.substring(spaceIndex + 1);
+            final ZoneId timeZone = parseTimeZoneQuiet(timeZoneString);
 
-                if (timeZone == null) {
-                    throw new RuntimeException("No matching time zone: " + timeZoneString);
-                }
+            if (timeZone == null) {
+                throw new RuntimeException("No matching time zone: " + timeZoneString);
+            }
 
-                return LocalDateTime.parse(dateTimeString, FORMATTER_ISO_LOCAL_DATE_TIME).atZone(timeZone);
+            return LocalDateTime.parse(dateTimeString, FORMATTER_ISO_LOCAL_DATE_TIME).atZone(timeZone);
         } catch (Exception ex) {
             throw new RuntimeException("Cannot parse datetime: " + s, ex);
         }
