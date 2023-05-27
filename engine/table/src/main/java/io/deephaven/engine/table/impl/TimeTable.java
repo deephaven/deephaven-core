@@ -40,7 +40,7 @@ import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 import static io.deephaven.time.DateTimeUtils.isBefore;
 import static io.deephaven.time.DateTimeUtils.minus;
 import static io.deephaven.time.DateTimeUtils.parseInstant;
-import static io.deephaven.time.DateTimeUtils.parseDuratioNanos;
+import static io.deephaven.time.DateTimeUtils.parseDurationNanos;
 import static io.deephaven.time.DateTimeUtils.plus;
 import static io.deephaven.util.type.TypeUtils.box;
 
@@ -86,7 +86,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         public Builder period(String period) {
-            this.period = parseDuratioNanos(period);
+            this.period = parseDurationNanos(period);
             return this;
         }
 

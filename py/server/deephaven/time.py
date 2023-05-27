@@ -12,6 +12,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Duration, Period, TimeZone, from_jtype
+from deephaven.constants import NULL_INT, NULL_LONG, NULL_DOUBLE
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 _JDateTimeUtilsDateStyle = jpy.get_type("io.deephaven.time.DateTimeUtils$DateStyle")
@@ -23,7 +24,7 @@ MINUTE = 60 * SECOND  #: One minute in nanoseconds.
 HOUR = 60 * MINUTE  #: One hour in nanoseconds.
 DAY = 24 * HOUR  #: One day in nanoseconds.
 WEEK = 7 * DAY  #: One week in nanoseconds.
-YEAR = 52 * WEEK  #: One year in nanoseconds.
+YEAR = 365 * DAY  #: One year in nanoseconds.
 
 SECONDS_PER_NANO = 1 / SECOND  #: Number of seconds per nanosecond.
 MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
@@ -117,10 +118,10 @@ def time_zone(tz: Optional[str]) -> TimeZone:
         DHError
     """
     try:
-        if time_zone:
-            return _JDateTimeUtils.timeZone(tz)
-        else:
+        if tz is None:
             return _JDateTimeUtils.timeZone()
+        else:
+            return _JDateTimeUtils.timeZone(tz)
     except Exception as e:
         raise DHError(e) from e
 
@@ -362,6 +363,9 @@ def to_instant(dt: ZonedDateTime) -> Instant:
     Raises:
         DHError
     """
+    if not dt:
+        return None
+
     try:
         return _JDateTimeUtils.toInstant(dt)
     except Exception as e:
@@ -381,6 +385,9 @@ def to_zdt(dt: Instant, tz: TimeZone) -> ZonedDateTime:
     Raises:
         DHError
     """
+    if not dt or not tz:
+        return None
+
     try:
         return _JDateTimeUtils.toZonedDateTime(dt, tz)
     except Exception as e:
@@ -401,6 +408,9 @@ def make_instant(date: LocalDate, time: LocalTime, tz: TimeZone) -> Instant:
     Raises:
         DHError
     """
+    if not date or not time or not tz:
+        return None
+
     try:
         return _JDateTimeUtils.toInstant(date, time, tz)
     except Exception as e:
@@ -421,6 +431,9 @@ def make_zdt(date: LocalDate, time: LocalTime, tz: TimeZone) -> ZonedDateTime:
     Raises:
         DHError
     """
+    if not date or not time or not tz:
+        return None
+
     try:
         return _JDateTimeUtils.toZonedDateTime(date, time, tz)
     except Exception as e:
@@ -493,6 +506,9 @@ def epoch_nanos(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.epochNanos(dt)
     except Exception as e:
@@ -511,6 +527,9 @@ def epoch_micros(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.epochMicros(dt)
     except Exception as e:
@@ -529,6 +548,9 @@ def epoch_millis(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.epochMillis(dt)
     except Exception as e:
@@ -547,6 +569,9 @@ def epoch_seconds(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.epochSeconds(dt)
     except Exception as e:
@@ -779,6 +804,9 @@ def to_excel_time(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> float:
     Raises:
         DHError
     """
+    if not dt or not tz:
+        return NULL_DOUBLE
+
     try:
         if not dt or not tz:
             return NULL_DOUBLE
@@ -847,6 +875,9 @@ def plus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration, 
     Raises:
         DHError
     """
+    if not dt or not period:
+        return None
+
     try:
         return _JDateTimeUtils.plus(dt, period)
     except Exception as e:
@@ -867,6 +898,9 @@ def minus_period(dt: Union[Instant, ZonedDateTime], period: Union[int, Duration,
     Raises:
         DHError
     """
+    if not dt or not period:
+        return None
+
     try:
         return _JDateTimeUtils.minus(dt, period)
     except Exception as e:
@@ -886,6 +920,9 @@ def diff_nanos(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDa
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.diffNanos(start, end)
     except Exception as e:
@@ -905,6 +942,9 @@ def diff_micros(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedD
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.diffMicros(start, end)
     except Exception as e:
@@ -924,6 +964,9 @@ def diff_millis(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedD
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_LONG
+
     try:
         return _JDateTimeUtils.diffMillis(start, end)
     except Exception as e:
@@ -943,6 +986,9 @@ def diff_seconds(start: Union[Instant, ZonedDateTime], end: Union[Instant, Zoned
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_DOUBLE
+
     try:
         return _JDateTimeUtils.diffSeconds(start, end)
     except Exception as e:
@@ -962,6 +1008,9 @@ def diff_minutes(start: Union[Instant, ZonedDateTime], end: Union[Instant, Zoned
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_DOUBLE
+
     try:
         return _JDateTimeUtils.diffMinutes(start, end)
     except Exception as e:
@@ -981,6 +1030,9 @@ def diff_days(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDat
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_DOUBLE
+
     try:
         return _JDateTimeUtils.diffDays(start, end)
     except Exception as e:
@@ -1000,6 +1052,9 @@ def diff_years(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDa
     Raises:
         DHError
     """
+    if not start or not end:
+        return NULL_DOUBLE
+
     try:
         return _JDateTimeUtils.diffYears(start, end)
     except Exception as e:
@@ -1024,6 +1079,9 @@ def is_before(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateT
     Raises:
         DHError
     """
+    if not dt1 or not dt2:
+        return False
+
     try:
         return _JDateTimeUtils.isBefore(dt1, dt2)
     except Exception as e:
@@ -1044,6 +1102,9 @@ def is_before_or_equal(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, Z
     Raises:
         DHError
     """
+    if not dt1 or not dt2:
+        return False
+
     try:
         return _JDateTimeUtils.isBeforeOrEqual(dt1, dt2)
     except Exception as e:
@@ -1064,6 +1125,9 @@ def is_after(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, ZonedDateTi
     Raises:
         DHError
     """
+    if not dt1 or not dt2:
+        return False
+
     try:
         return _JDateTimeUtils.isAfter(dt1, dt2)
     except Exception as e:
@@ -1084,6 +1148,9 @@ def is_after_or_equal(dt1: Union[Instant, ZonedDateTime], dt2: Union[Instant, Zo
     Raises:
         DHError
     """
+    if not dt1 or not dt2:
+        return False
+
     try:
         return _JDateTimeUtils.isAfterOrEqual(dt1, dt2)
     except Exception as e:
@@ -1106,6 +1173,9 @@ def nanos_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_INT
+
     try:
         return _JDateTimeUtils.nanosOfMilli(dt)
     except Exception as e:
@@ -1124,6 +1194,9 @@ def micros_of_milli(dt: Union[Instant, ZonedDateTime]) -> int:
     Raises:
         DHError
     """
+    if not dt:
+        return NULL_INT
+
     try:
         return _JDateTimeUtils.microsOfMilli(dt)
     except Exception as e:
@@ -1504,7 +1577,7 @@ def year(dt: Union[Instant, ZonedDateTime], tz: TimeZone) -> int:
         if from_jtype(dt.getClass()) == ZonedDateTime:
             dt = to_instant(dt)
 
-        return _JDateTimeUtils.monthOfYear(dt, tz)
+        return _JDateTimeUtils.year(dt, tz)
     except Exception as e:
         raise DHError(e) from e
 
@@ -1822,7 +1895,7 @@ def parse_duration(s: str, quiet: bool = False) -> Optional[Duration]:
     except Exception as e:
         raise DHError(e) from e
 
-#TODO: test
+
 def parse_epoch_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as nanoseconds since the Epoch.
 
@@ -1964,9 +2037,9 @@ def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.M
     """
     try:
         if quiet:
-            return _JDateTimeUtils.parseLocalDateQuiet(s, style)
+            return _JDateTimeUtils.parseLocalDateQuiet(s, style.value)
         else:
-            return _JDateTimeUtils.parseLocalDate(s, style)
+            return _JDateTimeUtils.parseLocalDate(s, style.value)
     except Exception as e:
         raise DHError(e) from e
 
