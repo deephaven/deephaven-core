@@ -43,7 +43,7 @@ public class TailInitializationFilter {
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
      * @param period interval between the last row in a partition (as converted by
-     *        {@link DateTimeUtils#parseDuratioNanos(String)})
+     *        {@link DateTimeUtils#parseDurationNanos(String)})
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
