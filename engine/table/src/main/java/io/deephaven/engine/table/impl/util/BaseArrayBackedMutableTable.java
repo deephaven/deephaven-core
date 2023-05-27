@@ -281,6 +281,11 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         void waitForSequence(long sequence) {
+            if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+                throw new UnsupportedOperationException(
+                        "Attempted to wait for an input table edit to complete from a listener or notification. "
+                                + "This is unsupported, because it will block the update graph from making progress.");
+            }
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 // We're holding the lock. currentTable had better be refreshing. Wait on its UGP condition
                 // in order to allow updates.
