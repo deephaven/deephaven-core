@@ -116,7 +116,7 @@ public class StaticCalendarMethods {
         return Calendars.calendar().dayOfWeek(date);
     }
 
-    public static ZoneId timeZone() {
+    public static ZoneId calendarTimeZone() {
         return Calendars.calendar().timeZone();
     }
 

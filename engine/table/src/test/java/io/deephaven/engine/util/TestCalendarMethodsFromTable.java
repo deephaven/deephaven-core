@@ -106,9 +106,7 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
         assertEquals(calendar.dayOfWeek(date2),
                 getVal(emptyTable(1).update("dayOfWeek = dayOfWeek(date2)"), "dayOfWeek"));
 
-
-        assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = timeZone()"), "timeZone"));
-
+        assertEquals(calendar.timeZone(), getVal(emptyTable(1).update("timeZone = calendarTimeZone()"), "timeZone"));
 
         assertEquals(calendar.isBusinessDay(),
                 getVal(emptyTable(1).update("isBusinessDay = isBusinessDay()"), "isBusinessDay"));

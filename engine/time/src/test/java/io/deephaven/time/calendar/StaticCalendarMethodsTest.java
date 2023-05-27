@@ -52,7 +52,7 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
         assertEquals(calendar.dayOfWeek(time2), StaticCalendarMethods.dayOfWeek(time2));
         assertEquals(calendar.dayOfWeek(date2), StaticCalendarMethods.dayOfWeek(date2));
 
-        assertEquals(calendar.timeZone(), StaticCalendarMethods.timeZone());
+        assertEquals(calendar.timeZone(), StaticCalendarMethods.calendarTimeZone());
     }
 
     public void testBusinessCalendarMethods() {
