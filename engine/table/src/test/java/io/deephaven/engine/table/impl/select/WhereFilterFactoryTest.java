@@ -16,12 +16,12 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 
 public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
@@ -286,7 +286,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 null, 0, null, '0');
         checkResult("FALS3", false, false, false, false, false, false, false, false, false, (byte) 0, (short) 0, 0, 0,
                 null, 0, null, '0');
-
         checkDateRange("18:43", makeInstant("18:43"), makeInstant("18:44"));
         checkDateRange("18:43:40", makeInstant("18:43:40"), makeInstant("18:43:41"));
         checkDateRange("18:43:40.100", makeInstant("18:43:40.100"), makeInstant("18:43:40.101"));
@@ -299,7 +298,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     private Instant makeInstant(String timeStr) {
-        ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
+        ZonedDateTime zdt = ZonedDateTime.now(TimeZone.getDefault().toZoneId()).truncatedTo(ChronoUnit.DAYS)
                 .plus(DateTimeUtils.parseDurationNanos(timeStr), ChronoUnit.NANOS);
         return zdt.toInstant();
     }
