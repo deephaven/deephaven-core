@@ -90,7 +90,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/pull/3506): Update this advice for multiple update graphs,
-    // and on the delete methods, as well.
+    // and on the blocking delete methods, as well.
     /**
      * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
      * rows, if supported.
@@ -105,7 +105,24 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     void add(Table newData) throws IOException;
 
     /**
-     * Delete the keys contained in the parameter {@code table} from this input table.
+     * Write {@code newData} to this table. Added rows with keys that match existing rows will instead replace those
+     * rows, if supported and {@code allowEdits == true}.
+     * <p>
+     * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
+     * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
+     * notification}-dispatched callback as long as {@code table} is already
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency#satisfied(long) satisfied} on the current
+     * cycle.
+     *
+     * @param newData The data to write to this table
+     * @param allowEdits Whether added rows with keys that match existing rows will instead replace those rows, or
+     *        result in an error
+     * @param listener The listener for asynchronous results
+     */
+    void addAsync(Table newData, boolean allowEdits, InputTableStatusListener listener);
+
+    /**
+     * Delete the keys contained in {@code table} from this input table.
      * <p>
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
@@ -120,17 +137,35 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
     }
 
     /**
-     * Delete the keys contained in the parameter {@code table} from this input table.
+     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
      * <p>
      * This method will block until the rows are deleted. As a result, this method is not suitable for use from a
      * {@link io.deephaven.engine.table.TableListener table listener} or any other
      * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}-dispatched callback.
      *
-     * @param table The rows to delete
+     * @param table Table containing the rows to delete
+     * @param rowSet The rows to delete
      * @throws IOException If a problem occurred while deleting the rows
      * @throws UnsupportedOperationException If this table does not support deletes
      */
     default void delete(Table table, TrackingRowSet rowSet) throws IOException {
+        throw new UnsupportedOperationException("Table does not support deletes");
+    }
+
+    /**
+     * Delete the keys contained in {@code table.subTable(rowSet)} from this input table.
+     * <p>
+     * This method will <em>not</em> block, and can be safely used from a {@link io.deephaven.engine.table.TableListener
+     * table listener} or any other {@link io.deephaven.engine.updategraph.NotificationQueue.Notification
+     * notification}-dispatched callback as long as {@code table} is already
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency#satisfied(long) satisfied} on the current
+     * cycle.
+     *
+     * @param table Table containing the rows to delete
+     * @param rowSet The rows to delete
+     * @throws UnsupportedOperationException If this table does not support deletes
+     */
+    default void deleteAsync(Table table, TrackingRowSet rowSet, InputTableStatusListener listener) {
         throw new UnsupportedOperationException("Table does not support deletes");
     }
 
