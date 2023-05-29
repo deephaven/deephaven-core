@@ -23,8 +23,8 @@
 #include "deephaven/client/subscription/subscription_handle.h"
 #include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/dhcore/chunk/chunk_maker.h"
+#include "deephaven/dhcore/clienttable/client_table.h"
 #include "deephaven/dhcore/container/row_sequence.h"
-#include "deephaven/dhcore/table/table.h"
 #include "deephaven/dhcore/ticking/ticking.h"
 #include "deephaven/dhcore/utility/callbacks.h"
 #include "deephaven/dhcore/utility/utility.h"
@@ -54,8 +54,8 @@ using deephaven::dhcore::container::RowSequence;
 using deephaven::dhcore::container::RowSequenceBuilder;
 using deephaven::dhcore::container::RowSequenceIterator;
 using deephaven::dhcore::ElementTypeId;
-using deephaven::dhcore::table::Schema;
-using deephaven::dhcore::table::Table;
+using deephaven::dhcore::clienttable::Schema;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::ticking::TickingUpdate;
 using deephaven::dhcore::utility::Callback;

@@ -16,7 +16,7 @@
 
 using deephaven::dhcore::column::ColumnSource;
 using deephaven::dhcore::chunk::AnyChunk;
-using deephaven::dhcore::table::Schema;
+using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::ticking::BarrageProcessor;
 using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::Callback;
