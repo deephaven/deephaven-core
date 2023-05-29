@@ -454,8 +454,7 @@ void TableHandleImpl::lookupHelper(const std::string &columnName, std::initializ
   throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
 }
 
-void TableHandleImpl::bindToVariableAsync(std::string variable,
-    std::shared_ptr<SFCallback<>> callback) {
+void TableHandleImpl::bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) {
   struct cb_t final : public SFCallback<BindTableToVariableResponse> {
     explicit cb_t(std::shared_ptr<SFCallback<>> outerCb) : outerCb_(std::move(outerCb)) {}
 
@@ -463,14 +462,20 @@ void TableHandleImpl::bindToVariableAsync(std::string variable,
       outerCb_->onSuccess();
     }
 
-    void onFailure(std::exception_ptr ep) override {
+    void onFailure(std::exception_ptr ep) final {
       outerCb_->onFailure(std::move(ep));
     }
 
     std::shared_ptr<SFCallback<>> outerCb_;
   };
+  if (!managerImpl_->consoleId().has_value()) {
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+        "Client was created without specifying a script language")));
+    callback->onFailure(std::move(eptr));
+    return;
+  }
   auto cb = std::make_shared<cb_t>(std::move(callback));
-  managerImpl_->server()->bindToVariableAsync(managerImpl_->consoleId(), ticket_,
+  managerImpl_->server()->bindToVariableAsync(*managerImpl_->consoleId(), ticket_,
       std::move(variable), std::move(cb));
 }
 
