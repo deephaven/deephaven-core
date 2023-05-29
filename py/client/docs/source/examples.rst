@@ -179,6 +179,73 @@ Execute a script server side
     table = session.open_table("table")
     print(table.to_arrow())
 
+Subscribe to a ticking table
+############################
+
+The `pydeephaven_ticking` package can be used to subscribe to ticking tables. This is useful for getting asynchronous callbacks when
+they change. The package maintains a complete local copy of the table and notifies callers when the table changes.
+
+The listener can be specified either as a python function or as an implementation of the TableListener abstract base class. In the
+case of implementing
+:py:class:`TableListener <pydeephaven.ticking.TableListener>`
+TableListener, the caller needs to implement
+:py:func:`on_update <pydeephaven.ticking.TableListener.on_error>`
+and
+:py:func:`on_update <pydeephaven.ticking.TableListener.on_error>`
+
+as shown in the example::
+
+    import time
+    from pydeephaven import Session
+    from pydeephaven_ticking import TableListener, TableUpdate, listen
+
+    session = Session()
+    table = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
+
+    class MyListener(TableListener):
+        def on_update(self, update: TableUpdate) -> None:
+            self._show_deltas("removes", update.removed())
+            self._show_deltas("adds", update.added())
+            self._show_deltas("modified-prev", update.modified_prev())
+            self._show_deltas("modified", update.modified())
+
+        def on_error(self, error: Exception):
+            print(f"Error happened: {error}")
+
+        def _show_deltas(self, what: str, dict: Dict[str, pa.Array]):
+            if len(dict) == 0:
+                return
+
+            print(f"*** {what} ***")
+            for name, data in dict.items():
+                print(f"name={name}, data={data}")
+
+    listen_handle = listen(table, MyListener())
+    # Start processing data in another thread
+    listen_handle.start()
+    time.sleep(15)  # simulate doing other work for 15 seconds
+    listen_handle.stop()
+
+The
+:py:func:`on_update <pydeephaven.ticking.table_listener.TableListener.on_update>`
+callback method is invoked with a
+:py:class:`TableUpdate <pydeephaven.ticking.table_listener.TableUpdate>` argument.
+:py:class:`TableUpdate <pydeephaven_ticking.table_listener.TableUpdate>` argument.
+:py:class:`TableUpdate <pydeephaven.ticking.table_listener.TableUpdate>`
+has methods
+`added()`,
+`removed()`,
+`modified_prev()`, and
+`modified()`.
+These methods return the data that was added, removed, or modified in this update.
+`modified_prev()` returns the data as it was before the modify operation happened, whereas
+`modified()` returns the modified data. This can be useful e.g. for calculations like keeping a running sum, where it is useful to know
+the "old" value and the new value.
+
+Each of the above methods has a "chunked" variant that returns a generator. This may be useful if the client is processing so much data
+that it would like to handle it a chunk at a time. The chunked variants are `added_chunks()`, `removed_chunks()`, `modified_prev_chunks()`,
+and `modified_chunks()`.
+
 Error handling
 ##############
 

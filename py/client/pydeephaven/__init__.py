@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
 """Deephaven Python Client (`pydeephaven`) is a Python API built on top of Deephaven's highly efficient Open API which is
@@ -7,7 +7,7 @@ based on gRPC and Apache Arrow. It allows Python applications to remotely connec
 export/import data with the server, run Python scripts on the server, and execute powerful queries on data tables.
 
 Because Deephaven data servers and Deephaven clients including pydeephaven exchange data in the Apache Arrow format,
-pydeephaven is able to leverage 'pyarrow' - the Python bindings of Arrow (ttps://arrow.apache.org/docs/python/) for
+pydeephaven is able to leverage 'pyarrow' - the Python bindings of Arrow (https://arrow.apache.org/docs/python/) for
 data representation and integration with other data analytic tools such as NumPy, Pandas, etc.
 
 
@@ -27,6 +27,11 @@ from .session import Session
 from .dherror import DHError
 from ._table_interface import SortDirection
 from .query import Query
+
+try:
+    import pydeephaven_ticking as table_listener
+except ImportError:
+    pass
 
 __all__ = ["Session", "DHError", "SortDirection"]
 __version__ = "0.26.0"

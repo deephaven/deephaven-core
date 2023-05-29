@@ -16,7 +16,7 @@ class ArrowFlightService:
         self._flight_client = flight_client
 
     def import_table(self, data: pa.Table) -> Table:
-        """Uploads a pyarrow table into Deephaven via. Flight do_put."""
+        """Uploads a pyarrow table into Deephaven via Flight do_put."""
         try:
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
                 raise DHError("source data must be either a pa table or RecordBatch.")
@@ -39,7 +39,7 @@ class ArrowFlightService:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 
     def do_get_table(self, table: Table) -> pa.Table:
-        """Gets a snapshot of a Table via. Flight do_get."""
+        """Gets a snapshot of a Table via Flight do_get."""
         try:
             flight_ticket = paflight.Ticket(table.ticket.ticket)
             # No need to add headers/metadata here via the options argument;
@@ -48,3 +48,19 @@ class ArrowFlightService:
             return reader.read_all()
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
+
+    def do_exchange(self):
+        """Starts an Arrow do_exchange operation.
+
+        Returns:
+            The corresonding Arrow FlightStreamWriter and FlightStreamReader.
+        """    
+        try:
+            desc =  pa.flight.FlightDescriptor.for_command(b"dphn")
+            options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
+            writer, reader = self._flight_client.do_exchange(desc, options)
+            return writer, reader
+
+        except Exception as e:
+            raise DHError("failed to perform a flight DoExchange on the table.") from e
+            
