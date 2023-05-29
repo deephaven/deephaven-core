@@ -1,8 +1,6 @@
 #include <memory>
 #include <exception>
 #include <iostream>
-#include <typeinfo>
-#include <cstdint>
 #include <sstream>
 #include <string>
 
@@ -15,21 +13,11 @@
 #include <Rcpp.h>
 
 
-// **********************
-
-#include <arrow/array.h>
-#include <arrow/scalar.h>
-using deephaven::client::Column;
-
-
 // ######################### DH WRAPPERS, API #########################
 
 class TableHandleWrapper {
 public:
-    TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)),
-                                                                   internal_stream(std::make_shared<ArrowArrayStream>()) {
-        fillStream();
-    };
+    TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
 
     TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
@@ -48,20 +36,7 @@ public:
     };
 
     SEXP getStream() {
-        Rcpp::XPtr<ArrowArrayStream> ptr(internal_stream.get(), true);
-        return ptr;
-    };
-
-    void print() {
-        std::cout << internal_tbl_hdl.stream(true) << '\n';
-    };
-
-    void printStream() {
-        std::cout << internal_stream << "\n";
-    };
-
-private:
-    void fillStream() {
+        ArrowArrayStream* stream = new ArrowArrayStream;
 
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
@@ -73,10 +48,19 @@ private:
         arrow::Result<std::shared_ptr<arrow::RecordBatchReader>> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches);
 
         //export to C struct
-        arrow::ExportRecordBatchReader(record_batch_reader.ValueOrDie(), internal_stream.get());
+        arrow::ExportRecordBatchReader(record_batch_reader.ValueOrDie(), stream);
+
+        // wrap pointer in external pointer and return
+        Rcpp::XPtr<ArrowArrayStream> xptr(stream, true);
+        return xptr;
     };
+
+    void print() {
+        std::cout << internal_tbl_hdl.stream(true) << '\n';
+    };
+
+private:
     deephaven::client::TableHandle internal_tbl_hdl;
-    std::shared_ptr<ArrowArrayStream> internal_stream;
 };
 
 
@@ -117,9 +101,8 @@ RCPP_MODULE(ClientModule) {
     .method("view", &TableHandleWrapper::view)
     .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("update", &TableHandleWrapper::update)
-    .method("get_stream", &TableHandleWrapper::getStream)
     .method("print", &TableHandleWrapper::print)
-    .method("print_stream", &TableHandleWrapper::printStream)
+    .method(".get_stream", &TableHandleWrapper::getStream)
     ;
 
     class_<ClientWrapper>("Client")
