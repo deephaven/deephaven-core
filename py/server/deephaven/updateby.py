@@ -118,7 +118,7 @@ def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -187,7 +187,7 @@ def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         ems_next = a * ems_last + value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -256,7 +256,7 @@ def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         em_val_next = min(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -325,7 +325,7 @@ def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         em_val_next = max(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -383,6 +383,78 @@ def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
                 j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, ts_col, time_scale, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Max UpdateByOperation.") from e
+
+def emstd_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+             op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
+    ticks as the decay unit.
+
+    The formula used is
+        a = e^(-1 / time_scale_ticks)
+        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+        ema = a * prevEma + x
+        std = sqrt(variance)
+
+    Args:
+        time_scale_ticks (float): the decay rate in ticks
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
+        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(time_scale_ticks, *cols))
+        else:
+            return UpdateByOperation(
+                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, time_scale_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a tick-decay EM Std UpdateByOperation.") from e
+
+
+def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+             op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
+    time as the decay unit.
+
+    The formula used is
+        a = e^(-dt / timeDecay)
+        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+        ema = a * prevEma + x
+        std = sqrt(variance)
+
+     Args:
+        ts_col (str): the column in the source table to use for timestamps
+        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
+        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+     """
+    try:
+        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        cols = to_sequence(cols)
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(ts_col, time_scale, *cols))
+        else:
+            return UpdateByOperation(
+                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, ts_col, time_scale, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a time-decay EM Std UpdateByOperation.") from e
 
 
 def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
