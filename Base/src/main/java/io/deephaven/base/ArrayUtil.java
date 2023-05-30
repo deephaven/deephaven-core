@@ -13,7 +13,7 @@ public class ArrayUtil {
 
     /**
      * The maximum array size is determined by the JVM and in practice is less than Integer.MAX_VALUE. (See note at
-     * {@link jdk.internal.util.ArraysSupport#SOFT_MAX_ARRAY_LENGTH}.)
+     * {@code jdk.internal.util.ArraysSupport#SOFT_MAX_ARRAY_LENGTH}.)
      */
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;

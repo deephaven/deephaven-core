@@ -92,7 +92,7 @@ public final class MappedCompressedString extends AbstractCompressedString<Mappe
     }
 
     /**
-     * Add the specified <key, value> pair if no mapping already exists for key.
+     * Add the specified &lt;key, value&gt; pair if no mapping already exists for key.
      * 
      * @param key A non-null Reference to an arbitrary object whose reachability determines mapping validity.
      * @param potentialValue The value to insert if none already exists. Must not equal NULL_MAPPING_VALUE.

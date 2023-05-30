@@ -159,7 +159,7 @@ public class CompareUtils {
     }
 
     /**
-     * You can't do double1 > double2 because floating point numbers are not exact values. Just make sure that x-y is
+     * You can't do double1 &gt; double2 because floating point numbers are not exact values. Just make sure that x-y is
      * greater than some allowable error factor for equality
      *
      * @param x
@@ -191,8 +191,8 @@ public class CompareUtils {
     }
 
     /**
-     * You can't do double1 < double2 because floating point numbers are not exact values. Just make sure that y - x is
-     * greater than some allowable error factor for equality
+     * You can't do double1 &lt; double2 because floating point numbers are not exact values. Just make sure that y - x
+     * is greater than some allowable error factor for equality
      *
      * @param x
      * @param y

@@ -20,11 +20,13 @@ import java.util.Set;
  * A ModelFarm implementation for evaluating a model upon request, retrieving a snapshot of data for all keys under a
  * single {@link UpdateGraphProcessor} lock.
  *
- * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
+ * TODO None of the following classes exist any more - should we remove this too?
+ * 
+ * @param <KEYTYPE> The type of the keys (e.g. {@code io.deephaven.modelfarm.fitterfarm.FitScope}).
  * @param <DATATYPE> The type of the data (e.g.
- *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataOptionPrices}.
+ *        {@code io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataOptionPrices}.
  * @param <ROWDATAMANAGERTYPE> The type of the RowDataManager (e.g.
- *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
+ *        {@code io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
  */
 public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
         extends ModelFarmBase<DATATYPE> {

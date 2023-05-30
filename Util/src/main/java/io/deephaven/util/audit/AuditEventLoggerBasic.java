@@ -4,9 +4,10 @@
 package io.deephaven.util.audit;
 
 /**
- * An simple interface that hides the context necessary for creating and logging {@link AuditEvent}s. Useful so that
- * callers are only responsible for the core parts of the event, namely {@link AuditEvent#getEvent()} and
- * {@link AuditEvent#getDetails()}.
+ * TODO is this necessary to keep? The AuditEvent class doesn't exist and this can't be used anywhere. A simple
+ * interface that hides the context necessary for creating and logging {@code AuditEvent}s. Useful so that callers are
+ * only responsible for the core parts of the event, namely {@code AuditEvent#getEvent()} and
+ * {@code AuditEvent#getDetails()}.
  */
 public interface AuditEventLoggerBasic {
     void log(String event, String details);

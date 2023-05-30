@@ -203,7 +203,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      * {@code FitDataPopulator} with the appropriate value for usePrev.
      *
      * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
-     * @return A function that runs a {@link }
+     * @return A function that runs an operation which accepts a {@link QueryDataRetrievalOperation} and a {@link Table}.
      */
     @SuppressWarnings("WeakerAccess")
     protected static ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> getDoLockedConsumer(
