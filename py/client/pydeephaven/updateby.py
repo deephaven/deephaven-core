@@ -16,10 +16,10 @@ _GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
 _GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn
 _GrpcUpdateBySpec = _GrpcUpdateByColumn.UpdateBySpec
 _GrpcUpdateByEma = _GrpcUpdateBySpec.UpdateByEma
-_GrpcUpdateByEmaOptions = table_pb2.UpdateByEmaOptions
-_GrpcUpdateByEmaTimescale = table_pb2.UpdateByEmaTimescale
-_GrpcUpdateByEmaTicks = _GrpcUpdateByEmaTimescale.UpdateByEmaTicks
-_GrpcUpdateByEmaTime = _GrpcUpdateByEmaTimescale.UpdateByEmaTime
+_GrpcUpdateByEmOptions = table_pb2.UpdateByEmOptions
+_GrpcUpdateByWindowScale = table_pb2.UpdateByWindowScale
+_GrpcUpdateByWindowTicks = _GrpcUpdateByWindowScale.UpdateByWindowTicks
+_GrpcUpdateByWindowTime = _GrpcUpdateByWindowScale.UpdateByWindowTime
 _GrpcMathContext = table_pb2.MathContext
 
 
@@ -81,10 +81,9 @@ class OperationControl(_UpdateByBase):
         self.big_value_context = big_value_context
 
     def make_grpc_message(self) -> Any:
-        return _GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
-                                       big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
-                                                                          rounding_mode=self.big_value_context.value[
-                                                                              1]))
+        return _GrpcUpdateByEmOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
+                                      big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
+                                                                         rounding_mode=self.big_value_context.value[1]))
 
 
 class UpdateByOperation(_UpdateByBase):
@@ -178,7 +177,7 @@ def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
+def ema_tick_decay(time_scale_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -188,7 +187,7 @@ def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -201,8 +200,9 @@ def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
         DHError
     """
     try:
-        timescale = _GrpcUpdateByEmaTimescale(ticks=_GrpcUpdateByEmaTicks(ticks=time_scale_ticks))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
+        window_scale = _GrpcUpdateByWindowScale(ticks=_GrpcUpdateByWindowTicks(ticks=time_scale_ticks))
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None,
+                                  window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
@@ -234,9 +234,9 @@ def ema_time_decay(ts_col: str, time_scale: int, cols: Union[str, List[str]],
         DHError
     """
     try:
-        timescale = _GrpcUpdateByEmaTimescale(time=_GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
-
+        window_scale = _GrpcUpdateByWindowScale(time=_GrpcUpdateByWindowTime(column=ts_col, period_nanos=time_scale))
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None,
+                                  window_scale=window_scale)
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=to_list(cols))
         return UpdateByOperation(ub_column=ub_column)
