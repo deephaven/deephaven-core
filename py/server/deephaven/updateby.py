@@ -118,7 +118,7 @@ def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -187,7 +187,7 @@ def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         ems_next = a * ems_last + value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -256,7 +256,7 @@ def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         em_val_next = min(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -325,7 +325,7 @@ def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
         em_val_next = max(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -390,13 +390,13 @@ def emstd_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     ticks as the decay unit.
 
     The formula used is
-        a = e^(-1 / tickDecay)
+        a = e^(-1 / time_scale_ticks)
         variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
         ema = a * prevEma + x
         std = sqrt(variance)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        time_scale_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
