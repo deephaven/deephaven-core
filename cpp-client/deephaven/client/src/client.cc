@@ -36,6 +36,7 @@ using deephaven::client::impl::ClientImpl;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::okOrThrow;
+using deephaven::dhcore::utility::base64Encode;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::SFCallback;
 using deephaven::dhcore::utility::SimpleOstringstream;
@@ -46,11 +47,40 @@ namespace {
 void printTableData(std::ostream &s, const TableHandle &tableHandle, bool wantHeaders);
 }  // namespace
 
-Client Client::connect(const std::string &target) {
+ClientOptions::ClientOptions() {
+  setDefaultAuthentication();
+  setSessionType("python");
+}
+
+ClientOptions::~ClientOptions() = default;
+
+ClientOptions &ClientOptions::setDefaultAuthentication() {
+  authorizationValue_ = "Anonymous";
+  return *this;
+}
+
+ClientOptions &ClientOptions::setBasicAuthentication(const std::string &username, const std::string &password) {
+  auto token = username + ':' + password;
+  authorizationValue_ = "Basic " + base64Encode(token);
+  return *this;
+}
+
+ClientOptions &ClientOptions::setCustomAuthentication(const std::string &authenticationType,
+    const std::string &authenticationToken) {
+  authorizationValue_ = authenticationType + " " + authenticationToken;
+  return *this;
+}
+
+ClientOptions &ClientOptions::setSessionType(const std::string &sessionType) {
+  this->sessionType_ = sessionType;
+  return *this;
+}
+
+Client Client::connect(const std::string &target, const ClientOptions &options) {
   auto executor = Executor::create();
   auto flightExecutor = Executor::create();
-  auto server = Server::createFromTarget(target);
-  auto impl = ClientImpl::create(std::move(server), executor, flightExecutor);
+  auto server = Server::createFromTarget(target, options.authorizationValue_);
+  auto impl = ClientImpl::create(std::move(server), executor, flightExecutor, options.sessionType_);
   return Client(std::move(impl));
 }
 
@@ -98,6 +128,12 @@ TableHandle TableHandleManager::timeTable(std::chrono::system_clock::time_point 
   auto stNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(startTime.time_since_epoch()).count();
   auto dNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(period).count();
   return timeTable(stNanos, dNanos);
+}
+
+void TableHandleManager::runScript(std::string code) const {
+  auto res = SFCallback<>::createForFuture();
+  impl_->runScriptAsync(std::move(code), std::move(res.first));
+  (void)res.second.get();
 }
 
 namespace {

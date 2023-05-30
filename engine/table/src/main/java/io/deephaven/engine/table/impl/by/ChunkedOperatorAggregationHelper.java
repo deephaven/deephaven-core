@@ -25,9 +25,6 @@ import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sort.findruns.IntFindRunsKernel;
@@ -231,7 +228,7 @@ public class ChunkedOperatorAggregationHelper {
                     (IncrementalOperatorAggregationStateManager) stateManager;
             incrementalStateManager.startTrackingPrevValues();
 
-            final boolean isStream = input.isStream();
+            final boolean isBlink = input.isBlink();
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("by(" + aggregationContextFactory + ")", input, result) {
                         @ReferentialIntegrity
@@ -250,7 +247,7 @@ public class ChunkedOperatorAggregationHelper {
                         public void onUpdate(@NotNull final TableUpdate upstream) {
                             incrementalStateManager.beginUpdateCycle();
 
-                            final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
                             }
@@ -322,11 +319,11 @@ public class ChunkedOperatorAggregationHelper {
         return stateManager;
     }
 
-    private static TableUpdate adjustForStreaming(@NotNull final TableUpdate upstream) {
-        // Streaming aggregations never have modifies or shifts from their parent:
+    private static TableUpdate adjustForBlinkTable(@NotNull final TableUpdate upstream) {
+        // Blink table aggregations never have modifies or shifts from their parent:
         Assert.assertion(upstream.modified().isEmpty() && upstream.shifted().empty(),
                 "upstream.modified.empty() && upstream.shifted.empty()");
-        // Streaming aggregations ignore removes:
+        // Blink table aggregations ignore removes:
         if (upstream.removed().isEmpty()) {
             return upstream;
         }
@@ -1921,7 +1918,7 @@ public class ChunkedOperatorAggregationHelper {
         if (table.isRefreshing()) {
             ac.startTrackingPrevValues();
 
-            final boolean isStream = table.isStream();
+            final boolean isBlink = table.isBlink();
             final TableUpdateListener listener =
                     new BaseTable.ListenerImpl("groupBy(" + aggregationContextFactory + ")", table, result) {
 
@@ -1934,7 +1931,7 @@ public class ChunkedOperatorAggregationHelper {
 
                         @Override
                         public void onUpdate(@NotNull final TableUpdate upstream) {
-                            final TableUpdate upstreamToUse = isStream ? adjustForStreaming(upstream) : upstream;
+                            final TableUpdate upstreamToUse = isBlink ? adjustForBlinkTable(upstream) : upstream;
                             if (upstreamToUse.empty()) {
                                 return;
                             }
@@ -2027,7 +2024,7 @@ public class ChunkedOperatorAggregationHelper {
                                 }
 
                                 final int newResultSize =
-                                        preserveEmpty || (isStream && lastSize != 0) || table.size() != 0 ? 1 : 0;
+                                        preserveEmpty || (isBlink && lastSize != 0) || table.size() != 0 ? 1 : 0;
                                 final TableUpdateImpl downstream = new TableUpdateImpl();
                                 downstream.shifted = RowSetShiftData.EMPTY;
                                 if ((lastSize == 0 && newResultSize == 1)) {

@@ -164,7 +164,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String scriptName = script.substring(0, script.indexOf("."));
 
         log.info("Executing script: " + script);
-        evaluateScript(FileUtils.readTextFile(file), scriptName);
+        evaluateScript(FileUtils.readTextFile(file), scriptName).throwIfError();
     }
 
     private final Set<String> executedScripts = new HashSet<>();
@@ -526,6 +526,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
+                "import io.deephaven.api.updateby.UpdateByControl;\n" +
+                "import io.deephaven.api.updateby.OperationControl;\n" +
+                "import io.deephaven.api.updateby.DeltaControl;\n" +
+                "import io.deephaven.api.updateby.BadDataBehavior;\n" +
 
                 String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

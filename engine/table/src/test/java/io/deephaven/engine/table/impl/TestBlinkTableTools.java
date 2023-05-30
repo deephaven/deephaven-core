@@ -20,7 +20,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.i;
 
-public class TestStreamTableTools {
+public class TestBlinkTableTools {
     @Before
     public void setUp() throws Exception {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -33,38 +33,38 @@ public class TestStreamTableTools {
     }
 
     @Test
-    public void testStreamToAppendOnlyTable() {
+    public void testBlinkToAppendOnlyTable() {
         final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
         final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
         final DateTime dt3 = DateTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
 
-        final QueryTable streamTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7),
+        final QueryTable blinkTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7),
                 doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));
-        streamTable.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true);
+        blinkTable.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
 
-        final Table appendOnly = StreamTableTools.streamToAppendOnlyTable(streamTable);
+        final Table appendOnly = BlinkTableTools.blinkToAppendOnly(blinkTable);
 
-        assertTableEquals(streamTable, appendOnly);
+        assertTableEquals(blinkTable, appendOnly);
         TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
         TestCase.assertTrue(appendOnly.isFlat());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            RowSet removed = streamTable.getRowSet().copyPrev();
-            ((WritableRowSet) streamTable.getRowSet()).clear();
-            TstUtils.addToTable(streamTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt2),
+            RowSet removed = blinkTable.getRowSet().copyPrev();
+            ((WritableRowSet) blinkTable.getRowSet()).clear();
+            TstUtils.addToTable(blinkTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt2),
                     col("B", true));
-            streamTable.notifyListeners(i(7), removed, i());
+            blinkTable.notifyListeners(i(7), removed, i());
         });
 
         assertTableEquals(TableTools.newTable(intCol("I", 7, 1), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI),
                 dateTimeCol("DT", dt1, dt2), col("B", true, true)), appendOnly);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            RowSet removed = streamTable.getRowSet().copyPrev();
-            ((WritableRowSet) streamTable.getRowSet()).clear();
-            TstUtils.addToTable(streamTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt3),
+            RowSet removed = blinkTable.getRowSet().copyPrev();
+            ((WritableRowSet) blinkTable.getRowSet()).clear();
+            TstUtils.addToTable(blinkTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt3),
                     col("B", false));
-            streamTable.notifyListeners(i(7), removed, i());
+            blinkTable.notifyListeners(i(7), removed, i());
         });
         assertTableEquals(
                 TableTools.newTable(intCol("I", 7, 1, 2), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI, Math.E),

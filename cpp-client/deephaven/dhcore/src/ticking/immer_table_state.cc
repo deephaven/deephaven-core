@@ -217,9 +217,9 @@ struct FlexVectorFromTypeMaker final {
 };
 
 std::vector<std::unique_ptr<AbstractFlexVectorBase>> makeEmptyFlexVectorsFromSchema(const Schema &schema) {
-  auto ncols = schema.columns().size();
+  auto ncols = schema.numCols();
   auto result = makeReservedVector<std::unique_ptr<AbstractFlexVectorBase>>(ncols);
-  for (const auto &[name, typeId] : schema.columns()) {
+  for (auto typeId : schema.types()) {
     FlexVectorFromTypeMaker fvm;
     visitElementTypeId(typeId, &fvm);
     result.push_back(std::move(fvm.result_));

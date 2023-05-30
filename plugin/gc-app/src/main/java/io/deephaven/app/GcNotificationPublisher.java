@@ -12,7 +12,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
-import io.deephaven.stream.StreamToTableAdapter;
+import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -68,8 +68,7 @@ final class GcNotificationPublisher implements StreamPublisher {
 
     GcNotificationPublisher() {
         this.vmStartMillis = ManagementFactory.getRuntimeMXBean().getStartTime();
-        // noinspection unchecked
-        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     @Override
@@ -120,8 +119,7 @@ final class GcNotificationPublisher implements StreamPublisher {
 
     private void flushInternal() {
         consumer.accept(chunks);
-        // noinspection unchecked
-        chunks = StreamToTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
+        chunks = StreamToBlinkTableAdapter.makeChunksForDefinition(DEFINITION, CHUNK_SIZE);
     }
 
     public void acceptFailure(Throwable e) {

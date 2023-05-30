@@ -3,7 +3,7 @@
  */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharStreamSortedFirstOrLastChunkedOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharBlinkSortedFirstOrLastChunkedOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.by;
@@ -28,9 +28,9 @@ import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Chunked aggregation operator for sorted first/last-by using a byte sort-column on stream tables.
+ * Chunked aggregation operator for sorted first/last-by using a byte sort-column on blink tables.
  */
-public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedStreamFirstOrLastChunkedOperator {
+public class ByteBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBlinkFirstOrLastChunkedOperator {
 
     private final boolean isFirst;
     private final boolean isCombo;
@@ -38,7 +38,7 @@ public class ByteStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedS
 
     private RowSetBuilderRandom changedDestinationsBuilder;
 
-    ByteStreamSortedFirstOrLastChunkedOperator(
+    ByteBlinkSortedFirstOrLastChunkedOperator(
             final boolean isFirst,
             final boolean isCombo,
             @NotNull final MatchPair[] resultPairs,

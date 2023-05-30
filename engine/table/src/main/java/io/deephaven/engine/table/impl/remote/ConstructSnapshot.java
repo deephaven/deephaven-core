@@ -22,6 +22,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
+import io.deephaven.proto.backplane.grpc.Config;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
@@ -79,7 +80,10 @@ public class ConstructSnapshot {
     private static final int MAX_CONCURRENT_ATTEMPT_DURATION_MILLIS = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttemptDurationMillis", 5000);
 
-    public static final int SNAPSHOT_CHUNK_SIZE = ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
+    // TODO (deephaven-core#188): use ChunkPoolConstants.LARGEST_POOL_CHUNK_CAPACITY when JS API allows multiple batches
+    // default enables more than 100MB of 8-byte values in a single record batch
+    public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
+            .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
     /**
      * Holder for thread-local state.

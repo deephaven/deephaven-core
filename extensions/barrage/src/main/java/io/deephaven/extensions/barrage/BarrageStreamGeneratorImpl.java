@@ -771,7 +771,7 @@ public class BarrageStreamGeneratorImpl implements
         final int maxMessageSize =
                 view.clientMaxMessageSize() > 0 ? view.clientMaxMessageSize() : DEFAULT_MESSAGE_SIZE_LIMIT;
 
-        // TODO: remove this when JS API can accept multiple batches
+        // TODO (deephaven-core#188): remove this when JS API can accept multiple batches
         boolean sendAllowed = numRows <= batchSize;
 
         while (offset < numRows) {

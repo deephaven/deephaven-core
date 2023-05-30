@@ -24,15 +24,16 @@ import java.util.Arrays;
  * Base-class for stream first/last-by chunked operators that need to copy data from source columns to result columns
  * with a permutation on the redirected indices.
  */
-public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends BaseStreamFirstOrLastChunkedOperator {
+public abstract class CopyingPermutedBlinkFirstOrLastChunkedOperator extends BaseBlinkFirstOrLastChunkedOperator {
     /**
      * Permute kernels, parallel to {@link #outputColumns}.
      */
     protected final PermuteKernel[] permuteKernels;
 
-    public CopyingPermutedStreamFirstOrLastChunkedOperator(@NotNull final MatchPair[] resultPairs,
-            @NotNull final Table streamTable) {
-        super(resultPairs, streamTable);
+    public CopyingPermutedBlinkFirstOrLastChunkedOperator(
+            @NotNull final MatchPair[] resultPairs,
+            @NotNull final Table blinkTable) {
+        super(resultPairs, blinkTable);
         permuteKernels = new PermuteKernel[numResultColumns];
         for (int ci = 0; ci < numResultColumns; ++ci) {
             permuteKernels[ci] = PermuteKernel.makePermuteKernel(outputColumns[ci].getChunkType());

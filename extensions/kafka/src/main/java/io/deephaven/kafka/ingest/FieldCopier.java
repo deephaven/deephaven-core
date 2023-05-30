@@ -9,11 +9,11 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 
 /**
- * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a stream table.
+ * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a blink table.
  */
 public interface FieldCopier {
     /**
-     * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a stream table.
+     * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a blink table.
      * @param inputChunk     the chunk containing Kafka keys or values
      * @param publisherChunk the output chunk for the provided field
      * @param sourceOffset   the source chunk offset

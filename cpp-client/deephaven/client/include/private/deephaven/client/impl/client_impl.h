@@ -23,7 +23,7 @@ class ClientImpl {
 
 public:
   static std::shared_ptr<ClientImpl> create(std::shared_ptr<Server> server,
-      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flightExecutor);
+      std::shared_ptr<Executor> executor, std::shared_ptr<Executor> flightExecutor, const std::string &sessionType);
 
   ClientImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&managerImpl);
   ~ClientImpl();
