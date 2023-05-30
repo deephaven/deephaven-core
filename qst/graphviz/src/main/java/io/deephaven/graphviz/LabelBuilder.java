@@ -17,6 +17,7 @@ import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
+import io.deephaven.qst.table.MetaTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.RangeJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
@@ -215,6 +216,11 @@ public class LabelBuilder extends TableVisitorGeneric {
         sb.append("dropColumns([");
         append(Strings::of, dropColumnsTable.dropColumns(), sb);
         sb.append("])");
+    }
+
+    @Override
+    public void visit(MetaTable metaTable) {
+        sb.append("meta()");
     }
 
     private void join(String name, Join j) {

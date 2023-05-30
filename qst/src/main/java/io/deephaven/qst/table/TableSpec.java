@@ -162,5 +162,7 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         void visit(UngroupTable ungroupTable);
 
         void visit(DropColumnsTable dropColumnsTable);
+
+        void visit(MetaTable metaTable);
     }
 }

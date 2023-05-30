@@ -1523,4 +1523,11 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Provides column metadata in table form.
+     *
+     * @return a table of metadata about this table's columns
+     */
+    @ConcurrentMethod
+    TOPS meta();
 }

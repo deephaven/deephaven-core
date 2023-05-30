@@ -161,4 +161,9 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     public void visit(DropColumnsTable dropColumnsTable) {
         accept(dropColumnsTable);
     }
+
+    @Override
+    public void visit(MetaTable metaTable) {
+        accept(metaTable);
+    }
 }

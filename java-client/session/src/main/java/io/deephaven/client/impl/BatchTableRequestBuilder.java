@@ -54,6 +54,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MetaTableRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
@@ -91,6 +92,7 @@ import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MetaTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
@@ -597,6 +599,15 @@ class BatchTableRequestBuilder {
                 request.addColumnNames(dropColumn.name());
             }
             out = op(Builder::setDropColumns, request);
+        }
+
+        @Override
+        public void visit(MetaTable metaTable) {
+            final MetaTableRequest request = MetaTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(metaTable.parent()))
+                    .build();
+            out = op(Builder::setMetaTable, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

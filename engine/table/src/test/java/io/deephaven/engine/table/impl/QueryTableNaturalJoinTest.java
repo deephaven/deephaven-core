@@ -586,7 +586,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = castSymbol(clazz, testTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
         final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
-        TableTools.showWithRowSet(right.getMeta());
+        TableTools.showWithRowSet(right.meta());
         TableTools.showWithRowSet(right);
 
         try {

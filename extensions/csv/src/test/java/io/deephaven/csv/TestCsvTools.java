@@ -59,7 +59,7 @@ public class TestCsvTools {
                 " Z, Dividend, 0.18, 500";
         Table tableDividends = CsvTools.readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
         Assert.assertEquals(3, tableDividends.size());
-        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(4, tableDividends.meta().size());
         Assert.assertEquals(0.15, tableDividends.getColumn(2).getDouble(1), 0.000001);
         Assert.assertEquals(300, tableDividends.getColumn(3).getInt(1));
         Assert.assertEquals("Z", tableDividends.getColumn(0).get(2));
@@ -74,7 +74,7 @@ public class TestCsvTools {
         Table tableDividends = CsvTools
                 .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
         Assert.assertEquals(3, tableDividends.size());
-        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(4, tableDividends.meta().size());
         Assert.assertEquals(0.15, tableDividends.getColumn(2).get(1));
         Assert.assertEquals(300, tableDividends.getColumn(3).get(1));
         Assert.assertEquals(" Z", tableDividends.getColumn(0).get(2));

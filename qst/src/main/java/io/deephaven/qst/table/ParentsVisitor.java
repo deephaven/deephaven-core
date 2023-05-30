@@ -306,6 +306,11 @@ public class ParentsVisitor implements Visitor {
         out = single(dropColumnsTable);
     }
 
+    @Override
+    public void visit(MetaTable metaTable) {
+        out = single(metaTable);
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;
