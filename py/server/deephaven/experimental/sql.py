@@ -26,19 +26,14 @@ def _scope(globals: Mapping[str, Any], locals: Mapping[str, Any]):
 def eval(
     sql: str,
     dry_run: bool = False,
-    globals: Optional[Mapping[str, Any]] = None,
-    locals: Optional[Mapping[str, Any]] = None,
 ) -> Union[Table, jpy.JType]:
-    """Experimental SQL evaluation. Subject to change.
+    """Evaluates an SQL query and returns the result.
 
-    If both globals and locals is omitted (the default), the sql is executed with the globals and locals in the
-    environment where eval() is called.
+    The query scope is taken from the environment when this method is called.
 
     Args:
-        sql (str): the sql
-        dry_run (bool, optional): if it should be a dry run, False by default
-        globals (Mapping[str, Any], optional): the globals to use
-        locals (Mapping[str, Any], optional): the locals to use
+        sql (str): SQL query string
+        dry_run (bool, optional): if the query should be a dry run, default is False
 
     Returns:
         a new Table, or a java TableSpec if dry_run is True
@@ -47,13 +42,9 @@ def eval(
         DHError
     """
     try:
-        if globals is None and locals is None:
-            callers_frame_info = inspect.stack()[1]
-            globals = callers_frame_info.frame.f_globals
-            locals = callers_frame_info.frame.f_locals
-        else:
-            globals = globals or {}
-            locals = locals or {}
+        callers_frame_info = inspect.stack()[1]
+        globals = callers_frame_info.frame.f_globals
+        locals = callers_frame_info.frame.f_locals
         with _scope(globals, locals):
             if dry_run:
                 # No JObjectWrapper for TableSpec
