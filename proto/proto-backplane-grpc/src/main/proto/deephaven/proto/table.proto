@@ -433,7 +433,7 @@ message UpdateByRequest {
 
     // The math context.
     // If unset, defaults to server-provided defaults.
-    optional MathContext math_context = 7;
+    MathContext math_context = 7;
   }
 
   message UpdateByOperation {
@@ -461,37 +461,37 @@ message UpdateByRequest {
 
         message UpdateByEma {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByEmaOptions options = 1;
+          UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
         }
 
         message UpdateByEms {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByEmaOptions options = 1;
+          UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
         }
 
         message UpdateByEmMin {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByEmaOptions options = 1;
+          UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
         }
 
         message UpdateByEmMax {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByEmaOptions options = 1;
+          UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
         }
 
         message UpdateByEmStd {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByEmaOptions options = 1;
+          UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
         }
 
         message UpdateByDelta {
           // If unset, defaults to server-provided defaults.
-          optional UpdateByDeltaOptions options = 1;
+          UpdateByDeltaOptions options = 1;
         }
 
         message UpdateByRollingSum {
