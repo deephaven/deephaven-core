@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 add_executable(tests
     add_drop_test.cc
     aggregates_test.cc
+    buffer_column_source_test.cc
+    cython_support_test.cc
     head_and_tail_test.cc
     filter_test.cc
     join_test.cc
@@ -13,17 +15,20 @@ add_executable(tests
     main.cc
     merge_tables_test.cc
     new_table_test.cc
+    script_test.cc
     select_test.cc
     sort_test.cc
     string_filter_test.cc
     test_util.cc
     test_util.h
+    ticking_test.cc
     ungroup_test.cc
+    utility_test.cc
     validation_test.cc
     view_test.cc
 
     third_party/catch.hpp
-    ticking_test.cc)
+    )
 
 target_compile_options(tests PRIVATE -Wall -Werror)
 target_include_directories(tests PUBLIC "..")

@@ -401,8 +401,8 @@ void TableHandleImpl::unsubscribe(std::shared_ptr<SubscriptionHandle> handle) {
 std::vector<std::shared_ptr<ColumnImpl>> TableHandleImpl::getColumnImpls() {
   auto schema = lazyState_->getSchema();
   std::vector<std::shared_ptr<ColumnImpl>> result;
-  result.reserve(schema->columns().size());
-  for (const auto &[name, type] : schema->columns()) {
+  result.reserve(schema->names().size());
+  for (const auto &name : schema->names()) {
     result.push_back(ColumnImpl::create(name));
   }
   return result;
@@ -431,21 +431,18 @@ std::shared_ptr<DateTimeColImpl> TableHandleImpl::getDateTimeColImpl(std::string
   return DateTimeColImpl::create(std::move(columnName));
 }
 
-void TableHandleImpl::lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId> validTypes) {
+void TableHandleImpl::lookupHelper(const std::string &columnName,
+    std::initializer_list<ElementTypeId::Enum> validTypes) {
   auto schema = lazyState_->getSchema();
-  auto ip = schema->map().find(columnName);
-  if (ip == schema->map().end()) {
-    auto message = stringf(R"(Column name "%o" is not in the table)", columnName);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
-  }
-  auto actualType = ip->second;
+  auto index = *schema->getColumnIndex(columnName, true);
+  auto actualType = schema->types()[index];
   for (auto type : validTypes) {
     if (actualType == type) {
       return;
     }
   }
 
-  auto render = [](std::ostream &s, ElementTypeId item) {
+  auto render = [](std::ostream &s, ElementTypeId::Enum item) {
     // TODO(kosak): render this as a human-readable string.
     s << (int)item;
   };
@@ -454,8 +451,7 @@ void TableHandleImpl::lookupHelper(const std::string &columnName, std::initializ
   throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
 }
 
-void TableHandleImpl::bindToVariableAsync(std::string variable,
-    std::shared_ptr<SFCallback<>> callback) {
+void TableHandleImpl::bindToVariableAsync(std::string variable, std::shared_ptr<SFCallback<>> callback) {
   struct cb_t final : public SFCallback<BindTableToVariableResponse> {
     explicit cb_t(std::shared_ptr<SFCallback<>> outerCb) : outerCb_(std::move(outerCb)) {}
 
@@ -463,14 +459,20 @@ void TableHandleImpl::bindToVariableAsync(std::string variable,
       outerCb_->onSuccess();
     }
 
-    void onFailure(std::exception_ptr ep) override {
+    void onFailure(std::exception_ptr ep) final {
       outerCb_->onFailure(std::move(ep));
     }
 
     std::shared_ptr<SFCallback<>> outerCb_;
   };
+  if (!managerImpl_->consoleId().has_value()) {
+    auto eptr = std::make_exception_ptr(std::runtime_error(DEEPHAVEN_DEBUG_MSG(
+        "Client was created without specifying a script language")));
+    callback->onFailure(std::move(eptr));
+    return;
+  }
   auto cb = std::make_shared<cb_t>(std::move(callback));
-  managerImpl_->server()->bindToVariableAsync(managerImpl_->consoleId(), ticket_,
+  managerImpl_->server()->bindToVariableAsync(*managerImpl_->consoleId(), ticket_,
       std::move(variable), std::move(cb));
 }
 
@@ -554,7 +556,7 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
   }
 
 
-  ElementTypeId typeId_ = ElementTypeId::INT8;  // arbitrary initializer
+  ElementTypeId::Enum typeId_ = ElementTypeId::INT8;  // arbitrary initializer
 };
 
 }  // namespace
@@ -604,15 +606,15 @@ public:
     auto schemaRes = schemaResult->GetSchema(nullptr, &arrowSchema);
     okOrThrow(DEEPHAVEN_EXPR_MSG(schemaRes));
 
-    std::vector<std::pair<std::string, ElementTypeId>> colVec;
-
+    auto names = makeReservedVector<std::string>(arrowSchema->fields().size());
+    auto types = makeReservedVector<ElementTypeId::Enum>(arrowSchema->fields().size());
     for (const auto &f : arrowSchema->fields()) {
-      std::cout << "processing " << f->name() << '\n';
       ArrowToElementTypeId v;
       okOrThrow(DEEPHAVEN_EXPR_MSG(f->type()->Accept(&v)));
-      colVec.emplace_back(f->name(), v.typeId_);
+      names.push_back(f->name());
+      types.push_back(v.typeId_);
     }
-    auto schema = std::make_shared<Schema>(std::move(colVec));
+    auto schema = Schema::create(std::move(names), std::move(types));
     schemaPromise_.setValue(std::move(schema));
   }
 

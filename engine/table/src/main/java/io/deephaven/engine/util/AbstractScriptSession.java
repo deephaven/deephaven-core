@@ -152,12 +152,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             }
         }
 
-        // re-throw any captured exception now that our listener knows what query scope state had changed prior
-        // to the script session execution error
-        if (evaluateErr != null) {
-            throw evaluateErr;
-        }
-
         return diff;
     }
 

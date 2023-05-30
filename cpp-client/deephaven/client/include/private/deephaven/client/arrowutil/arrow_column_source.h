@@ -15,16 +15,29 @@ namespace deephaven::client::arrowutil {
 namespace internal {
 template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
 class NumericBackingStore {
+  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
+
 public:
   explicit NumericBackingStore(const ARRAY_TYPE *arrowArray) : array_(arrowArray) {}
 
-  std::pair<ELEMENT_TYPE, bool> get(size_t index) const {
-    auto result = (*array_)[index];
-    if (result.has_value()) {
-      return std::make_pair(*result, false);
+  void get(size_t beginIndex, size_t endIndex, ELEMENT_TYPE *dest, bool *optionalNullFlags) const {
+    ColumnSourceImpls::assertRangeValid(beginIndex, endIndex, array_->length());
+    for (auto i = beginIndex; i != endIndex; ++i) {
+      auto element = (*array_)[i];
+      ELEMENT_TYPE value;
+      bool isNull;
+      if (element.has_value()) {
+        value = *element;
+        isNull = false;
+      } else {
+        value = deephaven::dhcore::DeephavenTraits<ELEMENT_TYPE>::NULL_VALUE;
+        isNull = true;
+      }
+      *dest++ = value;
+      if (optionalNullFlags != nullptr) {
+        *optionalNullFlags++ = isNull;
+      }
     }
-    auto nullValue = deephaven::dhcore::DeephavenTraits<ELEMENT_TYPE>::NULL_VALUE;
-    return std::make_pair(std::move(nullValue), true);
   }
 
 private:
@@ -33,20 +46,28 @@ private:
 
 template<typename ARRAY_TYPE, typename ELEMENT_TYPE>
 class GenericBackingStore {
+  typedef deephaven::dhcore::column::ColumnSourceImpls ColumnSourceImpls;
   typedef deephaven::dhcore::DateTime DateTime;
 public:
   explicit GenericBackingStore(const ARRAY_TYPE *arrowArray) : array_(arrowArray) {}
 
-  std::pair<ELEMENT_TYPE, bool> get(size_t index) const {
-    auto result = (*array_)[index];
-    if (result.has_value()) {
-      auto valueToStore = ELEMENT_TYPE();
-      ArrowValueConverter::convert(*result, &valueToStore);
-      return std::make_pair(std::move(valueToStore), false);
+  void get(size_t beginIndex, size_t endIndex, ELEMENT_TYPE *dest, bool *optionalNullFlags) const {
+    ColumnSourceImpls::assertRangeValid(beginIndex, endIndex, array_->length());
+    for (auto i = beginIndex; i != endIndex; ++i) {
+      auto element = (*array_)[i];
+      bool isNull;
+      if (element.has_value()) {
+        ArrowValueConverter::convert(*element, dest);
+        isNull = false;
+      } else {
+        // placeholder
+        *dest = ELEMENT_TYPE();
+        isNull = true;
+      }
+      if (optionalNullFlags != nullptr) {
+        *optionalNullFlags++ = isNull;
+      }
     }
-    // placeholder. Use the default-constructed value.
-    auto nullValue = ELEMENT_TYPE();
-    return std::make_pair(std::move(nullValue), true);
   }
 
 private:

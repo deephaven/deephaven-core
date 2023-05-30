@@ -5,13 +5,14 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 #include "deephaven/dhcore/column/column_source.h"
 #include "deephaven/dhcore/container/row_sequence.h"
 
 namespace deephaven::dhcore::table {
 /**
- * Declaration provided in deephaven/client/table/table.h
+ * Declaration provided in deephaven/dhcore/schema/schema.h
  */
 class Schema;
 /**
@@ -92,9 +93,9 @@ public:
    * @param strict Whether the method must succeed.
    * @return If 'name' was found, returns the index of the ColumnSource. If 'name' was not found and
    * 'strict' is true, throws an exception. If 'name' was not found and 'strict' is false, returns
-   * (size_t)-1.
+   * an empty optional.
    */
-  size_t getColumnIndex(std::string_view name, bool strict) const;
+  std::optional<size_t> getColumnIndex(std::string_view name, bool strict) const;
 
   /**
    * Number of rows in the table.

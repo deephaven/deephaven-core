@@ -18,6 +18,8 @@
 #include "deephaven/dhcore/utility/utility.h"
 #include "deephaven/proto/config.pb.h"
 #include "deephaven/proto/config.grpc.pb.h"
+#include "deephaven/proto/console.pb.h"
+#include "deephaven/proto/console.grpc.pb.h"
 #include "deephaven/proto/session.pb.h"
 #include "deephaven/proto/session.grpc.pb.h"
 #include "deephaven/proto/table.pb.h"
@@ -50,6 +52,8 @@ using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
 using io::deephaven::proto::backplane::grpc::UngroupRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
 using io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest;
+using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
+using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
 using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
 namespace deephaven::client::server {
@@ -62,7 +66,6 @@ std::optional<std::chrono::milliseconds> extractExpirationInterval(
     const ConfigurationConstantsResponse &ccResp);
 
 const char *authorizationKey = "authorization";
-const char *anonymousAuthorizationValue = "Anonymous";
 const char *timeoutKey = "http.session.durationMs";
 
 // (Potentially) re-send a handshake this often *until* the server responds to the handshake.
@@ -70,7 +73,7 @@ const char *timeoutKey = "http.session.durationMs";
 const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
-std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
+std::shared_ptr<Server> Server::createFromTarget(const std::string &target, const std::string &authorizationValue) {
   auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
@@ -81,6 +84,7 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
   // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = "grpc://" + target;
   arrow::flight::Location location;
+
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
     auto message = stringf("Location::Parse(%o) failed, error = %o", flightTarget, rc1.ToString());
@@ -101,7 +105,7 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
     ConfigurationConstantsRequest ccReq;
     ConfigurationConstantsResponse ccResp;
     grpc::ClientContext ctx;
-    ctx.AddMetadata(authorizationKey, anonymousAuthorizationValue);
+    ctx.AddMetadata(authorizationKey, authorizationValue);
     auto result = cfs->GetConfigurationConstants(&ctx, ccReq, &ccResp);
 
     if (!result.ok()) {
@@ -194,12 +198,20 @@ void Server::getConfigurationConstantsAsync(
       &ConfigService::Stub::AsyncGetConfigurationConstants);
 }
 
-void Server::startConsoleAsync(std::shared_ptr<SFCallback<StartConsoleResponse>> callback) {
+void Server::startConsoleAsync(std::string sessionType, std::shared_ptr<SFCallback<StartConsoleResponse>> callback) {
   auto ticket = newTicket();
   StartConsoleRequest req;
   *req.mutable_result_id() = std::move(ticket);
-  req.set_session_type("python");
+  *req.mutable_session_type() = std::move(sessionType);
   sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncStartConsole);
+}
+
+void Server::executeCommandAsync(Ticket consoleId, std::string code,
+    std::shared_ptr<SFCallback<ExecuteCommandResponse>> callback) {
+  ExecuteCommandRequest req;
+  *req.mutable_console_id() = std::move(consoleId);
+  *req.mutable_code() = std::move(code);
+  sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncExecuteCommand);
 }
 
 Ticket Server::emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback) {

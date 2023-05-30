@@ -71,7 +71,7 @@ public class SourceClosure extends Closure<Object> {
             }
         }
 
-        groovyDeephavenSession.evaluateScript(scriptText, scriptName);
+        groovyDeephavenSession.evaluateScript(scriptText, scriptName).throwIfError();
         return null;
     }
 
