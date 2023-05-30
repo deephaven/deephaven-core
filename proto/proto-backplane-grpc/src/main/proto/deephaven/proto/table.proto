@@ -313,14 +313,15 @@ message SelectOrUpdateRequest {
 
 message MathContext {
   enum RoundingMode {
-    UP = 0;
-    DOWN = 1;
-    CEILING = 2;
-    FLOOR = 3;
-    HALF_UP = 4;
-    HALF_DOWN = 5;
-    HALF_EVEN = 6;
-    UNNECESSARY = 7;
+    ROUNDING_MODE_NOT_SPECIFIED = 0;
+    UP = 1;
+    DOWN = 2;
+    CEILING = 3;
+    FLOOR = 4;
+    HALF_UP = 5;
+    HALF_DOWN = 6;
+    HALF_EVEN = 7;
+    UNNECESSARY = 8;
   }
   sint32 precision = 1;
   RoundingMode rounding_mode = 2;
@@ -328,23 +329,26 @@ message MathContext {
 
 // Directives for how to handle {@code null} and {@code NaN} values
 enum BadDataBehavior {
+  // When not specified will use the server default.
+  BAD_DATA_BEHAVIOR_NOT_SPECIFIED = 0;
+
   // Throw an exception and abort processing when bad data is encountered.
-  THROW = 0;
+  THROW = 1;
 
   // Reset the state for the bucket to {@code null} when invalid data is encountered.
-  RESET = 1;
+  RESET = 2;
 
   // Skip and do not process the invalid data without changing state.
-  SKIP = 2;
+  SKIP = 3;
 
   // Allow the bad data to poison the result. This is only valid for use with NaN.
-  POISON = 3;
+  POISON = 4;
 }
 
 // Directives for how to handle {@code null} and {@code NaN} values
 enum UpdateByNullBehavior {
   // When not specified will use the server default.
-  NOT_SPECIFIED = 0;
+  NULL_BEHAVIOR_NOT_SPECIFIED = 0;
 
   // In the case of Current - null, the null dominates so Column[i] - null = null
   NULL_DOMINATES = 1;
@@ -356,45 +360,38 @@ enum UpdateByNullBehavior {
   ZERO_DOMINATES = 3;
 }
 
-// Reusable timescale message for the UpdateBy rolling operations.
-message UpdateByEmaTimescale {
-  message UpdateByEmaTicks {
+// Reusable window scale message for the UpdateBy rolling operations.
+message UpdateByWindowScale {
+  message UpdateByWindowTicks {
     double ticks = 1;
   }
-  message UpdateByEmaTime {
+  message UpdateByWindowTime {
     string column = 1;
     sint64 period_nanos = 2 [jstype=JS_STRING];
   }
   oneof type {
-    UpdateByEmaTicks ticks = 1;
-    UpdateByEmaTime time = 2;
+    UpdateByWindowTicks ticks = 1;
+    UpdateByWindowTime time = 2;
   }
 }
 
 // Reusable options for the UpdateBy exponential moving operations.
-message UpdateByEmaOptions {
-  // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_null_value = 1;
+message UpdateByEmOptions {
+  BadDataBehavior on_null_value = 1;
 
-  // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_nan_value = 2;
+  BadDataBehavior on_nan_value = 2;
 
-  // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_null_time = 3;
+  BadDataBehavior on_null_time = 3;
 
-  // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_negative_delta_time = 4;
+  BadDataBehavior on_negative_delta_time = 4;
 
-  // If unset, defaults to server-provided defaults.
-  optional BadDataBehavior on_zero_delta_time = 5;
+  BadDataBehavior on_zero_delta_time = 5;
 
-  // If unset, defaults to server-provided defaults.
   MathContext big_value_context = 6;
 }
 
 // Reusable options for the UpdateBy delta operation.
 message UpdateByDeltaOptions {
-  // If unset, defaults to server-provided defaults.
   UpdateByNullBehavior null_behavior = 1;
 }
 
@@ -432,7 +429,6 @@ message UpdateByRequest {
     optional double target_load_factor = 6;
 
     // The math context.
-    // If unset, defaults to server-provided defaults.
     MathContext math_context = 7;
   }
 
@@ -460,83 +456,77 @@ message UpdateByRequest {
         }
 
         message UpdateByEma {
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
         }
 
         message UpdateByEms {
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
         }
 
         message UpdateByEmMin {
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
         }
 
         message UpdateByEmMax {
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
         }
 
         message UpdateByEmStd {
-          // If unset, defaults to server-provided defaults.
-          UpdateByEmaOptions options = 1;
-          UpdateByEmaTimescale timescale = 2;
+          UpdateByEmOptions options = 1;
+          UpdateByWindowScale window_scale = 2;
         }
 
         message UpdateByDelta {
-          // If unset, defaults to server-provided defaults.
           UpdateByDeltaOptions options = 1;
         }
 
         message UpdateByRollingSum {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingGroup {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingAvg {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingMin {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingMax {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingProduct {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingCount {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingStd {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
         }
 
         message UpdateByRollingWAvg {
-          UpdateByEmaTimescale reverse_timescale = 1;
-          UpdateByEmaTimescale forward_timescale = 2;
+          UpdateByWindowScale reverse_window_scale = 1;
+          UpdateByWindowScale forward_window_scale = 2;
           // Column name for the source of input weights.
           string weight_column = 3;
         }
@@ -576,7 +566,6 @@ message UpdateByRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
 
-  // If unset, defaults to server-provided defaults.
   UpdateByOptions options = 3;
   repeated UpdateByOperation operations = 4;
   repeated string group_by_columns = 5;

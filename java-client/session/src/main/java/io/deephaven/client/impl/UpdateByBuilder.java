@@ -69,8 +69,8 @@ class UpdateByBuilder {
             }
         }
 
-        private static UpdateByEmaOptions adapt(OperationControl control) {
-            UpdateByEmaOptions.Builder builder = UpdateByEmaOptions.newBuilder();
+        private static UpdateByEmOptions adapt(OperationControl control) {
+            UpdateByEmOptions.Builder builder = UpdateByEmOptions.newBuilder();
             control.onNullValue().map(SpecVisitor::adapt).ifPresent(builder::setOnNullValue);
             control.onNanValue().map(SpecVisitor::adapt).ifPresent(builder::setOnNanValue);
             control.onNullTime().map(SpecVisitor::adapt).ifPresent(builder::setOnNullTime);
@@ -80,17 +80,17 @@ class UpdateByBuilder {
             return builder.build();
         }
 
-        private static UpdateByEmaTimescale adapt(WindowScale windowScale) {
+        private static UpdateByWindowScale adapt(WindowScale windowScale) {
             if (windowScale.isTimeBased()) {
-                return UpdateByEmaTimescale.newBuilder()
-                        .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                return UpdateByWindowScale.newBuilder()
+                        .setTime(UpdateByWindowScale.UpdateByWindowTime.newBuilder()
                                 .setColumn(windowScale.timestampCol())
                                 .setPeriodNanos(windowScale.timeUnits())
                                 .build())
                         .build();
             } else {
-                return UpdateByEmaTimescale.newBuilder()
-                        .setTicks(UpdateByEmaTimescale.UpdateByEmaTicks.newBuilder()
+                return UpdateByWindowScale.newBuilder()
+                        .setTicks(UpdateByWindowScale.UpdateByWindowTicks.newBuilder()
                                 .setTicks(windowScale.tickUnits())
                                 .build())
                         .build();
@@ -118,7 +118,7 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmaSpec spec) {
-            UpdateByEma.Builder builder = UpdateByEma.newBuilder().setTimescale(adapt(spec.timeScale()));
+            UpdateByEma.Builder builder = UpdateByEma.newBuilder().setWindowScale(adapt(spec.windowScale()));
             spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setEma(builder.build())
@@ -127,7 +127,7 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmsSpec spec) {
-            UpdateByEms.Builder builder = UpdateByEms.newBuilder().setTimescale(adapt(spec.timeScale()));
+            UpdateByEms.Builder builder = UpdateByEms.newBuilder().setWindowScale(adapt(spec.windowScale()));
             spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setEms(builder.build())
@@ -137,13 +137,13 @@ class UpdateByBuilder {
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmMinMaxSpec spec) {
             if (spec.isMax()) {
-                UpdateByEmMax.Builder builder = UpdateByEmMax.newBuilder().setTimescale(adapt(spec.timeScale()));
+                UpdateByEmMax.Builder builder = UpdateByEmMax.newBuilder().setWindowScale(adapt(spec.windowScale()));
                 spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
                 return UpdateByColumn.UpdateBySpec.newBuilder()
                         .setEmMax(builder.build())
                         .build();
             } else {
-                UpdateByEmMin.Builder builder = UpdateByEmMin.newBuilder().setTimescale(adapt(spec.timeScale()));
+                UpdateByEmMin.Builder builder = UpdateByEmMin.newBuilder().setWindowScale(adapt(spec.windowScale()));
                 spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
                 return UpdateByColumn.UpdateBySpec.newBuilder()
                         .setEmMin(builder.build())
@@ -187,7 +187,7 @@ class UpdateByBuilder {
 
         @Override
         public UpdateByColumn.UpdateBySpec visit(EmStdSpec spec) {
-            UpdateByEmStd.Builder builder = UpdateByEmStd.newBuilder().setTimescale(adapt(spec.timeScale()));
+            UpdateByEmStd.Builder builder = UpdateByEmStd.newBuilder().setWindowScale(adapt(spec.windowScale()));
             spec.control().map(SpecVisitor::adapt).ifPresent(builder::setOptions);
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setEmStd(builder.build())
@@ -207,8 +207,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec rs) {
             final UpdateByRollingSum.Builder builder =
                     UpdateByRollingSum.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingSum(builder.build())
                     .build();
@@ -218,8 +218,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec rs) {
             final UpdateByRollingGroup.Builder builder =
                     UpdateByRollingGroup.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingGroup(builder.build())
                     .build();
@@ -229,8 +229,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec rs) {
             final UpdateByRollingAvg.Builder builder =
                     UpdateByRollingAvg.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingAvg(builder.build())
                     .build();
@@ -241,16 +241,16 @@ class UpdateByBuilder {
             if (rs.isMax()) {
                 final UpdateByRollingMax.Builder builder =
                         UpdateByRollingMax.newBuilder()
-                                .setReverseTimescale(adapt(rs.revWindowScale()))
-                                .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                                .setReverseWindowScale(adapt(rs.revWindowScale()))
+                                .setForwardWindowScale(adapt(rs.fwdWindowScale()));
                 return UpdateByColumn.UpdateBySpec.newBuilder()
                         .setRollingMax(builder.build())
                         .build();
             } else {
                 final UpdateByRollingMin.Builder builder =
                         UpdateByRollingMin.newBuilder()
-                                .setReverseTimescale(adapt(rs.revWindowScale()))
-                                .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                                .setReverseWindowScale(adapt(rs.revWindowScale()))
+                                .setForwardWindowScale(adapt(rs.fwdWindowScale()));
                 return UpdateByColumn.UpdateBySpec.newBuilder()
                         .setRollingMin(builder.build())
                         .build();
@@ -261,8 +261,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rs) {
             final UpdateByRollingProduct.Builder builder =
                     UpdateByRollingProduct.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingProduct(builder.build())
                     .build();
@@ -272,8 +272,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingCountSpec rs) {
             final UpdateByRollingCount.Builder builder =
                     UpdateByRollingCount.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingCount(builder.build())
                     .build();
@@ -283,8 +283,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingStdSpec rs) {
             final UpdateByRollingStd.Builder builder =
                     UpdateByRollingStd.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()));
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()));
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingStd(builder.build())
                     .build();
@@ -294,8 +294,8 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec rs) {
             final UpdateByRollingWAvg.Builder builder =
                     UpdateByRollingWAvg.newBuilder()
-                            .setReverseTimescale(adapt(rs.revWindowScale()))
-                            .setForwardTimescale(adapt(rs.fwdWindowScale()))
+                            .setReverseWindowScale(adapt(rs.revWindowScale()))
+                            .setForwardWindowScale(adapt(rs.fwdWindowScale()))
                             .setWeightColumn(rs.weightCol());
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setRollingWavg(builder.build())
