@@ -446,7 +446,7 @@ def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
         cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(ts_col, time_scale, *cols))
