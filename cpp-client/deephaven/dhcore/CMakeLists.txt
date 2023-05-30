@@ -15,39 +15,44 @@ set(ALL_FILES
     src/column/array_column_source.cc
     src/column/column_source.cc
     src/column/column_source_helpers.cc
+    src/column/column_source_utils.cc
     src/container/row_sequence.cc
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
     src/table/schema.cc
     src/table/table.cc
-    src/ticking/barrage_update_processor.cc
+    src/ticking/barrage_processor.cc
     src/ticking/immer_table_state.cc
     src/ticking/index_decoder.cc
     src/ticking/shift_processor.cc
     src/ticking/space_mapper.cc
     src/ticking/ticking.cc
     src/utility/cbfuture.cc
+    src/utility/cython_support.cc
     src/utility/utility.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
     include/private/deephaven/dhcore/ticking/index_decoder.h
     include/private/deephaven/dhcore/ticking/shift_processor.h
     include/private/deephaven/dhcore/ticking/space_mapper.h
-        include/private/deephaven/dhcore/ticking/subscription_handle.h
+    include/private/deephaven/dhcore/ticking/subscription_handle.h
     include/public/deephaven/dhcore/types.h
     include/public/deephaven/dhcore/chunk/chunk.h
     include/public/deephaven/dhcore/chunk/chunk_maker.h
     include/public/deephaven/dhcore/chunk/chunk_traits.h
     include/public/deephaven/dhcore/column/array_column_source.h
+    include/public/deephaven/dhcore/column/buffer_column_source.h
     include/public/deephaven/dhcore/column/column_source.h
     include/public/deephaven/dhcore/column/column_source_helpers.h
+    include/public/deephaven/dhcore/column/column_source_utils.h
     include/public/deephaven/dhcore/container/row_sequence.h
     include/public/deephaven/dhcore/table/schema.h
     include/public/deephaven/dhcore/table/table.h
-    include/public/deephaven/dhcore/ticking/barrage_update_processor.h
+    include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
     include/public/deephaven/dhcore/utility/callbacks.h
     include/public/deephaven/dhcore/utility/cbfuture.h
+    include/public/deephaven/dhcore/utility/cython_support.h
     include/public/deephaven/dhcore/utility/utility.h
 
     flatbuf/deephaven/flatbuf/Barrage_generated.h
@@ -71,7 +76,7 @@ set(ALL_FILES
     third_party/flatbuffers/include/flatbuffers/verifier.h
 
     third_party/roaring/include/roaring/roaring.c
-        include/public/deephaven/dhcore/column/column_source_utils.h)
+    )
 
 add_library(dhcore ${ALL_FILES})
 # In order to make a shared library suitable for Cython.
