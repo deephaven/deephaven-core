@@ -51,7 +51,6 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
-_JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
