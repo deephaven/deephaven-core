@@ -369,10 +369,8 @@ public class GroovyStaticImportGenerator {
     }
 
     /**
-     * Helper to transform method parameter types to a form that can be used in a javadoc link,
-     * including removing generics and finding the upper bound of typevars.
-     * @param t
-     * @return
+     * Helper to transform method parameter types to a form that can be used in a javadoc link, including removing
+     * generics and finding the upper bound of typevars.
      */
     @NotNull
     private String getParamTypeString(Type t) {
