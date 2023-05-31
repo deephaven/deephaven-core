@@ -88,11 +88,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        accept(raj);
-    }
-
-    @Override
     public void visit(RangeJoinTable rangeJoinTable) {
         accept(rangeJoinTable);
     }

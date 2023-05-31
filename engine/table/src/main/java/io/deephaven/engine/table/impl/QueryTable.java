@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -1828,57 +1828,57 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table aj(
+    public Table asOfJoin(
             Table rightTable,
             Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd,
-            AsOfJoinRule asOfJoinRule) {
-        return ajImpl(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(asOfJoinRule));
-    }
-
-    @Override
-    public Table raj(
-            Table rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd,
-            ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return rajImpl(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(reverseAsOfJoinRule));
+            AsOfJoinMatch joinMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        final MatchPair[] matches = Stream.concat(
+                columnsToMatch.stream().map(MatchPair::of),
+                Stream.of(new MatchPair(joinMatch.leftColumn().name(), joinMatch.rightColumn().name())))
+                .toArray(MatchPair[]::new);
+        final MatchPair[] additions = MatchPair.fromAddition(columnsToAdd);
+        final AsOfJoinRule joinRule = joinMatch.joinRule();
+        switch (joinRule) {
+            case LESS_THAN_EQUAL:
+            case LESS_THAN:
+                return ajImpl(rightTable, matches, additions, joinRule);
+            case GREATER_THAN_EQUAL:
+            case GREATER_THAN:
+                return rajImpl(rightTable, matches, additions, joinRule);
+            default:
+                throw new IllegalStateException("Unexpected join rule " + joinRule);
+        }
     }
 
     private Table ajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+            AsOfJoinRule joinRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
         }
         final Table rightTableCoalesced = rightTable.coalesce();
         return QueryPerformanceRecorder.withNugget(
-                "aj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
+                "aj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
+                        + matchString(columnsToAdd) + ")",
                 () -> ajInternal(rightTableCoalesced, columnsToMatch, columnsToAdd, SortingOrder.Ascending,
-                        asOfMatchRule));
+                        joinRule));
     }
 
     private Table rajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
+            AsOfJoinRule joinRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("raj() requires a non-null right hand side table.");
         }
         final Table rightTableCoalesced = rightTable.coalesce();
         return QueryPerformanceRecorder.withNugget(
-                "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
+                "raj(" + "rightTable, " + matchString(columnsToMatch) + ", " + joinRule + ", "
+                        + matchString(columnsToAdd) + ")",
                 () -> ajInternal(rightTableCoalesced.reverse(), columnsToMatch, columnsToAdd, SortingOrder.Descending,
-                        asOfMatchRule));
+                        joinRule));
     }
 
     private Table ajInternal(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            final SortingOrder order, AsOfMatchRule asOfMatchRule) {
+            final SortingOrder order, AsOfJoinRule joinRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
         }
@@ -1907,28 +1907,28 @@ public class QueryTable extends BaseTable<QueryTable> {
         columnsToAdd = revisedAdded.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
 
         final boolean disallowExactMatch;
-        switch (asOfMatchRule) {
+        switch (joinRule) {
             case LESS_THAN:
                 if (order != SortingOrder.Ascending) {
-                    throw new IllegalArgumentException("Invalid as of match rule for raj: " + asOfMatchRule);
+                    throw new IllegalArgumentException("Invalid as of match rule for raj: " + joinRule);
                 }
                 disallowExactMatch = true;
                 break;
             case LESS_THAN_EQUAL:
                 if (order != SortingOrder.Ascending) {
-                    throw new IllegalArgumentException("Invalid as of match rule for raj: " + asOfMatchRule);
+                    throw new IllegalArgumentException("Invalid as of match rule for raj: " + joinRule);
                 }
                 disallowExactMatch = false;
                 break;
             case GREATER_THAN:
                 if (order != SortingOrder.Descending) {
-                    throw new IllegalArgumentException("Invalid as of match rule for aj: " + asOfMatchRule);
+                    throw new IllegalArgumentException("Invalid as of match rule for aj: " + joinRule);
                 }
                 disallowExactMatch = true;
                 break;
             case GREATER_THAN_EQUAL:
                 if (order != SortingOrder.Descending) {
-                    throw new IllegalArgumentException("Invalid as of match rule for aj: " + asOfMatchRule);
+                    throw new IllegalArgumentException("Invalid as of match rule for aj: " + joinRule);
                 }
                 disallowExactMatch = false;
                 break;
@@ -3505,32 +3505,5 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     static Boolean isParallelWhereDisabledForThread() {
         return disableParallelWhereForThread.get();
-    }
-
-    /**
-     * Rules for the inexact matching performed on the final column to match by in {@link #aj} and {@link #raj}.
-     */
-    private enum AsOfMatchRule {
-        LESS_THAN_EQUAL, LESS_THAN, GREATER_THAN_EQUAL, GREATER_THAN;
-
-        public static AsOfMatchRule of(AsOfJoinRule rule) {
-            switch (rule) {
-                case LESS_THAN_EQUAL:
-                    return LESS_THAN_EQUAL;
-                case LESS_THAN:
-                    return LESS_THAN;
-            }
-            throw new IllegalStateException("Unexpected rule " + rule);
-        }
-
-        public static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
-            switch (rule) {
-                case GREATER_THAN_EQUAL:
-                    return GREATER_THAN_EQUAL;
-                case GREATER_THAN:
-                    return GREATER_THAN;
-            }
-            throw new IllegalStateException("Unexpected rule " + rule);
-        }
     }
 }

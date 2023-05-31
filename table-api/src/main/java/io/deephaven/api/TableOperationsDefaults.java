@@ -163,44 +163,32 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     default TOPS aj(TABLE rightTable, String columnsToMatch) {
         final AsOfJoinMatchFactory.AsOfJoinResult result =
                 AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return aj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
+        return asOfJoin(rightTable, result.matches, result.joinMatch, Collections.emptyList());
     }
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
         final AsOfJoinMatchFactory.AsOfJoinResult result =
                 AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return aj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
-                result.rule);
-    }
-
-    @Override
-    default TOPS aj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return aj(rightTable, columnsToMatch, columnsToAdd, AsOfJoinRule.LESS_THAN_EQUAL);
+        return asOfJoin(rightTable, result.matches, result.joinMatch,
+                JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch) {
-        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+        final AsOfJoinMatchFactory.AsOfJoinResult result =
                 AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return raj(rightTable, Arrays.asList(result.matches), Collections.emptyList(), result.rule);
+        return asOfJoin(rightTable, result.matches, result.joinMatch, Collections.emptyList());
     }
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final AsOfJoinMatchFactory.ReverseAsOfJoinResult result =
+        final AsOfJoinMatchFactory.AsOfJoinResult result =
                 AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return raj(rightTable, Arrays.asList(result.matches), JoinAddition.from(splitToCollection(columnsToAdd)),
-                result.rule);
-    }
-
-    @Override
-    default TOPS raj(TABLE rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return raj(rightTable, columnsToMatch, columnsToAdd, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
+        return asOfJoin(rightTable, result.matches, result.joinMatch,
+                JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

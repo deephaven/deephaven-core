@@ -218,11 +218,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        out = Stream.of(raj.left(), raj.right());
-    }
-
-    @Override
     public void visit(RangeJoinTable rangeJoinTable) {
         out = Stream.of(rangeJoinTable.left(), rangeJoinTable.right());
     }

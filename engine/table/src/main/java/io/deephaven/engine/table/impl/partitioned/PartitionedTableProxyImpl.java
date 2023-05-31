@@ -522,16 +522,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     }
 
     @Override
-    public PartitionedTable.Proxy aj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return complexTransform(rightTable, (ct, ot) -> ct.aj(ot, columnsToMatch, columnsToAdd, asOfJoinRule),
-                columnsToMatch.stream().limit(columnsToMatch.size() - 1).collect(Collectors.toList()));
-    }
-
-    @Override
-    public PartitionedTable.Proxy raj(TableOperations<?, ?> rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return complexTransform(rightTable, (ct, ot) -> ct.raj(ot, columnsToMatch, columnsToAdd, reverseAsOfJoinRule),
+    public PartitionedTable.Proxy asOfJoin(TableOperations<?, ?> rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            AsOfJoinMatch joinMatch, Collection<? extends JoinAddition> columnsToAdd) {
+        return complexTransform(rightTable, (ct, ot) -> ct.asOfJoin(ot, columnsToMatch, joinMatch, columnsToAdd),
                 columnsToMatch.stream().limit(columnsToMatch.size() - 1).collect(Collectors.toList()));
     }
 

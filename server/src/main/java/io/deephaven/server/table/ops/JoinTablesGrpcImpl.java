@@ -4,16 +4,17 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.AsOfJoinRule;
-import io.deephaven.api.ReverseAsOfJoinRule;
+import io.deephaven.api.expression.ExpressionException;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.api.expression.ExpressionException;
-import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
@@ -124,19 +125,26 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final AsOfJoinTablesRequest request) {
-            final List<MatchPair> match = Arrays.asList(columnsToMatch);
-            final List<MatchPair> add = Arrays.asList(columnsToAdd);
-            switch (request.getAsOfMatchRule()) {
-                case LESS_THAN:
-                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN);
+            final MatchPair joinMatch = columnsToMatch[columnsToMatch.length - 1];
+            return lhs.asOfJoin(
+                    rhs,
+                    Arrays.asList(columnsToMatch).subList(0, columnsToMatch.length - 1),
+                    AsOfJoinMatch.of(joinMatch.left(), adapt(request.getAsOfMatchRule()), joinMatch.right()),
+                    Arrays.asList(columnsToAdd));
+        }
+
+        private static AsOfJoinRule adapt(MatchRule rule) {
+            switch (rule) {
                 case LESS_THAN_EQUAL:
-                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN_EQUAL);
-                case GREATER_THAN:
-                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN);
+                    return AsOfJoinRule.LESS_THAN_EQUAL;
+                case LESS_THAN:
+                    return AsOfJoinRule.LESS_THAN;
                 case GREATER_THAN_EQUAL:
-                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
+                    return AsOfJoinRule.GREATER_THAN_EQUAL;
+                case GREATER_THAN:
+                    return AsOfJoinRule.GREATER_THAN;
                 default:
-                    throw new RuntimeException("Unsupported join type: " + request.getAsOfMatchRule());
+                    throw new RuntimeException("Unsupported join type: " + rule);
             }
         }
     }
