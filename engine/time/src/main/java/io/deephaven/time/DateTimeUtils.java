@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
 import java.util.Date;
@@ -2212,10 +2211,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @param timeZone time zone.
@@ -2234,10 +2232,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
@@ -2255,10 +2252,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of milliseconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @param timeZone time zone.
@@ -2277,10 +2273,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of milliseconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
@@ -2298,10 +2293,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of seconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @param timeZone time zone.
@@ -2320,10 +2314,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of seconds that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have elapsed
@@ -2341,10 +2334,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @param timeZone time zone.
@@ -2363,10 +2355,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have elapsed
@@ -2384,10 +2375,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of hours that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @param timeZone time zone.
@@ -2406,10 +2396,9 @@ public class DateTimeUtils {
     /**
      * Returns the number of hours that have elapsed since the top of the day.
      *
-     * On days when daylight savings time events occur, results may be different from what is
-     * expected based upon the local time.  For example, on daylight savings time change days,
-     * 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment
-     * is forwards or backwards.
+     * On days when daylight savings time events occur, results may be different from what is expected based upon the
+     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
+     * upon if the daylight savings time adjustment is forwards or backwards.
      *
      * @param dateTime time.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have elapsed
@@ -2971,11 +2960,24 @@ public class DateTimeUtils {
     // region Parse
 
     /**
+     * A type of RuntimeException thrown when date time values can not be parsed.
+     */
+    public static class DateTimeParseException extends RuntimeException {
+        private DateTimeParseException(String msg) {
+            super(msg);
+        }
+
+        private DateTimeParseException(String msg, Exception ex) {
+            super(msg, ex);
+        }
+    }
+
+    /**
      * Parses the string argument as a time zone.
      *
      * @param s string to be converted
      * @return a {@link ZoneId} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted.
+     * @throws DateTimeParseException if the string cannot be converted.
      * @see ZoneId
      * @see TimeZoneAliases
      */
@@ -2984,10 +2986,14 @@ public class DateTimeUtils {
     public static ZoneId parseTimeZone(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse time zone ID (null): " + s);
+            throw new DateTimeParseException("Cannot parse time zone (null): " + s);
         }
 
-        return TimeZoneAliases.zoneId(s);
+        try {
+            return TimeZoneAliases.zoneId(s);
+        } catch (Exception ex) {
+            throw new DateTimeParseException("Cannot parse time zone: " + s);
+        }
     }
 
     /**
@@ -3048,7 +3054,7 @@ public class DateTimeUtils {
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see #parseDuration(String)
      * @see #parseDurationQuiet(String)
      */
@@ -3056,7 +3062,7 @@ public class DateTimeUtils {
     public static long parseDurationNanos(@NotNull String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse time: " + s);
+            throw new DateTimeParseException("Cannot parse time: " + s);
         }
 
         try {
@@ -3094,7 +3100,7 @@ public class DateTimeUtils {
 
             return parseDuration(s).toNanos();
         } catch (Exception e) {
-            throw new RuntimeException("Cannot parse time : " + s, e);
+            throw new DateTimeParseException("Cannot parse time: " + s, e);
         }
     }
 
@@ -3146,7 +3152,7 @@ public class DateTimeUtils {
      *
      * @param s period string.
      * @return the period.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see Period#parse(CharSequence)
      */
     @ScriptApi
@@ -3154,13 +3160,13 @@ public class DateTimeUtils {
     public static Period parsePeriod(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse period (null): " + s);
+            throw new DateTimeParseException("Cannot parse period (null): " + s);
         }
 
         try {
             return Period.parse(s);
         } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse period: " + s, ex);
+            throw new DateTimeParseException("Cannot parse period: " + s, ex);
         }
     }
 
@@ -3226,7 +3232,7 @@ public class DateTimeUtils {
      *
      * @param s duration string.
      * @return the duration.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see Duration#parse(CharSequence)
      */
     @ScriptApi
@@ -3234,13 +3240,13 @@ public class DateTimeUtils {
     public static Duration parseDuration(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse duration (null): " + s);
+            throw new DateTimeParseException("Cannot parse duration (null): " + s);
         }
 
         try {
             return Duration.parse(s);
         } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse duration: " + s, ex);
+            throw new DateTimeParseException("Cannot parse duration: " + s, ex);
         }
     }
 
@@ -3292,18 +3298,22 @@ public class DateTimeUtils {
      *
      * @param s date time string.
      * @return a date time represented by the input string.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see #epochAutoToEpochNanos
      * @see #parseInstant(String)
      * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     public static long parseEpochNanos(@NotNull final String s) {
-        if (LONG_PATTERN.matcher(s).matches()) {
-            return epochAutoToEpochNanos(Long.parseLong(s));
-        }
+        try {
+            if (LONG_PATTERN.matcher(s).matches()) {
+                return epochAutoToEpochNanos(Long.parseLong(s));
+            }
 
-        return epochNanos(parseZonedDateTime(s));
+            return epochNanos(parseZonedDateTime(s));
+        } catch (Exception e) {
+            throw new DateTimeParseException("Cannot parse epoch nanos: " + s, e);
+        }
     }
 
     /**
@@ -3339,19 +3349,23 @@ public class DateTimeUtils {
      *
      * @param s date time string.
      * @return a date time represented by the input string.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     @NotNull
     public static Instant parseInstant(@NotNull final String s) {
-        if (LONG_PATTERN.matcher(s).matches()) {
-            final long nanos = epochAutoToEpochNanos(Long.parseLong(s));
-            // noinspection ConstantConditions
-            return epochNanosToInstant(nanos);
-        }
+        try {
+            if (LONG_PATTERN.matcher(s).matches()) {
+                final long nanos = epochAutoToEpochNanos(Long.parseLong(s));
+                // noinspection ConstantConditions
+                return epochNanosToInstant(nanos);
+            }
 
-        return parseZonedDateTime(s).toInstant();
+            return parseZonedDateTime(s).toInstant();
+        } catch (Exception e) {
+            throw new DateTimeParseException("Cannot parse instant: " + s, e);
+        }
     }
 
     /**
@@ -3387,7 +3401,7 @@ public class DateTimeUtils {
      *
      * @param s date time string.
      * @return a date time represented by the input string.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
@@ -3395,12 +3409,12 @@ public class DateTimeUtils {
     public static ZonedDateTime parseZonedDateTime(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse datetime (null): " + s);
+            throw new DateTimeParseException("Cannot parse datetime (null): " + s);
         }
 
         try {
             return ZonedDateTime.parse(s);
-        } catch (DateTimeParseException e) {
+        } catch (java.time.format.DateTimeParseException e) {
             // ignore
         }
 
@@ -3434,7 +3448,7 @@ public class DateTimeUtils {
 
             return LocalDateTime.parse(dateTimeString, FORMATTER_ISO_LOCAL_DATE_TIME).atZone(timeZone);
         } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse datetime: " + s, ex);
+            throw new DateTimeParseException("Cannot parse zoned date time: " + s, ex);
         }
     }
 
@@ -3491,7 +3505,7 @@ public class DateTimeUtils {
     public static ChronoField parseTimePrecision(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse time precision (null): " + s);
+            throw new DateTimeParseException("Cannot parse time precision (null): " + s);
         }
 
         try {
@@ -3508,7 +3522,7 @@ public class DateTimeUtils {
 
             throw new RuntimeException("Time precision does not match expected pattern");
         } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse time precision: " + s, ex);
+            throw new DateTimeParseException("Cannot parse time precision: " + s, ex);
         }
     }
 
@@ -3541,7 +3555,7 @@ public class DateTimeUtils {
      *
      * @param s date string.
      * @return local date parsed according to the default date style.
-     * @throws RuntimeException if the string cannot be parsed.
+     * @throws DateTimeParseException if the string cannot be parsed.
      * @see DateTimeFormatter#ISO_LOCAL_DATE
      */
     @ScriptApi
@@ -3549,13 +3563,13 @@ public class DateTimeUtils {
     public static LocalDate parseLocalDate(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse datetime (null): " + s);
+            throw new DateTimeParseException("Cannot parse datetime (null): " + s);
         }
 
         try {
             return LocalDate.parse(s, FORMATTER_ISO_LOCAL_DATE);
-        } catch (DateTimeParseException e) {
-            throw new RuntimeException("Cannot parse datetime: " + s, e);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new DateTimeParseException("Cannot parse local date: " + s, e);
         }
     }
 
@@ -3591,14 +3605,15 @@ public class DateTimeUtils {
      *
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
+     * @throws DateTimeParseException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed
+     *         string.
      */
     @ScriptApi
     @NotNull
     public static LocalTime parseLocalTime(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new RuntimeException("Cannot parse local time (null): " + s);
+            throw new DateTimeParseException("Cannot parse local time (null): " + s);
         }
 
         try {
@@ -3619,7 +3634,7 @@ public class DateTimeUtils {
 
             throw new RuntimeException("Local time does not match expected pattern");
         } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse local time: " + s, ex);
+            throw new DateTimeParseException("Cannot parse local time: " + s, ex);
         }
     }
 

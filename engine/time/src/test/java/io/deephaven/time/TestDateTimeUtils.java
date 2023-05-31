@@ -887,6 +887,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         try {
             // noinspection ConstantConditions
+            DateTimeUtils.parsePeriod("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            // noinspection ConstantConditions
             DateTimeUtils.parsePeriod(null);
             TestCase.fail("Should throw an exception");
         } catch (Exception ex) {
@@ -911,6 +919,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Period.parse(p), DateTimeUtils.parsePeriodQuiet(p));
         }
 
+        TestCase.assertNull(DateTimeUtils.parsePeriodQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parsePeriodQuiet(null));
     }
 
