@@ -13,6 +13,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;
@@ -28,7 +29,8 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * Minimum pivot is RSP container size. This guarantees that we only generate shifts that are a multiple of
      * container size, which is important if we're using an RSP-backed OrderedLongSet to implement our RowSet.
      */
-    private static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
+    @VisibleForTesting
+    static final long MINIMUM_PIVOT = RspArray.BLOCK_SIZE;
     /**
      * Maximum pivot is the maximum possible row key.
      */
