@@ -19,7 +19,6 @@ import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
 import io.deephaven.api.object.UnionObject;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +36,7 @@ import java.util.function.BiFunction;
  * @see FirstRowKey
  * @see LastRowKey
  */
-public interface Aggregation extends Serializable {
+public interface Aggregation {
 
     /**
      * Combine an {@link AggSpec} and an input/output {@link Pair column name pair} into a {@link ColumnAggregation}.

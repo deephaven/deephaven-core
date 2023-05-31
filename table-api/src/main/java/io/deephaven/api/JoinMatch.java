@@ -3,7 +3,6 @@
  */
 package io.deephaven.api;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -22,7 +21,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#whereIn(Object, Collection)
  * @see TableOperations#whereNotIn(Object, Collection)
  */
-public interface JoinMatch extends Serializable {
+public interface JoinMatch {
 
     static Collection<ColumnName> lefts(Collection<? extends JoinMatch> matches) {
         return matches.stream().map(JoinMatch::left).collect(Collectors.toList());
