@@ -1,7 +1,6 @@
-import org.gradle.api.tasks.javadoc.Javadoc
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-
-tasks.withType(Javadoc) {
+// Neither plain withType(Javadoc) {..} nor withType(Javadoc).all {..} will work here, somehow
+// this breaks sourcesets in some projects.
+tasks.withType(Javadoc).configureEach {
     javadocTool.set(javaToolchains.javadocToolFor{javadocSpec ->
         // Javadoc version >=11 is needed for search
         // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
@@ -16,7 +15,4 @@ tasks.withType(Javadoc) {
 
     // Don't fail on warnings, let specific projects enable this if desired
 //  options.addBooleanOption('Xwerror', true)
-
-    // https://github.com/gradle/gradle/issues/19869
-    options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
