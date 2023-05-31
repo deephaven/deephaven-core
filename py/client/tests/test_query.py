@@ -51,7 +51,7 @@ class QueryTestCase(BaseTestCase):
     def test_update_by(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
-        ub_ops = [ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"]),
+        ub_ops = [ema_tick_decay(decay_ticks=100, cols=["ema_a = a"]),
                   cum_prod(cols=["cc = c", "cb = b"]),
                   ]
 

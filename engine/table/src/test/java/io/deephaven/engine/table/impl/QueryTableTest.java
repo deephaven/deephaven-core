@@ -1139,6 +1139,33 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public void testReverseBlink() {
+        final Table table = testRefreshingTable(RowSetFactory.flat(1).toTracking(), intCol("Sentinel", 100))
+                .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true));
+        final Table reverseTable = table.reverse();
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        reverseTable.addUpdateListener(listener);
+
+        final long nextSize = ReverseOperation.MINIMUM_PIVOT + 2;
+        final int[] data = new int[Math.toIntExact(nextSize - 1)];
+        Arrays.fill(data, 200);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, RowSetFactory.fromRange(1, nextSize - 1), intCol("Sentinel", data));
+            final TableUpdateImpl downstream = new TableUpdateImpl();
+            downstream.added = RowSetFactory.flat(nextSize);
+            downstream.removed = RowSetFactory.flat(1);
+            downstream.modified = i();
+            downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+            downstream.shifted = RowSetShiftData.EMPTY;
+            ((QueryTable) table).notifyListeners(downstream);
+        });
+
+        assertNotNull(listener.update);
+        assertNotNull(listener.update.shifted());
+        assertEquals(0, listener.update.shifted().size());
+    }
+
     public void testSnapshot() {
         final QueryTable base = testRefreshingTable(i(10, 25, 30).toTracking(),
                 col("A", 3, 1, 2), col("B", "c", "a", "b"));

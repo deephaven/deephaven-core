@@ -3,7 +3,6 @@
  */
 package io.deephaven.api;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.stream.Collectors;
 /**
  * A column pair represents an {@link #input() input} and an {@link #output() output} column.
  */
-public interface Pair extends Serializable {
+public interface Pair {
 
     static Pair of(ColumnName input, ColumnName output) {
         if (input.equals(output)) {

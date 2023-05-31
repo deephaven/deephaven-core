@@ -13,6 +13,8 @@ struct ColumnSourceImpls {
   typedef deephaven::dhcore::container::RowSequence RowSequence;
   typedef deephaven::dhcore::chunk::UInt64Chunk UInt64Chunk;
 
+  static void assertRangeValid(size_t begin, size_t end, size_t size);
+
   template<typename CHUNK_TYPE, typename BACKING_STORE>
   static void fillChunk(const RowSequence &rows, Chunk *dest, BooleanChunk *optionalNullFlags,
       const BACKING_STORE &backingStore) {
@@ -23,16 +25,12 @@ struct ColumnSourceImpls {
     trueOrThrow(DEEPHAVEN_EXPR_MSG(rows.size() <= typedDest->size()));
     auto *destData = typedDest->data();
     auto *destNull = optionalNullFlags != nullptr ? optionalNullFlags->data() : nullptr;
-    size_t destIndex = 0;
-    auto applyChunk = [destData, destNull, &backingStore, &destIndex]
-        (uint64_t begin, uint64_t end) {
-      for (auto srcIndex = begin; srcIndex != end; ++srcIndex) {
-        auto [value, isNull] = backingStore.get(srcIndex);
-        destData[destIndex] = std::move(value);
-        if (destNull != nullptr) {
-          destNull[destIndex] = isNull;
-        }
-        ++destIndex;
+    auto applyChunk = [&destData, &destNull, &backingStore](uint64_t begin, uint64_t end) {
+      backingStore.get(begin, end, destData, destNull);
+      auto size = end - begin;
+      destData += size;
+      if (destNull != nullptr) {
+        destNull += size;
       }
     };
     rows.forEachInterval(applyChunk);
@@ -51,11 +49,12 @@ struct ColumnSourceImpls {
     auto *destNull = optionalNullFlags != nullptr ? optionalNullFlags->data() : nullptr;
 
     for (size_t destIndex = 0; destIndex < rowKeys.size(); ++destIndex) {
+      // This is terrible. For now.
       auto srcIndex = keys[destIndex];
-      auto [value, isNull] = backingStore.get(srcIndex);
-      destData[destIndex] = std::move(value);
+      backingStore.get(srcIndex, srcIndex + 1, destData, destNull);
+      ++destData;
       if (destNull != nullptr) {
-        destNull[destIndex] = isNull;
+        ++destNull;
       }
     }
   }
@@ -71,14 +70,13 @@ struct ColumnSourceImpls {
 
     const auto *srcData = typedSrc->data();
     const auto *nullData = optionalSrcNullFlags != nullptr ? optionalSrcNullFlags->data() : nullptr;
-    size_t srcIndex = 0;
-    auto applyChunk = [srcData, &srcIndex, nullData, backingStore](uint64_t begin, uint64_t end) {
+    auto applyChunk = [&srcData, &nullData, backingStore](uint64_t begin, uint64_t end) {
       backingStore->ensureCapacity(end);
-      for (auto destIndex = begin; destIndex != end; ++destIndex) {
-        auto value = srcData[srcIndex];
-        auto forceNull = nullData != nullptr && nullData[srcIndex];
-        backingStore->set(destIndex, value, forceNull);
-        ++srcIndex;
+      backingStore->set(begin, end, srcData, nullData);
+      auto size = end - begin;
+      srcData += size;
+      if (nullData != nullptr) {
+        nullData += size;
       }
     };
     rows.forEachInterval(applyChunk);
@@ -99,11 +97,14 @@ struct ColumnSourceImpls {
     const auto *srcData = typedSrc->data();
     const auto *nullData = optionalSrcNullFlags != nullptr ? optionalSrcNullFlags->data() : nullptr;
     for (size_t srcIndex = 0; srcIndex < typedSrc->size(); ++srcIndex) {
+      // This is terrible. For now.
       auto destIndex = keyData[srcIndex];
       backingStore->ensureCapacity(destIndex + 1);
-      auto value = srcData[srcIndex];
-      auto forceNull = nullData != nullptr && nullData[srcIndex];
-      backingStore->set(destIndex, value, forceNull);
+      backingStore->set(destIndex, destIndex + 1, srcData, nullData);
+      ++srcData;
+      if (nullData != nullptr) {
+        ++nullData;
+      }
     }
   }
 };

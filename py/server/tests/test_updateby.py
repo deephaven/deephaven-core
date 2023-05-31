@@ -6,7 +6,7 @@ import unittest
 
 from deephaven import read_csv, time_table, ugp
 from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick, ema_time, \
-    ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, \
+    ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, emstd_tick, emstd_time,\
     cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
@@ -35,29 +35,35 @@ class UpdateByTestCase(BaseTestCase):
 
         cls.em_ops = [
             # exponential moving average
-            ema_tick(time_scale_ticks=100, cols="ema_a = a"),
-            ema_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            ema_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            ema_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            ema_tick(decay_ticks=100, cols="ema_a = a"),
+            ema_tick(decay_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
+            ema_time(ts_col="Timestamp", decay_time=10, cols="ema_a = a"),
+            ema_time(ts_col="Timestamp", decay_time="00:00:00.001", cols="ema_c = c",
                            op_control=cls.em_op_ctrl),
             # exponential moving sum
-            ems_tick(time_scale_ticks=100, cols="ema_a = a"),
-            ems_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            ems_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            ems_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            ems_tick(decay_ticks=100, cols="ems_a = a"),
+            ems_tick(decay_ticks=100, cols="ems_a = a", op_control=cls.em_op_ctrl),
+            ems_time(ts_col="Timestamp", decay_time=10, cols="ems_a = a"),
+            ems_time(ts_col="Timestamp", decay_time="00:00:00.001", cols="ems_c = c",
                            op_control=cls.em_op_ctrl),
             # exponential moving minimum
-            emmin_tick(time_scale_ticks=100, cols="ema_a = a"),
-            emmin_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            emmin_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            emmin_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            emmin_tick(decay_ticks=100, cols="emmin_a = a"),
+            emmin_tick(decay_ticks=100, cols="emmin_a = a", op_control=cls.em_op_ctrl),
+            emmin_time(ts_col="Timestamp", decay_time=10, cols="emmin_a = a"),
+            emmin_time(ts_col="Timestamp", decay_time="00:00:00.001", cols="emmin_c = c",
                              op_control=cls.em_op_ctrl),
             # exponential moving maximum
-            emmax_tick(time_scale_ticks=100, cols="ema_a = a"),
-            emmax_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            emmax_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            emmax_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            emmax_tick(decay_ticks=100, cols="emmax_a = a"),
+            emmax_tick(decay_ticks=100, cols="emmax_a = a", op_control=cls.em_op_ctrl),
+            emmax_time(ts_col="Timestamp", decay_time=10, cols="emmax_a = a"),
+            emmax_time(ts_col="Timestamp", decay_time="00:00:00.001", cols="emmax_c = c",
                              op_control=cls.em_op_ctrl),
+            # exponential moving standard deviation
+            emstd_tick(decay_ticks=100, cols="emstd_a = a"),
+            emstd_tick(decay_ticks=100, cols="emstd_a = a", op_control=cls.em_op_ctrl),
+            emstd_time(ts_col="Timestamp", decay_time=10, cols="emstd_a = a"),
+            emstd_time(ts_col="Timestamp", decay_time="00:00:00.001", cols="emtd_c = c",
+                       op_control=cls.em_op_ctrl),
         ]
 
         cls.simple_ops = [
