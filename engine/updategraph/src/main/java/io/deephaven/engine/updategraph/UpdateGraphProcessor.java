@@ -10,6 +10,7 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.*;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -54,11 +55,15 @@ import java.util.function.Supplier;
  * <p>
  * This class can be configured via the following {@link Configuration} property
  * <ul>
- * <li>{@value UpdateContext#DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP}(optional)</i> - The default target cycle time in
- * ms (1000 if not defined)</li>
+ * <li>{@value DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP}(optional)</i> - The default target cycle time in ms (1000 if
+ * not defined)</li>
  * </ul>
  */
-public class UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQueue, NotificationQueue.Dependency {
+public class UpdateGraphProcessor implements UpdateGraph {
+
+    public static Builder newBuilder(final String name) {
+        return new Builder(name);
+    }
 
     private final Logger log = LoggerFactory.getLogger(UpdateGraphProcessor.class);
 
@@ -107,12 +112,17 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      */
     private LongConsumer watchDogTimeoutProcedure = null;
 
+    public static final String ALLOW_UNIT_TEST_MODE_PROP = "UpdateGraphProcessor.allowUnitTestMode";
     private final boolean ALLOW_UNIT_TEST_MODE;
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
     private boolean unitTestMode = false;
     private ExecutorService unitTestRefreshThreadPool;
 
+    public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
+            "UpdateGraphProcessor.targetCycleDurationMillis";
+    public static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
+            "UpdateGraphProcessor.minimumCycleDurationToLogMillis";
     private final long DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
@@ -136,67 +146,6 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      * Accumulated delays due to intracycle sleeps for the current cycle (or previous, if idle).
      */
     private long currentCycleSleepTotalNanos = 0L;
-
-    public static class AccumulatedCycleStats {
-        /**
-         * Number of cycles run.
-         */
-        public int cycles = 0;
-        /**
-         * Number of cycles run not exceeding their time budget.
-         */
-        public int cyclesOnBudget = 0;
-        /**
-         * Accumulated safepoints over all cycles.
-         */
-        public int safePoints = 0;
-        /**
-         * Accumulated safepoint time over all cycles.
-         */
-        public long safePointPauseTimeMillis = 0L;
-
-        public int[] cycleTimesMicros = new int[32];
-        public static final int MAX_DOUBLING_LEN = 1024;
-
-        synchronized void accumulate(
-                final long targetCycleDurationMillis,
-                final long cycleTimeNanos,
-                final long safePoints,
-                final long safePointPauseTimeMillis) {
-            final boolean onBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
-            if (onBudget) {
-                ++cyclesOnBudget;
-            }
-            this.safePoints += safePoints;
-            this.safePointPauseTimeMillis += safePointPauseTimeMillis;
-            if (cycles >= cycleTimesMicros.length) {
-                final int newLen;
-                if (cycleTimesMicros.length < MAX_DOUBLING_LEN) {
-                    newLen = cycleTimesMicros.length * 2;
-                } else {
-                    newLen = cycleTimesMicros.length + MAX_DOUBLING_LEN;
-                }
-                cycleTimesMicros = Arrays.copyOf(cycleTimesMicros, newLen);
-            }
-            cycleTimesMicros[cycles] = (int) ((cycleTimeNanos + 500) / 1_000);
-            ++cycles;
-        }
-
-        public synchronized void take(final AccumulatedCycleStats out) {
-            out.cycles = cycles;
-            out.cyclesOnBudget = cyclesOnBudget;
-            out.safePoints = safePoints;
-            out.safePointPauseTimeMillis = safePointPauseTimeMillis;
-            if (out.cycleTimesMicros.length < cycleTimesMicros.length) {
-                out.cycleTimesMicros = new int[cycleTimesMicros.length];
-            }
-            System.arraycopy(cycleTimesMicros, 0, out.cycleTimesMicros, 0, cycles);
-            cycles = 0;
-            cyclesOnBudget = 0;
-            safePoints = 0;
-            safePointPauseTimeMillis = 0;
-        }
-    }
 
     public final AccumulatedCycleStats accumulatedCycleStats = new AccumulatedCycleStats();
 
@@ -237,8 +186,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
     private final boolean interCycleYield =
             Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.interCycleYield", false);
 
-    private final LogicalClock logicalClock = new LogicalClock();
-    private final UpdateContext updateContext = new UpdateContext(this);
+    private final LogicalClockImpl logicalClock = new LogicalClockImpl();
 
     /**
      * Encapsulates locking support.
@@ -301,12 +249,9 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
         return new LogOutputStringImpl().append(this).toString();
     }
 
-    public LogicalClock getLogicalClock() {
+    @Override
+    public LogicalClock clock() {
         return logicalClock;
-    }
-
-    public UpdateContext getUpdateContext() {
-        return updateContext;
     }
 
     @NotNull
@@ -373,7 +318,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      *
      * @return the number of update threads configured.
      */
-    @SuppressWarnings("unused")
+    @Override
     public int getUpdateThreads() {
         if (notificationProcessor == null) {
             return updateThreads;
@@ -430,6 +375,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      *
      * @return whether this is one of our run threads.
      */
+    @Override
     public boolean isRefreshThread() {
         return isRefreshThread.get();
     }
@@ -452,6 +398,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      * {@link #setCheckTableOperations(boolean)} to set a thread local variable bypassing this check.
      * </p>
      */
+    @Override
     public void checkInitiateTableOperation() {
         if (!getCheckTableOperations() || exclusiveLock().isHeldByCurrentThread()
                 || sharedLock().isHeldByCurrentThread() || isRefreshThread()) {
@@ -471,7 +418,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      * @param value the new value of check table operations
      * @return the old value of check table operations
      */
-    @SuppressWarnings("unused")
+    @Override
     public boolean setCheckTableOperations(boolean value) {
         final boolean old = checkTableOperations.get();
         checkTableOperations.set(value);
@@ -532,6 +479,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      *
      * @param targetCycleDurationMillis The target duration for update cycles in milliseconds
      */
+    @Override
     public void setTargetCycleDurationMillis(final long targetCycleDurationMillis) {
         this.targetCycleDurationMillis = Math.max(targetCycleDurationMillis, 0);
     }
@@ -542,18 +490,18 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      *
      * @return The {@link #setTargetCycleDurationMillis(long) current} target cycle duration
      */
-    @SuppressWarnings("unused")
+    @Override
     public long getTargetCycleDurationMillis() {
         return targetCycleDurationMillis;
     }
 
     /**
-     * Resets the run cycle time to the default target configured via the {@link UpdateContext.Builder} setting.
+     * Resets the run cycle time to the default target configured via the {@link Builder} setting.
      *
-     * @implNote If the {@link UpdateContext.Builder#targetCycleDurationMillis(long)} property is not set, this value
-     *           defaults to {@link UpdateContext.Builder#DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} which defaults to
-     *           1000ms.
+     * @implNote If the {@link Builder#targetCycleDurationMillis(long)} property is not set, this value defaults to
+     *           {@link Builder#DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} which defaults to 1000ms.
      */
+    @Override
     @SuppressWarnings("unused")
     public void resetCycleDuration() {
         targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
@@ -806,6 +754,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
      *
      * @see #addNotification(Notification)
      */
+    @Override
     public void addNotifications(@NotNull final Collection<? extends Notification> notifications) {
         synchronized (pendingNormalNotifications) {
             synchronized (terminalNotifications) {
@@ -915,7 +864,7 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
     }
 
     /**
-     * Begin the next {@link LogicalClock#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
+     * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
      * unit-test} mode. Note that this happens on a simulated UGP run thread, rather than this thread.
      */
     @TestUseOnly
@@ -944,8 +893,8 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
 
     /**
      * Do the second half of the update cycle, including flushing notifications, and completing the
-     * {@link LogicalClock#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated UGP
-     * run thread, rather than this thread.
+     * {@link LogicalClockImpl#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated
+     * UGP run thread, rather than this thread.
      */
     @TestUseOnly
     public void completeCycleForUnitTests() {
@@ -1903,6 +1852,90 @@ public class UpdateGraphProcessor implements UpdateSourceRegistrar, Notification
 
         // refresh threads run under our update context
         // noinspection resource
-        updateContext.open();
+        ExecutionContext.getContext().withUpdateGraph(this).open();
+    }
+
+    @Override
+    public void takeAccumulatedCycleStats(AccumulatedCycleStats ugpAccumCycleStats) {
+        accumulatedCycleStats.take(ugpAccumCycleStats);
+    }
+
+    public static final class Builder {
+        private boolean allowUnitTestMode =
+                Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
+        private long targetCycleDurationMillis =
+                Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+        private long minimumCycleDurationToLogNanos = TimeUnit.MILLISECONDS.toNanos(
+                Configuration.getInstance().getIntegerWithDefault(MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP, 25));
+
+        private String name;
+        private int numUpdateThreads = -1;
+
+        public Builder(String name) {
+            this.name = name;
+        }
+
+        /**
+         * This enables Unit Test Mode. Unit tests mode allows complete control over the update graph processor. This is
+         * useful for testing boundary conditions to validate the behavior of table operations.
+         *
+         * @param allowUnitTestMode true to allow unit test mode
+         * @return this builder
+         */
+        public Builder allowUnitTestMode(boolean allowUnitTestMode) {
+            this.allowUnitTestMode = allowUnitTestMode;
+            return this;
+        }
+
+        /**
+         * Set the target duration of an update cycle, including the updating phase and the idle phase. This is also the
+         * target interval between the start of one cycle and the start of the next.
+         *
+         * @implNote Any target cycle duration {@code < 0} will be clamped to 0.
+         *
+         * @param targetCycleDurationMillis The target duration for update cycles in milliseconds
+         * @return this builder
+         */
+        public Builder targetCycleDurationMillis(long targetCycleDurationMillis) {
+            this.targetCycleDurationMillis = targetCycleDurationMillis;
+            return this;
+        }
+
+        /**
+         * Set the minimum duration of an update cycle that should be logged at the INFO level.
+         *
+         * @param minimumCycleDurationToLogNanos threshold to log a slow cycle
+         * @return this builder
+         */
+        public Builder minimumCycleDurationToLogNanos(long minimumCycleDurationToLogNanos) {
+            this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
+            return this;
+        }
+
+        /**
+         * Sets the number of threads to use in the update graph processor. Values < 0 indicate to use one thread per
+         * available processor.
+         *
+         * @param numUpdateThreads number of threads to use in update processing
+         * @return this builder
+         */
+        public Builder numUpdateThreads(int numUpdateThreads) {
+            this.numUpdateThreads = numUpdateThreads;
+            return this;
+        }
+
+        /**
+         * Creates an UpdateGraphProcessor, starts it, and returns the UpdateContext associated with it.
+         *
+         * @return an update context wrapping the newly constructed update graph processor
+         */
+        public UpdateGraphProcessor build() {
+            return new UpdateGraphProcessor(
+                    name,
+                    allowUnitTestMode,
+                    targetCycleDurationMillis,
+                    minimumCycleDurationToLogNanos,
+                    numUpdateThreads);
+        }
     }
 }

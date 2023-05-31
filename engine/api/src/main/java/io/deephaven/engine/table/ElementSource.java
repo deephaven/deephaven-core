@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table;
 
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.Nullable;
 
@@ -90,9 +91,8 @@ public interface ElementSource<T> {
 
     /**
      * Get the previous value at the rowKey. Previous values are used during an
-     * {@link io.deephaven.engine.updategraph.UpdateGraphProcessor UGP}
-     * {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating update} cycle to process changes in data.
-     * During {@link io.deephaven.engine.updategraph.LogicalClock.State#Idle normal} operation previous values will be
+     * {@link io.deephaven.engine.updategraph.UpdateGraphProcessor UGP} {@link LogicalClock.State#Updating update} cycle
+     * to process changes in data. During {@link LogicalClock.State#Idle normal} operation previous values will be
      * identical to {@link #get(long) current} values. RowKeys that were not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.

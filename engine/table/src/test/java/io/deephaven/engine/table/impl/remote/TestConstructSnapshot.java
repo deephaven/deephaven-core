@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.SleepUtil;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -35,18 +35,18 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
 
         changed.setValue(0);
         final Thread t = new Thread(snapshot_test);
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         t.start();
         t.join();
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         assertEquals(0, changed.longValue());
 
         changed.setValue(0);
         final Thread t2 = new Thread(snapshot_test);
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         t2.start();
         SleepUtil.sleep(100);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         t2.join();
         assertEquals(1, changed.longValue());
     }

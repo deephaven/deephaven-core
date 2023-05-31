@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.server.session.SessionState;
@@ -36,11 +37,15 @@ public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
                 .map(ColumnName::of)
                 .collect(Collectors.toList());
         try (final SafeCloseable ignored = lock(parent)) {
-            return parent.getUpdateContext().apply(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
+            return parent.ungroup(request.getNullFill(), columnsToUngroup);
         }
     }
 
     private static SafeCloseable lock(Table base) {
-        return base.isRefreshing() ? base.getUpdateContext().getSharedLock().lockCloseable() : null;
+        if (base.isRefreshing()) {
+            return base.getUpdateGraph().sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 }

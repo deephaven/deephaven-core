@@ -1,8 +1,8 @@
 package io.deephaven.engine.bench;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -61,7 +61,7 @@ public abstract class IncrementalSortRedirectionBase {
     public void setup(Blackhole blackhole) throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        ugp = UpdateContext.updateGraphProcessor();
+        ugp = ExecutionContext.getContext().getUpdateGraph();
 
         final int componentSize = 2000000;
         final int numBuckets = 2000;

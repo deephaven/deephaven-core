@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
-import io.deephaven.engine.updategraph.UpdateContext;
 import junit.framework.TestCase;
 import org.junit.Assert;
 
@@ -258,7 +258,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                 final RowSetShiftData shifted) {
             ++updateCount;
 
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(modTable::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(modTable::run);
             showWithRowSet(sourceTable);
 
             if (listener instanceof SimpleShiftObliviousListener) {
@@ -333,7 +333,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final Table expected = odds.sumBy("B");
         final Table actual = odds.flatten().sumBy("B");
         assertTableEquals(expected, actual);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(upstream, RowSetFactory.fromRange(100_001, 200_000));
             upstream.notifyListeners(RowSetFactory.fromRange(100_001, 200_000), i(),
                     RowSetFactory.fromRange(0, 100_000));

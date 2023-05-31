@@ -147,6 +147,6 @@ public class UpdatableTable extends QueryTable implements Runnable {
     @Override
     public void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 }

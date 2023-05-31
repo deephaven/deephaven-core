@@ -1619,7 +1619,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final AggregationContext ac,
             @NotNull final MutableInt outputPosition,
             @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier) {
-        initialKeys.checkUpdateContextConsistency();
+        initialKeys.getUpdateGraph();
 
         // This logic is duplicative of the logic in the main aggregation function, but it's hard to consolidate
         // further. A better strategy might be to do a selectDistinct first, but that would result in more hash table

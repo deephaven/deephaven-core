@@ -4,6 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -13,7 +14,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.vector.ObjectVector;
@@ -728,7 +728,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
                     () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
@@ -757,7 +757,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
                     () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
@@ -900,7 +900,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -930,7 +930,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }

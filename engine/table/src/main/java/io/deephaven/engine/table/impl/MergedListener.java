@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
@@ -14,7 +15,6 @@ import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -86,7 +86,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private void notifyInternal(@Nullable final Throwable upstreamError,
             @Nullable final TableListener.Entry errorSourceEntry) {
-        final long currentStep = UpdateContext.logicalClock().currentStep();
+        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
 
         synchronized (this) {
             if (notificationStep == currentStep) {
@@ -115,7 +115,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             queuedNotificationStep = currentStep;
         }
 
-        UpdateContext.updateGraphProcessor().addNotification(new MergedNotification());
+        ExecutionContext.getContext().getUpdateGraph().addNotification(new MergedNotification());
     }
 
     private void propagateError(
@@ -138,7 +138,8 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected void propagateErrorDownstream(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        if (fromProcess && result.getLastNotificationStep() == UpdateContext.logicalClock().currentStep()) {
+        if (fromProcess && result.getLastNotificationStep() == ExecutionContext.getContext().getUpdateGraph().clock()
+                .currentStep()) {
             // If the result managed to send its notification, we should not send our own on this cycle.
             if (!result.isFailed()) {
                 // If the result isn't failed, we need to mark it as such on the next cycle.
@@ -169,7 +170,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             this.error = error;
             this.entry = entry;
             this.targetReferences = targets.stream().map(WeakReference::new).collect(Collectors.toList());
-            UpdateContext.updateGraphProcessor().addSource(this);
+            ExecutionContext.getContext().getUpdateGraph().addSource(this);
         }
 
         @Override
@@ -178,7 +179,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                     .map(WeakReference::get)
                     .filter(Objects::nonNull)
                     .forEach(t -> t.notifyListenersOnError(error, entry));
-            UpdateContext.updateGraphProcessor().removeSource(this);
+            ExecutionContext.getContext().getUpdateGraph().removeSource(this);
         }
     }
 
@@ -200,7 +201,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     public boolean satisfied(final long step) {
         // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
             return true;
         }
@@ -208,14 +209,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
         // cheap check that may let us avoid recursively checking all the dependencies.
         if (queuedNotificationStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Enqueued notification for ").append(this).append(", step=").append(step).endl();
             return false;
         }
 
         // Recursively check to see if our dependencies have been satisfied.
         if (!canExecute(step)) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
             return false;
         }
@@ -223,7 +224,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // Let's check again and see if we got lucky and another thread completed us while we were checking our
         // dependencies.
         if (lastCompletedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Already completed notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
@@ -233,14 +234,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // We check the queued notification step again after the dependency check. It is possible that something
         // enqueued us while we were evaluating the dependencies, and we must not miss that race.
         if (queuedNotificationStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Enqueued notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
             return false;
         }
 
-        UpdateContext.updateGraphProcessor().logDependencies()
+        ExecutionContext.getContext().getUpdateGraph().logDependencies()
                 .append("Dependencies satisfied for ").append(this)
                 .append(", lastCompleted=").append(lastCompletedStep)
                 .append(", lastQueued=").append(queuedNotificationStep)
@@ -271,7 +272,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
         @Override
         public void run() {
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             try {
                 if (queuedNotificationStep != currentStep) {
                     // noinspection ConstantConditions
@@ -311,7 +312,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                         notificationStep = queuedNotificationStep;
                     }
                     process();
-                    UpdateContext.updateGraphProcessor().logDependencies()
+                    ExecutionContext.getContext().getUpdateGraph().logDependencies()
                             .append("MergedListener has completed execution ")
                             .append(this).endl();
                 } finally {

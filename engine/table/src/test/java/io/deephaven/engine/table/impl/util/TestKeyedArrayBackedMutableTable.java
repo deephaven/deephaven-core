@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
@@ -164,7 +164,7 @@ public class TestKeyedArrayBackedMutableTable {
         mutableInputTable.addRow(randyMap, true, listener);
         SleepUtil.sleep(100);
         listener.assertIncomplete();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(kabut::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, input2), kabut);
         listener.waitForCompletion();
         listener.assertSuccess();
@@ -177,7 +177,7 @@ public class TestKeyedArrayBackedMutableTable {
         mutableInputTable.addRow(randyMap2, false, listener2);
         SleepUtil.sleep(100);
         listener2.assertIncomplete();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(kabut::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, input2), kabut);
         listener2.waitForCompletion();
         listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
@@ -236,7 +236,7 @@ public class TestKeyedArrayBackedMutableTable {
                 CollectionUtil.mapFromArray(String.class, Object.class, "Name", "George", "Employer", "Cogswell");
         mutableInputTable.setRow(defaultValues, 0, cogMap);
         SleepUtil.sleep(100);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(kabut::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, ex2).lastBy("Name"), kabut);
     }
 
@@ -300,7 +300,7 @@ public class TestKeyedArrayBackedMutableTable {
         table.setOnPendingChange(gate::countDown);
         try {
             refreshThread = new Thread(() -> {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                     try {
                         gate.await();
                     } catch (InterruptedException ignored) {

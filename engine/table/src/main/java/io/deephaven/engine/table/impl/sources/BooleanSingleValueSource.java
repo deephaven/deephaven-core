@@ -13,12 +13,12 @@ import io.deephaven.chunk.WritableObjectChunk;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
@@ -47,7 +47,7 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
     @Override
     public final void set(Boolean value) {
         if (isTrackingPrevValues) {
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -82,7 +82,7 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        if (!isTrackingPrevValues || changeTime < UpdateContext.logicalClock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
             return current;
         }
         return prev;

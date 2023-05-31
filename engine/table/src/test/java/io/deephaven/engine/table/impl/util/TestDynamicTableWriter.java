@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
@@ -45,7 +45,7 @@ public class TestDynamicTableWriter {
         writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -91,7 +91,7 @@ public class TestDynamicTableWriter {
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row3 = writer.getRowWriter();
@@ -109,7 +109,7 @@ public class TestDynamicTableWriter {
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
                 charCol("CC", 'A', 'C', 'D'),
@@ -143,7 +143,7 @@ public class TestDynamicTableWriter {
         writer.getSetter("LC").setLong(4);
         writer.getSetter("FC").setFloat(5.5f);
         writer.writeRow();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -166,7 +166,7 @@ public class TestDynamicTableWriter {
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
                 charCol("CC", QueryConstants.NULL_CHAR),
@@ -193,7 +193,7 @@ public class TestDynamicTableWriter {
 
         addRow(writer, Row.Flags.SingleRow, "Fred", 1);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table lonelyFred =
                 TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
@@ -202,29 +202,29 @@ public class TestDynamicTableWriter {
         addRow(writer, Row.Flags.StartTransaction, "Barney", 2);
         addRow(writer, Row.Flags.None, "Betty", 3);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         TstUtils.assertTableEquals(lonelyFred, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Bam-Bam", 4);
 
         TstUtils.assertTableEquals(lonelyFred, result);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
 
         final Table withRubbles = TableTools.newTable(
                 TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"), TableTools.intCol("B", 1, 2, 3, 4));
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Wilma", 5);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Pebbles", 6);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Wilma", 7);
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(result::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(result::run);
         final Table allTogether =
                 TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
                         TableTools.intCol("B", 1, 2, 3, 4, 6, 7));

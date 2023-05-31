@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -159,7 +158,7 @@ public class SessionState {
         this.authContext = authContext;
         this.executionContext = executionContextProvider.get()
                 .withAuthContext(authContext)
-                .withUpdateContext(UpdateContext.get());
+                .withUpdateGraph(ExecutionContext.getContext().getUpdateGraph());
         log.debug().append(logPrefix).append("session initialized").endl();
     }
 

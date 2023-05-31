@@ -78,7 +78,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
-        updateContext.getUpdateGraphProcessor().addSource(this);
+        updateGraph.addSource(this);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
     @Override
     protected void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 
     @Override

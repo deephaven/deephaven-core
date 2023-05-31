@@ -7,6 +7,7 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
@@ -19,7 +20,6 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -635,7 +635,7 @@ public class TestEms extends BaseUpdateByTest {
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             try {
                 if (appendOnly) {
-                    UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                    ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                         generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
                         generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
                     });

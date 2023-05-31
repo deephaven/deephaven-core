@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.chunk.*;
@@ -13,7 +14,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +55,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
         Assert.eq(newCurrent.getComponentType(), "newCurrent.getComponentType()", getComponentType(),
                 "getComponentType()");
         prevSource = currentSource;
-        prevValidityStep = UpdateContext.logicalClock().currentStep();
+        prevValidityStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         currentSource = newCurrent;
         updateCommitter.maybeActivate();
     }
@@ -295,7 +295,8 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
 
     private boolean prevInvalid() {
-        return prevValidityStep == -1 || prevValidityStep != UpdateContext.logicalClock().currentStep();
+        return prevValidityStep == -1
+                || prevValidityStep != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
     }
 
     @Override

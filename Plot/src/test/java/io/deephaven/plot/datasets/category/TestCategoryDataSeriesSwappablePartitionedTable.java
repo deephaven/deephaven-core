@@ -4,9 +4,9 @@
 package io.deephaven.plot.datasets.category;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.util.SafeCloseable;
@@ -18,7 +18,7 @@ public class TestCategoryDataSeriesSwappablePartitionedTable extends BaseArrayTe
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
         executionContext = TestExecutionContext.createForUnitTests().open();
     }
 

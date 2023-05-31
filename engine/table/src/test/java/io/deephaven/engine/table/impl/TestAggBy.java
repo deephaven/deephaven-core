@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
@@ -405,7 +404,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'c'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'d'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final RowSet toAdd = i(4, 5, 6, 7);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
@@ -418,7 +417,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'c', 'g'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'d', 'h'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final RowSet toAdd = i(8, 9, 10, 11);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
@@ -430,7 +429,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'c', 'g', 'k'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'d', 'h', 'l'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final RowSet toAdd = i(12, 13, 14, 15);
             addToTable(dataTable, toAdd,
                     intCol("Grp", 1, 2, 3, 4),
@@ -442,7 +441,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'g', 'k', 'o'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'h', 'l', 'p'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(16), intCol("Grp", 1), charCol("Let", 'q'));
             dataTable.notifyListeners(i(16), i(), i());
         });
@@ -451,7 +450,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'k', 'o'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'h', 'l', 'p'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(17), intCol("Grp", 2), charCol("Let", 'r'));
             dataTable.notifyListeners(i(17), i(), i());
         });
@@ -460,7 +459,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'k', 'o'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'l', 'p'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(18), intCol("Grp", 3), charCol("Let", 's'));
             dataTable.notifyListeners(i(18), i(), i());
         });
@@ -469,7 +468,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new char[] {'k', 'o', 's'}, cs.get(2).toArray());
         assertArrayEquals(new char[] {'l', 'p'}, cs.get(3).toArray());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(19), intCol("Grp", 4), charCol("Let", 't'));
             dataTable.notifyListeners(i(19), i(), i());
         });
@@ -494,7 +493,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"VXX", 1L, 1L}, result.getRecord(3));
         assertTableEquals(result, countNulls);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 10),
                     col("USym", "AAPL", "VXX"),
                     longCol("Account", QueryConstants.NULL_LONG, 1),
@@ -508,7 +507,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"AAPL", 3L, 2L}, countNulls.getRecord(0));
         assertArrayEquals(new Object[] {"VXX", 2L, 2L}, countNulls.getRecord(3));
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(2),
                     col("USym", "AAPL"),
                     longCol("Account", QueryConstants.NULL_LONG),
@@ -521,7 +520,7 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         TableTools.showWithRowSet(dataTable, dataTable.size());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 2, 11),
                     col("USym", "AAPL", "AAPL", "SPY"),
                     longCol("Account", 1, 2, QueryConstants.NULL_LONG),
@@ -563,7 +562,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, result.getRecord(3));
         assertTableEquals(result, countNulls);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(2, 10),
                     col("USym", "AAPL", "VXX"),
                     longCol("Account", 1, 5),
@@ -580,7 +579,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         // Check the nulls table
         assertArrayEquals(new Object[] {"VXX", 5L, -1, null}, countNulls.getRecord(3));
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11),
                     col("USym", "USO"),
                     longCol("Account", 2),
@@ -598,7 +597,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"AAPL", 1L, 100, dtDefault}, countNulls.getRecord(0));
 
         //
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11),
                     col("USym", "USO"),
                     longCol("Account", QueryConstants.NULL_LONG),
@@ -609,7 +608,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"USO", null, null, dt2}, result.getRecord(3));
 
         //
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(3, 4, 9, 10),
                     col("USym", "GOOG", "GOOG", "VXX", "VXX"),
                     longCol("Account", 2L, 2L, QueryConstants.NULL_LONG, 99),

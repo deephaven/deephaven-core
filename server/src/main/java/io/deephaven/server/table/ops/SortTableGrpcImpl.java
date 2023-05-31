@@ -36,11 +36,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
     public Table create(final SortTableRequest request,
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
-        final Table original = sourceTables.get(0).get();
-        return original.getUpdateContext().apply(() -> doCreate(request, original));
-    }
 
-    private static Table doCreate(final SortTableRequest request, final Table original) {
+        final Table original = sourceTables.get(0).get();
         Table result = original;
 
         final List<String> absColumns = new ArrayList<>();

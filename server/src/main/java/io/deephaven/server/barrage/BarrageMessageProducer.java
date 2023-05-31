@@ -16,6 +16,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -31,7 +32,7 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -596,9 +597,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= UpdateContext.logicalClock().currentStep()) {
+                if (lastIndexClockStep >= ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
                     throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
-                            + " >= notification on " + UpdateContext.logicalClock().currentStep());
+                            + " >= notification on "
+                            + ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
                 }
 
                 final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
@@ -611,7 +613,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 parentTableSize = parent.size();
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = UpdateContext.logicalClock().currentStep();
+                lastIndexClockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
                 if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
                         log.debug().append(logPrefix)
@@ -842,7 +844,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("step=")
-                    .append(UpdateContext.logicalClock().currentStep())
+                    .append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())
                     .append(", upstream=").append(upstream).append(", activeSubscriptions=")
                     .append(activeSubscriptions.size())
                     .append(", numFullSubscriptions=").append(numFullSubscriptions)
@@ -921,11 +923,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("update accumulation complete for step=")
-                    .append(UpdateContext.logicalClock().currentStep()).endl();
+                    .append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()).endl();
         }
 
-        pendingDeltas.add(new Delta(UpdateContext.logicalClock().currentStep(), deltaColumnOffset,
-                upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
+        pendingDeltas
+                .add(new Delta(ExecutionContext.getContext().getUpdateGraph().clock().currentStep(), deltaColumnOffset,
+                        upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
     }
 
     private void schedulePropagation() {
@@ -1329,8 +1332,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
+                    UpdateGraph updateGraph = parent.getUpdateGraph();
                     long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                            * parent.getUpdateContext().getUpdateGraphProcessor().getTargetCycleDurationMillis()
+                            * updateGraph.getTargetCycleDurationMillis()
                             * 1000000);
 
                     long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * columnCount);

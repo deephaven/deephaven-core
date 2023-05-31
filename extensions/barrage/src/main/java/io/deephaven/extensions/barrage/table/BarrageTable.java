@@ -10,6 +10,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -153,7 +157,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
-        final long currentClockValue = UpdateContext.logicalClock().currentValue();
+        final long currentClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
@@ -364,8 +368,8 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final TableDefinition tableDefinition,
             final Map<String, Object> attributes,
             final long initialViewPortRows) {
-        final UpdateGraphProcessor ugp = UpdateContext.get().getUpdateGraphProcessor();
-        return make(ugp, ugp, executorService, tableDefinition, attributes, initialViewPortRows);
+        final UpdateGraph ug = ExecutionContext.getContext().getUpdateGraph();
+        return make(ug, ug, executorService, tableDefinition, attributes, initialViewPortRows);
     }
 
     @VisibleForTesting
@@ -455,7 +459,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedStep.remove(0);
         }
         processedData.add(snapshotOrDelta.clone());
-        processedStep.add(UpdateContext.logicalClock().currentStep());
+        processedStep.add(ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
     }
 
     protected boolean maybeEnablePrevTracking() {

@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayDeque;
@@ -50,6 +51,6 @@ public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
      */
     @Override
     public void requestRefresh() {
-        UpdateContext.get().getUpdateGraphProcessor().requestRefresh();
+        ExecutionContext.getContext().getUpdateGraph().requestRefresh();
     }
 }

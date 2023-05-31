@@ -5,8 +5,8 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
@@ -64,7 +64,7 @@ public class PercentileByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -188,7 +188,8 @@ public class PercentileByBenchmark {
     @Benchmark
     public Table percentileByStatic(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
-        final Table result = UpdateContext.sharedLock().computeLocked(() -> fut.apply(table));
+        final Table result =
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> fut.apply(table));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -210,7 +211,10 @@ public class PercentileByBenchmark {
     public Table percentileByIncremental(@NotNull final Blackhole bh) {
         final Function<Table, Table> fut = getFunction();
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateContext.sharedLock().computeLocked(() -> fut.apply(t)), table);
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> fut.apply(t));
+                }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

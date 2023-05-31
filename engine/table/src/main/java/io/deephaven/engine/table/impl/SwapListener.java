@@ -8,6 +8,9 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.SwappableDelegatingReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
@@ -210,7 +213,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
             public void run() {
                 log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
                         .append(" swap=").append(System.identityHashCode(SwapListener.this))
-                        .append(", clock=").append(UpdateContext.logicalClock().currentStep())
+                        .append(", clock=").append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())
                         .append("} Firing notification")
                         .endl();
                 notification.run();

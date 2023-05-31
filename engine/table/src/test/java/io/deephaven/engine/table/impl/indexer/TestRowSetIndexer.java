@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -13,7 +14,6 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
@@ -85,46 +85,62 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         addGroupingValidator(queryTable, "queryTable");
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.head(0))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.head(1))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.update("intCol2 = intCol + 1"))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.update("intCol2 = intCol + 1").select())),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.view("Sym", "intCol2 = intCol + 1"))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.avgBy("Sym").sort("Sym"))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.groupBy("Sym", "intCol")
-                                .sort("Sym", "intCol")
-                                .view("doubleCol=max(doubleCol)"))),
-                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
-                        () -> queryTable.avgBy("Sym", "doubleCol")
-                                .sort("Sym", "doubleCol")
-                                .view("intCol=min(intCol)"))),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.head(0));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.head(1));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.update("intCol2 = intCol + 1"));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.update("intCol2 = intCol + 1").select());
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.view("Sym", "intCol2 = intCol + 1"));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.avgBy("Sym").sort("Sym"));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.groupBy("Sym", "intCol")
+                                    .sort("Sym", "intCol")
+                                    .view("doubleCol=max(doubleCol)"));
+                }),
+                EvalNugget.from(() -> {
+                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                            () -> queryTable.avgBy("Sym", "doubleCol")
+                                    .sort("Sym", "doubleCol")
+                                    .view("intCol=min(intCol)"));
+                }),
         };
 
         for (int ii = 0; ii < en.length; ++ii) {
             addGroupingValidator(en[ii].originalValue, "en[" + ii + "]");
         }
 
-        Table by = UpdateContext.exclusiveLock().computeLocked(
+        Table by = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym"));
         addGroupingValidator(by, "groupBy");
-        Table avgBy = UpdateContext.exclusiveLock().computeLocked(
+        Table avgBy = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym"));
         addGroupingValidator(avgBy, "avgBy");
-        Table avgBy1 = UpdateContext.exclusiveLock().computeLocked(
+        Table avgBy1 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> queryTable.avgBy("Sym", "intCol"));
         addGroupingValidator(avgBy1, "avgBy1");
 
-        Table merged = Require.neqNull(UpdateContext.exclusiveLock().computeLocked(
+        Table merged = Require.neqNull(ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TableTools.merge(queryTable)), "TableTools.merge(queryTable)");
         addGroupingValidator(merged, "merged");
-        Table updated = UpdateContext.exclusiveLock()
+        Table updated = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                 .computeLocked(() -> merged.update("HiLo = intCol > 50 ? `Hi` : `Lo`"));
         addGroupingValidator(updated, "updated");
 

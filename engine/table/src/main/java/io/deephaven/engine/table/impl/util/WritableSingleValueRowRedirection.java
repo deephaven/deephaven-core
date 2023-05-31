@@ -4,9 +4,9 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 public class WritableSingleValueRowRedirection extends SingleValueRowRedirection {
@@ -25,14 +25,16 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
 
     @Override
     public synchronized long getPrev(long outerRowKey) {
-        if (updatedClockTick > 0 && updatedClockTick == UpdateContext.logicalClock().currentStep()) {
-            return prevValue;
+        if (updatedClockTick > 0) {
+            if (updatedClockTick == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+                return prevValue;
+            }
         }
         return value;
     }
 
     public synchronized void setValue(long newValue) {
-        final long currentStep = UpdateContext.logicalClock().currentStep();
+        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         if (updatedClockTick > 0 && updatedClockTick != currentStep) {
             prevValue = value;
             updatedClockTick = currentStep;
@@ -47,7 +49,7 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
 
     public void startTrackingPrevValues() {
         prevValue = value;
-        updatedClockTick = UpdateContext.logicalClock().currentStep();
+        updatedClockTick = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
     }
 
     @Override
@@ -61,7 +63,8 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
             @NotNull WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
         final long fillValue = (updatedClockTick > 0 &&
-                updatedClockTick == UpdateContext.logicalClock().currentStep()) ? prevValue : value;
+                updatedClockTick == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) ? prevValue
+                        : value;
         final int sz = outerRowKeys.intSize();
         innerRowKeys.setSize(sz);
         innerRowKeys.asWritableLongChunk().fillWithValue(0, sz, fillValue);

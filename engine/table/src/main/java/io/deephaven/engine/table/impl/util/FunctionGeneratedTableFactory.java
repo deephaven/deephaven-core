@@ -138,7 +138,7 @@ public class FunctionGeneratedTableFactory {
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
                 if (refreshIntervalMs > 0) {
-                    updateContext.getUpdateGraphProcessor().addSource(this);
+                    updateGraph.addSource(this);
                 }
             }
         }
@@ -183,7 +183,7 @@ public class FunctionGeneratedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs > 0) {
-                updateContext.getUpdateGraphProcessor().removeSource(this);
+                updateGraph.removeSource(this);
             }
         }
     }

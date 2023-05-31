@@ -4,6 +4,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.*;
@@ -17,7 +18,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -50,9 +50,9 @@ public class AppendOnlyFixedSizePageRegionTest {
         final DateTime endTime = DateTimeUtils.plus(startTime, 1_000_000_000L);
         final SimulationClock clock = new SimulationClock(startTime, endTime, 100_000_000L);
         final TimeTable[] timeTables = new TimeTable[] {
-                new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, 1000, false),
-                new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, 10000, false),
-                new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, 100000, false)
+                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 1000, false),
+                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 10000, false),
+                new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 100000, false)
         };
         final Table[] withTypes = addTypes(timeTables);
         final DependentRegistrar dependentRegistrar = new DependentRegistrar(withTypes);
@@ -62,7 +62,7 @@ public class AppendOnlyFixedSizePageRegionTest {
         TstUtils.assertTableEquals(expected, actual);
         clock.start();
         while (!clock.done()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 clock.advance();
                 for (final TimeTable timeTable : timeTables) {
                     timeTable.run();
@@ -116,7 +116,7 @@ public class AppendOnlyFixedSizePageRegionTest {
 
         private DependentRegistrar(@NotNull final NotificationQueue.Dependency... dependencies) {
             this.dependencies = dependencies;
-            UpdateGraphProcessor.DEFAULT.addSource(this);
+            ExecutionContext.getContext().getUpdateGraph().addSource(this);
         }
 
         @Override
@@ -131,12 +131,12 @@ public class AppendOnlyFixedSizePageRegionTest {
 
         @Override
         public void requestRefresh() {
-            UpdateGraphProcessor.DEFAULT.requestRefresh();
+            ExecutionContext.getContext().getUpdateGraph().requestRefresh();
         }
 
         @Override
         public void run() {
-            UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
+            ExecutionContext.getContext().getUpdateGraph().addNotification(new AbstractNotification(false) {
                 @Override
                 public boolean canExecute(final long step) {
                     synchronized (DependentRegistrar.this) {

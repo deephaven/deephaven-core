@@ -9,14 +9,12 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -172,7 +170,7 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
             asObject.addUpdateListener(asObjectListener);
 
             while (desc.advance(50)) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

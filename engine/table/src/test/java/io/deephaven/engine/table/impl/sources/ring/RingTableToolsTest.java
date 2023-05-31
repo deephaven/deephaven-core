@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
@@ -10,7 +11,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
@@ -96,7 +96,7 @@ public class RingTableToolsTest {
         final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
         for (int i = 0; i < times; ++i) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 streamHelper.addAndNotify(appendSize, holders);
                 checkEquals(tail, ring);
             });

@@ -4,10 +4,10 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortHelpers;
@@ -78,7 +78,7 @@ public class SortBenchmark {
         Assert.eqTrue(workingSize % sizePerStep == 0, "Cannot evenly divide working size by step size.");
         workingSizeInSteps = workingSize / sizePerStep;
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         final int nVals = (int) (enumSize < 1 ? enumSize * tableSize : enumSize);
         System.out.println("String Values: " + nVals);
@@ -153,7 +153,7 @@ public class SortBenchmark {
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
     }
 
     private long currStep = 0;
@@ -168,7 +168,7 @@ public class SortBenchmark {
         }
         currStep = (currStep + 1) % numSteps;
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
         return incrementalTable;
     }
@@ -176,7 +176,7 @@ public class SortBenchmark {
     @Benchmark
     public Table rollingSort() {
         Assert.eq(rollingSortTable.size(), "result.size()", workingSize, "inputTable.size()");
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(rollingReleaseFilter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(rollingReleaseFilter::run);
         return rollingSortTable;
     }
 
@@ -200,7 +200,7 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added(), update.removed());
             rollingInputTable.notifyListeners(update);
         });
@@ -226,7 +226,7 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added(), update.removed());
             rollingInputTable.notifyListeners(update);
         });

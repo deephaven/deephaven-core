@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.engine.context.ExecutionContext;
+
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 
@@ -38,6 +40,6 @@ public class UpdateCommitter<T> extends TerminalNotification {
             return;
         }
         active = true;
-        UpdateContext.get().getUpdateGraphProcessor().addNotification(this);
+        ExecutionContext.getContext().getUpdateGraph().addNotification(this);
     }
 }

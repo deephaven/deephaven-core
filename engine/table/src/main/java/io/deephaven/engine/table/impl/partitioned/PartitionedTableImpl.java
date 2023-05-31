@@ -153,7 +153,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return merged;
             }
             if (table.isRefreshing()) {
-                table.getUpdateContext().checkInitiateTableOperation();
+                table.getUpdateGraph().checkInitiateTableOperation();
             }
             final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
             merged = unionSourceManager.getResult();
@@ -309,13 +309,13 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
         if (table.isRefreshing()) {
-            table.getUpdateContext().checkInitiateTableOperation();
+            table.getUpdateGraph().checkInitiateTableOperation();
         }
         if (other.table().isRefreshing()) {
-            other.table().getUpdateContext().checkInitiateTableOperation();
+            other.table().getUpdateGraph().checkInitiateTableOperation();
         }
         if (table.isRefreshing() && other.table().isRefreshing()
-                && table.getUpdateContext() != other.table().getUpdateContext()) {
+                && table.getUpdateGraph() != other.table().getUpdateGraph()) {
             throw new IllegalStateException(
                     "Cannot perform a partitioned transform on two tables with different update contexts");
         }
@@ -435,7 +435,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private Table[] snapshotConstituents() {
         if (constituentChangesPermitted) {
             final MutableObject<Table[]> resultHolder = new MutableObject<>();
-            table.checkUpdateContextConsistency();
+            table.getUpdateGraph();
 
             ConstructSnapshot.callDataSnapshotFunction(
                     "PartitionedTable.constituents(): ",

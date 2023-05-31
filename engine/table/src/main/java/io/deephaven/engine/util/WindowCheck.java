@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -22,7 +23,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
@@ -84,7 +85,7 @@ public class WindowCheck {
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        UpdateContext.updateGraphProcessor().checkInitiateTableOperation();
+        ExecutionContext.getContext().getUpdateGraph().checkInitiateTableOperation();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
@@ -107,7 +108,7 @@ public class WindowCheck {
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
-            UpdateContext.updateGraphProcessor().addSource(timeWindowListener);
+            ExecutionContext.getContext().getUpdateGraph().addSource(timeWindowListener);
         }
         return new Pair<>(result, timeWindowListener);
     }
@@ -396,7 +397,8 @@ public class WindowCheck {
         @Override
         public void destroy() {
             super.destroy();
-            result.getUpdateContext().getUpdateGraphProcessor().removeSource(this);
+            UpdateGraph updateGraph = result.getUpdateGraph();
+            updateGraph.removeSource(this);
         }
     }
 
@@ -421,7 +423,7 @@ public class WindowCheck {
 
         private long prevTime = 0;
         private long currentTime = 0;
-        private long clockStep = UpdateContext.logicalClock().currentStep();
+        private long clockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         private final long initialStep = clockStep;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
@@ -481,7 +483,7 @@ public class WindowCheck {
         private void captureTime() {
             prevTime = currentTime;
             currentTime = getTimeNanos();
-            clockStep = UpdateContext.logicalClock().currentStep();
+            clockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         }
 
         @Override
@@ -537,7 +539,7 @@ public class WindowCheck {
         }
 
         private long timeStampForPrev() {
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
         }
     }

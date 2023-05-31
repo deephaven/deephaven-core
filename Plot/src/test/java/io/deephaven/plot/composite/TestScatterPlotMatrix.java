@@ -5,10 +5,10 @@ package io.deephaven.plot.composite;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
@@ -29,21 +29,21 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
         executionContext.close();
     }
 
     public void testScatterPlotMatrix() {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final int[][] ints = new int[length][length];
         final double[][] doubles = new double[length][length];
         final long[][] longs = new long[length][length];
@@ -119,7 +119,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("dimension"));
         }
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     public void testPointSize() {

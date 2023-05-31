@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
@@ -24,7 +24,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     public void testRowRedirection() throws InterruptedException {
         final WritableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
-        final long initialStep = UpdateContext.logicalClock().currentStep();
+        final long initialStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         Writer writer = new Writer("writer", initialStep, index);
         Reader r0 = new Reader("reader0", initialStep, index);
         Reader r1 = new Reader("reader1", initialStep, index);
@@ -111,7 +111,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             // Figure out what step we're in and what step to read from (current or prev).
-            final long logicalClockStartValue = UpdateContext.logicalClock().currentValue();
+            final long logicalClockStartValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             final long stepFromCycle = LogicalClock.getStep(logicalClockStartValue);
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
             final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
@@ -152,7 +152,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             }
 
 
-            final long logicalClockEndValue = UpdateContext.logicalClock().currentValue();
+            final long logicalClockEndValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             if (logicalClockStartValue != logicalClockEndValue) {
                 ++incoherentCycles;
                 return;
@@ -194,8 +194,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
-                final long step = UpdateContext.logicalClock().currentStep();
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+                final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());

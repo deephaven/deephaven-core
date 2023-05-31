@@ -41,7 +41,6 @@ public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctReq
                     "column(s) not found: " + String.join(", ", requestedMissing));
         }
 
-        return parent.getUpdateContext().apply(
-                () -> parent.selectDistinct(request.getColumnNamesList().toArray(String[]::new)));
+        return parent.selectDistinct(request.getColumnNamesList().toArray(String[]::new));
     }
 }

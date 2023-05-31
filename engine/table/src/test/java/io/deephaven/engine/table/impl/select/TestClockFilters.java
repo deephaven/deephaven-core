@@ -3,8 +3,8 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 import static io.deephaven.engine.util.TableTools.col;
@@ -46,13 +46,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput1.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -67,13 +67,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput1.where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -88,13 +88,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput2.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -109,13 +109,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput2.where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -130,13 +130,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput3.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -151,13 +151,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput3.where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });

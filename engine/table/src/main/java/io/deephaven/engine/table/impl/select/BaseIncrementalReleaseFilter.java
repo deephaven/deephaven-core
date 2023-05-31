@@ -71,7 +71,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     private void addToUpdateGraphProcessor() {
         if (!addedToUpdateGraphProcessor) {
-            updateContext.getUpdateGraphProcessor().addSource(this);
+            updateGraph.addSource(this);
             addedToUpdateGraphProcessor = true;
         }
     }
@@ -93,7 +93,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
         if (fullSet.size() <= releasedSize) {
             onReleaseAll();
             releasedSize = fullSet.size();
-            updateContext.getUpdateGraphProcessor().removeSource(this);
+            updateGraph.removeSource(this);
             listener = null;
         }
 
@@ -116,14 +116,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     @ScriptApi
     public void waitForCompletion() throws InterruptedException {
-        if (updateContext.getUpdateGraphProcessor().isRefreshThread()) {
+        if (updateGraph.isRefreshThread()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }
         if (releaseAllNanos != QueryConstants.NULL_LONG) {
             return;
         }
-        updateContext.getExclusiveLock().doLocked(() -> {
+        updateGraph.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 // this only works because we will never actually filter out a row from the result; in the general
                 // WhereFilter case, the result table may not update. We could await on the source table, but
@@ -137,7 +137,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     @ScriptApi
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
-        if (updateContext.getUpdateGraphProcessor().isRefreshThread()) {
+        if (updateGraph.isRefreshThread()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }
@@ -145,7 +145,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
             return;
         }
         final long end = System.currentTimeMillis() + timeoutMillis;
-        updateContext.getExclusiveLock().doLocked(() -> {
+        updateGraph.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 // this only works because we will never actually filter out a row from the result; in the general
                 // WhereFilter case, the result table may not update. We could await on the source table, but
@@ -233,7 +233,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     @Override
     protected void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 
     @Override

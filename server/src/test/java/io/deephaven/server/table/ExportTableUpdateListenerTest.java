@@ -14,7 +14,6 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
@@ -41,15 +40,20 @@ public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private static final UpdateGraphProcessor updateGraphProcessor = UpdateContext.updateGraphProcessor();
+    private static final UpdateGraphProcessor updateGraphProcessor;
+
+    static {
+        updateGraphProcessor = (UpdateGraph) ExecutionContext.getContext().getUpdateGraph();
+    }
+
     private TestControlledScheduler scheduler;
     private TestSessionState session;
     private QueuingResponseObserver observer;
 
     @Before
     public void setup() {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph()).enableUnitTestMode();
+        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph()).resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
 
         scheduler = new TestControlledScheduler();
@@ -59,7 +63,7 @@ public class ExportTableUpdateListenerTest {
 
     @After
     public void tearDown() {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph()).resetForUnitTests(true);
 
         scheduler = null;
         session = null;

@@ -5,12 +5,12 @@ package io.deephaven.stream;
 
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
@@ -32,13 +32,13 @@ import static io.deephaven.engine.util.TableTools.*;
 public class TestStreamToBlinkTableAdapter {
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     @Test
@@ -51,14 +51,14 @@ public class TestStreamToBlinkTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(
-                tableDefinition, streamPublisher, UpdateContext.updateGraphProcessor(), "test");
+                tableDefinition, streamPublisher, ExecutionContext.getContext().getUpdateGraph(), "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
         result.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
@@ -87,7 +87,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
@@ -100,7 +100,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
@@ -111,15 +111,15 @@ public class TestStreamToBlinkTableAdapter {
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
 
         chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
@@ -158,7 +158,7 @@ public class TestStreamToBlinkTableAdapter {
         adapter.accept(chunks);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
@@ -189,7 +189,7 @@ public class TestStreamToBlinkTableAdapter {
         adapter.accept(chunks);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.flat(4), listener.getUpdate().removed());
@@ -202,7 +202,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(expect3, result);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().added());
@@ -212,7 +212,7 @@ public class TestStreamToBlinkTableAdapter {
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
         TstUtils.assertTableEquals(empty, result);
     }
@@ -227,14 +227,14 @@ public class TestStreamToBlinkTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(tableDefinition, streamPublisher,
-                UpdateContext.updateGraphProcessor(), "test");
+                ExecutionContext.getContext().getUpdateGraph(), "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
         result.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
@@ -263,7 +263,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(3), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
@@ -276,7 +276,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
@@ -297,14 +297,14 @@ public class TestStreamToBlinkTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(
-                tableDefinition, streamPublisher, UpdateContext.updateGraphProcessor(), "test");
+                tableDefinition, streamPublisher, ExecutionContext.getContext().getUpdateGraph(), "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
         result.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
@@ -323,7 +323,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(2), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
@@ -337,7 +337,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
@@ -356,14 +356,14 @@ public class TestStreamToBlinkTableAdapter {
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(
-                tableDefinition, streamPublisher, UpdateContext.updateGraphProcessor(), "test");
+                tableDefinition, streamPublisher, ExecutionContext.getContext().getUpdateGraph(), "test");
         final Table result = adapter.table();
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
         result.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
@@ -391,7 +391,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(1, listener.getCount());
         TestCase.assertEquals(RowSetFactory.flat(4048), listener.getUpdate().added());
         TestCase.assertEquals(RowSetFactory.empty(), listener.getUpdate().removed());
@@ -403,7 +403,7 @@ public class TestStreamToBlinkTableAdapter {
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
 
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(1, listener.getCount());
@@ -414,11 +414,11 @@ public class TestStreamToBlinkTableAdapter {
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
 
         listener.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertEquals(0, listener.getCount());
     }
 
@@ -430,7 +430,7 @@ public class TestStreamToBlinkTableAdapter {
         final DummyStreamPublisher streamPublisher = new DummyStreamPublisher();
 
         final StreamToBlinkTableAdapter adapter = new StreamToBlinkTableAdapter(
-                tableDefinition, streamPublisher, UpdateContext.updateGraphProcessor(), "test");
+                tableDefinition, streamPublisher, ExecutionContext.getContext().getUpdateGraph(), "test");
         final Table result = adapter.table();
 
         final MutableBoolean listenerFailed = new MutableBoolean();
@@ -443,7 +443,7 @@ public class TestStreamToBlinkTableAdapter {
         result.addUpdateListener(listener);
 
         streamPublisher.fail = true;
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(adapter::run);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(adapter::run);
         TestCase.assertTrue(listenerFailed.booleanValue());
     }
 

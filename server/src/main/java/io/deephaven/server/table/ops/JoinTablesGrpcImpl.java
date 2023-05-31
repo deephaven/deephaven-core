@@ -22,7 +22,6 @@ import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.locks.AwareFunctionalLock;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -88,11 +87,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         if (!lhs.isRefreshing() && !rhs.isRefreshing()) {
             result = realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request);
         } else {
-            final AwareFunctionalLock sharedLock = lhs.isRefreshing()
-                    ? lhs.getUpdateContext().getSharedLock()
-                    : rhs.getUpdateContext().getExclusiveLock();
-            result = sharedLock.computeLocked(() -> getUpdateContext(lhs, rhs).apply(
-                    () -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request)));
+            result = lhs.getUpdateGraph(rhs).sharedLock()
+                    .computeLocked(() -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
         }
         return result;
     }

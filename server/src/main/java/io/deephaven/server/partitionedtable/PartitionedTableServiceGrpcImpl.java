@@ -38,7 +38,6 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
 
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
-    private final UpdateGraphProcessor updateGraphProcessor;
     private final PartitionedTableServiceContextualAuthWiring authWiring;
     private final TicketResolverBase.AuthTransformation authorizationTransformation;
 
@@ -46,12 +45,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     public PartitionedTableServiceGrpcImpl(
             TicketRouter ticketRouter,
             SessionService sessionService,
-            UpdateGraphProcessor updateGraphProcessor,
             AuthorizationProvider authorizationProvider,
             PartitionedTableServiceContextualAuthWiring authWiring) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
-        this.updateGraphProcessor = updateGraphProcessor;
         this.authWiring = authWiring;
         this.authorizationTransformation = authorizationProvider.getTicketTransformation();
     }
@@ -91,12 +88,12 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                 .require(partitionedTable)
                 .onError(responseObserver)
                 .submit(() -> {
+                    final Table table = partitionedTable.get().table();
                     authWiring.checkPermissionMerge(session.getAuthContext(), request,
-                            Collections.singletonList(partitionedTable.get().table()));
+                            Collections.singletonList(table));
                     Table merged;
-                    if (partitionedTable.get().table().isRefreshing()) {
-                        merged = updateGraphProcessor.sharedLock()
-                                .computeLocked(partitionedTable.get()::merge);
+                    if (table.isRefreshing()) {
+                        merged = table.getUpdateGraph().sharedLock().computeLocked(partitionedTable.get()::merge);
                     } else {
                         merged = partitionedTable.get().merge();
                     }
@@ -141,7 +138,7 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                                         .toArray();
                         table = partitionedTable.get().constituentFor(values);
                     } else {
-                        table = updateGraphProcessor.sharedLock().computeLocked(() -> {
+                        table = keyTable.getUpdateGraph().sharedLock().computeLocked(() -> {
                             long keyTableSize = keyTable.size();
                             if (keyTableSize != 1) {
                                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,

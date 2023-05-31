@@ -3,13 +3,13 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TotalsTableBuilder;
 import io.deephaven.function.Numeric;
 import io.deephaven.vector.DoubleVectorDirect;
@@ -59,7 +59,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                         new ShortGenerator()));
 
         final TotalsTableBuilder builder = new TotalsTableBuilder();
-        final Table totals = UpdateContext.exclusiveLock().computeLocked(
+        final Table totals = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TotalsTableBuilder.makeTotalsTable(builder.applyToTable(queryTable)));
         final Map<String, ? extends ColumnSource<?>> resultColumns = totals.getColumnSourceMap();
         assertEquals(1, totals.size());
@@ -82,7 +82,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         builder.setOperation("Sym", "first");
         builder.setOperation("intCol2", "last");
 
-        final Table totals2 = UpdateContext.exclusiveLock().computeLocked(
+        final Table totals2 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
                 totals2.getColumnSourceMap().keySet());
@@ -100,7 +100,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
-            final Table totals3 = UpdateContext.exclusiveLock().computeLocked(
+            final Table totals3 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                     () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
             assertEquals(
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
@@ -124,7 +124,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     EPSILON);
             assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
 
-            final Table totals4 = UpdateContext.exclusiveLock().computeLocked(
+            final Table totals4 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                     () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
             assertSame(totals3, totals4);
         } finally {
@@ -151,21 +151,21 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return UpdateContext.exclusiveLock().computeLocked(
+                        return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                                 () -> totalsTableBuilder.applyToTable(queryTable));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return UpdateContext.exclusiveLock().computeLocked(
+                        return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                                 () -> TotalsTableBuilder.makeTotalsTable(totalsTableBuilder.applyToTable(queryTable)));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
-                        return UpdateContext.exclusiveLock().computeLocked(
+                        return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                                 () -> TotalsTableBuilder.makeTotalsTable(totalsTableBuilder.applyToTable(queryTable)));
                     }
                 },

@@ -4,11 +4,11 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
@@ -171,7 +171,7 @@ public class TestCharSegmentedSortedArray extends RefreshingTableTestCase {
             asCharacter.addUpdateListener(asCharacterListener);
 
             while (desc.advance(50)) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() ->
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() ->
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asCharacter.intSize());
@@ -214,7 +214,7 @@ public class TestCharSegmentedSortedArray extends RefreshingTableTestCase {
             asCharacter.addUpdateListener(asCharacterListener);
 
             while (desc.advance(50)) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

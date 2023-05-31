@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -58,7 +58,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedIndices) {
-        final long currentStep = UpdateContext.logicalClock().currentStep();
+        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -409,7 +409,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
+                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -460,7 +460,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
+                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -506,7 +506,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         if (keys.size() == 0) {
             return;
         }
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

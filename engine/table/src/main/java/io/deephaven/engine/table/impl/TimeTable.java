@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -20,7 +21,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
@@ -50,7 +50,12 @@ public final class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     public static class Builder {
-        private UpdateSourceRegistrar registrar = UpdateContext.updateGraphProcessor();
+        private UpdateSourceRegistrar registrar;
+
+        {
+            registrar = ExecutionContext.getContext().getUpdateGraph();
+        }
+
         private Clock clock;
         private DateTime startTime;
         private long period;

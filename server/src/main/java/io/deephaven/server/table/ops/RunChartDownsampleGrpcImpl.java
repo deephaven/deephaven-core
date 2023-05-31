@@ -37,10 +37,10 @@ public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDowns
         } else {
             zoomRange = null;
         }
-        return parent.getUpdateContext().apply(() -> parent.apply(new RunChartDownsample(
+        return parent.apply(new RunChartDownsample(
                 request.getPixelCount(),
                 zoomRange,
                 request.getXColumnName(),
-                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))));
+                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
     }
 }

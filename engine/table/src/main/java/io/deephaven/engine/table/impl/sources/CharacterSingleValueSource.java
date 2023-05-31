@@ -6,13 +6,13 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
@@ -42,7 +42,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(Character value) {
         if (isTrackingPrevValues) {
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -55,7 +55,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(char value) {
         if (isTrackingPrevValues) {
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -88,7 +88,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        if (!isTrackingPrevValues || changeTime < UpdateContext.logicalClock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
             return current;
         }
         return prev;

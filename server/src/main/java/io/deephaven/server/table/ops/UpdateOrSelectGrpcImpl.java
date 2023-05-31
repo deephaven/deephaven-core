@@ -10,12 +10,11 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.validation.ColumnExpressionValidator;
-import io.deephaven.util.SafeCloseable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -54,11 +53,9 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
         if (parent.isRefreshing() && requiresSharedLock) {
-            final UpdateContext updateContext = parent.getUpdateContext();
-            try (final SafeCloseable ignored = updateContext.open()) {
-                return updateContext.getSharedLock()
-                        .computeLocked(() -> realTableOperation.apply(parent, Arrays.asList(expressions)));
-            }
+            final UpdateGraph updateGraph = parent.getUpdateGraph();
+            return updateGraph.sharedLock().computeLocked(
+                    () -> realTableOperation.apply(parent, Arrays.asList(expressions)));
         }
 
         return realTableOperation.apply(parent, Arrays.asList(expressions));

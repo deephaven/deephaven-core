@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import org.jetbrains.annotations.NotNull;
 
@@ -15,12 +16,12 @@ import java.util.Collections;
  */
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
-    private final UpdateContext updateContext;
+    private final UpdateGraph updateGraph;
 
     private final WeakReferenceManager<Runnable> combinedTables = new WeakReferenceManager<>(true);
 
     public UpdateSourceCombiner() {
-        updateContext = UpdateContext.get();
+        updateGraph = ExecutionContext.getContext().getUpdateGraph();
     }
 
     @Override
@@ -54,12 +55,12 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
      */
     @Override
     public void requestRefresh() {
-        updateContext.getUpdateGraphProcessor().requestRefresh();
+        updateGraph.requestRefresh();
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 }

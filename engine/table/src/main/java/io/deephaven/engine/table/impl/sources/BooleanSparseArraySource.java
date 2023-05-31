@@ -8,13 +8,13 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
-import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -27,7 +27,6 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -275,8 +274,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
         // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
         // been recorded.
-        return prevFlusher != null &&
-                prepareForParallelPopulationClockCycle != UpdateContext.logicalClock().currentStep();
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
     }
 
     @Override
@@ -424,7 +422,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
 
     @Override
     public void prepareForParallelPopulation(final RowSequence changedRows) {
-        final long currentStep = UpdateContext.logicalClock().currentStep();
+        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }

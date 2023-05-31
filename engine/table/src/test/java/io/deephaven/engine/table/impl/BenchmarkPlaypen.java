@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.parquet.table.ParquetTools;
@@ -104,7 +104,7 @@ public class BenchmarkPlaypen {
         final AutoTuningIncrementalReleaseFilter filter;
         if (incremental) {
             System.out.println("Running test incrementally.");
-            UpdateContext.updateGraphProcessor().enableUnitTestMode();
+            ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
             filter = new AutoTuningIncrementalReleaseFilter(new StreamLoggerImpl(), 0, 1_000_000L, 1.0, true);
             input = viewed.where(filter);
         } else {
@@ -145,7 +145,7 @@ public class BenchmarkPlaypen {
             while (viewed.size() > input.size()) {
                 final long initialSize = input.size();
                 System.out.println("Running UpdateGraphProcessor cycle: " + input.size() + " / " + viewed.size());
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(filter::run);
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(filter::run);
                 if (initialSize == input.size()) {
                     throw new RuntimeException("Did not increase size of input table during cycle!");
                 }

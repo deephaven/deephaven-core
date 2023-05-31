@@ -3,8 +3,8 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
@@ -60,7 +60,7 @@ public class AjBenchmark {
     public void setupEnv(BenchmarkParams params) {
         System.out.println("Setup started: " + new Date());
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;

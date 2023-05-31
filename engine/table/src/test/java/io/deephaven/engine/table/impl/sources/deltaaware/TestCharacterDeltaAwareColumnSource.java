@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.CharChunk;
@@ -26,13 +26,13 @@ import static junit.framework.TestCase.*;
 public class TestCharacterDeltaAwareColumnSource {
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     @Test
@@ -42,7 +42,7 @@ public class TestCharacterDeltaAwareColumnSource {
         final long key1 = 6;
         final char expected1 = ArrayGenerator.randomChars(rng, 1)[0];
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Character> source = new DeltaAwareColumnSource<>(char.class);
         source.ensureCapacity(10);
 
@@ -51,7 +51,7 @@ public class TestCharacterDeltaAwareColumnSource {
         final char actual1 = source.getChar(key1);
         assertEquals(NULL_CHAR, actual0);
         assertEquals(expected1, actual1);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test
@@ -63,15 +63,15 @@ public class TestCharacterDeltaAwareColumnSource {
         final char expected0_0 = values[0];
         final char expected0_1 = values[1];
         final char expected1 = values[2];
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Character> source = new DeltaAwareColumnSource<>(char.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -85,7 +85,7 @@ public class TestCharacterDeltaAwareColumnSource {
         assertEquals(NULL_CHAR, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     /**
@@ -108,7 +108,7 @@ public class TestCharacterDeltaAwareColumnSource {
         final char[] valuesPhase2 = ArrayGenerator.randomChars(rng, length);
         final HashMap<Long, Character> expectedPrev = new HashMap<>();
         final HashMap<Long, Character> expectedCurrent = new HashMap<>();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Character> source = new DeltaAwareColumnSource<>(char.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
@@ -127,10 +127,10 @@ public class TestCharacterDeltaAwareColumnSource {
         // Check some subranges using three ranges.
         final long[] threeRanges = {10, 30, 45, 55, 70, 90};
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         // Now start the second cycle so we have different current and prev values.
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
             final char value = valuesPhase2[(int)ii];
             source.set(ii, value);
@@ -144,7 +144,7 @@ public class TestCharacterDeltaAwareColumnSource {
         checkUsingGet(source, expectedCurrent, expectedPrev, 0, length);
         checkUsingChunk(source, expectedCurrent, expectedPrev, singleRange);
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Character> source, Map<Long, Character> expectedCurrent,

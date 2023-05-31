@@ -3,10 +3,10 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -109,7 +109,7 @@ public class TestRedirectedColumnSource {
         final int chunkSz = stepSz - 7;
         try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
             while (live.size() < t.size()) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incFilter::run);
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incFilter::run);
                 doFillAndCheck(live, "StringsCol", chunk, chunkSz);
             }
         }
@@ -137,10 +137,10 @@ public class TestRedirectedColumnSource {
                 TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         intCol("IntVal", 0, 1, 2, 3, 4, 5));
 
-        final Table a = UpdateContext.sharedLock().computeLocked(
+        final Table a = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
         showWithRowSet(a);
-        final Table b = UpdateContext.sharedLock().computeLocked(
+        final Table b = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
         showWithRowSet(b);
 
@@ -166,7 +166,7 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(expecteds, chunkResult);
         }
 
-        final Table c = UpdateContext.sharedLock().computeLocked(
+        final Table c = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
         showWithRowSet(c);
         final ColumnSource<?> reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
@@ -203,14 +203,14 @@ public class TestRedirectedColumnSource {
             assertArrayEquals(nullBytes, chunkResult);
         }
 
-        final Table captured = UpdateContext.sharedLock().computeLocked(c::snapshot);
+        final Table captured = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(c::snapshot);
         showWithRowSet(captured);
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
         qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
-        UpdateContext.updateGraphProcessor().flushAllNormalNotificationsForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().flushAllNormalNotificationsForUnitTests();
 
         System.out.println("A:");
         showWithRowSet(a);
@@ -232,6 +232,6 @@ public class TestRedirectedColumnSource {
         });
         assertArrayEquals(expecteds, byteList.toArray());
 
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 }

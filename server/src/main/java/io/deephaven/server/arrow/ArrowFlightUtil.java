@@ -13,12 +13,14 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -39,6 +41,7 @@ import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -68,7 +71,7 @@ public class ArrowFlightUtil {
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final SessionState.ExportObject<BaseTable> export =
+        final SessionState.ExportObject<BaseTable<?>> export =
                 ticketRouter.resolve(session, request, "request");
 
         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -600,19 +603,21 @@ public class ArrowFlightUtil {
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
-                    table.getUpdateContext().apply(() -> {
+                    final UpdateGraph ug = table.getUpdateGraph();
+                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
                         // always manage; we do not want the BMP to be destroyed prematurely
                         manage(bmp);
-                    });
+                    }
                 } else if (export instanceof HierarchicalTableView) {
                     final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
-                    hierarchicalTableView.getHierarchicalTable().getSource().getUpdateContext().apply(() -> {
+                    final UpdateGraph ug = hierarchicalTableView.getHierarchicalTable().getSource().getUpdateGraph();
+                    try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         htvs = htvsFactory.create(hierarchicalTableView, listener,
                                 subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
                         // always manage; we do not want the HTVS to be destroyed prematurely
                         manage(htvs);
-                    });
+                    }
                 } else {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                             + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")

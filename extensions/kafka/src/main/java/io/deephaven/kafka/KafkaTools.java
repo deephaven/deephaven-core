@@ -17,6 +17,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -29,7 +30,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -1330,7 +1331,7 @@ public class KafkaTools {
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
-            return UpdateContext.updateGraphProcessor();
+            return ExecutionContext.getContext().getUpdateGraph();
         }
 
         @Override
@@ -1616,11 +1617,13 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isRefreshing()
-                && !UpdateContext.exclusiveLock().isHeldByCurrentThread()
-                && !UpdateContext.sharedLock().isHeldByCurrentThread()) {
-            throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
+        if (table.isRefreshing()) {
+            if (!ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+                if (!ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+                    throw new KafkaPublisherException(
+                            "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
+                }
+            }
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
@@ -1739,7 +1742,8 @@ public class KafkaTools {
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            table().getUpdateContext().getUpdateGraphProcessor().addSource(refreshCombiner);
+            UpdateGraph updateGraph = table().getUpdateGraph();
+            updateGraph.addSource(refreshCombiner);
         }
 
         @Override

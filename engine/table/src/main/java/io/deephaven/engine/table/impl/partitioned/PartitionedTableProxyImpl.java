@@ -177,14 +177,14 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final boolean refreshingResults = target.table().isRefreshing() || otherTable.isRefreshing();
             if (refreshingResults && joinMatches != null) {
                 if (target.table().isRefreshing()) {
-                    target.table().getUpdateContext().checkInitiateTableOperation();
+                    target.table().getUpdateGraph().checkInitiateTableOperation();
                 }
                 if (otherTable.isRefreshing()) {
-                    otherTable.getUpdateContext().checkInitiateTableOperation();
+                    otherTable.getUpdateGraph().checkInitiateTableOperation();
                 }
             }
             if (target.table().isRefreshing() && otherTable.isRefreshing()
-                    && target.table().getUpdateContext() != otherTable.getUpdateContext()) {
+                    && target.table().getUpdateGraph() != otherTable.getUpdateGraph()) {
                 throw new IllegalStateException(
                         "Cannot perform a complexTransform between two tables that have different update contexts.");
             }
@@ -199,13 +199,13 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final boolean refreshingResults = target.table().isRefreshing() || otherTarget.table().isRefreshing();
 
             if (target.table().isRefreshing()) {
-                target.table().getUpdateContext().checkInitiateTableOperation();
+                target.table().getUpdateGraph().checkInitiateTableOperation();
             }
             if (otherTarget.table().isRefreshing()) {
-                otherTarget.table().getUpdateContext().checkInitiateTableOperation();
+                otherTarget.table().getUpdateGraph().checkInitiateTableOperation();
             }
             if (target.table().isRefreshing() && otherTarget.table().isRefreshing()
-                    && target.table().getUpdateContext() != otherTarget.table().getUpdateContext()) {
+                    && target.table().getUpdateGraph() != otherTarget.table().getUpdateGraph()) {
                 throw new IllegalStateException(
                         "Cannot perform a complexTransform between two tables that have different update contexts.");
             }

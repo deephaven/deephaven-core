@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -15,7 +16,6 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -59,20 +59,20 @@ public class TestByteArraySource {
 
     private void testGetChunkGeneric(byte[] values, byte[] newValues, int chunkSize, RowSet rowSet) {
         final ByteArraySource source;
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
     }
 
@@ -266,20 +266,20 @@ public class TestByteArraySource {
 
     private void testFillChunkGeneric(byte[] values, byte[] newValues, int chunkSize, RowSet rowSet) {
         final ByteArraySource source;
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
     }
 
@@ -528,14 +528,14 @@ public class TestByteArraySource {
     public void testFillEmptyChunkWithPrev() {
         final ByteArraySource src = new ByteArraySource();
         src.startTrackingPrevValues();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ByteSparseArraySource.commitUpdates()
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test

@@ -99,7 +99,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
         if (!refreshing) {
             return;
         }
-        updateContext.getUpdateGraphProcessor().addSource(this);
+        updateGraph.addSource(this);
         this.resultTable = listener.getTable();
         listener.setIsRefreshing(true);
     }
@@ -107,7 +107,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
     @Override
     protected void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 
     @Override

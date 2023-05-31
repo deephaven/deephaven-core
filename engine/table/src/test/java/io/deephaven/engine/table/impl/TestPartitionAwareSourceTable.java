@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -14,7 +15,6 @@ import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
@@ -150,7 +150,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         expectedRowSet = RowSetFactory.empty();
 
         SUT = new PartitionAwareSourceTable(TABLE_DEFINITION, "", componentFactory, locationProvider,
-                UpdateContext.updateGraphProcessor());
+                ExecutionContext.getContext().getUpdateGraph());
         assertIsSatisfied();
     }
 
@@ -267,7 +267,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         if (coalesceAndListen) {
             if (ciType == ConcurrentInstantiationType.UpdatingClosed
                     || ciType == ConcurrentInstantiationType.UpdatingOpen) {
-                UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
             }
             try {
                 coalesced = SUT.coalesce();
@@ -286,7 +286,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             assertIsSatisfied();
             assertRowSetEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
-                UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
             }
         }
     }
@@ -334,13 +334,13 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         notification.reset();
-        if (UpdateContext.logicalClock().currentState() == LogicalClock.State.Idle) {
-            UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        if (ExecutionContext.getContext().getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
+            ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         }
         try {
             SUT.refresh();
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
         assertIsSatisfied();
         notification.assertInvoked();
@@ -357,7 +357,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         notification.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(SUT::refresh);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         notification.assertNotInvoked();
 
@@ -383,7 +383,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         errorNotification.reset();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(SUT::refresh);
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         errorNotification.assertInvoked();
 
@@ -405,7 +405,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     @Test
     public void testRedefinition() {
-        UpdateContext.exclusiveLock().doLocked(this::doTestRedefinition);
+        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(this::doTestRedefinition);
     }
 
     private void doTestRedefinition() {

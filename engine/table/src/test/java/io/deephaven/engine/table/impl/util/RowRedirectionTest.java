@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
@@ -26,7 +26,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         }
         rowRedirection.startTrackingPrevValues();
         rowRedirection1.startTrackingPrevValues();
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 rowRedirection1.put(i * 2, i * 3);
             }
@@ -39,7 +39,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
             }
         });
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 rowRedirection.put((i + 1) % 3, i * 2);
             }
@@ -65,7 +65,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         // As of startTrackingPrevValues, get() and getPrev() should both be returning 100 + ii * 2
         rowRedirection.startTrackingPrevValues();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             for (int ii = 0; ii < 100; ++ii) {
                 assertEquals(100 + ii * 2, rowRedirection.get(ii));
             }

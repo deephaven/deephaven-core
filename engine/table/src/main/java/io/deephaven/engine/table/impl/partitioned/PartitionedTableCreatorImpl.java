@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.partitioned;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.api.ColumnName;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
@@ -12,7 +14,6 @@ import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.qst.type.Type;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -88,7 +89,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
 
     @Override
     public PartitionedTable of(@NotNull final Table table) {
-        table.checkUpdateContextConsistency();
+        table.getUpdateGraph();
 
         final Map<Boolean, List<ColumnDefinition<?>>> splitColumns = table.getDefinition().getColumnStream().collect(
                 Collectors.partitioningBy(cd -> Table.class.isAssignableFrom(cd.getDataType())));
@@ -164,12 +165,12 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         if (constituentsToUse.length == 0) {
             throw new IllegalArgumentException("No non-null constituents provided");
         }
-        final UpdateContext updateContext = UpdateContext.get();
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
         for (Table constituent : constituentsToUse) {
-            if (constituent.isRefreshing() && constituent.getUpdateContext() != updateContext) {
+            if (constituent.isRefreshing() && constituent.getUpdateGraph() != updateGraph) {
                 throw new IllegalStateException("Constituent table uses a different update context than what is "
-                        + " currently active. Constituent: " + constituent.getUpdateContext() + ", active context: "
-                        + updateContext);
+                        + " currently active. Constituent: " + constituent.getUpdateGraph() + ", active context: "
+                        + updateGraph);
             }
         }
 

@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -44,7 +44,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -52,7 +52,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -60,7 +60,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(2000);
             timeSeriesFilter.run();
         });
@@ -92,7 +92,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                         UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
                                 new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
                         filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return UpdateContext.exclusiveLock().computeLocked(
+                        return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                                 () -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
                                         .where(unitTestTimeSeriesFilter1));
                     }
@@ -105,7 +105,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             if (ii % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                     unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
                     final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();

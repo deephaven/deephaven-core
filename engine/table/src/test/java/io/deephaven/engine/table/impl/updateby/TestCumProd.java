@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.updateby.UpdateByOperation;
@@ -8,7 +9,6 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.NotNull;
@@ -137,7 +137,7 @@ public class TestCumProd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
-            UpdateContext.updateGraphProcessor()
+            ExecutionContext.getContext().getUpdateGraph()
                     .runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
@@ -159,7 +159,7 @@ public class TestCumProd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(100, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }

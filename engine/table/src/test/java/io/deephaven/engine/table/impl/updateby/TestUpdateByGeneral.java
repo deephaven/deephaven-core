@@ -4,6 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
@@ -16,7 +17,6 @@ import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -173,7 +173,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
-                    UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                    ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                         generateAppends(stepSize, result.random, result.t, result.infos);
                     });
                     validate("Table", nuggets);
@@ -205,22 +205,22 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final QueryTable result = (QueryTable) table.updateBy(
                 List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
             table.notifyListeners(i(8), i(), i());
         });
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
             table.notifyListeners(i(9), i(), i());
         });
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
             table.notifyListeners(i(), i(), i(8));
         });
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
             table.notifyListeners(i(10, 11), i(), i());
         });
@@ -304,7 +304,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
     @Override
     public void reportUpdateError(Throwable t) {
-        UpdateContext.updateGraphProcessor().addNotification(new TerminalNotification() {
+        ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
             @Override
             public void run() {
                 System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
