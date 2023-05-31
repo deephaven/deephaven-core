@@ -8,10 +8,15 @@ library(rdeephaven)
 # I hate this api more than Rcpp hates default arguments
 client <- new(Client, target="192.168.1.241:10000", auth_type="default", credentials=c("",""), session_type="python")
 
-client$run_script("print('Hello world!')")
-
-# open DH table and convert to arrow table
+# open DH table and convert to R dataframe
 static_table <- client$open_table("static_table1")
-arrow_table <- to_arrow_table(static_table)
-data_frame <- as.data.frame(arrow_table)
-data_frame
+data_frame1 <- dh_to_data_frame(static_table)
+data_frame1
+
+# modify dataframe with regular R stuff
+data_frame1$Name_Float_Col <- c(3.14, 2.71, 0.00)
+data_frame1
+
+# push new dataframe back to DH server and retrieve as DH table
+new_static_table <- df_to_dh_table(client, data_frame1, "static_table2")
+new_static_table
