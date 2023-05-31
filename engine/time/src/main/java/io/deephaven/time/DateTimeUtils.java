@@ -1327,20 +1327,20 @@ public class DateTimeUtils {
      * Adds a time period to a date time.
      *
      * @param dateTime starting date time value.
-     * @param period time period.
+     * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
-    public static Instant plus(@Nullable final Instant dateTime, @Nullable final Duration period) {
-        if (dateTime == null || period == null) {
+    public static Instant plus(@Nullable final Instant dateTime, @Nullable final Duration duration) {
+        if (dateTime == null || duration == null) {
             return null;
         }
 
         try {
-            return dateTime.plus(period);
+            return dateTime.plus(duration);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1373,20 +1373,20 @@ public class DateTimeUtils {
      * Adds a time period to a date time.
      *
      * @param dateTime starting date time value.
-     * @param period time period.
+     * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
-        if (dateTime == null || period == null) {
+    public static ZonedDateTime plus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration duration) {
+        if (dateTime == null || duration == null) {
             return null;
         }
 
         try {
-            return dateTime.plus(period);
+            return dateTime.plus(duration);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1465,20 +1465,20 @@ public class DateTimeUtils {
      * Subtracts a time period to a date time.
      *
      * @param dateTime starting date time value.
-     * @param period time period.
+     * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
-    public static Instant minus(@Nullable final Instant dateTime, @Nullable final Duration period) {
-        if (dateTime == null || period == null) {
+    public static Instant minus(@Nullable final Instant dateTime, @Nullable final Duration duration) {
+        if (dateTime == null || duration == null) {
             return null;
         }
 
         try {
-            return dateTime.minus(period);
+            return dateTime.minus(duration);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1511,20 +1511,20 @@ public class DateTimeUtils {
      * Subtracts a time period to a date time.
      *
      * @param dateTime starting date time value.
-     * @param period time period.
+     * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration period) {
-        if (dateTime == null || period == null) {
+    public static ZonedDateTime minus(@Nullable final ZonedDateTime dateTime, @Nullable final Duration duration) {
+        if (dateTime == null || duration == null) {
             return null;
         }
 
         try {
-            return dateTime.minus(period);
+            return dateTime.minus(duration);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
