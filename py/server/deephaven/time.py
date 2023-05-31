@@ -20,9 +20,9 @@ MILLI = 1000000  #: One millisecond in nanosecondsl
 SECOND = 1000000000  #: One second in nanoseconds.
 MINUTE = 60 * SECOND  #: One minute in nanoseconds.
 HOUR = 60 * MINUTE  #: One hour in nanoseconds.
-DAY = 24 * HOUR  #: One day in nanoseconds.
-WEEK = 7 * DAY  #: One week in nanoseconds.
-YEAR = 365 * DAY  #: One year in nanoseconds.
+DAY = 24 * HOUR  #: One day in nanoseconds.  This is one hour of wall time and does not take into account calendar adjustments.
+WEEK = 7 * DAY  #: One week in nanoseconds.  This is 7 days of wall time and does not take into account calendar adjustments.
+YEAR = 31556952000000000  #: One average year in nanoseconds.  This is 365.2425 days of wall time and does not take into account calendar adjustments.
 
 SECONDS_PER_NANO = 1 / SECOND  #: Number of seconds per nanosecond.
 MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
@@ -1029,6 +1029,8 @@ def diff_days(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDat
 
 def diff_years(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
     """ Returns the difference in years between two date time values.  Both values must be of the same type.
+
+    Years are defined in terms of 365.2425 day years.
 
     Args:
         start (Union[Instant,ZonedDateTime]): Start time.

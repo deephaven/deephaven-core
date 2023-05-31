@@ -33,13 +33,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(60 * 60_000_000_000L, DateTimeUtils.HOUR);
         TestCase.assertEquals(24 * 60 * 60_000_000_000L, DateTimeUtils.DAY);
         TestCase.assertEquals(7 * 24 * 60 * 60_000_000_000L, DateTimeUtils.WEEK);
-        TestCase.assertEquals(365 * 24 * 60 * 60_000_000_000L, DateTimeUtils.YEAR);
+        TestCase.assertEquals(31556952000000000L, DateTimeUtils.YEAR);
 
         TestCase.assertEquals(1.0, DateTimeUtils.SECONDS_PER_NANO * DateTimeUtils.SECOND);
         TestCase.assertEquals(1.0, DateTimeUtils.MINUTES_PER_NANO * DateTimeUtils.MINUTE);
         TestCase.assertEquals(1.0, DateTimeUtils.HOURS_PER_NANO * DateTimeUtils.HOUR);
         TestCase.assertEquals(1.0, DateTimeUtils.DAYS_PER_NANO * DateTimeUtils.DAY);
-        TestCase.assertEquals(1.0, DateTimeUtils.YEARS_PER_NANO * DateTimeUtils.YEAR);
+        assertEquals(1.0, DateTimeUtils.YEARS_PER_NANO * DateTimeUtils.YEAR, 1e-10);
     }
 
     public void testParseLocalDate() {
@@ -2250,16 +2250,16 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final double delta =
                 (DateTimeUtils.epochNanos(i2) - DateTimeUtils.epochNanos(i1)) / (double) DateTimeUtils.YEAR;
 
-        TestCase.assertEquals(delta, DateTimeUtils.diffYears(i1, i2));
-        TestCase.assertEquals(-delta, DateTimeUtils.diffYears(i2, i1));
+        assertEquals(delta, DateTimeUtils.diffYears(i1, i2), 1e-10);
+        assertEquals(-delta, DateTimeUtils.diffYears(i2, i1), 1e-10);
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null, i1));
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(i2, null));
 
         final ZonedDateTime zdt1 = i1.atZone(TZ_AL);
         final ZonedDateTime zdt2 = i2.atZone(TZ_AL);
 
-        TestCase.assertEquals(delta, DateTimeUtils.diffYears(zdt1, zdt2));
-        TestCase.assertEquals(-delta, DateTimeUtils.diffYears(zdt2, zdt1));
+        assertEquals(delta, DateTimeUtils.diffYears(zdt1, zdt2), 1e-10);
+        assertEquals(-delta, DateTimeUtils.diffYears(zdt2, zdt1), 1e-10);
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(null, zdt1));
         TestCase.assertEquals(NULL_DOUBLE, DateTimeUtils.diffYears(zdt2, null));
     }

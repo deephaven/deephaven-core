@@ -135,19 +135,20 @@ public class DateTimeUtils {
     public static final long HOUR = 60 * MINUTE;
 
     /**
-     * One day in nanoseconds.
+     * One day in nanoseconds. This is one hour of wall time and does not take into account calendar adjustments.
      */
     public static final long DAY = 24 * HOUR;
 
     /**
-     * One week in nanoseconds.
+     * One week in nanoseconds. This is 7 days of wall time and does not take into account calendar adjustments.
      */
     public static final long WEEK = 7 * DAY;
 
     /**
-     * One year (365 days) in nanoseconds.
+     * One average year in nanoseconds. This is 365.2425 days of wall time and does not take into account calendar
+     * adjustments.
      */
-    public static final long YEAR = 365 * DAY;
+    public static final long YEAR = 31556952000000000L;
 
     /**
      * Maximum time in microseconds that can be converted to a date time without overflow.
@@ -1797,7 +1798,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in years (365-days) between two date time values.
+     * Returns the difference in years between two date time values.
+     *
+     * Years are defined in terms of 365.2425 day years.
      *
      * @param start start time.
      * @param end end time.
@@ -1815,7 +1818,9 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the difference in years (365-days) between two date time values.
+     * Returns the difference in years between two date time values.
+     *
+     * Years are defined in terms of 365.2425 day years.
      *
      * @param start start time.
      * @param end end time.

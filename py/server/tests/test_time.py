@@ -24,7 +24,7 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(60*60*1000000000,HOUR)
         self.assertEqual(24*60*60*1000000000,DAY)
         self.assertEqual(7*24*60*60*1000000000,WEEK)
-        self.assertEqual(31536000000000000,YEAR)
+        self.assertEqual(31556952000000000,YEAR)
 
         self.assertEqual(1/SECOND, SECONDS_PER_NANO)
         self.assertEqual(1/MINUTE, MINUTES_PER_NANO)
@@ -425,8 +425,8 @@ class TimeTestCase(BaseTestCase):
     def test_diff_years(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_instant("2023-12-10T14:21:17.123456789 ET")
-        self.assertEqual(2.0, diff_years(dt1, dt2))
-        self.assertEqual(-2.0, diff_years(dt2, dt1))
+        self.assertAlmostEqual(2.0,diff_years(dt1, dt2), delta=1e-2)
+        self.assertAlmostEqual(-2.0,diff_years(dt2, dt1), delta=1e-2)
         self.assertEqual(NULL_DOUBLE, diff_years(None, dt2))
         self.assertEqual(NULL_DOUBLE, diff_years(dt1, None))
 
@@ -697,7 +697,7 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             tz = parse_time_zone("JUNK")
         self.assertTrue(cm.exception.root_cause)
-        self.assertIn("Unknown time-zone ID", cm.exception.compact_traceback)
+        self.assertIn("Cannot parse time zone", cm.exception.compact_traceback)
 
         tz = parse_time_zone("JUNK", quiet=True)
         self.assertEqual(None, tz)
@@ -710,7 +710,7 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             time_str = "530000:59:39.X"
             in_nanos = parse_duration_nanos(time_str)
-        self.assertIn("RuntimeException", str(cm.exception))
+        self.assertIn("DateTimeParseException", str(cm.exception))
 
         time_str = "00:59:39.X"
         in_nanos = parse_duration_nanos(time_str, quiet=True)
@@ -738,7 +738,7 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             period_str = "PT1Y"
             period = parse_period(period_str)
-        self.assertIn("RuntimeException", str(cm.exception))
+        self.assertIn("DateTimeParseException", str(cm.exception))
 
         period = parse_period(period_str, quiet=True)
         self.assertEquals(None,period)
@@ -754,7 +754,7 @@ class TimeTestCase(BaseTestCase):
 
         with self.assertRaises(DHError) as cm:
             duration = parse_duration("T1Q")
-        self.assertIn("RuntimeException", str(cm.exception))
+        self.assertIn("DateTimeParseException", str(cm.exception))
 
         duration = parse_duration("T1Q", quiet=True)
         self.assertEquals(None,duration)
@@ -836,7 +836,7 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             date_str = "2021-x12-10"
             dt = parse_local_date(date_str)
-        self.assertIn("RuntimeException", str(cm.exception))
+        self.assertIn("DateTimeParseException", str(cm.exception))
 
         date_str = "2021-x12-10"
         dt = parse_local_date(date_str, quiet=True)
@@ -850,7 +850,7 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             time_str = "L23:59x:59"
             dt = parse_local_time(time_str)
-        self.assertIn("RuntimeException", str(cm.exception))
+        self.assertIn("DateTimeParseException", str(cm.exception))
 
         time_str = "L23:59x:59"
         dt = parse_local_time(time_str, quiet=True)
