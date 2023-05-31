@@ -515,6 +515,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import java.time.Instant;\n" +
                 "import java.time.LocalDate;\n" +
                 "import java.time.LocalTime;\n" +
+                "import java.time.ZoneId;\n" +
                 "import java.time.ZonedDateTime;\n" +
                 "import io.deephaven.engine.context.QueryScopeParam;\n" +
                 "import io.deephaven.engine.context.QueryScope;\n" +
