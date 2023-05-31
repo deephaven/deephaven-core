@@ -277,7 +277,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, FloatSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), FloatSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {

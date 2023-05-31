@@ -15,6 +15,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
@@ -69,6 +70,11 @@ public class ConstituentDependency implements Dependency {
         this.resultUpdatedDependency = resultUpdatedDependency;
         this.resultRows = resultRows;
         this.dependencyColumns = dependencyColumns;
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return resultUpdatedDependency.getUpdateGraph();
     }
 
     @Override

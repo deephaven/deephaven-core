@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -295,7 +296,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             }
 
             ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this, LongChunkedUniqueOperator::flushPrevious);
+            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), LongChunkedUniqueOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
     }

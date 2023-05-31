@@ -44,7 +44,7 @@ public class LongTestSource extends AbstractColumnSource<Long>
     protected Long2LongOpenHashMap prevData;
 
     private final UpdateCommitter<LongTestSource> prevFlusher =
-            new UpdateCommitter<>(this, LongTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), LongTestSource::flushPrevious);
 
     // region empty constructor
     public LongTestSource() {

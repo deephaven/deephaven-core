@@ -44,7 +44,7 @@ public class DoubleTestSource extends AbstractColumnSource<Double>
     protected Long2DoubleOpenHashMap prevData;
 
     private final UpdateCommitter<DoubleTestSource> prevFlusher =
-            new UpdateCommitter<>(this, DoubleTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), DoubleTestSource::flushPrevious);
 
     // region empty constructor
     public DoubleTestSource() {

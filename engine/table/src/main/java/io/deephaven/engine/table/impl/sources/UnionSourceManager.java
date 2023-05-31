@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -96,7 +97,8 @@ public class UnionSourceManager {
             coalescedPartitions.addUpdateListener(constituentChangesListener);
             listenerRecorders.offer(constituentChangesListener);
 
-            updateCommitter = new UpdateCommitter<>(this, usm -> usm.unionRedirection.copyCurrToPrev());
+            updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                    usm -> usm.unionRedirection.copyCurrToPrev());
         } else {
             listenerRecorders = null;
             mergedListener = null;

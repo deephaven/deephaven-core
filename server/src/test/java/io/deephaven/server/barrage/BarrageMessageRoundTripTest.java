@@ -10,6 +10,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl.BarrageDataMarshaller;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
@@ -25,6 +26,7 @@ import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
@@ -90,7 +92,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        updateSourceCombiner = new UpdateSourceCombiner();
+        updateSourceCombiner = new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
         useDeephavenNulls = true;
@@ -179,7 +181,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.barrageMessageProducer = barrageMessageProducer;
 
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
-                    (UpdateGraph) ExecutionContext.getContext().getUpdateGraph(),
+                    ExecutionContext.getContext().getUpdateGraph(),
                     null, barrageMessageProducer.getTableDefinition(), new HashMap<>(),
                     viewport == null ? -1 : viewport.size());
 

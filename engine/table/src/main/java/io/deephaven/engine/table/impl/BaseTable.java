@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.rpc.Code;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
@@ -32,7 +31,6 @@ import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
@@ -149,6 +147,11 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
+    }
+
+    @Override
     public String toString() {
         return description;
     }
@@ -156,38 +159,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append(description);
-    }
-
-    /**
-     * Get the appropriate update context for this operation. Returns the first update graph found from a refreshing
-     * table. If multiple tables are operating under multiple update graphs, this will throw a gRPC friendly exception.
-     *
-     * @param sources the source tables
-     * @return the update context
-     */
-    public UpdateGraph getUpdateGraph(final Table... sources) {
-        UpdateGraph graph = null;
-        if (isRefreshing()) {
-            graph = getUpdateGraph();
-        }
-
-        for (final Table other : sources) {
-            if (other == null || !other.isRefreshing()) {
-                continue;
-            }
-            if (graph == null) {
-                graph = other.getUpdateGraph();
-            } else if (graph != other.getUpdateGraph()) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "All refreshing source tables require the use of a singular update graph but found both "
-                                + graph + " and " + other.getUpdateGraph());
-            }
-        }
-
-        if (graph != null) {
-            return graph;
-        }
-        return ExecutionContext.getContext().getUpdateGraph();
     }
 
     // ------------------------------------------------------------------------------------------------------------------

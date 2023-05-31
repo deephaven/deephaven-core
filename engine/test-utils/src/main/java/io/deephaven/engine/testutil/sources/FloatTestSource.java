@@ -44,7 +44,7 @@ public class FloatTestSource extends AbstractColumnSource<Float>
     protected Long2FloatOpenHashMap prevData;
 
     private final UpdateCommitter<FloatTestSource> prevFlusher =
-            new UpdateCommitter<>(this, FloatTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), FloatTestSource::flushPrevious);
 
     // region empty constructor
     public FloatTestSource() {

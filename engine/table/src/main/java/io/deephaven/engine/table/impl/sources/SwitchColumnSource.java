@@ -36,7 +36,8 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     public SwitchColumnSource(@NotNull final ColumnSource<T> currentSource,
             @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
         super(currentSource.getType(), currentSource.getComponentType());
-        this.updateCommitter = new UpdateCommitter<>(this, SwitchColumnSource::clearPrevious);
+        this.updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                SwitchColumnSource::clearPrevious);
         this.onPreviousCommitted = onPreviousCommitted;
         this.currentSource = currentSource;
     }

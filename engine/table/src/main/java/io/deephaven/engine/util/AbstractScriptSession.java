@@ -82,6 +82,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .newQueryLibrary()
                 .setQueryScope(queryScope)
                 .setQueryCompiler(compilerContext)
+                .captureUpdateGraph()
                 .build();
     }
 

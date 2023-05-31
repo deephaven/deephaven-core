@@ -10,7 +10,6 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.*;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -237,6 +236,10 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     public String getName() {
         return name;
+    }
+
+    public UpdateGraph getUpdateGraph() {
+        return this;
     }
 
     @Override
@@ -1849,10 +1852,6 @@ public class UpdateGraphProcessor implements UpdateGraph {
         SystemicObjectTracker.markThreadSystemic();
         MultiChunkPool.enableDedicatedPoolForThisThread();
         isRefreshThread.set(true);
-
-        // refresh threads run under our update context
-        // noinspection resource
-        ExecutionContext.getContext().withUpdateGraph(this).open();
     }
 
     @Override

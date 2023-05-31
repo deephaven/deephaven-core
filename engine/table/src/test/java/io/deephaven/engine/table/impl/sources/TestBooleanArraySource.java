@@ -12,9 +12,9 @@ import io.deephaven.chunk.ObjectChunk;
 
 import io.deephaven.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.BooleanUtils;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;

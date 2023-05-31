@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.updategraph;
 
-import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -21,13 +20,15 @@ import java.util.function.BiConsumer;
 public class UpdateCommitterEx<T, U> extends TerminalNotification {
 
     private final WeakReference<T> targetReference;
+    private final UpdateGraph updateGraph;
     private final BiConsumer<T, U> committer;
 
     private WeakReference<U> secondaryReference;
     private boolean active;
 
-    public UpdateCommitterEx(T target, BiConsumer<T, U> committer) {
+    public UpdateCommitterEx(T target, UpdateGraph updateGraph, BiConsumer<T, U> committer) {
         this.targetReference = new WeakReference<>(target);
+        this.updateGraph = updateGraph;
         this.committer = committer;
     }
 
@@ -49,6 +50,6 @@ public class UpdateCommitterEx<T, U> extends TerminalNotification {
         if (secondaryReference == null || secondaryReference.get() != secondary) {
             secondaryReference = new WeakReference<>(secondary);
         }
-        ExecutionContext.getContext().getUpdateGraph().addNotification(this);
+        updateGraph.addNotification(this);
     }
 }

@@ -4,8 +4,10 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
@@ -62,6 +64,52 @@ public interface NotificationQueue {
          *           itself is satisfied if they have no other dependencies.
          */
         boolean satisfied(long step);
+
+
+        /**
+         * @return the update graph that this dependency is a part of
+         */
+        UpdateGraph getUpdateGraph();
+
+        default UpdateGraph getUpdateGraph(Dependency... dependencies) {
+            return NotificationQueue.Dependency.getUpdateGraph(this, dependencies);
+        }
+
+        /**
+         * Examine all {@code dependencies} excluding non-refreshing {@link DynamicNode dynamic nodes}, and verify that
+         * they are using the same {@link UpdateGraph}.
+         * <p>
+         * If a singular update graph was found in this process, return it.
+         * <p>
+         * Otherwise, if all dependencies are non-refreshing {@link DynamicNode dynamic nodes}, return null.
+         *
+         * @param first at least one dependency is helpful
+         * @param dependencies the dependencies to examine
+         * @return the singular {@link UpdateGraph} used by all {@code dependencies}, or null if all
+         *         {@code dependencies} are non-refreshing {@link DynamicNode dynamic nodes}
+         * @throws UpdateGraphConflictException if multiple update graphs were found in the dependencies
+         */
+        static UpdateGraph getUpdateGraph(@Nullable Dependency first, Dependency... dependencies) {
+            UpdateGraph graph = null;
+
+            if (first != null && !DynamicNode.isDynamicAndNotRefreshing(first)) {
+                graph = first.getUpdateGraph();
+            }
+
+            for (final Dependency other : dependencies) {
+                if (other == null || DynamicNode.isDynamicAndNotRefreshing(other)) {
+                    continue;
+                }
+                if (graph == null) {
+                    graph = other.getUpdateGraph();
+                } else if (graph != other.getUpdateGraph()) {
+                    throw new UpdateGraphConflictException("Multiple update graphs found in dependencies: " + graph
+                            + " and " + other.getUpdateGraph());
+                }
+            }
+
+            return graph;
+        }
     }
 
     /**

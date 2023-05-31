@@ -277,7 +277,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, ByteSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), ByteSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
