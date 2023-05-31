@@ -22,13 +22,15 @@ MINUTE = 60 * SECOND  #: One minute in nanoseconds.
 HOUR = 60 * MINUTE  #: One hour in nanoseconds.
 DAY = 24 * HOUR  #: One day in nanoseconds.  This is one hour of wall time and does not take into account calendar adjustments.
 WEEK = 7 * DAY  #: One week in nanoseconds.  This is 7 days of wall time and does not take into account calendar adjustments.
-YEAR = 31556952000000000  #: One average year in nanoseconds.  This is 365.2425 days of wall time and does not take into account calendar adjustments.
+YEAR_365 = 365 * DAY  #: One 365 day year in nanoseconds.  This is 365 days of wall time and does not take into account calendar adjustments.
+YEAR_AVG = 31556952000000000  #: One average year in nanoseconds.  This is 365.2425 days of wall time and does not take into account calendar adjustments.
 
 SECONDS_PER_NANO = 1 / SECOND  #: Number of seconds per nanosecond.
 MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
 HOURS_PER_NANO = 1 / HOUR  #: Number of hours per nanosecond.
 DAYS_PER_NANO = 1 / DAY  #: Number of days per nanosecond.
-YEARS_PER_NANO = 1 / YEAR  #: Number of years per nanosecond.
+YEARS_PER_NANO_365 = 1 / YEAR_365  #: Number of 365 day years per nanosecond.
+YEARS_PER_NANO_AVG = 1 / YEAR_AVG  #: Number of average (365.2425 day) years per nanosecond.
 
 
 # region Clock
@@ -1027,7 +1029,31 @@ def diff_days(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDat
         raise DHError(e) from e
 
 
-def diff_years(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
+def diff_years_365(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
+    """ Returns the difference in years between two date time values.  Both values must be of the same type.
+
+    Years are defined in terms of 365 day years.
+
+    Args:
+        start (Union[Instant,ZonedDateTime]): Start time.
+        end (Union[Instant,ZonedDateTime]): End time.
+
+    Returns:
+        the difference in start and end in years or NULL_DOUBLE if any input is None.
+
+    Raises:
+        DHError
+    """
+    if not start or not end:
+        return NULL_DOUBLE
+
+    try:
+        return _JDateTimeUtils.diffYears365(start, end)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def diff_years_avg(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDateTime]) -> float:
     """ Returns the difference in years between two date time values.  Both values must be of the same type.
 
     Years are defined in terms of 365.2425 day years.
@@ -1046,10 +1072,9 @@ def diff_years(start: Union[Instant, ZonedDateTime], end: Union[Instant, ZonedDa
         return NULL_DOUBLE
 
     try:
-        return _JDateTimeUtils.diffYears(start, end)
+        return _JDateTimeUtils.diffYearsAvg(start, end)
     except Exception as e:
         raise DHError(e) from e
-
 
 # endregion
 
