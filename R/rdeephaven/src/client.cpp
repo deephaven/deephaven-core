@@ -13,6 +13,10 @@
 #include <Rcpp.h>
 
 
+// TODO: determine if Rcpp generates docs from here and document for internal use
+// TODO: good error handling
+
+
 // ######################### DH WRAPPERS, API #########################
 
 class TableHandleWrapper {
@@ -35,24 +39,21 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
     };
 
-    SEXP getStream() {
-        ArrowArrayStream* stream = new ArrowArrayStream;
+    SEXP getArrowArrayStreamPtr() {
 
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
-        // allocate memory for vector of RecordBatches and populate with fsr
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
         DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // need to add OK or throw
 
-        // convert to RecordBatchReader
         arrow::Result<std::shared_ptr<arrow::RecordBatchReader>> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches);
 
-        //export to C struct
+        // create C struct and export RecordBatchReader to that struct
+        ArrowArrayStream* stream = new ArrowArrayStream();
         arrow::ExportRecordBatchReader(record_batch_reader.ValueOrDie(), stream);
 
-        // wrap pointer in external pointer and return
-        Rcpp::XPtr<ArrowArrayStream> xptr(stream, true);
-        return xptr;
+        // XPtr is needed here to ensure Rcpp can properly handle type casting, as it does not like raw pointers
+        return Rcpp::XPtr<ArrowArrayStream>(stream, true);
     };
 
     void print() {
@@ -66,23 +67,52 @@ private:
 
 class ClientWrapper {
 public:
+
     TableHandleWrapper* emptyTable(int64_t size) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
     };
     TableHandleWrapper* openTable(std::string tableName) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     };
-    
+
+    void runScript(std::string code) {
+        internal_tbl_hdl_mngr.runScript(code);
+    };
+
 private:
     ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
-    const deephaven::client::Client internal_client;
+    deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
-    friend ClientWrapper* newClientWrapper(const std::string &target);
+
+    friend ClientWrapper* newClientWrapper(const std::string &target, const std::string &authType, const std::vector<std::string> &credentials, const std::string &sessionType);
 };
 
 // factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
-ClientWrapper* newClientWrapper(const std::string &target) {
-    return new ClientWrapper(deephaven::client::Client::connect(target));
+// the current implementation of passing authentication args to C++ client is terrible and needs to be redone. Only this could make Rcpp happy in a days work
+ClientWrapper* newClientWrapper(const std::string &target, const std::string &authType, const std::vector<std::string> &credentials, const std::string &sessionType) {
+
+    deephaven::client::ClientOptions client_options = deephaven::client::ClientOptions();
+
+    if (authType == "default") {
+        client_options.setDefaultAuthentication();
+    } else if (authType == "basic") {
+        std::cout << "basic auth!\n";
+        client_options.setBasicAuthentication(credentials[0], credentials[1]);
+    } else if (authType == "custom") {
+        std::cout << "custom auth!\n";
+        client_options.setCustomAuthentication(credentials[0], credentials[1]);
+    } else {
+        std::cout << "complain about invalid authType\n";
+    }
+
+    if (sessionType == "none") {}
+    else if (sessionType == "python" || sessionType == "groovy") {
+        client_options.setSessionType(sessionType);
+    } else {
+        std::cout << "complain about invalid sessionType\n";
+    }
+
+    return new ClientWrapper(deephaven::client::Client::connect(target, client_options));
 };
 
 
@@ -102,12 +132,13 @@ RCPP_MODULE(ClientModule) {
     .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("update", &TableHandleWrapper::update)
     .method("print", &TableHandleWrapper::print)
-    .method(".get_stream", &TableHandleWrapper::getStream)
+    .method(".get_arrowArrayStream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;
 
     class_<ClientWrapper>("Client")
-    .factory<const std::string&>(newClientWrapper)
+    .factory<const std::string&, const std::string&, const std::vector<std::string>&, const std::string&>(newClientWrapper)
     .method("empty_table", &ClientWrapper::emptyTable)
     .method("open_table", &ClientWrapper::openTable)
+    .method("run_script", &ClientWrapper::runScript)
     ;
 }
