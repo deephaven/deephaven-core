@@ -5,10 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -174,7 +174,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             return;
                         }
                         rowSet.initializePreviousValue();
-                        final long currentClockValue = UpdateContext.logicalClock().currentValue();
+                        final long currentClockValue =
+                                ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
                         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                                 ? LogicalClock.getStep(currentClockValue) - 1
                                 : LogicalClock.getStep(currentClockValue));

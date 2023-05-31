@@ -28,6 +28,6 @@ public class ApplyPreviewColumnsGrpcImpl extends GrpcTableOperation<ApplyPreview
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table source = sourceTables.get(0).get();
-        return source.getUpdateContext().apply(() -> ColumnPreviewManager.applyPreview(source));
+        return ColumnPreviewManager.applyPreview(source);
     }
 }

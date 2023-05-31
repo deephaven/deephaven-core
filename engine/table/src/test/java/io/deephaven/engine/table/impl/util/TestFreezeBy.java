@@ -4,10 +4,10 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
@@ -52,7 +52,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         assertEquals(DateTime.class, frozen.getDefinition().getColumn("SDateTime").getDataType());
         assertEquals(Boolean.class, frozen.getDefinition().getColumn("SBoolean").getDataType());
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(0));
             TstUtils.addToTable(input, i(2), stringCol("Key", "C"), intCol("Sentinel", 4));
             input.notifyListeners(i(), i(0), i(2));
@@ -62,7 +62,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         assertTableEquals(TableTools.newTable(stringCol("Key", "B", "C"), intCol("Sentinel", 2, 3))
                 .updateView(Selectable.from(updates)), frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3, 4), stringCol("Key", "D", "A"), intCol("Sentinel", 5, 6));
             input.notifyListeners(i(3, 4), i(), i());
         });
@@ -72,7 +72,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
                 .updateView(Selectable.from(updates)), frozen);
 
         // swap two keys
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3, 4), stringCol("Key", "A", "D"), intCol("Sentinel", 7, 8));
             input.notifyListeners(i(), i(), i(4, 3));
         });
@@ -97,7 +97,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         assertTableEquals(input, frozen);
 
         // swap two keys
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(0, 4), stringCol("Key", "A", "D"), intCol("Key2", 101, 101),
                     intCol("Sentinel", 4, 5));
             input.notifyListeners(i(4), i(), i(0));
@@ -113,7 +113,8 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input);
         showWithRowSet(frozen);
 
-        final Table originalExpect = UpdateContext.sharedLock().computeLocked(input::snapshot);
+        final Table originalExpect =
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, originalExpect);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
@@ -121,7 +122,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         tuv.getResultTable().addUpdateListener(failureListener);
         assertTableEquals(input, frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(0));
             TstUtils.addToTable(input, i(2), stringCol("Key", "C"), intCol("Sentinel", 4));
             input.notifyListeners(i(2), i(0), i());
@@ -129,37 +130,38 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         showWithRowSet(frozen);
         assertTableEquals(originalExpect, frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(2), stringCol("Key", "D"), intCol("Sentinel", 5));
             input.notifyListeners(i(), i(), i(2));
         });
         showWithRowSet(frozen);
         assertTableEquals(originalExpect, frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(input, i(2));
             input.notifyListeners(i(), i(2), i());
         });
         showWithRowSet(frozen);
         assertTableEquals(originalExpect.head(0), frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(2), stringCol("Key", "E"), intCol("Sentinel", 6));
             input.notifyListeners(i(2), i(), i());
         });
         showWithRowSet(frozen);
-        final Table newExpect = UpdateContext.sharedLock().computeLocked(input::snapshot);
+        final Table newExpect =
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3), stringCol("Key", "F"), intCol("Sentinel", 7));
             TstUtils.removeRows(input, i(2));
             input.notifyListeners(i(3), i(2), i());
         });
         assertTableEquals(newExpect, frozen);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(input, i(3), stringCol("Key", "G"), intCol("Sentinel", 8));
             input.notifyListeners(i(), i(), i(3));
         });
@@ -179,7 +181,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input, "Key");
         assertTableEquals(input, frozen);
         allowingError(() -> {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 addToTable(input, i(3), stringCol("Key", "A"), intCol("Sentinel", 4));
                 input.notifyListeners(i(3), i(), i());
             });

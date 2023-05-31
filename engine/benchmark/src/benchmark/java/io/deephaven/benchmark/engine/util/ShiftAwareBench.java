@@ -4,8 +4,8 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -56,7 +56,7 @@ public class ShiftAwareBench {
     public void setupEnv(BenchmarkParams params) {
         Configuration.getInstance().setProperty("QueryTable.memoizeResults", "false");
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         final BenchmarkTableBuilder builder = BenchmarkTools.inMemoryTableBuilder("ShiftAwareBench",
                 BenchmarkTools.sizeWithSparsity(tableSize, sparsity));
@@ -92,10 +92,10 @@ public class ShiftAwareBench {
 
         final R result = function.apply(filtered);
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

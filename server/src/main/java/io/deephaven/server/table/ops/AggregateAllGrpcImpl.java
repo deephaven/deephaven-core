@@ -44,6 +44,6 @@ public final class AggregateAllGrpcImpl extends GrpcTableOperation<AggregateAllR
         Assert.neq(request.getSpec().getTypeCase(), "request.getSpec().getTypeCase()", TypeCase.TYPE_NOT_SET);
         final Table parent = sourceTables.get(0).get();
         final AggSpec spec = AggSpecAdapter.adapt(request.getSpec());
-        return parent.getUpdateContext().apply(() -> parent.aggAllBy(spec, request.getGroupByColumnsList()));
+        return parent.aggAllBy(spec, request.getGroupByColumnsList());
     }
 }

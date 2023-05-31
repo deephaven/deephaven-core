@@ -3,8 +3,8 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
@@ -60,7 +60,7 @@ public class AjBenchmark {
     public void setupEnv(BenchmarkParams params) {
         System.out.println("Setup started: " + new Date());
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
@@ -169,7 +169,7 @@ public class AjBenchmark {
         if (buckets == 0) {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
-        final Table result = UpdateContext.sharedLock().computeLocked(
+        final Table result = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> leftTable.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
         return doFingerPrint(result, bh);
     }
@@ -180,8 +180,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (lt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable);
         return doFingerPrint(result, bh);
     }
@@ -192,8 +194,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (lt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, 100);
         return doFingerPrint(result, bh);
     }
@@ -204,8 +208,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (lt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rightTable, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, 1000);
         return doFingerPrint(result, bh);
     }
@@ -216,8 +222,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> leftTable.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> leftTable.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 rightTable);
         return doFingerPrint(result, bh);
     }
@@ -227,7 +235,7 @@ public class AjBenchmark {
         if (buckets != 0) {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
-        final Table result = UpdateContext.sharedLock().computeLocked(
+        final Table result = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> leftTable.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel"));
         return doFingerPrint(result, bh);
     }
@@ -238,8 +246,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
         final Table result =
-                IncrementalBenchmark.incrementalBenchmark((lt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel")),
+                IncrementalBenchmark.incrementalBenchmark((lt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rightTable, "LeftStamp=RightStamp", "RightSentinel"));
+                },
                         leftTable);
         return doFingerPrint(result, bh);
     }
@@ -250,8 +260,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
         final Table result =
-                IncrementalBenchmark.incrementalBenchmark((rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> leftTable.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                IncrementalBenchmark.incrementalBenchmark((rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> leftTable.aj(rt, "LeftStamp=RightStamp", "RightSentinel"));
+                },
                         rightTable);
         return doFingerPrint(result, bh);
     }
@@ -262,8 +274,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                (lt, rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, rightTable);
         return doFingerPrint(result, bh);
     }
@@ -274,8 +288,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                (lt, rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, rightTable, 0.95, 1);
         return doFingerPrint(result, bh);
     }
@@ -286,8 +302,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Zero key should have zero buckets!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel")),
+                (lt, rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rt, "LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, rightTable, 0.1, 100);
         return doFingerPrint(result, bh);
     }
@@ -299,8 +317,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (lt, rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, rightTable, 0.1, 100);
         return doFingerPrint(result, bh);
     }
@@ -311,8 +331,10 @@ public class AjBenchmark {
             throw new UnsupportedOperationException("Buckets must be positive!");
         }
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateContext.sharedLock().computeLocked(
-                        () -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel")),
+                (lt, rt) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                            () -> lt.aj(rt, joinKeyName + ",LeftStamp=RightStamp", "RightSentinel"));
+                },
                 leftTable, rightTable);
         return doFingerPrint(result, bh);
     }

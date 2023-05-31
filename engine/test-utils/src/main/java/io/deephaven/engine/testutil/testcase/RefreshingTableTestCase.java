@@ -6,6 +6,7 @@ package io.deephaven.engine.testutil.testcase;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.TestExecutionContextAccess;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -16,7 +17,6 @@ import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -55,8 +55,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     public void setUp() throws Exception {
         super.setUp();
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -66,7 +66,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         executionContext = TestExecutionContextAccess.createForUnitTests().open();
 
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        oldCheckLtm = UpdateContext.updateGraphProcessor().setCheckTableOperations(false);
+        oldCheckLtm = ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         ChunkPoolReleaseTracking.enableStrict();
     }
@@ -74,7 +74,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     @Override
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
-        UpdateContext.updateGraphProcessor().setCheckTableOperations(oldCheckLtm);
+        ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(oldCheckLtm);
         QueryCompiler.setLogEnabled(oldLogEnabled);
 
         // reset the execution context
@@ -82,7 +82,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
 
         super.tearDown();
     }
@@ -150,7 +150,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> GenerateTableUpdates
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);
         // The EvalNugget test cases end up generating very big listener DAGs, for at each step we create a brand new

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.testutil.ColumnInfo;
@@ -14,7 +15,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
@@ -439,7 +439,7 @@ public class QueryTableAjTest {
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
             result1.addUpdateListener(listener);
 
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),
                         stringCol("SingleKey", "Key", "Key", "Key"),
                         byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),

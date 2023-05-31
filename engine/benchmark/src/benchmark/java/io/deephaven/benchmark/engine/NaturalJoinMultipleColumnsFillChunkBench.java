@@ -3,8 +3,8 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
@@ -104,7 +104,7 @@ public class NaturalJoinMultipleColumnsFillChunkBench extends RedirectionBenchBa
         final String joinColsStr = String.join(",", joinCols);
         final String joinColumnsToAddStr = String.join(",", joinColumnsToAdd);
         if (doSelect) {
-            live = UpdateContext.exclusiveLock().computeLocked(
+            live = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                     () -> t1Released.select(t1Cols).sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr));
         } else {
             live = t1Released.sort(sortCol).naturalJoin(t2, joinColsStr, joinColumnsToAddStr);

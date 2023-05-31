@@ -44,11 +44,15 @@ public final class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTabl
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table base = sourceTables.get(0).get();
         try (final SafeCloseable ignored = lock(base)) {
-            return base.getUpdateContext().apply(base::snapshot);
+            return base.snapshot();
         }
     }
 
     private SafeCloseable lock(Table base) {
-        return base.isRefreshing() ? base.getUpdateContext().getSharedLock().lockCloseable() : null;
+        if (base.isRefreshing()) {
+            return base.getUpdateGraph().sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 }

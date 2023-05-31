@@ -11,6 +11,7 @@ import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ColumnSource;
@@ -20,7 +21,6 @@ import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -70,7 +70,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
@@ -106,7 +106,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -145,7 +145,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -177,7 +177,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
         TstUtils.validate(en);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
@@ -230,7 +230,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(4, 5), intCol("RK", 2, 2), intCol("RS", 40, 50));
             right.notifyListeners(i(4, 5), i(), i());
         });
@@ -278,7 +278,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
@@ -474,14 +474,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         assertTableEquals(z3, z);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             xqt.getRowSet().writableCast().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             yqt.getRowSet().writableCast().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
@@ -561,7 +561,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -625,7 +625,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -702,7 +702,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             final long rightOffset = numSteps.getValue();
 
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;

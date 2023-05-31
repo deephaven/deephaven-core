@@ -10,12 +10,11 @@ package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.chunk.ObjectChunk;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.BooleanUtils;
 
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -29,19 +28,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     @Test
@@ -51,7 +49,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final long key1 = 6;
         final byte expected1 = ArrayGenerator.randomBooleans(rng, 1)[0];
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(10);
 
@@ -60,7 +58,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte actual1 = source.getByte(key1);
         assertEquals(BooleanUtils.NULL_BOOLEAN_AS_BYTE, actual0);
         assertEquals(expected1, actual1);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test
@@ -72,15 +70,15 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected0_0 = values[0];
         final byte expected0_1 = values[1];
         final byte expected1 = values[2];
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -94,7 +92,7 @@ public class TestBooleanDeltaAwareColumnSource {
         assertEquals(BooleanUtils.NULL_BOOLEAN_AS_BYTE, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     /**
@@ -117,7 +115,7 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte[] valuesPhase2 = ArrayGenerator.randomBooleans(rng, length);
         final HashMap<Long, Byte> expectedPrev = new HashMap<>();
         final HashMap<Long, Byte> expectedCurrent = new HashMap<>();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
@@ -136,10 +134,10 @@ public class TestBooleanDeltaAwareColumnSource {
         // Check some subranges using three ranges.
         final long[] threeRanges = {10, 30, 45, 55, 70, 90};
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         // Now start the second cycle so we have different current and prev values.
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
             final byte value = valuesPhase2[(int)ii];
             source.set(ii, value);
@@ -153,7 +151,7 @@ public class TestBooleanDeltaAwareColumnSource {
         checkUsingGet(source, expectedCurrent, expectedPrev, 0, length);
         checkUsingChunk(source, expectedCurrent, expectedPrev, singleRange);
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Boolean> source, Map<Long, Byte> expectedCurrent,

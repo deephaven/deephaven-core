@@ -19,6 +19,7 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -66,7 +67,7 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     protected abstract Table doCoalesce();
 
     public final Table coalesce() {
-        try (final SafeCloseable ignored = updateContext.open()) {
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             Table localCoalesced;
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;

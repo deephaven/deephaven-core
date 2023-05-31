@@ -14,6 +14,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -21,7 +22,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.longs.Long2ShortOpenHashMap;
@@ -39,7 +39,7 @@ import java.util.function.LongConsumer;
  */
 public class ShortTestSource extends AbstractColumnSource<Short>
         implements MutableColumnSourceGetDefaults.ForShort, TestColumnSource<Short> {
-    private long lastAdditionTime = UpdateContext.logicalClock().currentStep();
+    private long lastAdditionTime = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
     protected final Long2ShortOpenHashMap data = new Long2ShortOpenHashMap();
     protected Long2ShortOpenHashMap prevData;
 
@@ -113,7 +113,7 @@ public class ShortTestSource extends AbstractColumnSource<Short>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = UpdateContext.logicalClock().currentStep();
+        long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

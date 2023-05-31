@@ -4,10 +4,10 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -119,7 +119,7 @@ public class HashSetBackedTableFactory {
         indexToPreviousMap.put(index, vtiIt.key());
         vtiIt.remove();
 
-        indexToPreviousClock.put(index, UpdateContext.logicalClock().currentStep());
+        indexToPreviousClock.put(index, ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
 
         indexToValueMap.remove(index);
         removedBuilder.addKey(index);
@@ -138,8 +138,9 @@ public class HashSetBackedTableFactory {
         valueToIndexMap.put(value, newIndex);
         indexToValueMap.put(newIndex, value);
 
-        if (indexToPreviousClock.get(newIndex) != UpdateContext.logicalClock().currentStep()) {
-            indexToPreviousClock.put(newIndex, UpdateContext.logicalClock().currentStep());
+        if (indexToPreviousClock.get(newIndex) != ExecutionContext.getContext().getUpdateGraph().clock()
+                .currentStep()) {
+            indexToPreviousClock.put(newIndex, ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
             indexToPreviousMap.put(newIndex, null);
         }
     }
@@ -152,7 +153,7 @@ public class HashSetBackedTableFactory {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {
                 setRefreshing(true);
-                updateContext.getUpdateGraphProcessor().addSource(this);
+                updateGraph.addSource(this);
             }
         }
 
@@ -185,7 +186,7 @@ public class HashSetBackedTableFactory {
         public void destroy() {
             super.destroy();
             if (refreshIntervalMs >= 0) {
-                updateContext.getUpdateGraphProcessor().removeSource(this);
+                updateGraph.removeSource(this);
             }
         }
     }
@@ -213,7 +214,8 @@ public class HashSetBackedTableFactory {
         @Override
         public String getPrev(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                if (indexToPreviousClock.get(rowKey) == UpdateContext.logicalClock().currentStep()) {
+                if (indexToPreviousClock.get(rowKey) == ExecutionContext.getContext().getUpdateGraph().clock()
+                        .currentStep()) {
                     ArrayTuple row = indexToPreviousMap.get(rowKey);
                     if (row == null)
                         return null;

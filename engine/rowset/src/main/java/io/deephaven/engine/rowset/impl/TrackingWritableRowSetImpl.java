@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -39,11 +39,11 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     private OrderedLongSet checkAndGetPrev() {
-        if (UpdateContext.logicalClock().currentStep() == changeTimeStep) {
+        if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() == changeTimeStep) {
             return prevInnerSet;
         }
         synchronized (this) {
-            final long currentClockStep = UpdateContext.logicalClock().currentStep();
+            final long currentClockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             if (currentClockStep == changeTimeStep) {
                 return prevInnerSet;
             }

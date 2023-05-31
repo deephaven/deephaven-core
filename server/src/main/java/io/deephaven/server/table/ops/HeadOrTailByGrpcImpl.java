@@ -10,6 +10,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.util.Exceptions;
@@ -63,13 +64,17 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
 
         // note that headBy/tailBy use ungroup which currently requires the UGP lock
         try (final SafeCloseable ignored = lock(parent)) {
-            return parent.getUpdateContext().apply(
-                    () -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
+            return realTableOperation.apply(parent, request.getNumRows(), columnSpecs);
         }
     }
 
     private SafeCloseable lock(Table parent) {
-        return parent.isRefreshing() ? parent.getUpdateContext().getSharedLock().lockCloseable() : null;
+        if (parent.isRefreshing()) {
+            UpdateGraph updateGraph = parent.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 
     @Singleton

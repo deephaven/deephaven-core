@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SingleTableLocationProvider;
@@ -157,7 +158,8 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
             if (result.isRefreshing()) {
                 // noinspection ConstantConditions
-                result.getUpdateContext().getUpdateGraphProcessor().addSource(refreshCombiner);
+                UpdateGraph updateGraph = result.getUpdateGraph();
+                updateGraph.addSource(refreshCombiner);
             }
         }
 

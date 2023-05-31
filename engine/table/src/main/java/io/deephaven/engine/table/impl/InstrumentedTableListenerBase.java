@@ -7,6 +7,8 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
@@ -83,14 +85,14 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     }
 
     public boolean canExecute(final long step) {
-        return UpdateContext.updateGraphProcessor().satisfied(step);
+        return ExecutionContext.getContext().getUpdateGraph().satisfied(step);
     }
 
     @Override
     public boolean satisfied(final long step) {
         // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
             return true;
         }
@@ -98,14 +100,14 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
         // cheap check that may let us avoid recursively checking all the dependencies.
         if (lastEnqueuedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Enqueued notification for ").append(this).append(", step=").append(step).endl();
             return false;
         }
 
         // Recursively check to see if our dependencies have been satisfied.
         if (!canExecute(step)) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
             return false;
         }
@@ -113,7 +115,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         // Let's check again and see if we got lucky and another thread completed us while we were checking our
         // dependencies.
         if (lastCompletedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Already completed notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
@@ -123,14 +125,14 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         // We check the queued notification step again after the dependency check. It is possible that something
         // enqueued us while we were evaluating the dependencies, and we must not miss that race.
         if (lastEnqueuedStep == step) {
-            UpdateContext.updateGraphProcessor().logDependencies()
+            ExecutionContext.getContext().getUpdateGraph().logDependencies()
                     .append("Enqueued notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
             return false;
         }
 
-        UpdateContext.updateGraphProcessor().logDependencies()
+        ExecutionContext.getContext().getUpdateGraph().logDependencies()
                 .append("Dependencies satisfied for ").append(this)
                 .append(", lastCompleted=").append(lastCompletedStep)
                 .append(", lastQueued=").append(lastEnqueuedStep)
@@ -218,7 +220,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             super(terminalListener);
             this.update = update.acquire();
 
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             if (lastCompletedStep == currentStep) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Enqueued after lastCompletedStep already set to current step: " + this
@@ -241,7 +243,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         @Override
         public final LogOutput append(LogOutput logOutput) {
             return logOutput.append("Notification:(step=")
-                    .append(UpdateContext.logicalClock().currentStep())
+                    .append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())
                     .append(", listener=")
                     .append(System.identityHashCode(InstrumentedTableListenerBase.this))
                     .append(")")
@@ -268,7 +270,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
             entry.onUpdateStart(update.added(), update.removed(), update.modified(), update.shifted());
 
-            final long currentStep = UpdateContext.logicalClock().currentStep();
+            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
             try {
                 Assert.eq(lastEnqueuedStep, "lastEnqueuedStep", currentStep, "currentStep");
                 if (lastCompletedStep >= currentStep) {

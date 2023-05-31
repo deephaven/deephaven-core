@@ -967,7 +967,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn) {
         if (keyTable.isRefreshing()) {
-            keyTable.checkUpdateContextConsistency();
+            keyTable.getUpdateGraph();
 
             final MutableObject<Collection<KeyTableDirective>> rootNodeInfoHolder = new MutableObject<>();
             // NB: This snapshot need not be notification-aware. If the key table ticks so be it, as long as we
@@ -1147,7 +1147,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         synchronized (snapshotState) {
             try (final SafeCloseable ignored = snapshotState.initializeSnapshot(columns, rows, destinations)) {
                 if (source.isRefreshing()) {
-                    source.checkUpdateContextConsistency();
+                    source.getUpdateGraph();
 
                     // NB: This snapshot control must be notification-aware, because if our sources tick we cannot
                     // guarantee that we won't observe some newly-created components on their instantiation step.

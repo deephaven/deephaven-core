@@ -9,6 +9,7 @@ import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.ConditionalExpr;
 import com.github.javaparser.ast.expr.Expression;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -26,7 +27,6 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -75,7 +75,7 @@ public class TestFormulaArrayEvaluation {
                 EvalNugget.from(() -> queryTable.view("newCol=Value / 2", "newCol2=newCol_[i-2] * 4")),
                 EvalNugget.from(() -> queryTable.view("newCol=Value / 2", "newCol2=newCol_[i+2] * 4")),
         };
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(queryTable,
                     i(10, 12, 18),
                     intCol("Sentinel", 56, 57, 510),
@@ -1349,7 +1349,7 @@ public class TestFormulaArrayEvaluation {
 
         TstUtils.validate("", en);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(queryTable,
                     i(10, 12, 18),
                     intCol("Sentinel", 56, 57, 510),

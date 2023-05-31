@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.engine.updategraph;
 
@@ -24,78 +24,21 @@ import java.util.concurrent.atomic.AtomicLong;
  * When {@link #completeUpdateCycle()} is called, the clock transitions back to Idle.
  * </p>
  */
-public class LogicalClock {
+public class LogicalClockImpl implements LogicalClock {
 
-    private static final Logger log = LoggerFactory.getLogger(LogicalClock.class);
-
-    /**
-     * The state component of a logical timestamp.
-     */
-    public enum State {
-
-        /**
-         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is propagating updates.
-         */
-        Updating,
-
-        /**
-         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is <em>not</em>
-         * propagating updates.
-         */
-        Idle
-    }
-
-    private static final long STEP_SHIFT = 1;
-    private static final long STATE_MASK = 1L;
+    private static final Logger log = LoggerFactory.getLogger(LogicalClockImpl.class);
 
     // {2, Idle}, just in case any code has 0 or 1 as an initializer.
     private final AtomicLong currentValue = new AtomicLong(5L);
 
     /**
-     * Get the clock step for the input clock value. The step increments one time for each complete
-     * {@link #startUpdateCycle() start} - {@link #completeUpdateCycle() end} cycle.
-     *
-     * @param value The clock value to get the step for
-     * @return The clock step associated with value
-     */
-    public static long getStep(final long value) {
-        return value >>> STEP_SHIFT;
-    }
-
-    /**
-     * Get the {@link State} of the LogicalClock for a particular clock value.
-     *
-     * @param value The clock value
-     * @return The clock state associated with the input value
-     */
-    public static State getState(final long value) {
-        return ((value & STATE_MASK) == 0) ? State.Updating : State.Idle;
-    }
-
-    /**
      * Get the current value of the clock.
      */
+    @Override
     public final long currentValue() {
         return currentValue.get();
     }
 
-    /**
-     * Get the current Step of the clock.
-     *
-     * @see #getStep(long)
-     */
-    public final long currentStep() {
-        return getStep(currentValue());
-    }
-
-    /**
-     * Get the current clock state.
-     *
-     * @see #getState(long)
-     */
-    public final State currentState() {
-        return getState(currentValue());
-    }
 
     /**
      * Increment the current value and set the clock state to {@link State#Updating updating}.
@@ -104,7 +47,7 @@ public class LogicalClock {
      */
     public final long startUpdateCycle() {
         final long beforeValue = currentValue.get();
-        Assert.eq(getState(beforeValue), "getState(beforeValue)", State.Idle);
+        Assert.eq(LogicalClock.getState(beforeValue), "getState(beforeValue)", State.Idle);
         final long afterValue = currentValue.incrementAndGet();
         Assert.eq(afterValue, "currentValue.incrementAndGet()", beforeValue + 1, "beforeValue + 1");
         return afterValue;
@@ -117,7 +60,7 @@ public class LogicalClock {
      */
     public final void completeUpdateCycle() {
         final long value = currentValue.get();
-        Assert.eq(getState(value), "getState(value)", State.Updating);
+        Assert.eq(LogicalClock.getState(value), "getState(value)", State.Updating);
         Assert.eq(currentValue.incrementAndGet(), "currentValue.incrementAndGet()", value + 1, "value + 1");
     }
 
@@ -143,11 +86,12 @@ public class LogicalClock {
         }
         if (value == updatingCycleValue) {
             log.warn()
-                    .append("LogicalClock cycle was not completed in normal operation, value=").append(value).endl();
+                    .append("LogicalClockImpl cycle was not completed in normal operation, value=").append(value)
+                    .endl();
             completeUpdateCycle();
             return;
         }
-        throw new IllegalStateException("Inconsistent LogicalClock value at end of cycle, expected "
+        throw new IllegalStateException("Inconsistent LogicalClockImpl value at end of cycle, expected "
                 + (updatingCycleValue + 1) + ", encountered " + value);
     }
 

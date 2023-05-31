@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.verify;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
@@ -13,7 +14,6 @@ import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
@@ -69,7 +69,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testPlant);
         assertTableEquals(test, testInt);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(test, i(11));
             addToTable(test, i(11), stringCol("Plant", "Berry"), intCol("Int", 6));
             test.notifyListeners(i(11), i(11), i());
@@ -78,7 +78,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testInt);
         assertTableEquals(test, testPlant);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
             TableTools.showWithRowSet(test);
@@ -110,7 +110,7 @@ public class TestTableAssertions {
         // final Random random1 = new Random(0);
         // QueryScope.addParam("random1", random);
 
-        // final Table badTable = UpdateContext.sharedLock().computeLocked(() ->
+        // final Table badTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() ->
         // table.update("RV=random1.nextDouble() < 0.00001 ? -1L : SortValue"));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -136,7 +136,7 @@ public class TestTableAssertions {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            UpdateContext.updateGraphProcessor()
+            ExecutionContext.getContext().getUpdateGraph()
                     .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                             GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);

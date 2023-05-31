@@ -59,7 +59,6 @@ public final class AggregateGrpcImpl extends GrpcTableOperation<AggregateRequest
                 .map(AggregationAdapter::adapt)
                 .collect(Collectors.toList());
         final List<ColumnName> groupByColumns = ColumnName.from(request.getGroupByColumnsList());
-        return getUpdateContext(parent, initialGroups).apply(
-                () -> parent.aggBy(aggregations, request.getPreserveEmpty(), initialGroups, groupByColumns));
+        return parent.aggBy(aggregations, request.getPreserveEmpty(), initialGroups, groupByColumns);
     }
 }

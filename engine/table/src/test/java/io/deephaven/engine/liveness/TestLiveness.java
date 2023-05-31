@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.liveness;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
@@ -25,9 +25,9 @@ public class TestLiveness {
 
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
-        oldCheckUgp = UpdateContext.updateGraphProcessor().setCheckTableOperations(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        oldCheckUgp = ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
         executionContext = TestExecutionContext.createForUnitTests().open();
@@ -37,8 +37,8 @@ public class TestLiveness {
     public void tearDown() throws Exception {
         LivenessScopeStack.pop(scope);
         scope.release();
-        UpdateContext.updateGraphProcessor().setCheckTableOperations(oldCheckUgp);
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(oldCheckUgp);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
         executionContext.close();
     }
 

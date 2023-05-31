@@ -325,7 +325,7 @@ public abstract class UpdateBy {
                     }
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (UpdateContext.updateGraphProcessor().getUpdateThreads() > 1) {
+                if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
                     jobScheduler = new UpdateGraphProcessorJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
@@ -473,7 +473,7 @@ public abstract class UpdateBy {
 
             final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
 
-            jobScheduler.iterateParallel(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringToAppendable("-computeCachedColumnRowSets")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
                     (context, idx, nec) -> {
@@ -525,7 +525,7 @@ public abstract class UpdateBy {
          */
         private void prepareForParallelPopulation(
                 final Runnable onParallelPopulationComplete) {
-            jobScheduler.iterateParallel(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringToAppendable("-prepareForParallelPopulation")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     windows.length,
@@ -585,7 +585,7 @@ public abstract class UpdateBy {
 
             final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
 
-            jobScheduler.iterateSerial(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringToAppendable("-processWindows")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     dirtyWindowIndices.length,
@@ -672,7 +672,7 @@ public abstract class UpdateBy {
             operatorSets.add(opList.toArray());
 
             // Process each set of similar operators in this window serially.
-            jobScheduler.iterateSerial(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringAndIndexToAppendable("-processWindowOperators", winIdx)),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     operatorSets.size(),
@@ -711,7 +711,7 @@ public abstract class UpdateBy {
                 return;
             }
 
-            jobScheduler.iterateParallel(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
@@ -770,7 +770,7 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringToAppendable("-createCachedColumnSource")),
                     BatchThreadContext::new, 0, taskCount,
                     (ctx, idx, nec) -> {
@@ -836,7 +836,7 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(UpdateContext.get(), ExecutionContext.getContextToRecord(),
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringAndIndexToAppendable("-processWindowBucketOperators", winIdx)),
                     OperatorThreadContext::new,
                     0, dirtyBuckets.length,
@@ -924,7 +924,7 @@ public abstract class UpdateBy {
                         outerNugget.addBaseEntry(accumulated);
                     }
                 } else {
-                    UpdateContext.updateGraphProcessor().addNotification(new TerminalNotification() {
+                    ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
                             synchronized (accumulated) {
@@ -1086,7 +1086,8 @@ public abstract class UpdateBy {
             final QueryTable result = result();
             if (result.isFailed()) {
                 Assert.eq(result.getLastNotificationStep(), "result.getLastNotificationStep()",
-                        UpdateContext.logicalClock().currentStep(), "UpdateContext.logicalClock().currentStep()");
+                        ExecutionContext.getContext().getUpdateGraph().clock().currentStep(),
+                        "ExecutionContext.getContext().getUpdateGraph().clock().currentStep()");
                 return;
             }
 

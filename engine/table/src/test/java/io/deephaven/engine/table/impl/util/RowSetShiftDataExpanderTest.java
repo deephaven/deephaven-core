@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -10,7 +11,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -513,13 +513,13 @@ public class RowSetShiftDataExpanderTest {
         public final WritableRowSet expectModified = RowSetFactory.empty();
 
         public Context() {
-            UpdateContext.logicalClock().resetForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().clock().resetForUnitTests();
         }
 
         public void validate() {
-            UpdateContext.logicalClock().startUpdateCycle();
+            ExecutionContext.getContext().getUpdateGraph().clock().startUpdateCycle();
             sourceRowSet.update(expectAdded, expectRemoved);
-            UpdateContext.logicalClock().completeUpdateCycle();
+            ExecutionContext.getContext().getUpdateGraph().clock().completeUpdateCycle();
 
             final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();

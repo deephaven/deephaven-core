@@ -3,13 +3,12 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
-import io.deephaven.util.annotations.ScriptApi;
 import junit.framework.TestCase;
 
 import java.util.List;
@@ -30,7 +29,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(2, filtered.size());
 
         for (int ii = 0; ii <= 10; ++ii) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
@@ -55,7 +54,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             cycles++;
         }
         assertTableEquals(source, filtered);
@@ -89,7 +88,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
     public void testAutoTune2() {
         // I just want to see commas in the output
-        UpdateContext.updateGraphProcessor().setTargetCycleDurationMillis(100);
+        ExecutionContext.getContext().getUpdateGraph().setTargetCycleDurationMillis(100);
         final Table source = TableTools.emptyTable(1_000_000);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
@@ -97,12 +96,13 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = UpdateContext.sharedLock().computeLocked(() -> filtered.update("I=0"));
+        final Table updated =
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> filtered.update("I=0"));
 
         int steps = 0;
 
         while (filtered.size() < source.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             if (steps++ > 100) {
                 TestCase.fail("Did not release rows promptly.");
             }
@@ -112,7 +112,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     }
 
     private int testAutoTuneCycle(int cycleTime) {
-        UpdateContext.updateGraphProcessor().setTargetCycleDurationMillis(cycleTime);
+        ExecutionContext.getContext().getUpdateGraph().setTargetCycleDurationMillis(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
@@ -121,12 +121,12 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         incrementalReleaseFilter.start();
         final Table filtered = source.updateView("I = ii").where(incrementalReleaseFilter);
 
-        final Table updated = UpdateContext.sharedLock().computeLocked(() -> filtered
+        final Table updated = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> filtered
                 .update("I=io.deephaven.engine.table.impl.util.TestIncrementalReleaseFilter.sleepValue(100000, I)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
             if (cycles++ > (2 * (source.size() * 100) / cycleTime)) {
                 TestCase.fail("Did not release rows promptly.");

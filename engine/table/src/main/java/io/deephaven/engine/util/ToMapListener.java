@@ -3,9 +3,9 @@
  */
 package io.deephaven.engine.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.ColumnSource;
@@ -107,7 +107,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
         upstream.modified().forAllRowKeys(adder);
 
         currentMap = newMap;
-        UpdateContext.updateGraphProcessor().addNotification(new Flusher());
+        ExecutionContext.getContext().getUpdateGraph().addNotification(new Flusher());
     }
 
     @Override
@@ -158,7 +158,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
      * @return the value associated with key
      */
     public <T> T get(K key, LongFunction<T> valueProducer, LongFunction<T> prevValueProducer) {
-        final LogicalClock.State state = UpdateContext.logicalClock().currentState();
+        final LogicalClock.State state = ExecutionContext.getContext().getUpdateGraph().clock().currentState();
         final TObjectLongHashMap<Object> map;
         if (state == LogicalClock.State.Idle && (map = currentMap) != null) {
             final long row = map.get(key);

@@ -4,7 +4,7 @@
 package io.deephaven.plot;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.gui.color.Color;
 import junit.framework.TestCase;
 
@@ -12,14 +12,14 @@ public class TestBaseFigureImpl extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     public void testSubplot() {

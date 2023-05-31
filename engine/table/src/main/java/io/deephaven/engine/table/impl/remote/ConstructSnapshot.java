@@ -9,6 +9,9 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.updategraph.*;
@@ -231,7 +234,7 @@ public class ConstructSnapshot {
             }
             if (!clockConsistent(
                     activeConcurrentAttempt.beforeClockValue,
-                    lastObservedClockValue = UpdateContext.logicalClock().currentValue(),
+                    lastObservedClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue(),
                     activeConcurrentAttempt.usingPreviousValues)) {
                 return true;
             }
@@ -277,7 +280,7 @@ public class ConstructSnapshot {
                     || WaitNotification.waitForSatisfaction(beforeStep, dependency)) {
                 return;
             }
-            lastObservedClockValue = UpdateContext.logicalClock().currentValue();
+            lastObservedClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             // Blow up if we've detected a step change
             if (LogicalClock.getStep(lastObservedClockValue) != beforeStep) {
                 throw new SnapshotInconsistentException();
@@ -317,8 +320,9 @@ public class ConstructSnapshot {
          * @return Whether this thread currently holds a lock on the UGP
          */
         private boolean locked() {
-            return UpdateContext.sharedLock().isHeldByCurrentThread()
-                    || UpdateContext.exclusiveLock().isHeldByCurrentThread();
+            if (ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread())
+                return true;
+            return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread();
         }
 
         /**
@@ -328,7 +332,7 @@ public class ConstructSnapshot {
             if (locked()) {
                 return;
             }
-            UpdateContext.sharedLock().lock();
+            ExecutionContext.getContext().getUpdateGraph().sharedLock().lock();
             acquiredLock = true;
         }
 
@@ -337,7 +341,7 @@ public class ConstructSnapshot {
          */
         private void maybeReleaseLock() {
             if (acquiredLock && concurrentSnapshotDepth == 0 && lockedSnapshotDepth == 0) {
-                UpdateContext.sharedLock().unlock();
+                ExecutionContext.getContext().getUpdateGraph().sharedLock().unlock();
                 acquiredLock = false;
             }
         }
@@ -460,7 +464,8 @@ public class ConstructSnapshot {
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet keysToSnapshot,
             @NotNull final SnapshotControl control) {
-        try (final SafeCloseable ignored = table.getUpdateContext().open()) {
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final InitialSnapshot snapshot = new InitialSnapshot();
 
             final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> serializeAllTable(
@@ -567,7 +572,9 @@ public class ConstructSnapshot {
             @Nullable final RowSequence positionsToSnapshot,
             @Nullable final RowSequence reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
-        try (final SafeCloseable ignored1 = table.getUpdateContext().open()) {
+
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        try (final SafeCloseable ignored1 = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final BarrageMessage snapshot = new BarrageMessage();
             snapshot.isSnapshot = true;
             snapshot.shifted = RowSetShiftData.EMPTY;
@@ -629,10 +636,11 @@ public class ConstructSnapshot {
                 break;
             }
         }
-        try (final SafeCloseable ignored = refOffset == -1 ? null : tables[refOffset].getUpdateContext().open()) {
+        try (final SafeCloseable ignored = refOffset == -1 ? null
+                : ExecutionContext.getContext().withUpdateGraph(tables[refOffset].getUpdateGraph()).open()) {
             // it's fine that we will check this first table twice
             if (refOffset != -1) {
-                tables[refOffset].checkUpdateContextConsistency(tables);
+                tables[refOffset].getUpdateGraph(tables);
             }
 
             final List<InitialSnapshot> snapshots = new ArrayList<>();
@@ -968,10 +976,11 @@ public class ConstructSnapshot {
                         .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
                         .toArray(NotificationStepSource[]::new);
                 if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
-                        && UpdateContext.logicalClock().currentStep() != beforeStep) {
-                    // If we missed a step change, we've already failed, request a do-over.
-                    return null;
+                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                        // If we missed a step change, we've already failed, request a do-over.
+                        return null;
+                    }
                 }
             }
             return false;
@@ -1022,10 +1031,11 @@ public class ConstructSnapshot {
                         .filter((final NotificationQueue.Dependency dep) -> !dep.satisfied(beforeStep))
                         .toArray(NotificationStepSource[]::new);
                 if (notYetSatisfied.length > 0
-                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)
-                        && UpdateContext.logicalClock().currentStep() != beforeStep) {
-                    // If we missed a step change, we've already failed, request a do-over.
-                    return null;
+                        && !WaitNotification.waitForSatisfaction(beforeStep, notYetSatisfied)) {
+                    if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != beforeStep) {
+                        // If we missed a step change, we've already failed, request a do-over.
+                        return null;
+                    }
                 }
             }
             return false;
@@ -1085,7 +1095,7 @@ public class ConstructSnapshot {
         final LivenessManager initialLivenessManager = LivenessScopeStack.peek();
         while (numConcurrentAttempts < MAX_CONCURRENT_ATTEMPTS && !state.locked()) {
             ++numConcurrentAttempts;
-            final long beforeClockValue = UpdateContext.logicalClock().currentValue();
+            final long beforeClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             final long attemptStart = System.currentTimeMillis();
 
             final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
@@ -1099,7 +1109,7 @@ public class ConstructSnapshot {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
             }
-            if (UpdateContext.updateGraphProcessor().isRefreshThread() && usePrev) {
+            if (ExecutionContext.getContext().getUpdateGraph().isRefreshThread() && usePrev) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested from a run thread: " + beforeClockValue);
             }
@@ -1120,7 +1130,8 @@ public class ConstructSnapshot {
                         log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
                                 .append(System.currentTimeMillis() - attemptStart).append("ms")
                                 .append(", beforeClockValue=").append(beforeClockValue)
-                                .append(", afterClockValue=").append(UpdateContext.logicalClock().currentValue())
+                                .append(", afterClockValue=")
+                                .append(ExecutionContext.getContext().getUpdateGraph().clock().currentValue())
                                 .append(", usePrev=").append(usePrev)
                                 .endl();
                     }
@@ -1132,7 +1143,7 @@ public class ConstructSnapshot {
                     state.endConcurrentSnapshot(startObject);
                 }
 
-                final long afterClockValue = UpdateContext.logicalClock().currentValue();
+                final long afterClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
                 try {
                     snapshotSuccessful = clockConsistent(beforeClockValue, afterClockValue, usePrev)
                             && control.snapshotCompletedConsistently(afterClockValue, usePrev);
@@ -1206,7 +1217,7 @@ public class ConstructSnapshot {
             }
             state.startLockedSnapshot();
             try {
-                final long beforeClockValue = UpdateContext.logicalClock().currentValue();
+                final long beforeClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
                 if (!Boolean.FALSE.equals(previousValuesRequested)) {
@@ -1219,7 +1230,7 @@ public class ConstructSnapshot {
                 functionSuccessful = function.call(false, beforeClockValue);
                 Assert.assertion(functionSuccessful, "functionSuccessful");
 
-                final long afterClockValue = UpdateContext.logicalClock().currentValue();
+                final long afterClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
 
                 Assert.eq(beforeClockValue, "beforeClockValue", afterClockValue, "afterClockValue");
 
@@ -1269,7 +1280,7 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             RowSet keysToSnapshot) {
-        table.checkUpdateContextConsistency();
+        table.getUpdateGraph();
         // noinspection resource
         snapshot.rowSet = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
 
@@ -1342,7 +1353,7 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
-        table.checkUpdateContextConsistency();
+        table.getUpdateGraph();
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();

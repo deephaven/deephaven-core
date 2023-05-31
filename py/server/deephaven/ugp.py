@@ -15,9 +15,9 @@ import jpy
 
 from deephaven import DHError
 
-_JUpdateContext = jpy.get_type("io.deephaven.engine.updategraph.UpdateContext")
-_j_exclusive_lock = _JUpdateContext.exclusiveLock()
-_j_shared_lock = _JUpdateContext.sharedLock()
+_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
+_j_exclusive_lock = _JUpdateGraph.exclusiveLock()
+_j_shared_lock = _JUpdateGraph.sharedLock()
 
 auto_locking = True
 """Whether to automatically acquire the Update Graph Processor(UGP) shared lock for an unsafe operation on a refreshing 

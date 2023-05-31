@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -76,7 +76,7 @@ public class TestSortIncrementalPerformance {
         final R result = function.apply(filtered);
 
         while (filtered.size() < inputTable.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

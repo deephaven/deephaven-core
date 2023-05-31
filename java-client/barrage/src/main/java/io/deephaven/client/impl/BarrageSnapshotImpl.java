@@ -9,13 +9,13 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
@@ -179,15 +179,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         // test lock conditions
-        if (UpdateContext.sharedLock().isHeldByCurrentThread()) {
+        if (ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
-                    "Cannot snapshot while holding the UpdateContext shared lock");
+                    "Cannot snapshot while holding the UpdateGraph shared lock");
         }
 
         prevUsed = true;
 
-        if (UpdateContext.exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = UpdateContext.exclusiveLock().newCondition();
+        if (ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+            completedCondition = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition();
         }
 
         if (!connected) {
@@ -243,7 +243,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private void signalCompletion() {
         if (completedCondition != null) {
-            UpdateContext.updateGraphProcessor().requestSignal(completedCondition);
+            ExecutionContext.getContext().getUpdateGraph().requestSignal(completedCondition);
         } else {
             synchronized (BarrageSnapshotImpl.this) {
                 BarrageSnapshotImpl.this.notifyAll();

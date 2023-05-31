@@ -7,6 +7,8 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+
 /**
  * Interface for notification of update graph node changes.
  */
@@ -56,8 +58,8 @@ public interface NotificationQueue {
          *
          * @param step The step for which we are testing satisfaction
          * @return Whether the dependency is satisfied on {@code step} (and will not fire subsequent notifications)
-         * @implNote For all practical purposes, all implementations should consider whether the
-         *           {@link UpdateGraphProcessor} itself is satisfied if they have no other dependencies.
+         * @implNote For all practical purposes, all implementations should consider whether the {@link UpdateGraph}
+         *           itself is satisfied if they have no other dependencies.
          */
         boolean satisfied(long step);
     }
@@ -70,6 +72,15 @@ public interface NotificationQueue {
      * @param notification The notification to add
      */
     void addNotification(@NotNull Notification notification);
+
+    /**
+     * Enqueue a collection of notifications to be flushed.
+     *
+     * @param notifications The notification to enqueue
+     *
+     * @see #addNotification(Notification)
+     */
+    void addNotifications(@NotNull final Collection<? extends Notification> notifications);
 
     /**
      * Add a notification for this NotificationQueue to deliver (by invoking its run() method), iff the delivery step is

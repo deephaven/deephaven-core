@@ -4,13 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -42,8 +42,8 @@ public class TestSort extends BaseArrayTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         lastMemoize = QueryTable.setMemoizeResults(false);
         oldQueryCompilerLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         executionContext = TestExecutionContext.createForUnitTests().open();
@@ -54,7 +54,7 @@ public class TestSort extends BaseArrayTestCase {
         super.tearDown();
         QueryCompiler.setLogEnabled(oldQueryCompilerLogEnabled);
         QueryTable.setMemoizeResults(lastMemoize);
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
         executionContext.close();
     }
 

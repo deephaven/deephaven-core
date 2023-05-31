@@ -9,7 +9,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -41,7 +41,7 @@ public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
     private final GrpcServer server;
-    private final UpdateGraphProcessor ugp;
+    private final UpdateGraph ug;
     private final LogInit logInit;
     private final Provider<ScriptSession> scriptSessionProvider;
     private final PluginRegistration pluginRegistration;
@@ -55,7 +55,7 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final GrpcServer server,
-            final UpdateGraphProcessor ugp,
+            final UpdateGraph ug,
             final LogInit logInit,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
@@ -66,7 +66,7 @@ public class DeephavenApiServer {
             final Provider<ExecutionContext> executionContextProvider,
             final ServerConfig serverConfig) {
         this.server = server;
-        this.ugp = ugp;
+        this.ug = ug;
         this.logInit = logInit;
         this.scriptSessionProvider = scriptSessionProvider;
         this.pluginRegistration = pluginRegistration;
@@ -128,7 +128,7 @@ public class DeephavenApiServer {
         pluginRegistration.registerAll();
 
         log.info().append("Starting UGP...").endl();
-        ugp.start();
+        ug.start();
 
         EngineMetrics.maybeStartStatsCollection();
 

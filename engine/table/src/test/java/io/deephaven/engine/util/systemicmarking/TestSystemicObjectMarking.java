@@ -3,13 +3,13 @@
  */
 package io.deephaven.engine.util.systemicmarking;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.ErrorListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
@@ -21,14 +21,16 @@ import static io.deephaven.engine.util.TableTools.col;
 public class TestSystemicObjectMarking extends RefreshingTableTestCase {
     public void testSystemicObjectMarking() {
         final QueryTable source = TstUtils.testRefreshingTable(col("Str", "a", "b"), col("Str2", "A", "B"));
-        final Table updated = UpdateContext.sharedLock().computeLocked(
+        final Table updated = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> source.update("UC=Str.toUpperCase()"));
         final Table updated2 = SystemicObjectTracker.executeSystemically(false,
-                () -> UpdateContext.sharedLock().computeLocked(() -> source.update("LC=Str2.toLowerCase()")));
+                () -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> source.update("LC=Str2.toLowerCase()"));
+                });
 
         TableTools.showWithRowSet(updated);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), col("Str", "c", "d"), col("Str2", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -39,7 +41,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         final ErrorListener errorListener2 = new ErrorListener(updated2);
         updated2.addUpdateListener(errorListener2);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(4, 5), col("Str", "e", "f"), col("Str2", "E", null));
             source.notifyListeners(i(4, 5), i(), i());
         });
@@ -60,7 +62,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         updated.addUpdateListener(errorListener);
 
         allowingError(() -> {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(source, i(7, 8), col("Str", "g", null), col("Str2", "G", "H"));
                 source.notifyListeners(i(7, 8), i(), i());
             });

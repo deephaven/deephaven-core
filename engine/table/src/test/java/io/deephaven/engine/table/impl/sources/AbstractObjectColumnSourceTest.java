@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -19,7 +20,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
-import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -40,13 +40,13 @@ public abstract class AbstractObjectColumnSourceTest {
 
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     @Test
@@ -310,14 +310,14 @@ public abstract class AbstractObjectColumnSourceTest {
     public void testFilllEmptyChunkWithPrev() {
         final ObjectSparseArraySource src = new ObjectSparseArraySource<>(String.class);
         src.startTrackingPrevValues();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ObjectSparseArraySource.commitUpdates()
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test

@@ -3,8 +3,8 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.*;
@@ -49,7 +49,7 @@ public class RangeFilterBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
@@ -159,10 +159,10 @@ public class RangeFilterBenchmark {
 
         final R result = function.apply(filtered);
 
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

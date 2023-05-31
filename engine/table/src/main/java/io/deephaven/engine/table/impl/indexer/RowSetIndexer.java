@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.tuple.EmptyTuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -111,7 +111,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
                 ephemeralMappings = new WeakHashMap<>();
             }
             ephemeralMappings.put(sourcesKey, new MappingInfo(tupleSource, result,
-                    UpdateContext.logicalClock().currentStep()));
+                    ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
         }
 
         return result;
@@ -151,7 +151,8 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
                 ephemeralPrevMappings = new WeakHashMap<>();
             }
             ephemeralPrevMappings.put(sourcesKey,
-                    new MappingInfo(tupleSource, result, UpdateContext.logicalClock().currentStep()));
+                    new MappingInfo(tupleSource, result,
+                            ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
         }
         return result;
     }
@@ -627,7 +628,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             return null;
         }
 
-        if (resultInfo.creationTick != UpdateContext.logicalClock().currentStep()) {
+        if (resultInfo.creationTick != ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
             groupingMap.remove(columnSourceKey);
             return null;
         }

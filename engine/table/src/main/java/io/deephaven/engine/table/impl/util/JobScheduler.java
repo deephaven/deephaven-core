@@ -6,7 +6,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
@@ -40,14 +39,12 @@ public interface JobScheduler {
     /**
      * Cause runnable to be executed.
      *
-     * @param updateContext the update context to run it under
      * @param executionContext the execution context to run it under
      * @param runnable the runnable to execute
      * @param description a description for logging
      * @param onError a routine to call if an exception occurs while running runnable
      */
     void submit(
-            UpdateContext updateContext,
             ExecutionContext executionContext,
             Runnable runnable,
             final LogOutputAppendable description,
@@ -143,7 +140,6 @@ public interface JobScheduler {
 
         private void startTasks(
                 @NotNull final JobScheduler scheduler,
-                @NotNull final UpdateContext updateContext,
                 @Nullable final ExecutionContext executionContext,
                 @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
                 final int maxThreads) {
@@ -161,8 +157,7 @@ public interface JobScheduler {
                     break;
                 }
                 final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
-                scheduler.submit(updateContext, executionContext, taskInvoker, description,
-                        IterationManager::onUnexpectedJobError);
+                scheduler.submit(executionContext, taskInvoker, description, IterationManager::onUnexpectedJobError);
             }
         }
 
@@ -314,7 +309,6 @@ public interface JobScheduler {
     /**
      * Provides a mechanism to iterate over a range of values in parallel using the {@link JobScheduler}
      *
-     * @param updateContext the update context for this task
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the threads
@@ -327,7 +321,6 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            @NotNull final UpdateContext updateContext,
             @Nullable final ExecutionContext executionContext,
             @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
@@ -336,7 +329,7 @@ public interface JobScheduler {
             @NotNull final IterateAction<CONTEXT_TYPE> action,
             @NotNull final Runnable onComplete,
             @NotNull final Consumer<Exception> onError) {
-        iterateParallel(updateContext, executionContext, description, taskThreadContextFactory, start, count,
+        iterateParallel(executionContext, description, taskThreadContextFactory, start, count,
                 (final CONTEXT_TYPE taskThreadContext,
                         final int taskIndex,
                         final Consumer<Exception> nestedErrorConsumer,
@@ -353,7 +346,6 @@ public interface JobScheduler {
      * execution. This allows the next iteration and the completion runnable to be delayed until dependent asynchronous
      * serial or parallel scheduler jobs have completed.
      *
-     * @param updateContext the update context for this task
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
@@ -365,7 +357,6 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            @NotNull final UpdateContext updateContext,
             @Nullable final ExecutionContext executionContext,
             @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
@@ -382,7 +373,7 @@ public interface JobScheduler {
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
                 new IterationManager<>(description, start, count, action, onComplete, onError);
-        iterationManager.startTasks(this, updateContext, executionContext, taskThreadContextFactory, count);
+        iterationManager.startTasks(this, executionContext, taskThreadContextFactory, count);
     }
 
     /**
@@ -391,7 +382,6 @@ public interface JobScheduler {
      * execution. This allows the next iteration and the completion runnable to be delayed until dependent asynchronous
      * serial or parallel scheduler jobs have completed.
      *
-     * @param updateContext the update context for this task
      * @param executionContext the execution context for this task
      * @param description the description to use for logging
      * @param taskThreadContextFactory the factory that supplies {@link JobThreadContext contexts} for the tasks
@@ -403,7 +393,6 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(
-            @NotNull final UpdateContext updateContext,
             @Nullable final ExecutionContext executionContext,
             @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
@@ -420,6 +409,6 @@ public interface JobScheduler {
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
                 new IterationManager<>(description, start, count, action, onComplete, onError);
-        iterationManager.startTasks(this, updateContext, executionContext, taskThreadContextFactory, 1);
+        iterationManager.startTasks(this, executionContext, taskThreadContextFactory, 1);
     }
 }

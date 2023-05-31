@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.logger.Logger;
 
 import java.util.*;
@@ -67,18 +67,21 @@ class WhereListener extends MergedListener {
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-        if (UpdateContext.updateGraphProcessor().getUpdateThreads() > 1) {
+        if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
             minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
         } else {
             minimumThreadSize = Long.MAX_VALUE;
         }
-        segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0 ? UpdateContext.updateGraphProcessor().getUpdateThreads()
-                : QueryTable.PARALLEL_WHERE_SEGMENTS;
+        if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
+            segmentCount = ExecutionContext.getContext().getUpdateGraph().getUpdateThreads();
+        } else {
+            segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
+        }
     }
 
     @Override
     public void process() {
-        initialNotificationStep = UpdateContext.logicalClock().currentStep();
+        initialNotificationStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
 
         if (result.refilterRequested()) {
             final TableUpdate update = recorder != null ? recorder.getUpdate() : null;
@@ -184,7 +187,7 @@ class WhereListener extends MergedListener {
     }
 
     void setFinalExecutionStep() {
-        finalNotificationStep = UpdateContext.logicalClock().currentStep();
+        finalNotificationStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
     }
 
     ListenerFilterExecution makeFilterExecution() {
@@ -240,8 +243,8 @@ class WhereListener extends MergedListener {
         @Override
         void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
-            UpdateContext.updateGraphProcessor().addNotifications(subFilters);
-            UpdateContext.updateGraphProcessor().addNotification(combinationNotification);
+            ExecutionContext.getContext().getUpdateGraph().addNotifications(subFilters);
+            ExecutionContext.getContext().getUpdateGraph().addNotification(combinationNotification);
         }
 
         @Override

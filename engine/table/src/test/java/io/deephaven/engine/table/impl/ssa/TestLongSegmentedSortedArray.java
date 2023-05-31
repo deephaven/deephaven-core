@@ -9,18 +9,17 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -176,7 +175,7 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
             asLong.addUpdateListener(asLongListener);
 
             while (desc.advance(50)) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() ->
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() ->
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asLong.intSize());
@@ -219,7 +218,7 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
             asLong.addUpdateListener(asLongListener);
 
             while (desc.advance(50)) {
-                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

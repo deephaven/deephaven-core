@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -412,7 +413,8 @@ public final class DynamicTableWriter implements TableWriter {
                     (currentRow) -> createRowSetter(source.getType(), (WritableColumnSource) source));
             ++ii;
         }
-        table.getUpdateContext().getUpdateGraphProcessor().addSource(table);
+        UpdateGraph updateGraph = table.getUpdateGraph();
+        updateGraph.addSource(table);
     }
 
     @SuppressWarnings("unchecked")

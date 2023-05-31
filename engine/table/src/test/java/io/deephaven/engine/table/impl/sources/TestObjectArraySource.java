@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -15,7 +16,6 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -58,20 +58,20 @@ public class TestObjectArraySource {
 
     private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, RowSet rowSet) {
         final ObjectArraySource source;
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
     }
 
@@ -265,20 +265,20 @@ public class TestObjectArraySource {
 
     private void testFillChunkGeneric(Object[] values, Object[] newValues, int chunkSize, RowSet rowSet) {
         final ObjectArraySource source;
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
         }
     }
 
@@ -527,14 +527,14 @@ public class TestObjectArraySource {
     public void testFillEmptyChunkWithPrev() {
         final ObjectArraySource src = new ObjectArraySource<>(String.class);
         src.startTrackingPrevValues();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ObjectSparseArraySource.commitUpdates()
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test

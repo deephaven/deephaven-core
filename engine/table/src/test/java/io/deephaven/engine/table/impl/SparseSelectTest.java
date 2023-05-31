@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -12,7 +13,6 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -187,7 +187,7 @@ public class SparseSelectTest {
         assertTableEquals(selected, table);
         assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), TableTools.longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -198,7 +198,7 @@ public class SparseSelectTest {
         TableTools.show(table);
         TableTools.show(selected);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), TableTools.longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });

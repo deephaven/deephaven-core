@@ -198,7 +198,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         } else {
             final long cycleDurationNanos = cycleEndNanos - lastRefreshNanos;
             final long targetCycleNanos =
-                    updateContext.getUpdateGraphProcessor().getTargetCycleDurationMillis() * 1000 * 1000;
+                    updateGraph.getTargetCycleDurationMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDurationNanos;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycleNanos * targetFactor), 1L);
             if (verbose) {
@@ -216,13 +216,13 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
                         .append(decimalFormat.format(eta)).append(" sec").endl();
             }
         }
-        updateContext.getUpdateGraphProcessor().addNotification(new TerminalNotification() {
+        updateGraph.addNotification(new TerminalNotification() {
             final boolean captureReleasedAll = releasedAll;
 
             @Override
             public void run() {
                 cycleEndNanos = System.nanoTime();
-                updateContext.getUpdateGraphProcessor().requestRefresh();
+                updateGraph.requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");
                     final long durationNanos = cycleEndNanos - firstCycleNanos;

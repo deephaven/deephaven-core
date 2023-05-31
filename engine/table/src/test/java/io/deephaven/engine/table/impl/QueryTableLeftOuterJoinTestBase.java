@@ -8,6 +8,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -21,7 +22,6 @@ import io.deephaven.engine.testutil.generator.IntArrayGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.StringArrayGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -136,7 +136,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
@@ -171,7 +171,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -209,7 +209,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -241,7 +241,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         };
         TstUtils.validate(en);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
@@ -336,7 +336,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             if (printTableUpdates) {
                 System.out.println("Size = " + size + ", seed=" + seed + ", step = " + numSteps.intValue());
             }
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
@@ -367,7 +367,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0, 1));
             right.notifyListeners(i(), i(0, 1), i());
         });
@@ -382,7 +382,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(TableTools.newTable(intCol("LS", 1, 2, 3, 4, 5),
                 intCol("RS", NULL_INT, NULL_INT, NULL_INT, NULL_INT, NULL_INT)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(7), intCol("RS", 30));
             right.notifyListeners(i(7), i(), i());
             addToTable(left, i(6), intCol("LS", 6));
@@ -400,7 +400,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(), listener.update.modified());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(7), intCol("RS", 40));
             final TableUpdateImpl update = new TableUpdateImpl(i(), i(), i(7), RowSetShiftData.EMPTY,
                     right.newModifiedColumnSet("RS"));
@@ -416,7 +416,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(), listener.update.removed());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(7), intCol("RS", 50));
             addToTable(right, i(4), intCol("RS", 60));
             right.notifyListeners(new TableUpdateImpl(i(4), i(), i(7), RowSetShiftData.EMPTY,
@@ -440,7 +440,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         TableTools.showWithRowSet(left);
         TableTools.showWithRowSet(joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(4, 7));
             addToTable(right, i(2, 3), intCol("RS", 70, 80));
             right.notifyListeners(new TableUpdateImpl(i(2, 3), i(4, 7), i(), RowSetShiftData.EMPTY,
@@ -476,7 +476,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(0, 1), intCol("RS", 1, 2));
             right.notifyListeners(i(0, 1), i(), i());
         });
@@ -489,7 +489,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         assertTableEquals(TableTools.newTable(intCol("LS", 1, 1), intCol("LS2", 100, 100), intCol("RS", 1, 2)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0, 1));
             right.notifyListeners(i(), i(0, 1), i());
         });
@@ -502,7 +502,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(), listener.update.modified());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(10), intCol("LS", 1), intCol("LS2", 101));
             final TableUpdateImpl update = new TableUpdateImpl(i(), i(), i(10),
                     RowSetShiftData.EMPTY, left.newModifiedColumnSet("LS2"));
@@ -519,7 +519,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(), listener.update.removed());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(0), intCol("RS", 50));
             right.notifyListeners(i(0), i(), i());
         });
@@ -533,7 +533,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(20), listener.update.removed());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(0), intCol("RS", 60));
             final TableUpdateImpl update = new TableUpdateImpl(i(), i(), i(0), RowSetShiftData.EMPTY,
                     right.newModifiedColumnSet("RS"));
@@ -551,7 +551,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
 
         // empty out right in preparation for next tests, make something from left we can remove
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0));
             final TableUpdateImpl update =
                     new TableUpdateImpl(i(), i(0), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
@@ -563,7 +563,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("RS", NULL_INT, NULL_INT, NULL_INT)), joined);
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(11), intCol("LS", 3), intCol("LS2", 102));
             final TableUpdateImpl updateLeft = new TableUpdateImpl(i(), i(), i(11),
                     RowSetShiftData.EMPTY, left.newModifiedColumnSet("LS"));
@@ -579,7 +579,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         listener.reset();
 
         // right empty, remove from left
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(left, i(20));
             final TableUpdateImpl updateLeft =
                     new TableUpdateImpl(i(), i(20), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
@@ -595,7 +595,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertEquals(i(40), listener.update.removed());
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             // right transitions to non-empty, left has a remove
             addToTable(right, i(0), intCol("RS", 70));
             final TableUpdateImpl update =
@@ -679,7 +679,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0, 1));
             right.notifyListeners(i(), i(0, 1), i());
         });
@@ -694,7 +694,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 1, 3, 2, 1), intCol("LS", 1, 2, 3, 4, 5, 6),
                 intCol("RS", NULL_INT, 30, NULL_INT, NULL_INT, 30, NULL_INT)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(7), intCol("RK", 3), intCol("RS", 40));
             right.notifyListeners(i(7), i(), i());
         });
@@ -706,7 +706,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 1, 3, 2, 1), intCol("LS", 1, 2, 3, 4, 5, 6),
                 intCol("RS", NULL_INT, 30, NULL_INT, 40, 30, NULL_INT)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(8, 9), intCol("RK", 3, 3), intCol("RS", 50, 60));
             right.notifyListeners(i(8, 9), i(), i());
             addToTable(left, i(7), intCol("LK", 1), intCol("LS", 8));
@@ -718,7 +718,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                         intCol("RS", NULL_INT, 30, NULL_INT, 40, 50, 60, 30, NULL_INT, NULL_INT)),
                 joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(0), intCol("RK", 4), intCol("RS", 70));
             final TableUpdateImpl update = new TableUpdateImpl(i(0), i(), i(), RowSetShiftData.EMPTY,
                     right.newModifiedColumnSet("RS"));
@@ -734,7 +734,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 joined);
 
         System.out.println("Activate K=4");
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(0, 11), intCol("LK", 4, 3), intCol("LS", 1, 10));
             removeRows(left, i(1));
             left.notifyListeners(new TableUpdateImpl(i(11), i(1), i(0), RowSetShiftData.EMPTY,
@@ -748,7 +748,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("LS", 1, 3, 4, 4, 4, 5, 6, 8, 10, 10, 10),
                 intCol("RS", 70, NULL_INT, 40, 50, 60, 30, NULL_INT, NULL_INT, 40, 50, 60)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(1), intCol("LK", 4), intCol("LS", 1));
             removeRows(left, i(0));
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
@@ -760,7 +760,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("LS", 1, 3, 4, 4, 4, 5, 6, 8, 10, 10, 10),
                 intCol("RS", 70, NULL_INT, 40, 50, 60, 30, NULL_INT, NULL_INT, 40, 50, 60)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
 
             addToTable(right, i(16, 17), intCol("RK", 3, 3), intCol("RS", 50, 60));
             removeRows(right, i(8, 9));
@@ -788,7 +788,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(1), intCol("RK", 1), intCol("RS", 20));
             right.notifyListeners(i(1), i(), i());
 
@@ -832,7 +832,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(1, 2, 3), intCol("RK", 1, 2, 2), intCol("RS", 20, 30, 40));
             right.notifyListeners(i(1, 2, 3), i(), i());
 
@@ -877,7 +877,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0));
             right.notifyListeners(i(), i(0), i());
 
@@ -928,7 +928,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         (joined).addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(7), intCol("LK", 1), intCol("LS", 8));
             left.notifyListeners(i(7), i(), i());
         });
@@ -937,7 +937,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("LS", 1, 1, 2, 3, 3, 4, 5, 6, 6, 8, 8),
                 intCol("RS", 10, 20, 30, 10, 20, NULL_INT, 30, 10, 20, 10, 20)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(0, 11), intCol("LK", 4, 3), intCol("LS", 1, 10));
             removeRows(left, i(1));
             left.notifyListeners(new TableUpdateImpl(i(11), i(1), i(0), RowSetShiftData.EMPTY,
@@ -969,7 +969,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(left, i(20), intCol("LK", 1), intCol("LS", 3));
             removeRows(left, i(10));
             left.notifyListeners(i(), i(10), i(20));
@@ -1011,7 +1011,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             removeRows(right, i(0, 1));
             right.notifyListeners(i(), i(0, 1), i());
         });
@@ -1026,7 +1026,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 1, 3, 2, 1), intCol("LS", 1, 2, 3, 4, 5, 6),
                 intCol("RS", NULL_INT, 30, NULL_INT, NULL_INT, 30, NULL_INT)), joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(7), intCol("RK", 3), intCol("RS", 40));
             right.notifyListeners(i(7), i(), i());
         });
@@ -1043,7 +1043,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         TableTools.showWithRowSet(joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(8, 9), intCol("RK", 3, 3), intCol("RS", 50, 60));
             right.notifyListeners(i(8, 9), i(), i());
         });
@@ -1067,7 +1067,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
         listener.reset();
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(0), intCol("RK", 4), intCol("RS", 70));
             final TableUpdateImpl update = new TableUpdateImpl(i(0), i(), i(), RowSetShiftData.EMPTY,
                     right.newModifiedColumnSet("RS"));
@@ -1077,7 +1077,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 intCol("LS", 1, 2, 3, 4, 4, 4, 5, 6), intCol("RS", NULL_INT, 30, NULL_INT, 40, 50, 60, 30, NULL_INT)),
                 joined);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             addToTable(right, i(16, 17), intCol("RK", 3, 3), intCol("RS", 50, 60));
             removeRows(right, i(8, 9));
             final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
@@ -1292,14 +1292,14 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         assertTableEquals(z2, z);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             xqt.getRowSet().writableCast().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z2, z);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             yqt.getRowSet().writableCast().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
@@ -1353,7 +1353,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         assertTableEquals(expected, result);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final RowSet toRemove = RowSetFactory.fromKeys(
                     LongStream.range(0, size / 4).map(vv -> vv * 4 + 3).toArray());
             removeRows(leftTable, toRemove);
@@ -1407,7 +1407,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         assertTableEquals(expected, result);
 
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final RowSet toModify =
                     RowSetFactory.fromKeys(LongStream.range(0, size / 4).map(vv -> vv * 4 + 3).toArray());
             addToTable(rightTable, toModify,
@@ -1512,7 +1512,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             System.out.println("Seed = " + seed + ", size = " + initialSize + ", step = " + numSteps.intValue());
 
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -1584,7 +1584,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             final long rightOffset = numSteps.getValue();
 
-            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;

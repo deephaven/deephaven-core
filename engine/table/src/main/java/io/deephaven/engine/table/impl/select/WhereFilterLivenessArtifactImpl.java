@@ -4,19 +4,20 @@
 package io.deephaven.engine.table.impl.select;
 
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.liveness.LivenessArtifact;
-import io.deephaven.engine.updategraph.UpdateContext;
 
 import java.io.Serializable;
 
 public abstract class WhereFilterLivenessArtifactImpl extends LivenessArtifact implements WhereFilter, Serializable {
 
-    protected final UpdateContext updateContext;
+    protected final UpdateGraph updateGraph;
 
     private boolean isAutomatedFilter = false;
 
     public WhereFilterLivenessArtifactImpl() {
-        updateContext = UpdateContext.get();
+        updateGraph = ExecutionContext.getContext().getUpdateGraph();
     }
 
     @Override

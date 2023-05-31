@@ -97,7 +97,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
-        updateContext.getUpdateGraphProcessor().addSource(this);
+        updateGraph.addSource(this);
     }
 
     @Override
@@ -118,6 +118,6 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     @Override
     protected void destroy() {
         super.destroy();
-        updateContext.getUpdateGraphProcessor().removeSource(this);
+        updateGraph.removeSource(this);
     }
 }

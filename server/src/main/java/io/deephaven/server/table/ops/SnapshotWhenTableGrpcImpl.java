@@ -11,6 +11,7 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -82,15 +83,17 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
         final Table trigger = sourceTables.get(1).get();
         final SnapshotWhenOptions options = options(request);
         try (final SafeCloseable ignored = lock(base, trigger)) {
-            return getUpdateContext(base, trigger).apply(() -> base.snapshotWhen(trigger, options));
+            return base.snapshotWhen(trigger, options);
         }
     }
 
     private SafeCloseable lock(Table base, Table trigger) {
         if (base.isRefreshing()) {
-            return base.getUpdateContext().getSharedLock().lockCloseable();
+            UpdateGraph updateGraph = base.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
         } else if (trigger.isRefreshing()) {
-            return trigger.getUpdateContext().getSharedLock().lockCloseable();
+            UpdateGraph updateGraph = trigger.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
         }
         return null;
     }

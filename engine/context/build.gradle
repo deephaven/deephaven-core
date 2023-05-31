@@ -11,7 +11,6 @@ configurations {
 
 dependencies {
     api project(':authentication')
-    api project(':engine-updategraph')
 
     implementation project(':Configuration')
     implementation project(':DataStructures')

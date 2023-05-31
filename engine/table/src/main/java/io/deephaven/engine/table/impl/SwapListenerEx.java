@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -58,7 +58,8 @@ public final class SwapListenerEx extends SwapListener {
                 } else {
                     WaitNotification.waitForSatisfaction(beforeStep, extra);
                     extraLastNotificationStep = extra.getLastNotificationStep();
-                    result = UpdateContext.logicalClock().currentStep() == beforeStep ? false : null;
+                    result = ExecutionContext.getContext().getUpdateGraph().clock().currentStep() == beforeStep ? false
+                            : null;
                 }
             } else if (extraUpdatedOnThisCycle) {
                 if (sourceTable.satisfied(beforeStep)) {
@@ -66,7 +67,8 @@ public final class SwapListenerEx extends SwapListener {
                 } else {
                     WaitNotification.waitForSatisfaction(beforeStep, sourceTable);
                     lastNotificationStep = sourceTable.getLastNotificationStep();
-                    result = UpdateContext.logicalClock().currentStep() == beforeStep ? false : null;
+                    result = ExecutionContext.getContext().getUpdateGraph().clock().currentStep() == beforeStep ? false
+                            : null;
                 }
             } else {
                 result = true;

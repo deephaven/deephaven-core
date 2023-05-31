@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.FloatChunk;
@@ -31,13 +31,13 @@ import static junit.framework.TestCase.*;
 public class TestFloatDeltaAwareColumnSource {
     @Before
     public void setUp() throws Exception {
-        UpdateContext.updateGraphProcessor().enableUnitTestMode();
-        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
     }
 
     @Test
@@ -47,7 +47,7 @@ public class TestFloatDeltaAwareColumnSource {
         final long key1 = 6;
         final float expected1 = ArrayGenerator.randomFloats(rng, 1)[0];
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Float> source = new DeltaAwareColumnSource<>(float.class);
         source.ensureCapacity(10);
 
@@ -56,7 +56,7 @@ public class TestFloatDeltaAwareColumnSource {
         final float actual1 = source.getFloat(key1);
         assertEquals(NULL_FLOAT, actual0);
         assertEquals(expected1, actual1);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     @Test
@@ -68,15 +68,15 @@ public class TestFloatDeltaAwareColumnSource {
         final float expected0_0 = values[0];
         final float expected0_1 = values[1];
         final float expected1 = values[2];
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Float> source = new DeltaAwareColumnSource<>(float.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -90,7 +90,7 @@ public class TestFloatDeltaAwareColumnSource {
         assertEquals(NULL_FLOAT, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     /**
@@ -113,7 +113,7 @@ public class TestFloatDeltaAwareColumnSource {
         final float[] valuesPhase2 = ArrayGenerator.randomFloats(rng, length);
         final HashMap<Long, Float> expectedPrev = new HashMap<>();
         final HashMap<Long, Float> expectedCurrent = new HashMap<>();
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final DeltaAwareColumnSource<Float> source = new DeltaAwareColumnSource<>(float.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
@@ -132,10 +132,10 @@ public class TestFloatDeltaAwareColumnSource {
         // Check some subranges using three ranges.
         final long[] threeRanges = {10, 30, 45, 55, 70, 90};
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
 
         // Now start the second cycle so we have different current and prev values.
-        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         for (long ii = 20; ii < 40; ++ii) {
             final float value = valuesPhase2[(int)ii];
             source.set(ii, value);
@@ -149,7 +149,7 @@ public class TestFloatDeltaAwareColumnSource {
         checkUsingGet(source, expectedCurrent, expectedPrev, 0, length);
         checkUsingChunk(source, expectedCurrent, expectedPrev, singleRange);
         checkUsingChunk(source, expectedCurrent, expectedPrev, threeRanges);
-        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
     }
 
     private static void checkUsingGet(DeltaAwareColumnSource<Float> source, Map<Long, Float> expectedCurrent,

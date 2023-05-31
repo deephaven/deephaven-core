@@ -5,12 +5,16 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.rpc.Code;
 import io.deephaven.base.Base64;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
@@ -28,6 +32,7 @@ import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
@@ -88,9 +93,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     protected final String description;
 
     /**
-     * This table's update context.
+     * This table's update graph.
      */
-    protected final UpdateContext updateContext;
+    protected final UpdateGraph updateGraph;
 
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
@@ -117,8 +122,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         super(attributes);
         this.definition = definition;
         this.description = description;
-        updateContext = UpdateContext.get();
-        lastNotificationStep = updateContext.getLogicalClock().currentStep();
+        updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        lastNotificationStep = updateGraph.clock().currentStep();
 
         // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than
         // getAttribute, in order to avoid triggering the "immutable after first access" restrictions of
@@ -153,8 +158,36 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         return logOutput.append(description);
     }
 
-    public UpdateContext getUpdateContext() {
-        return updateContext;
+    /**
+     * Get the appropriate update context for this operation. Returns the first update graph found from a refreshing
+     * table. If multiple tables are operating under multiple update graphs, this will throw a gRPC friendly exception.
+     *
+     * @param sources the source tables
+     * @return the update context
+     */
+    public UpdateGraph getUpdateGraph(final Table... sources) {
+        UpdateGraph graph = null;
+        if (isRefreshing()) {
+            graph = getUpdateGraph();
+        }
+
+        for (final Table other : sources) {
+            if (other == null || !other.isRefreshing()) {
+                continue;
+            }
+            if (graph == null) {
+                graph = other.getUpdateGraph();
+            } else if (graph != other.getUpdateGraph()) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "All refreshing source tables require the use of a singular update graph but found both "
+                                + graph + " and " + other.getUpdateGraph());
+            }
+        }
+
+        if (graph != null) {
+            return graph;
+        }
+        return ExecutionContext.getContext().getUpdateGraph();
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -453,8 +486,8 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // If we have no parents whatsoever then we are a source, and have no dependency chain other than the UGP
         // itself
         if (localParents.isEmpty()) {
-            if (updateContext.getUpdateGraphProcessor().satisfied(step)) {
-                updateContext.getUpdateGraphProcessor().logDependencies().append("Root node satisfied ").append(this)
+            if (updateGraph.satisfied(step)) {
+                updateGraph.logDependencies().append("Root node satisfied ").append(this)
                         .endl();
                 return true;
             }
@@ -466,7 +499,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             for (Object parent : localParents) {
                 if (parent instanceof NotificationQueue.Dependency) {
                     if (!((NotificationQueue.Dependency) parent).satisfied(step)) {
-                        updateContext.getUpdateGraphProcessor().logDependencies()
+                        updateGraph.logDependencies()
                                 .append("Parents dependencies not satisfied for ").append(this)
                                 .append(", parent=").append((NotificationQueue.Dependency) parent)
                                 .endl();
@@ -476,7 +509,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             }
         }
 
-        updateContext.getUpdateGraphProcessor().logDependencies()
+        updateGraph.logDependencies()
                 .append("All parents dependencies satisfied for ").append(this)
                 .endl();
 
@@ -487,13 +520,13 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public void awaitUpdate() throws InterruptedException {
-        updateContext.getExclusiveLock().doLocked(ensureCondition()::await);
+        updateGraph.exclusiveLock().doLocked(ensureCondition()::await);
     }
 
     @Override
     public boolean awaitUpdate(long timeout) throws InterruptedException {
         final MutableBoolean result = new MutableBoolean(false);
-        updateContext.getExclusiveLock().doLocked(
+        updateGraph.exclusiveLock().doLocked(
                 () -> result.setValue(ensureCondition().await(timeout, TimeUnit.MILLISECONDS)));
 
         return result.booleanValue();
@@ -501,22 +534,23 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     private Condition ensureCondition() {
         return FieldUtils.ensureField(this, CONDITION_UPDATER, null,
-                () -> updateContext.getExclusiveLock().newCondition());
+                () -> updateGraph.exclusiveLock().newCondition());
     }
 
     private void maybeSignal() {
         final Condition localCondition = updateGraphProcessorCondition;
         if (localCondition != null) {
-            updateContext.getUpdateGraphProcessor().requestSignal(localCondition);
+            updateGraph.requestSignal(localCondition);
         }
     }
 
     @Override
     public void addUpdateListener(final ShiftObliviousListener listener, final boolean replayInitialImage) {
+        // TODO NOCOMMIT NATE: check update graph consistency
         addUpdateListener(new LegacyListenerAdapter(listener, getRowSet()));
         if (replayInitialImage) {
             if (isRefreshing()) {
-                updateContext.getUpdateGraphProcessor().checkInitiateTableOperation();
+                updateGraph.checkInitiateTableOperation();
             }
             if (getRowSet().isNonempty()) {
                 listener.setInitialImage(getRowSet());
@@ -605,10 +639,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     public final void notifyListeners(final TableUpdate update) {
         Assert.eqFalse(isFailed, "isFailed");
-        final long currentStep = updateContext.getLogicalClock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         // tables may only be updated once per cycle
-        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep,
-                "UpdateContext.logicalClock().currentStep()");
+        Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep, "updateGraph.clock().currentStep()");
 
         Assert.eqTrue(update.valid(), "update.valid()");
         if (update.empty()) {
@@ -769,9 +802,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      */
     public final void notifyListenersOnError(final Throwable e, @Nullable final TableListener.Entry sourceEntry) {
         Assert.eqFalse(isFailed, "isFailed");
-        final long currentStep = updateContext.getLogicalClock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         Assert.lt(lastNotificationStep, "lastNotificationStep", currentStep,
-                "UpdateContext.logicalClock().currentStep()");
+                "updateGraph.clock().currentStep()");
 
         isFailed = true;
         maybeSignal();
@@ -791,7 +824,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
      * @return The {@link NotificationQueue} to add to
      */
     protected NotificationQueue getNotificationQueue() {
-        return updateContext.getUpdateGraphProcessor();
+        return updateGraph;
     }
 
     @Override
@@ -1225,7 +1258,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     public static void initializeWithSnapshot(
             String logPrefix, SwapListener swapListener, ConstructSnapshot.SnapshotFunction snapshotFunction) {
         if (swapListener == null) {
-            snapshotFunction.call(false, UpdateContext.logicalClock().currentValue());
+            snapshotFunction.call(false, ExecutionContext.getContext().getUpdateGraph().clock().currentValue());
             return;
         }
         ConstructSnapshot.callDataSnapshotFunction(logPrefix, swapListener.makeSnapshotControl(), snapshotFunction);

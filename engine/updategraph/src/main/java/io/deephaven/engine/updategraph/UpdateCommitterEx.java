@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.updategraph;
 
+import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
@@ -48,6 +49,6 @@ public class UpdateCommitterEx<T, U> extends TerminalNotification {
         if (secondaryReference == null || secondaryReference.get() != secondary) {
             secondaryReference = new WeakReference<>(secondary);
         }
-        UpdateContext.get().getUpdateGraphProcessor().addNotification(this);
+        ExecutionContext.getContext().getUpdateGraph().addNotification(this);
     }
 }

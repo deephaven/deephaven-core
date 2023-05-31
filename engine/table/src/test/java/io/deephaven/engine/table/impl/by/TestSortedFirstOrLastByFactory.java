@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.TstUtils;
@@ -14,7 +15,6 @@ import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -125,7 +125,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same row key; we would not notice the mdoification
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -150,7 +150,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -176,7 +176,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(1, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -203,7 +203,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -230,7 +230,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();
@@ -257,7 +257,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
-        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();

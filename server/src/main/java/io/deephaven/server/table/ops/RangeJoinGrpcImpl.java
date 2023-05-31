@@ -9,7 +9,6 @@ import io.deephaven.api.RangeStartRule;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.Aggregation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
@@ -30,18 +29,14 @@ import java.util.stream.Collectors;
 @Singleton
 public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesRequest> {
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
     public RangeJoinGrpcImpl(
-            final TableServiceContextualAuthWiring authWiring,
-            final UpdateGraphProcessor updateGraphProcessor) {
+            final TableServiceContextualAuthWiring authWiring) {
         super(
                 authWiring::checkPermissionRangeJoinTables,
                 BatchTableRequest.Operation::getRangeJoin,
                 RangeJoinTablesRequest::getResultId,
                 RangeJoinGrpcImpl::refs);
-        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     private static List<TableReference> refs(RangeJoinTablesRequest request) {
@@ -93,7 +88,7 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
         if (!leftTable.isRefreshing() && !rightTable.isRefreshing()) {
             return leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
         } else {
-            return updateGraphProcessor.sharedLock().computeLocked(
+            return leftTable.getUpdateGraph(rightTable).sharedLock().computeLocked(
                     () -> leftTable.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations));
         }
     }

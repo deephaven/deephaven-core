@@ -7,6 +7,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
@@ -51,17 +52,15 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
         final Table right = sourceTables.get(1).get();
         final List<JoinMatch> columnsToMatch = JoinMatch.from(request.getColumnsToMatchList());
         try (final SafeCloseable ignored = lock(left, right)) {
-            return getUpdateContext(left, right)
-                    .apply(() -> request.getInverted() ? left.whereNotIn(right, columnsToMatch)
-                            : left.whereIn(right, columnsToMatch));
+            return request.getInverted() ? left.whereNotIn(right, columnsToMatch) : left.whereIn(right, columnsToMatch);
         }
     }
 
     private SafeCloseable lock(Table left, Table right) {
         if (left.isRefreshing()) {
-            return left.getUpdateContext().getSharedLock().lockCloseable();
+            return left.getUpdateGraph().sharedLock().lockCloseable();
         } else if (right.isRefreshing()) {
-            return right.getUpdateContext().getSharedLock().lockCloseable();
+            return right.getUpdateGraph().sharedLock().lockCloseable();
         }
         return null;
     }

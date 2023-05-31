@@ -4,6 +4,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.context.ExecutionContext;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
@@ -19,7 +20,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testUpgradeFailures() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), false);
 
         lock.sharedLock().doLocked(() -> {
             try {
@@ -56,7 +58,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testDowngradeSuccess() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), false);
 
         lock.exclusiveLock().doLocked(() -> {
             final MutableBoolean success = new MutableBoolean(false);
@@ -110,7 +113,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testSharedLockHeld() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
             lock.sharedLock().doLocked(r::run);
@@ -126,7 +130,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testExclusiveLockHeld() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
             lock.exclusiveLock().doLocked(r::run);
@@ -141,7 +146,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testConditions() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), false);
         try {
             lock.sharedLock().newCondition();
             TestCase.fail("Unexpectedly got shard lock condition successfully");
@@ -165,7 +171,8 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testDebugImplementation() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), true);
+        final UpdateGraphLock lock =
+                UpdateGraphLock.create(ExecutionContext.getContext().getUpdateGraph().clock(), true);
         lock.sharedLock().lock();
         lock.sharedLock().lock();
         try {

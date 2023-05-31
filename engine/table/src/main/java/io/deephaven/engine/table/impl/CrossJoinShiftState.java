@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.context.ExecutionContext;
 
 /**
  * Shift state used by the {@link io.deephaven.engine.table.impl.sources.BitShiftingColumnSource}.
@@ -33,7 +33,7 @@ public class CrossJoinShiftState {
         Assert.lt(newNumShiftBits, "newNumShiftBits", 63, "63");
         Assert.gt(newNumShiftBits, "newNumShiftBits", 0, "0");
 
-        final long currentStep = UpdateContext.logicalClock().currentStep();
+        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         if (updatedClockTick != currentStep) {
             prevMask = mask;
             prevNumShiftBits = numShiftBits;
@@ -49,7 +49,7 @@ public class CrossJoinShiftState {
 
     public int getPrevNumShiftBits() {
         if (updatedClockTick > 0) {
-            if (updatedClockTick == UpdateContext.logicalClock().currentStep()) {
+            if (updatedClockTick == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
                 return prevNumShiftBits;
             }
             updatedClockTick = 0;
@@ -83,7 +83,7 @@ public class CrossJoinShiftState {
 
     private long getPrevMask() {
         if (updatedClockTick > 0) {
-            if (updatedClockTick == UpdateContext.logicalClock().currentStep()) {
+            if (updatedClockTick == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
                 return prevMask;
             }
             updatedClockTick = 0;

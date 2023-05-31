@@ -56,7 +56,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
         setRefreshing = setTable.isRefreshing();
         if (setRefreshing) {
-            updateContext.checkInitiateTableOperation();
+            updateGraph.checkInitiateTableOperation();
         }
 
         this.matchPairs = setColumnsNames;

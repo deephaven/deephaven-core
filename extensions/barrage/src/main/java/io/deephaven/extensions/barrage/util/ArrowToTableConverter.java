@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -117,8 +118,10 @@ public class ArrowToTableConverter {
         }
 
         final Condition completedCondition;
-        if (resultTable.getUpdateContext().getExclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = resultTable.getUpdateContext().getExclusiveLock().newCondition();
+        UpdateGraph updateGraph1 = resultTable.getUpdateGraph();
+        if (updateGraph1.exclusiveLock().isHeldByCurrentThread()) {
+            UpdateGraph updateGraph = resultTable.getUpdateGraph();
+            completedCondition = updateGraph.exclusiveLock().newCondition();
         } else {
             completedCondition = null;
         }
@@ -147,7 +150,8 @@ public class ArrowToTableConverter {
 
     private void signalCompletion(final Condition completedCondition) {
         if (completedCondition != null) {
-            resultTable.getUpdateContext().getUpdateGraphProcessor().requestSignal(completedCondition);
+            UpdateGraph updateGraph = resultTable.getUpdateGraph();
+            updateGraph.requestSignal(completedCondition);
         } else {
             synchronized (ArrowToTableConverter.this) {
                 ArrowToTableConverter.this.notifyAll();
