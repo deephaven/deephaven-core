@@ -1,11 +1,11 @@
 // Neither plain withType(Javadoc) {..} nor withType(Javadoc).all {..} will work here, somehow
 // this breaks sourcesets in some projects.
 tasks.withType(Javadoc).configureEach {
-    javadocTool.set(javaToolchains.javadocToolFor{javadocSpec ->
+    javadocTool = javaToolchains.javadocToolFor{javadocSpec ->
         // Javadoc version >=11 is needed for search
         // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
         javadocSpec.languageVersion = JavaLanguageVersion.of(17)
-    }.get())
+    }
 
     options.encoding = 'UTF-8'
 
