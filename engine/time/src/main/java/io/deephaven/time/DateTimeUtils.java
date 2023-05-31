@@ -5,7 +5,6 @@ package io.deephaven.time;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.function.Numeric;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -15,8 +14,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.*;
-import java.time.format.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Objects;
@@ -70,36 +71,6 @@ public class DateTimeUtils {
             .append(FORMATTER_ISO_LOCAL_TIME)
             .toFormatter();
 
-    // The following 4 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
-    // the date, to avoid confusion with date time literals.
-
-    /** Matches yyyy-MM-dd. */
-    private static final Pattern STD_DATE_PATTERN =
-            Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])-(?<month>[0-9][0-9])-(?<day>[0-9][0-9])$");
-
-    /** Matches yyyyMMdd (consistent with ISO dates). */
-    private static final Pattern NOSEP_DATE_PATTERN =
-            Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])(?<month>[0-9][0-9])(?<day>[0-9][0-9])$");
-
-    /**
-     * Matches variations of month/day/year or day/month/year or year/month/day - how this is interpreted depends on the
-     * DateTimeUtils.dateStyle system property.
-     */
-    private static final Pattern SLASH_DATE_PATTERN =
-            Pattern.compile(
-                    "^(?<part1>[0-9]?[0-9](?<part1sub2>[0-9][0-9])?)\\/(?<part2>[0-9]?[0-9])\\/(?<part3>[0-9]?[0-9](?<part3sub2>[0-9][0-9])?)$");
-
-    /**
-     * Matches variations of month-day-year or day-month-year or year-month-day - how this is interpreted depends on the
-     * DateTimeUtils.dateStyle system property.
-     */
-    private static final Pattern DASH_DATE_PATTERN =
-            Pattern.compile(
-                    "^(?<part1>[0-9]?[0-9](?<part1sub2>[0-9][0-9])?)\\-(?<part2>[0-9]?[0-9])\\-(?<part3>[0-9]?[0-9](?<part3sub2>[0-9][0-9])?)$");
-
-    /** DateTimeFormatter for use when interpreting two digit years (we use Java's rules). */
-    private static final DateTimeFormatter TWO_DIGIT_YR_FORMAT = DateTimeFormatter.ofPattern("yy");
-
     /**
      * Matches LocalTime literals. Note these must begin with "L" to avoid ambiguity with the older
      * TIME_AND_DURATION_PATTERN
@@ -129,12 +100,6 @@ public class DateTimeUtils {
      */
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
-
-    /**
-     * Default date style.
-     */
-    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
     // endregion
 
@@ -3521,196 +3486,51 @@ public class DateTimeUtils {
     }
 
     /**
-     * Format style for a date string.
-     */
-    @ScriptApi
-    public enum DateStyle {
-        /**
-         * Month, day, year date format.
-         */
-        MDY,
-        /**
-         * Day, month, year date format.
-         */
-        DMY,
-        /**
-         * Year, month, day date format.
-         */
-        YMD
-    }
-
-    // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
-    // system date style setting (for example Europeans often write dates as d/m/y).
-    @NotNull
-    private static LocalDate matchLocalDate(final Matcher matcher, final DateStyle dateStyle) {
-        final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
-        // note we have nested groups which allow us to detect 2 vs 4 digit year
-        // (groups 2 and 5 are the optional last 2 digits)
-        switch (dateStyle) {
-            case MDY:
-                dayGroup = "part2";
-                monthGroup = "part1";
-                yearGroup = "part3";
-                yearFinal2DigitsGroup = "part3sub2";
-                break;
-            case DMY:
-                dayGroup = "part1";
-                monthGroup = "part2";
-                yearGroup = "part3";
-                yearFinal2DigitsGroup = "part3sub2";
-                break;
-            case YMD:
-                dayGroup = "part3";
-                monthGroup = "part2";
-                yearGroup = "part1";
-                yearFinal2DigitsGroup = "part1sub2";
-                break;
-            default:
-                throw new RuntimeException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
-        }
-        final int year;
-        // for 2 digit years, lean on java's standard interpretation
-        if (matcher.group(yearFinal2DigitsGroup) == null) {
-            year = Year.parse(matcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
-        } else {
-            year = Integer.parseInt(matcher.group(yearGroup));
-        }
-        final int month = Integer.parseInt(matcher.group(monthGroup));
-        final int dayOfMonth = Integer.parseInt(matcher.group(dayGroup));
-        return LocalDate.of(year, month, dayOfMonth);
-    }
-
-    /**
-     * Converts a string into a local date. A local date is a date without a time or time zone.
-     * <p>
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     * <p>
-     * Supported formats: - YYYY-MM-DD - YYYYMMDD - YYYY/MM/DD - MM/DD/YYYY - MM-DD-YYYY - DD/MM/YYYY - DD-MM-YYYY -
-     * YY/MM/DD - YY-MM-DD - MM/DD/YY - MM-DD-YY - DD/MM/YY - DD-MM-YY
-     * <p>
-     * If the format matches the ISO YYYY-MM-DD or YYYYMMDD formats, the date style is ignored.
-     *
-     * @param s date string.
-     * @param dateStyle style the date string is formatted in.
-     * @return local date.
-     * @throws RuntimeException if the string cannot be parsed.
-     */
-    @ScriptApi
-    @NotNull
-    public static LocalDate parseLocalDate(@NotNull final String s, @Nullable final DateStyle dateStyle) {
-        // noinspection ConstantConditions
-        if (s == null) {
-            throw new RuntimeException("Cannot parse date (null): " + s);
-        }
-
-        try {
-            final Matcher stdMatcher = STD_DATE_PATTERN.matcher(s);
-            if (stdMatcher.matches()) {
-                final int year = Integer.parseInt(stdMatcher.group("year"));
-                final int month = Integer.parseInt(stdMatcher.group("month"));
-                final int dayOfMonth = Integer.parseInt(stdMatcher.group("day"));
-                return LocalDate.of(year, month, dayOfMonth);
-            }
-
-            final Matcher nosepMatcher = NOSEP_DATE_PATTERN.matcher(s);
-            if (nosepMatcher.matches()) {
-                final int year = Integer.parseInt(nosepMatcher.group("year"));
-                final int month = Integer.parseInt(nosepMatcher.group("month"));
-                final int dayOfMonth = Integer.parseInt(nosepMatcher.group("day"));
-                return LocalDate.of(year, month, dayOfMonth);
-            }
-
-            if (dateStyle == null) {
-                throw new RuntimeException("Cannot parse date (null style): " + s);
-            }
-
-            final Matcher dashMatcher = DASH_DATE_PATTERN.matcher(s);
-            if (dashMatcher.matches()) {
-                return matchLocalDate(dashMatcher, dateStyle);
-            }
-
-            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
-            if (slashMatcher.matches()) {
-                return matchLocalDate(slashMatcher, dateStyle);
-            }
-
-            throw new RuntimeException("Date does not match expected pattern");
-        } catch (Exception ex) {
-            throw new RuntimeException("Cannot parse date: " + s, ex);
-        }
-    }
-
-    /**
      * Parses the string argument as a local date, which is a date without a time or time zone.
-     * <p>
-     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-     * <p>
-     * Supported formats: - {@code YYYY-MM-DD} - {@code YYYYMMDD} - {@code YYYY/MM/DD} - {@code MM/DD/YYYY} -
-     * {@code MM-DD-YYYY} - {@code DD/MM/YYYY} - {@code DD-MM-YYYY} - {@code YY/MM/DD} - {@code YY-MM-DD} -
-     * {@code MM/DD/YY} - {@code MM-DD-YY} - {@code DD/MM/YY} - {@code DD-MM-YY}
      *
-     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-     * <p>
-     *
-     * @param s date string.
-     * @param dateStyle style the date string is formatted in.
-     * @return local date, or null if the string can not be parsed.
-     */
-    @ScriptApi
-    @Nullable
-    public static LocalDate parseLocalDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
-        if (s == null || s.length() <= 1 || dateStyle == null) {
-            return null;
-        }
-
-        try {
-            return parseLocalDate(s, dateStyle);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * Parses the string argument as a local date, which is a date without a time or time zone.
-     * <p>
-     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-     * <p>
-     * Supported formats: - {@code YYYY-MM-DD} - {@code YYYYMMDD} - {@code YYYY/MM/DD} - {@code MM/DD/YYYY} -
-     * {@code MM-DD-YYYY} - {@code DD/MM/YYYY} - {@code DD-MM-YYYY} - {@code YY/MM/DD} - {@code YY-MM-DD} -
-     * {@code MM/DD/YY} - {@code MM-DD-YY} - {@code DD/MM/YY} - {@code DD-MM-YY}
-     *
-     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-     * <p>
+     * Date strings are formatted according to the ISO 8601 date time format as {@code YYYY-MM-DD}.
      *
      * @param s date string.
      * @return local date parsed according to the default date style.
      * @throws RuntimeException if the string cannot be parsed.
+     * @see DateTimeFormatter#ISO_LOCAL_DATE
      */
     @ScriptApi
     @NotNull
     public static LocalDate parseLocalDate(@NotNull final String s) {
-        return parseLocalDate(s, DEFAULT_DATE_STYLE);
+        // noinspection ConstantConditions
+        if (s == null) {
+            throw new RuntimeException("Cannot parse datetime (null): " + s);
+        }
+
+        try {
+            return LocalDate.parse(s, FORMATTER_ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            throw new RuntimeException("Cannot parse datetime: " + s, e);
+        }
     }
 
     /**
      * Parses the string argument as a local date, which is a date without a time or time zone.
-     * <p>
-     * The ideal date format is {@code YYYY-MM-DD} since it's the least ambiguous, but other formats are supported.
-     * <p>
-     * Supported formats: - {@code YYYY-MM-DD} - {@code YYYYMMDD} - {@code YYYY/MM/DD} - {@code MM/DD/YYYY} -
-     * {@code MM-DD-YYYY} - {@code DD/MM/YYYY} - {@code DD-MM-YYYY} - {@code YY/MM/DD} - {@code YY-MM-DD} -
-     * {@code MM/DD/YY} - {@code MM-DD-YY} - {@code DD/MM/YY} - {@code DD-MM-YY}
      *
-     * If the format matches the ISO {@code YYYY-MM-DD} or {@code YYYYMMDD} formats, the date style is ignored.
-     * <p>
+     * Date strings are formatted according to the ISO 8601 date time format as {@code YYYY-MM-DD}.
      *
      * @param s date string.
      * @return local date parsed according to the default date style, or null if the string can not be parsed.
+     * @see DateTimeFormatter#ISO_LOCAL_DATE
      */
     @ScriptApi
     @Nullable
     public static LocalDate parseLocalDateQuiet(@Nullable final String s) {
-        return parseLocalDateQuiet(s, DEFAULT_DATE_STYLE);
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseLocalDate(s);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
 

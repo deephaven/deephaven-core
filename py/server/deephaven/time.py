@@ -15,7 +15,6 @@ from deephaven.dtypes import Instant, LocalDate, LocalTime, ZonedDateTime, Durat
 from deephaven.constants import NULL_INT, NULL_LONG, NULL_DOUBLE
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
-_JDateTimeUtilsDateStyle = jpy.get_type("io.deephaven.time.DateTimeUtils$DateStyle")
 
 MICRO = 1000  #: One microsecond in nanoseconds.
 MILLI = 1000000  #: One millisecond in nanosecondsl
@@ -31,16 +30,6 @@ MINUTES_PER_NANO = 1 / MINUTE  #: Number of minutes per nanosecond.
 HOURS_PER_NANO = 1 / HOUR  #: Number of hours per nanosecond.
 DAYS_PER_NANO = 1 / DAY  #: Number of days per nanosecond.
 YEARS_PER_NANO = 1 / YEAR  #: Number of years per nanosecond.
-
-
-class DateStyle(Enum):
-    """ A Enum for date format styles. """
-    MDY = _JDateTimeUtilsDateStyle.MDY
-    """ Month, day, year date format. """
-    DMY = _JDateTimeUtilsDateStyle.DMY
-    """ Day, month, year date format. """
-    YMD = _JDateTimeUtilsDateStyle.YMD
-    """ Year, month, day date format. """
 
 
 # region Clock
@@ -2002,32 +1991,14 @@ def parse_time_precision(s: str, quiet: bool = False) -> Optional[str]:
         raise DHError(e) from e
 
 
-def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.MDY) -> Optional[LocalTime]:
+def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
     """ Parses the string argument as a local date, which is a date without a time or time zone.
 
-    The ideal date format is 'YYYY-MM-DD' since it's the least ambiguous, but other formats are supported.
-    
-    Supported formats:
-    - 'YYYY-MM-DD'
-    - 'YYYYMMDD'
-    - 'YYYY/MM/DD'
-    - 'MM/DD/YYYY'
-    - 'MM-DD-YYYY'
-    - 'DD/MM/YYYY'
-    - 'DD-MM-YYYY'
-    - 'YY/MM/DD'
-    - 'YY-MM-DD'
-    - 'MM/DD/YY'
-    - 'MM-DD-YY'
-    - 'DD/MM/YY'
-    - 'DD-MM-YY'
-    
-    If the format matches the ISO 'YYYY-MM-DD' or 'YYYYMMDD' formats, the date style is ignored.
+    Date strings are formatted according to the ISO 8601 date time format as 'YYYY-MM-DD}'.
 
     Args:
         s (str): String to be converted.
         quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
-        style (DateStyle): Date format style.  Defaults to MDY (month, day, year).
 
     Returns:
         LocalDate represented by the string.
@@ -2037,9 +2008,9 @@ def parse_local_date(s: str, quiet: bool = False, style: DateStyle = DateStyle.M
     """
     try:
         if quiet:
-            return _JDateTimeUtils.parseLocalDateQuiet(s, style.value)
+            return _JDateTimeUtils.parseLocalDateQuiet(s)
         else:
-            return _JDateTimeUtils.parseLocalDate(s, style.value)
+            return _JDateTimeUtils.parseLocalDate(s)
     except Exception as e:
         raise DHError(e) from e
 

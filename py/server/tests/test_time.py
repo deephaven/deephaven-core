@@ -32,10 +32,6 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(1/DAY, DAYS_PER_NANO)
         self.assertEqual(1/YEAR, YEARS_PER_NANO)
 
-    def test_datestyle(self):
-        for v in DateStyle:
-            self.assertEqual(str(v), "DateStyle." + str(v.value))
-
     # endregion
 
     # region: CLock
