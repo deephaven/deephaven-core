@@ -588,7 +588,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
      * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
      * single-value range, only rows within the bucket where the right range column matches the single value are
-     * included in the output aggregations.</dt>
+     * included in the output aggregations.</dd>
      * <dt>invalid ranges</dt>
      * <dd>An <em>invalid</em> range occurs in two scenarios: First, when the range is inverted, i.e. when the value of
      * the left start column is greater than the value of the left end column. Second, when either relative-match is

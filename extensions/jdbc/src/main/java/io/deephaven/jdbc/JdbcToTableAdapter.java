@@ -37,7 +37,6 @@ import java.util.TimeZone;
 /**
  * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
  * {@link ResultSet} to a Deephaven {@link Table}.
- * <p/>
  *
  * To use, first create a result set using your provided JDBC driver of choice:
  * 

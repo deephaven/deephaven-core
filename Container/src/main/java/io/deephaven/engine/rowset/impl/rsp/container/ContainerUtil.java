@@ -144,7 +144,7 @@ public final class ContainerUtil {
     }
 
     /**
-     * Search for the largest value in array such that comp.directionFrom(value) > 0, or any value such that
+     * Search for the largest value in array such that comp.directionFrom(value) &gt; 0, or any value such that
      * comp.directionFrom(value) == 0, and return its index. If there is no such a value return -1.
      *
      * @param array Array with values sorted in increasing order.

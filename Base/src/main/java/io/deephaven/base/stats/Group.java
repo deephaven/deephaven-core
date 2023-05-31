@@ -95,7 +95,7 @@ public class Group {
     }
 
     /**
-     * Update the histories of all items in this group, logging all updated intervals >= logInterval.
+     * Update the histories of all items in this group, logging all updated intervals &gt;= logInterval.
      */
     public void update(ItemUpdateListener listener, long logInterval, long now, long appNow) {
         Item[] arr = itemsArray;

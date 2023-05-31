@@ -814,7 +814,7 @@ public final class Assert {
     // gt (primitiveValue > primitiveValue)
 
     // ----------------------------------------------------------------
-    /** assert (c0 > c1) */
+    /** assert (c0 &gt; c1) */
     public static void gt(char c0, String name0, char c1, String name1) {
         if (!(c0 > c1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(c0, name0, c1, name1));
@@ -828,7 +828,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (b0 > b1) */
+    /** assert (b0 &gt; b1) */
     public static void gt(byte b0, String name0, byte b1, String name1) {
         if (!(b0 > b1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(b0, name0, b1, name1));
@@ -842,7 +842,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (s0 > s1) */
+    /** assert (s0 &gt; s1) */
     public static void gt(short s0, String name0, short s1, String name1) {
         if (!(s0 > s1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(s0, name0, s1, name1));
@@ -856,7 +856,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (i0 > i1) */
+    /** assert (i0 &gt; i1) */
     public static void gt(int i0, String name0, int i1, String name1) {
         if (!(i0 > i1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(i0, name0, i1, name1));
@@ -870,7 +870,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (l0 > l1) */
+    /** assert (l0 &gt; l1) */
     public static void gt(long l0, String name0, long l1, String name1) {
         if (!(l0 > l1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(l0, name0, l1, name1));
@@ -884,7 +884,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (f0 > f1) */
+    /** assert (f0 &gt; f1) */
     public static void gt(float f0, String name0, float f1, String name1) {
         if (!(f0 > f1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(f0, name0, f1, name1));
@@ -898,7 +898,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (d0 > d1) */
+    /** assert (d0 &gt; d1) */
     public static void gt(double d0, String name0, double d1, String name1) {
         if (!(d0 > d1)) {
             fail(name0 + " > " + name1, ExceptionMessageUtil.valueAndName(d0, name0, d1, name1));
@@ -915,7 +915,7 @@ public final class Assert {
     // geq (primitiveValue >= primitiveValue)
 
     // ----------------------------------------------------------------
-    /** assert (c0 >= c1) */
+    /** assert (c0 &gt;= c1) */
     public static void geq(char c0, String name0, char c1, String name1) {
         if (!(c0 >= c1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(c0, name0, c1, name1));
@@ -929,7 +929,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (b0 >= b1) */
+    /** assert (b0 &gt;= b1) */
     public static void geq(byte b0, String name0, byte b1, String name1) {
         if (!(b0 >= b1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(b0, name0, b1, name1));
@@ -943,7 +943,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (s0 >= s1) */
+    /** assert (s0 &gt;= s1) */
     public static void geq(short s0, String name0, short s1, String name1) {
         if (!(s0 >= s1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(s0, name0, s1, name1));
@@ -957,7 +957,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (i0 >= i1) */
+    /** assert (i0 &gt;= i1) */
     public static void geq(int i0, String name0, int i1, String name1) {
         if (!(i0 >= i1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(i0, name0, i1, name1));
@@ -971,7 +971,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (l0 >= l1) */
+    /** assert (l0 &gt;= l1) */
     public static void geq(long l0, String name0, long l1, String name1) {
         if (!(l0 >= l1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(l0, name0, l1, name1));
@@ -985,7 +985,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (f0 >= f1) */
+    /** assert (f0 &gt;= f1) */
     public static void geq(float f0, String name0, float f1, String name1) {
         if (!(f0 >= f1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(f0, name0, f1, name1));
@@ -999,7 +999,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (d0 >= d1) */
+    /** assert (d0 &gt;= d1) */
     public static void geq(double d0, String name0, double d1, String name1) {
         if (!(d0 >= d1)) {
             fail(name0 + " >= " + name1, ExceptionMessageUtil.valueAndName(d0, name0, d1, name1));
@@ -1271,7 +1271,7 @@ public final class Assert {
     // gtZero (primitiveValue > 0)
 
     // ----------------------------------------------------------------
-    /** assert (b > 0) */
+    /** assert (b &gt; 0) */
     public static void gtZero(byte b, String name) {
         if (!(b > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(b, name));
@@ -1279,7 +1279,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (s > 0) */
+    /** assert (s &gt; 0) */
     public static void gtZero(short s, String name) {
         if (!(s > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(s, name));
@@ -1287,7 +1287,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (i > 0) */
+    /** assert (i &gt; 0) */
     public static void gtZero(int i, String name) {
         if (!(i > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(i, name));
@@ -1295,7 +1295,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (l > 0) */
+    /** assert (l &gt; 0) */
     public static void gtZero(long l, String name) {
         if (!(l > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(l, name));
@@ -1303,7 +1303,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (f > 0) */
+    /** assert (f &gt; 0) */
     public static void gtZero(float f, String name) {
         if (!(f > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(f, name));
@@ -1311,7 +1311,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (d > 0) */
+    /** assert (d &gt; 0) */
     public static void gtZero(double d, String name) {
         if (!(d > 0)) {
             fail(name + " > 0", ExceptionMessageUtil.valueAndName(d, name));
@@ -1322,7 +1322,7 @@ public final class Assert {
     // geqZero (primitiveValue >= 0)
 
     // ----------------------------------------------------------------
-    /** assert (b >= 0) */
+    /** assert (b &gt;= 0) */
     public static void geqZero(byte b, String name) {
         if (!(b >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(b, name));
@@ -1330,7 +1330,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (s >= 0) */
+    /** assert (s &gt;= 0) */
     public static void geqZero(short s, String name) {
         if (!(s >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(s, name));
@@ -1338,7 +1338,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (i >= 0) */
+    /** assert (i &gt;= 0) */
     public static void geqZero(int i, String name) {
         if (!(i >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(i, name));
@@ -1346,7 +1346,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (l >= 0) */
+    /** assert (l &gt;= 0) */
     public static void geqZero(long l, String name) {
         if (!(l >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(l, name));
@@ -1354,7 +1354,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (f >= 0) */
+    /** assert (f &gt;= 0) */
     public static void geqZero(float f, String name) {
         if (!(f >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(f, name));
@@ -1362,7 +1362,7 @@ public final class Assert {
     }
 
     // ----------------------------------------------------------------
-    /** assert (d >= 0) */
+    /** assert (d &gt;= 0) */
     public static void geqZero(double d, String name) {
         if (!(d >= 0)) {
             fail(name + " >= 0", ExceptionMessageUtil.valueAndName(d, name));
@@ -1500,7 +1500,7 @@ public final class Assert {
     // nonempty (String.equals(nonempty))
 
     // ----------------------------------------------------------------
-    /** assert (s != null &amp;&amp; s.length() > 0) */
+    /** assert (s != null &amp;&amp; s.length() &gt; 0) */
     public static void nonempty(String s, String name) {
         neqNull(s, name);
         if (!(s.length() > 0)) {

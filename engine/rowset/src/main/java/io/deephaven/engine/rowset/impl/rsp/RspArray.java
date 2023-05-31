@@ -54,7 +54,7 @@ import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
  *
  * <ul>
  * <li>A "block" is a particular interval [n*2^16, (n+1)*2^16 - 1] of the long domain.</li>
- * <li>A "span" is a partition of the domain consisting of one or more consecutive blocks;</li> a span is a subset of
+ * <li>A "span" is a partition of the domain consisting of one or more consecutive blocks; a span is a subset of
  * the domain represented by an interval [n*2^16, (n+m)*2^16 - 1], m &gt;= 1.
  * <li>Full blocks are blocks whose domain are fully contained in the set, ie, the set contains every possible value in
  * the block's interval (as a bitmap, it would be "all ones").</li>

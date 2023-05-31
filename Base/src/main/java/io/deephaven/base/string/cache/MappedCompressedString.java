@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 /**
  * This is a ridiculously simple, light-as-I-can-make-it, but decidedly single-purpose data structure. Specifically,
  * it's a CompressedString with an embedded (to avoid reference or Object instance overhead) open-addressed
- * SimpleReference<Object>-identity -> int hash map with load factor 1 (100%) and no public operations other than
+ * SimpleReference&lt;Object&gt;-identity -&gt; int hash map with load factor 1 (100%) and no public operations other than
  * "putIfAbsent".
  *
  * The reason for requiring that key objects be SimpleReferences is to allow for O(1) automatic slot reclamation across
@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  *
  * Unfortunately, I haven't figured out a way to make this allow concurrent gets.
  *
- * The intended use is in Deephaven import code, for storing SymbolManager -> SymbolId mappings on the CompressedString
+ * The intended use is in Deephaven import code, for storing SymbolManager -&gt; SymbolId mappings on the CompressedString
  * that represents the Symbol itself, typically inside of a (bounded) StringCache of MappedCompressedString instances.
  *
  * Note that this uses io.deephaven.base.reference.SimpleReference instead of java.lang.ref.Reference so that unit tests

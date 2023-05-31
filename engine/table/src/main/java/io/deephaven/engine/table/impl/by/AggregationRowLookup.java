@@ -35,7 +35,7 @@ public interface AggregationRowLookup {
      * <dt>Multiple group-by columns</dt>
      * <dd>Compound keys are {@code Object[]} of (boxed, if needed) objects, in the order of the aggregation's group-by
      * columns</dd>
-     * </p>
+     * </dl>
      * <p>
      * All key fields must be reinterpreted to the appropriate primitive value before boxing. See
      * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToPrimitive}.

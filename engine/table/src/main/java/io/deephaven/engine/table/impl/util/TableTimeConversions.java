@@ -31,7 +31,7 @@ import java.util.List;
  *
  * <pre>
  * baseTable = db.i("Market", "Trades")
- *               .where("Date > 2021-10-01")
+ *               .where("Date &gt; 2021-10-01")
  *
  * startTime = LocalTime.of(10,30,00)
  * endTime = LocalTime.of(16,30,00)

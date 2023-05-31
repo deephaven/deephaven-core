@@ -994,7 +994,7 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
+         * @param excludeColumns A set specifying column names to omit; can only be used when {@code columnNames} is null.
          *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
@@ -1038,7 +1038,7 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is
+         * @param excludeColumns A predicate specifying column names to omit; can only be used when {@code columnNames} is
          *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
