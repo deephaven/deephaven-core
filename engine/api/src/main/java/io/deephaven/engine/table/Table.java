@@ -14,7 +14,6 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
@@ -89,16 +88,6 @@ public interface Table extends
     @Override
     @ConcurrentMethod
     boolean isRefreshing();
-
-    /**
-     * Verifies that all refreshing source tables are using the same update graph. If no tables are refreshing it
-     * returns the currently installed update graph, otherwise it returns the update graph that was found.
-     *
-     * @param others other source tables that might be refreshing
-     * @return the update graph for this table
-     */
-    @ConcurrentMethod
-    UpdateGraph getUpdateGraph(Table... others);
 
     /**
      * @return The {@link TrackingRowSet} that exposes the row keys present in this Table

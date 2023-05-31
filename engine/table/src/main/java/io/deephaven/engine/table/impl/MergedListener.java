@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -41,6 +42,7 @@ import java.util.stream.StreamSupport;
 public abstract class MergedListener extends LivenessArtifact implements NotificationQueue.Dependency {
     private static final Logger log = LoggerFactory.getLogger(MergedListener.class);
 
+    private final UpdateGraph updateGraph;
     private final Iterable<? extends ListenerRecorder> recorders;
     private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;
@@ -62,6 +64,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             Iterable<NotificationQueue.Dependency> dependencies,
             String listenerDescription,
             QueryTable result) {
+        this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.recorders = recorders;
         recorders.forEach(this::manage);
         this.dependencies = dependencies;
@@ -73,6 +76,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private void releaseFromRecorders() {
         recorders.forEach(ListenerRecorder::release);
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     public final void notifyOnUpstreamError(

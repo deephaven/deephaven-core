@@ -44,7 +44,7 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     protected Long2IntOpenHashMap prevData;
 
     private final UpdateCommitter<IntTestSource> prevFlusher =
-            new UpdateCommitter<>(this, IntTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), IntTestSource::flushPrevious);
 
     // region empty constructor
     public IntTestSource() {

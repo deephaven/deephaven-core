@@ -44,7 +44,7 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     protected Long2ByteOpenHashMap prevData;
 
     private final UpdateCommitter<ByteTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ByteTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), ByteTestSource::flushPrevious);
 
     // region empty constructor
     public ByteTestSource() {

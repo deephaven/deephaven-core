@@ -520,7 +520,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             @NotNull final LivenessNode liveResultOwner,
             @NotNull final WritableObjectChunk<? extends LivenessReferent, Values> prevValuesToUnmanage) {
         if (prevUnmanager == null) {
-            prevUnmanager = new UpdateCommitterEx<>(this, SelectColumnLayer::unmanagePreviousValues);
+            prevUnmanager = new UpdateCommitterEx<>(this, ExecutionContext.getContext().getUpdateGraph(), SelectColumnLayer::unmanagePreviousValues);
         }
         prevUnmanager.maybeActivate(liveResultOwner);
         if (prevValueChunksToUnmanage == null) {

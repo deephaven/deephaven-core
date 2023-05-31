@@ -474,6 +474,10 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
     private static class SourceCombiner extends UpdateSourceCombiner {
         private boolean refreshRequested = false;
 
+        private SourceCombiner() {
+            super(ExecutionContext.getContext().getUpdateGraph());
+        }
+
         @Override
         public void requestRefresh() {
             refreshRequested = true;

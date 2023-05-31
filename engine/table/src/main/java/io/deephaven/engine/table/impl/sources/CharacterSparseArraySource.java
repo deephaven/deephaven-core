@@ -272,7 +272,7 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, CharacterSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), CharacterSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {

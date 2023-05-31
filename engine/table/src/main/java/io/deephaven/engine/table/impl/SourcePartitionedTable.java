@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -120,7 +121,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final boolean needToRefreshLocations = refreshLocations && tableLocationProvider.supportsSubscriptions();
             if (needToRefreshLocations || refreshSizes) {
                 result.setRefreshing(true);
-                refreshCombiner = new UpdateSourceCombiner();
+                refreshCombiner = new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
                 result.addParentReference(refreshCombiner);
             } else {
                 refreshCombiner = null;

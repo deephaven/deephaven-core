@@ -41,6 +41,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     private static final Logger log = LoggerFactory.getLogger(InstrumentedTableListenerBase.class);
 
+    private final UpdateGraph updateGraph;
     private final PerformanceEntry entry;
     private final boolean terminalListener;
 
@@ -53,8 +54,14 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
+        this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
         this.terminalListener = terminalListener;
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     @Override

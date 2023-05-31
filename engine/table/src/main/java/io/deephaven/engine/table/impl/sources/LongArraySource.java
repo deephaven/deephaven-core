@@ -17,7 +17,6 @@ import java.time.LocalTime;
 import io.deephaven.base.verify.Require;
 import java.time.ZoneId;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.util.copy.CopyKernel;
 
@@ -25,6 +24,7 @@ import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;

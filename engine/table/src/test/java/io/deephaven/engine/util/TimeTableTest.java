@@ -40,7 +40,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
         super.setUp();
 
         clock = new TestClock(0);
-        updateSourceCombiner = new UpdateSourceCombiner();
+        updateSourceCombiner = new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
     }
 
     @Override

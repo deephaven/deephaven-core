@@ -192,6 +192,14 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     void completeCycleForUnitTests();
 
     // TODO: What does Ryan really want here?
+    // hide in impl maybe behind processor:
+    // <UP_TYPE extends UpdateProcessor> boolean hasProcessorType(@NotNull final Class<UP_TYPE> processorType) {
+    // final UpdateProcessor processor = processor();
+    // return processorType.isAssignableFrom(processor.getClass());
+    // }
+    //
+    // <UP_TYPE extends UpdateProcessor> UP_TYPE processor();
+
     void takeAccumulatedCycleStats(AccumulatedCycleStats ugpAccumCycleStats);
 
     class AccumulatedCycleStats {

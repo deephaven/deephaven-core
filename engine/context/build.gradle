@@ -17,6 +17,7 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Util')
     implementation project(':engine-time')
+    implementation project(':engine-updategraph')
     implementation project(':table-api')
     implementation project(':IO')
 

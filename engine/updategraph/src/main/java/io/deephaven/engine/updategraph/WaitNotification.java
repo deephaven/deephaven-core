@@ -5,7 +5,6 @@ package io.deephaven.engine.updategraph;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -78,7 +77,7 @@ public final class WaitNotification extends AbstractNotification {
     public static boolean waitForSatisfaction(final long step,
             @NotNull final NotificationQueue.Dependency... dependencies) {
         final WaitNotification waitNotification = new WaitNotification(dependencies);
-        if (ExecutionContext.getContext().getUpdateGraph().maybeAddNotification(waitNotification, step)) {
+        if (NotificationQueue.Dependency.getUpdateGraph(null, dependencies).maybeAddNotification(waitNotification, step)) {
             try {
                 waitNotification.await();
             } catch (InterruptedException e) {

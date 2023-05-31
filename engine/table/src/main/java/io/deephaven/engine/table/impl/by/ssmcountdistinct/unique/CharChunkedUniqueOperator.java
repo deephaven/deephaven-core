@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -281,7 +282,7 @@ public class CharChunkedUniqueOperator implements IterativeChunkedAggregationOpe
             }
 
             ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this, CharChunkedUniqueOperator::flushPrevious);
+            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), CharChunkedUniqueOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
     }

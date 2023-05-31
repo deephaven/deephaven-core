@@ -4,7 +4,9 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -34,9 +36,13 @@ public class ExecutionContext {
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
                 if ((localContext = defaultContext) == null) {
+                    final int numUpdateThreads = Configuration.getInstance().getIntegerWithDefault(
+                            "UpdateGraphProcessor.updateThreads", -1);
                     localContext = defaultContext = new Builder(null)
                             .markSystemic()
-                            .setUpdateGraph(UpdateGraphProcessor)
+                            .setUpdateGraph(UpdateGraphProcessor.newBuilder("DEFAULT")
+                                    .numUpdateThreads(numUpdateThreads)
+                                    .build())
                             .build();
                 }
             }

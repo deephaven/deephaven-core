@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
@@ -612,7 +613,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          * startTrackingPrevValues().
          */
         chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
-        updateCommitter = new UpdateCommitter<>(this, DeltaAwareColumnSource::commitValues);
+        updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                DeltaAwareColumnSource::commitValues);
     }
 
     @Override

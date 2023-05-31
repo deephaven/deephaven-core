@@ -39,8 +39,8 @@ public class IntEMOperator extends BasePrimitiveEMOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         @NotNull Chunk<? extends Values>[] valueChunkArr,
-                                         @Nullable LongChunk<? extends Values> tsChunk,
+                                         Chunk<? extends Values>[] valueChunkArr,
+                                         LongChunk<? extends Values> tsChunk,
                                          int len) {
             setValueChunks(valueChunkArr);
 

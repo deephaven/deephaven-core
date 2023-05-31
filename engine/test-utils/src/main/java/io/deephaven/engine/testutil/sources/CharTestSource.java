@@ -39,7 +39,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
     protected Long2CharOpenHashMap prevData;
 
     private final UpdateCommitter<CharTestSource> prevFlusher =
-            new UpdateCommitter<>(this, CharTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), CharTestSource::flushPrevious);
 
     // region empty constructor
     public CharTestSource() {

@@ -18,6 +18,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -136,6 +137,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             setInclusionKernel = null;
             setUpdateListener = null;
         }
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     private Object makeKey(long index) {
