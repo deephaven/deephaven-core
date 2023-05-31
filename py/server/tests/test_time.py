@@ -24,13 +24,15 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(60*60*1000000000,HOUR)
         self.assertEqual(24*60*60*1000000000,DAY)
         self.assertEqual(7*24*60*60*1000000000,WEEK)
-        self.assertEqual(31556952000000000,YEAR)
+        self.assertEqual(365*24*60*60*1000000000,YEAR_365)
+        self.assertEqual(31556952000000000,YEAR_AVG)
 
         self.assertEqual(1/SECOND, SECONDS_PER_NANO)
         self.assertEqual(1/MINUTE, MINUTES_PER_NANO)
         self.assertEqual(1/HOUR, HOURS_PER_NANO)
         self.assertEqual(1/DAY, DAYS_PER_NANO)
-        self.assertEqual(1/YEAR, YEARS_PER_NANO)
+        self.assertEqual(1/YEAR_365, YEARS_PER_NANO_365)
+        self.assertEqual(1/YEAR_AVG, YEARS_PER_NANO_AVG)
 
     # endregion
 
@@ -422,13 +424,21 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(NULL_DOUBLE, diff_days(None, dt2))
         self.assertEqual(NULL_DOUBLE, diff_days(dt1, None))
 
-    def test_diff_years(self):
+    def test_diff_years_365(self):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_instant("2023-12-10T14:21:17.123456789 ET")
-        self.assertAlmostEqual(2.0,diff_years(dt1, dt2), delta=1e-2)
-        self.assertAlmostEqual(-2.0,diff_years(dt2, dt1), delta=1e-2)
-        self.assertEqual(NULL_DOUBLE, diff_years(None, dt2))
-        self.assertEqual(NULL_DOUBLE, diff_years(dt1, None))
+        self.assertEqual(2.0,diff_years_365(dt1, dt2))
+        self.assertEqual(-2.0,diff_years_365(dt2, dt1))
+        self.assertEqual(NULL_DOUBLE, diff_years_365(None, dt2))
+        self.assertEqual(NULL_DOUBLE, diff_years_365(dt1, None))
+
+    def test_diff_years_avg(self):
+        dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
+        dt2 = parse_instant("2023-12-10T14:21:17.123456789 ET")
+        self.assertAlmostEqual(2.0,diff_years_avg(dt1, dt2), delta=1e-2)
+        self.assertAlmostEqual(-2.0,diff_years_avg(dt2, dt1), delta=1e-2)
+        self.assertEqual(NULL_DOUBLE, diff_years_avg(None, dt2))
+        self.assertEqual(NULL_DOUBLE, diff_years_avg(dt1, None))
 
     # endregion
 

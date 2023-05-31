@@ -23,7 +23,7 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
         final NumberFormat nyNumberFormat = nyFormat.getNumberFormatter();
         final NumberFormat tokyoNumberFormat = tokyoFormat.getNumberFormatter();
 
-        final Instant time = DateTimeUtils.epochNanosToInstant(DateTimeUtils.YEAR);
+        final Instant time = DateTimeUtils.epochNanosToInstant(DateTimeUtils.YEAR_365);
         final long lNanos = DateTimeUtils.epochNanos(time);
         final double dNanos = lNanos;
         assertEquals(nyNumberFormat.format(lNanos), DateTimeUtils.formatDate(time, ZoneId.systemDefault()));

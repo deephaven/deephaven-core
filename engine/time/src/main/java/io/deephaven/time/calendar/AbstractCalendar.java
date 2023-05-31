@@ -147,12 +147,20 @@ public abstract class AbstractCalendar implements Calendar {
         return (double) diffNanos(start, end) / (double) DateTimeUtils.DAY;
     }
 
-    public double diffYear(Instant start, Instant end) {
+    public double diffYear365(Instant start, Instant end) {
         if (start == null || end == null) {
             return QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR;
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR_365;
+    }
+
+    public double diffYearAvg(Instant start, Instant end) {
+        if (start == null || end == null) {
+            return QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / (double) DateTimeUtils.YEAR_AVG;
     }
 
     public DayOfWeek dayOfWeek(final Instant time) {

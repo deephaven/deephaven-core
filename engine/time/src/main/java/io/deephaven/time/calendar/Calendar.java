@@ -229,13 +229,22 @@ public interface Calendar {
     double diffDay(final Instant start, final Instant end);
 
     /**
-     * Returns the number of years between {@code start} and {@code end}.
+     * Returns the number of 365 day years between {@code start} and {@code end}.
      *
      * @param start start; if null, return null
      * @param end end; if null, return null
      * @return the amount of time in years between the {@code start} and {@code end}
      */
-    double diffYear(Instant start, Instant end);
+    double diffYear365(Instant start, Instant end);
+
+    /**
+     * Returns the number of average (365.2425 day) years between {@code start} and {@code end}.
+     *
+     * @param start start; if null, return null
+     * @param end end; if null, return null
+     * @return the amount of time in years between the {@code start} and {@code end}
+     */
+    double diffYearAvg(Instant start, Instant end);
 
     /**
      * Gets the day of the week for the current day.

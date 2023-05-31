@@ -145,10 +145,16 @@ public class DateTimeUtils {
     public static final long WEEK = 7 * DAY;
 
     /**
+     * One 365 day year in nanoseconds. This is 365 days of wall time and does not take into account calendar
+     * adjustments.
+     */
+    public static final long YEAR_365 = 365*DAY;
+
+    /**
      * One average year in nanoseconds. This is 365.2425 days of wall time and does not take into account calendar
      * adjustments.
      */
-    public static final long YEAR = 31556952000000000L;
+    public static final long YEAR_AVG = 31556952000000000L;
 
     /**
      * Maximum time in microseconds that can be converted to a date time without overflow.
@@ -186,9 +192,14 @@ public class DateTimeUtils {
     public static final double DAYS_PER_NANO = 1. / (double) DAY;
 
     /**
-     * Number of years per nanosecond.
+     * Number of 365 day years per nanosecond.
      */
-    public static final double YEARS_PER_NANO = 1. / (double) YEAR;
+    public static final double YEARS_PER_NANO_365 = 1. / (double) YEAR_365;
+
+    /**
+     * Number of average (365.2425 day) years per nanosecond.
+     */
+    public static final double YEARS_PER_NANO_AVG = 1. / (double) YEAR_AVG;
 
     // endregion
 
@@ -1800,7 +1811,7 @@ public class DateTimeUtils {
     /**
      * Returns the difference in years between two date time values.
      *
-     * Years are defined in terms of 365.2425 day years.
+     * Years are defined in terms of 365 day years.
      *
      * @param start start time.
      * @param end end time.
@@ -1809,12 +1820,32 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffYears(@Nullable final Instant start, @Nullable final Instant end) {
+    public static double diffYears365(@Nullable final Instant start, @Nullable final Instant end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) * YEARS_PER_NANO;
+        return (double) diffNanos(start, end) * YEARS_PER_NANO_365;
+    }
+
+    /**
+     * Returns the difference in years between two date time values.
+     *
+     * Years are defined in terms of 365 day years.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
+     *         years.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffYears365(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) * YEARS_PER_NANO_365;
     }
 
     /**
@@ -1829,12 +1860,32 @@ public class DateTimeUtils {
      * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
-    public static double diffYears(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
+    public static double diffYearsAvg(@Nullable final Instant start, @Nullable final Instant end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
 
-        return (double) diffNanos(start, end) * YEARS_PER_NANO;
+        return (double) diffNanos(start, end) * YEARS_PER_NANO_AVG;
+    }
+
+    /**
+     * Returns the difference in years between two date time values.
+     *
+     * Years are defined in terms of 365.2425 day years.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
+     *         years.
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     */
+    @ScriptApi
+    public static double diffYearsAvg(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) * YEARS_PER_NANO_AVG;
     }
 
     // endregion

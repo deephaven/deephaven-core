@@ -1230,7 +1230,8 @@ public class TestDefaultBusinessCalendar extends BaseArrayTestCase {
         Instant day2 = DateTimeUtils.parseInstant("2016-09-01T01:00:00.000000000 NY");
         assertEquals(USNYSE.diffDay(day1, day2), 1.0);
         assertEquals(USNYSE.diffNanos(day1, day2), DateTimeUtils.DAY);
-        assertEquals(JPOSE.diffYear(day1, day2), (double) DateTimeUtils.DAY / (double) DateTimeUtils.YEAR);
+        assertEquals(JPOSE.diffYear365(day1, day2), (double) DateTimeUtils.DAY / (double) DateTimeUtils.YEAR_365);
+        assertEquals(JPOSE.diffYearAvg(day1, day2), (double) DateTimeUtils.DAY / (double) DateTimeUtils.YEAR_AVG);
     }
 
     public void testBusinessTimeDiff() {
