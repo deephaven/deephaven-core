@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 from typing import Union, Optional
-from enum import Enum
 
 import jpy
 
@@ -1998,7 +1997,7 @@ def parse_local_date(s: str, quiet: bool = False) -> Optional[LocalTime]:
 
     Args:
         s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
 
     Returns:
         LocalDate represented by the string.
@@ -2023,7 +2022,7 @@ def parse_local_time(s: str, quiet: bool = False) -> Optional[LocalTime]:
 
     Args:
         s (str): String to be converted.
-        quiet (bool): False will cause exceptions when strings can not be parsed.  False will cause None to be returned.
+        quiet (bool): False will cause exceptions when strings can not be parsed.  True will cause None to be returned.
 
     Returns:
         LocalTime represented by the string.
