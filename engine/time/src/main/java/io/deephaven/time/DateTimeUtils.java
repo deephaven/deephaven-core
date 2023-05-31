@@ -2239,8 +2239,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
 
-        return dateTime.getHour() * HOUR + dateTime.getMinute() * MINUTE + dateTime.getSecond() * SECOND
-                + dateTime.getNano();
+        return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
     }
 
     /**
@@ -2372,7 +2371,7 @@ public class DateTimeUtils {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return dateTime.getHour();
+        return minuteOfDay(dateTime) / 60;
     }
 
     /**
