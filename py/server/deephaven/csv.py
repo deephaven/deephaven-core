@@ -39,7 +39,7 @@ def read(
     Args:
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
-        headless (bool): whether the csv file doesn't have a header row, default is false
+        headless (bool): whether the csv file doesn't have a header row, default is False
         header_row (int): the header row number, all the rows before it will be skipped, default is 0. Must be 0 if
             headless is True, otherwise an exception will be raised
         skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse
@@ -53,7 +53,6 @@ def read(
         ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is
             set, then rows that are too long (that have more columns than the header row) will have those excess columns
             dropped. Defaults to false.
-        headless (bool): indicates if the CSV data is headless, default is False
         delimiter (str): the delimiter used by the CSV, default is the comma
         quote (str): the quote character for the CSV, default is double quote
         ignore_surrounding_spaces (bool): Indicates whether surrounding white space should be ignored for unquoted
@@ -86,19 +85,20 @@ def read(
             for column_name, column_type in header.items():
                 csv_specs_builder.putParserForName(column_name, parser_map[column_type])
 
-        csv_specs = (csv_specs_builder.hasHeaderRow(not headless)
-                     .skipHeaderRows(header_row)
-                     .skipRows(skip_rows)
-                     .numRows(num_rows)
-                     .ignoreEmptyLines(ignore_empty_lines)
-                     .allowMissingColumns(allow_missing_columns)
-                     .ignoreExcessColumns(ignore_excess_columns)
-                     .delimiter(ord(delimiter))
-                     .quote(ord(quote))
-                     .ignoreSurroundingSpaces(ignore_surrounding_spaces)
-                     .trim(trim)
-                     .build()
-                     )
+        csv_specs = (
+            csv_specs_builder.hasHeaderRow(not headless)
+            .skipHeaderRows(header_row)
+            .skipRows(skip_rows)
+            .numRows(num_rows)
+            .ignoreEmptyLines(ignore_empty_lines)
+            .allowMissingColumns(allow_missing_columns)
+            .ignoreExcessColumns(ignore_excess_columns)
+            .delimiter(ord(delimiter))
+            .quote(ord(quote))
+            .ignoreSurroundingSpaces(ignore_surrounding_spaces)
+            .trim(trim)
+            .build()
+        )
 
         j_table = _JCsvTools.readCsv(path, csv_specs)
 
