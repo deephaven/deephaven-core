@@ -1302,8 +1302,8 @@ public class ConstructSnapshot {
      * <p>
      * Populate a BarrageMessage with the specified positions to snapshot and columns.
      * <p>
-     * Note that care must be taken while using this method to ensure the underlying table is locked or does not
-     * change, otherwise the resulting snapshot may be inconsistent. In general users should instead use
+     * Note that care must be taken while using this method to ensure the underlying table is locked or does not change,
+     * otherwise the resulting snapshot may be inconsistent. In general users should instead use
      * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
      * uses.
      *

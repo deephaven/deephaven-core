@@ -54,8 +54,8 @@ import java.util.function.Supplier;
  * <p>
  * This class can be configured via the following {@link Configuration} property
  * <ul>
- * <li>{@value DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP}(optional) - The default target cycle time in ms (1000 if
- * not defined)</li>
+ * <li>{@value DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP}(optional) - The default target cycle time in ms (1000 if not
+ * defined)</li>
  * </ul>
  */
 public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQueue, NotificationQueue.Dependency {

@@ -76,8 +76,9 @@ public interface ServerConfig {
      * Also parses {@link MainHelper#parseSSLConfig(Configuration)} into {@link Builder#ssl(SSLConfig)} and
      * {@link MainHelper#parseOutboundSSLConfig(Configuration)} into {@link Builder#outboundSsl(SSLConfig)}.
      * <p>
-     *     See {@link MainHelper#parseSSLConfig(Configuration)} for {@link Builder#ssl(SSLConfig)}.
+     * See {@link MainHelper#parseSSLConfig(Configuration)} for {@link Builder#ssl(SSLConfig)}.
      * </p>
+     * 
      * @param builder the builder
      * @param config the configuration
      * @return the builder

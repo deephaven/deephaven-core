@@ -216,9 +216,9 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Retrieves a {@code ColumnSource}. It is conveniently cast to {@code ColumnSource<Object>} using the type that caller
-     * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
-     * to verify that the data type is a subclass of the expected class.
+     * Retrieves a {@code ColumnSource}. It is conveniently cast to {@code ColumnSource<Object>} using the type that
+     * caller expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class}
+     * object to verify that the data type is a subclass of the expected class.
      *
      * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.

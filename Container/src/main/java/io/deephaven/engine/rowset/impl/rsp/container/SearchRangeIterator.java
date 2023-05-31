@@ -49,9 +49,9 @@ public interface SearchRangeIterator extends RangeIterator {
      * @param comp a comparator used to search forward from the current iterator position
      * @return false if the target was to the left of the initial position at the time of the call (iterator not
      *         changed); true otherwise. In the true case the current position is guaranteed to satisfy
-     *         comp.directionFrom(v) &gt;= 0 and if also comp.directionFrom(v) &gt; 0, then v is the biggest such value for
-     *         which comp.directionFrom(v) &gt; 0. If there are multiple values for which comp.directionFrom(v) == 0, there
-     *         is no guarantee as of which one will be left as current iterator position.
+     *         comp.directionFrom(v) &gt;= 0 and if also comp.directionFrom(v) &gt; 0, then v is the biggest such value
+     *         for which comp.directionFrom(v) &gt; 0. If there are multiple values for which comp.directionFrom(v) ==
+     *         0, there is no guarantee as of which one will be left as current iterator position.
      */
     boolean search(ContainerUtil.TargetComparator comp);
 }
