@@ -149,43 +149,48 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         final long newShift =
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted().nonempty() || newShift > 0) {
-            long watermarkKey = 0;
-            final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
+            // Only compute downstream shifts if there are retained rows to shift
+            if (resultRowSet.isEmpty()) {
+                downstream.shifted = RowSetShiftData.EMPTY;
+            } else {
+                long watermarkKey = 0;
+                final RowSetShiftData.Builder oShiftedBuilder = new RowSetShiftData.Builder();
 
-            // Bounds seem weird because we might need to shift all keys outside of shifts too.
-            for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
-                final long nextShiftEnd;
-                final long nextShiftStart;
-                final long nextShiftDelta;
-                if (idx == 0) {
-                    nextShiftStart = nextShiftEnd = pivotPoint + 1;
-                    nextShiftDelta = 0;
-                } else {
-                    // Note: begin/end flip responsibilities in the transformation
-                    nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
-                    final long minStart = Math.max(-nextShiftDelta - newShift, 0);
-                    nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
-                    nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
-                    if (nextShiftEnd < nextShiftStart) {
+                // Bounds seem weird because we might need to shift all keys outside of shifts too.
+                for (int idx = upstream.shifted().size(); idx >= 0; --idx) {
+                    final long nextShiftEnd;
+                    final long nextShiftStart;
+                    final long nextShiftDelta;
+                    if (idx == 0) {
+                        nextShiftStart = nextShiftEnd = pivotPoint + 1;
+                        nextShiftDelta = 0;
+                    } else {
+                        // Note: begin/end flip responsibilities in the transformation
+                        nextShiftDelta = -upstream.shifted().getShiftDelta(idx - 1);
+                        final long minStart = Math.max(-nextShiftDelta - newShift, 0);
+                        nextShiftStart = Math.max(minStart, transform(upstream.shifted().getEndRange(idx - 1)));
+                        nextShiftEnd = transform(upstream.shifted().getBeginRange(idx - 1));
+                        if (nextShiftEnd < nextShiftStart) {
+                            continue;
+                        }
+                    }
+
+                    // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
+                    long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
+                    oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
+
+                    if (idx == 0) {
                         continue;
                     }
+
+                    // insert this range
+                    oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
+                    watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
                 }
 
-                // insert range prior to here; note shift ends are inclusive so we need the -1 for endRange
-                long innerEnd = nextShiftStart - 1 + (nextShiftDelta < 0 ? nextShiftDelta : 0);
-                oShiftedBuilder.shiftRange(watermarkKey, innerEnd, newShift);
-
-                if (idx == 0) {
-                    continue;
-                }
-
-                // insert this range
-                oShiftedBuilder.shiftRange(nextShiftStart, nextShiftEnd, newShift + nextShiftDelta);
-                watermarkKey = nextShiftEnd + 1 + (nextShiftDelta > 0 ? nextShiftDelta : 0);
+                downstream.shifted = oShiftedBuilder.build();
+                downstream.shifted().apply(resultRowSet);
             }
-
-            downstream.shifted = oShiftedBuilder.build();
-            downstream.shifted().apply(resultRowSet);
 
             // Update pivot logic.
             lastPivotPointChange = LogicalClock.DEFAULT.currentStep();
