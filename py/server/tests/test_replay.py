@@ -11,7 +11,7 @@ from tests.testbase import BaseTestCase
 
 
 class ReplayTestCase(BaseTestCase):
-    def test_historical_table_replayer(self):
+    def historical_table_replayer(self, start_time, end_time):
         dt1 = parse_instant("2000-01-01T00:00:01 ET")
         dt2 = parse_instant("2000-01-01T00:00:02 ET")
         dt3 = parse_instant("2000-01-01T00:00:04 ET")
@@ -23,9 +23,6 @@ class ReplayTestCase(BaseTestCase):
         hist_table2 = new_table(
             [datetime_col("DateTime", [dt1, dt2, dt3]), int_col("Number", [1, 3, 6])]
         )
-
-        start_time = parse_instant("2000-01-01T00:00:00 ET")
-        end_time = parse_instant("2000-01-01T00:00:05 ET")
 
         replayer = TableReplayer(start_time, end_time)
         replay_table = replayer.add_table(hist_table, "DateTime")
@@ -57,6 +54,17 @@ class ReplayTestCase(BaseTestCase):
             self.wait_ticking_table_update(replay_table, row_count=3, timeout=60)
             replayer.shutdown()
 
+    def test_historical_table_replayer_instant(self):
+        start_time = parse_instant("2000-01-01T00:00:00 ET")
+        end_time = parse_instant("2000-01-01T00:00:05 ET")
+
+        self.historical_table_replayer(start_time, end_time)
+
+    def test_historical_table_replayer_str(self):
+        start_time = "2000-01-01T00:00:00 ET"
+        end_time = "2000-01-01T00:00:05 ET"
+
+        self.historical_table_replayer(start_time, end_time)
 
 if __name__ == "__main__":
     unittest.main()
