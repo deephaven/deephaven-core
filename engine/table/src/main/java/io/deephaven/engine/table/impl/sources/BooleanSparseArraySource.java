@@ -15,6 +15,7 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;

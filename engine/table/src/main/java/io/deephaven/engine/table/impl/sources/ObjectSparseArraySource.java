@@ -9,6 +9,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
