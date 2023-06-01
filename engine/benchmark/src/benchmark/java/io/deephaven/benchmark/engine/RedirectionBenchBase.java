@@ -16,7 +16,6 @@ import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;

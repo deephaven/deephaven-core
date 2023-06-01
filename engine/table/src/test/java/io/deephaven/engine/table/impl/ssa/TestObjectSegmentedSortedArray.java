@@ -25,7 +25,6 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;

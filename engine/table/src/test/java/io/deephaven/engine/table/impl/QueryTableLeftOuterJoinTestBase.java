@@ -22,7 +22,6 @@ import io.deephaven.engine.testutil.generator.IntArrayGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.StringArrayGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -801,6 +800,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(right, i(1), intCol("RK", 1), intCol("RS", 20));
             right.notifyListeners(i(1), i(), i());

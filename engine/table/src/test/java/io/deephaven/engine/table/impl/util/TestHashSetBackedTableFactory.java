@@ -11,7 +11,6 @@ import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.tuple.ArrayTuple;
 

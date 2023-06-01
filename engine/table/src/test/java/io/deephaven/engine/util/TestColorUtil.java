@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
