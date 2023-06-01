@@ -5,6 +5,7 @@
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/column/column_source.h"
@@ -16,43 +17,41 @@ namespace deephaven::dhcore::table {
  * the names and data types of the table columns.
  */
 class Schema {
+  struct Private {};
   typedef deephaven::dhcore::ElementTypeId ElementTypeId;
 
 public:
   /**
-   * Constructor.
+   * Factory method
    */
-  Schema();
+  static std::shared_ptr<Schema> create(std::vector<std::string> names, std::vector<ElementTypeId::Enum> types);
   /**
    * Constructor.
    */
-  explicit Schema(std::vector<std::pair<std::string, ElementTypeId>> columns);
-  /**
-   * Move constructor.
-   */
-  Schema(Schema &&other) noexcept;
-  /**
-   * Move assignment operator.
-   */
-  Schema &operator=(Schema &&other) noexcept;
+  Schema(Private, std::vector<std::string> names, std::vector<ElementTypeId::Enum> types,
+      std::map<std::string_view, size_t, std::less<>> index);
   /**
    * Destructor.
    */
   ~Schema();
 
-  /**
-   * The schema (represented as a pair of name, column type) for each column in your Table.
-   */
-  const std::vector<std::pair<std::string, ElementTypeId>> &columns() const {
-    return columns_;
+  std::optional<size_t> getColumnIndex(std::string_view name, bool strict) const;
+
+  const std::vector<std::string> &names() const {
+    return names_;
   }
 
-  const std::map<std::string, ElementTypeId> &map() const {
-    return map_;
+  const std::vector<ElementTypeId::Enum> &types() const {
+    return types_;
+  }
+
+  size_t numCols() const {
+    return names_.size();
   }
 
 private:
-  std::vector<std::pair<std::string, ElementTypeId>> columns_;
-  std::map<std::string, ElementTypeId> map_;
+  std::vector<std::string> names_;
+  std::vector<ElementTypeId::Enum> types_;
+  std::map<std::string_view, size_t, std::less<>> index_;
 };
 }  // namespace deephaven::dhcore::table

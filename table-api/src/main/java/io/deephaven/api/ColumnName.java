@@ -10,7 +10,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
 @Immutable
 @SimpleStyle
 public abstract class ColumnName
-        implements Selectable, Expression, Pair, JoinMatch, JoinAddition, Serializable {
+        implements Selectable, Expression, Pair, JoinMatch, JoinAddition {
 
     public static boolean isValidParsedColumnName(String value) {
         return NameValidator.isValidColumnName(value.trim());

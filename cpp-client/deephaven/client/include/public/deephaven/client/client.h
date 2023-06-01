@@ -67,6 +67,8 @@ namespace deephaven::client {
  * This class is move-only.
  */
 class TableHandleManager {
+  template<typename... Args>
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 public:
   /*
    * Default constructor. Creates a (useless) empty client object.
@@ -124,6 +126,18 @@ public:
    */
   TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor() const;
   /**
+   * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
+   * the language of the script (typically either "python" or "groovy") and that the code matches that language.
+   */
+  void runScript(std::string code) const;
+  /**
+   * The async version of runScript(std::string variable) code.
+   * @param code The script to run on the server.
+   * @param callback The asynchronous callback.
+   */
+  void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback) const;
+
+  /**
    * Creates a FlightWrapper that is used for Arrow Flight integration. Arrow Flight is the primary
    * way to push data into or pull data out of the system. The object returned is only
    * forward-referenced in this file. If you want to use it, you will also need to include
@@ -134,6 +148,59 @@ public:
 
 private:
   std::shared_ptr<impl::TableHandleManagerImpl> impl_;
+};
+
+/**
+ * The ClientOptions object is intended to be passed to Client::connect(). For convenience, the mutating methods can be
+ * chained. For example:
+ * auto client = Client::connect("localhost:10000", ClientOptions().setBasicAuthentication("foo", "bar").setSessionType("groovy")
+ */
+class ClientOptions {
+public:
+  /*
+   * Default constructor. Creates a default ClientOptions object with default authentication and Python scripting.
+   */
+  ClientOptions();
+  /**
+   * Move constructor
+   */
+  ClientOptions(ClientOptions &&other) noexcept;
+  /**
+   * Move assigment operator.
+   */
+  ClientOptions &operator=(ClientOptions &&other) noexcept;
+  /**
+   * Destructor
+   */
+  ~ClientOptions();
+
+  /**
+   * Modifies the ClientOptions object to set the default authentication scheme.
+   * @return *this, so that methods can be chained.
+   */
+  ClientOptions &setDefaultAuthentication();
+  /**
+   * Modifies the ClientOptions object to set the basic authentication scheme.
+   * @return *this, so that methods can be chained.
+   */
+  ClientOptions &setBasicAuthentication(const std::string &username, const std::string &password);
+  /**
+   * Modifies the ClientOptions object to set a custom authentication scheme.
+   * @return *this, so that methods can be chained.
+   */
+  ClientOptions &setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue);
+  /**
+   * Modifies the ClientOptions object to set the scripting language for the session.
+   * @param sessionType The scripting language for the session, such as "groovy" or "python".
+   * @return *this, so that methods can be chained.
+   */
+  ClientOptions &setSessionType(const std::string &sessionType);
+
+private:
+  std::string authorizationValue_;
+  std::string sessionType_;
+
+  friend class Client;
 };
 
 /**
@@ -153,12 +220,14 @@ public:
    * Default constructor. Creates a (useless) empty client object.
    */
   Client();
+
   /**
-   * Factory method to connect to a Deephaven server
+   * Factory method to connect to a Deephaven server using the specified options.
    * @param target A connection string in the format host:port. For example "localhost:10000".
+   * @param options An options object for setting options like authentication and script language.
    * @return A Client object conneted to the Deephaven server.
    */
-  static Client connect(const std::string &target);
+  static Client connect(const std::string &target, const ClientOptions &options = {});
   /**
    * Move constructor
    */

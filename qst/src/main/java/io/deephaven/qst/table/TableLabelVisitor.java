@@ -5,7 +5,6 @@ package io.deephaven.qst.table;
 
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregation;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -89,12 +88,13 @@ public class TableLabelVisitor extends TableVisitorGeneric {
 
     @Override
     public void visit(AsOfJoinTable aj) {
-        join("aj", aj);
-    }
-
-    @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        join("raj", raj);
+        sb.append("asOfJoin([");
+        append(Strings::of, aj.matches(), sb);
+        sb.append("],");
+        sb.append(Strings.of(aj.joinMatch()));
+        sb.append(",");
+        append(Strings::of, aj.additions(), sb);
+        sb.append("])");
     }
 
     @Override

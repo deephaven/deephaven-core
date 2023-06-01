@@ -7,7 +7,6 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
-import java.io.Serializable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,7 +22,7 @@ import static io.deephaven.api.expression.SelectFactoryConstants.START_PTRN;
  */
 @Immutable
 @BuildableStyle
-public abstract class RangeJoinMatch implements Serializable {
+public abstract class RangeJoinMatch {
 
     public static Builder builder() {
         return ImmutableRangeJoinMatch.builder();

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/utility/executor.h"
 
@@ -21,18 +22,15 @@ class TableHandleManagerImpl {
   typedef io::deephaven::proto::backplane::grpc::Ticket Ticket;
   typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
 
-  template<typename... Args>
-  using Callback = deephaven::dhcore::utility::Callback<Args...>;
-  template<typename T>
-  using SFCallback = deephaven::dhcore::utility::SFCallback<T>;
-  typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
+  template<typename ...Args>
+  using SFCallback = deephaven::dhcore::utility::SFCallback<Args...>;
 
 public:
-  static std::shared_ptr<TableHandleManagerImpl> create(Ticket consoleId,
+  static std::shared_ptr<TableHandleManagerImpl> create(std::optional<Ticket> consoleId,
       std::shared_ptr<Server> server, std::shared_ptr<Executor> executor,
       std::shared_ptr<Executor> flightExecutor);
 
-  TableHandleManagerImpl(Private, Ticket &&consoleId,
+  TableHandleManagerImpl(Private, std::optional<Ticket> &&consoleId,
       std::shared_ptr<Server> &&server, std::shared_ptr<Executor> &&executor,
       std::shared_ptr<Executor> &&flightExecutor);
   TableHandleManagerImpl(const TableHandleManagerImpl &other) = delete;
@@ -41,18 +39,18 @@ public:
 
   std::shared_ptr<TableHandleImpl> emptyTable(int64_t size);
   std::shared_ptr<TableHandleImpl> fetchTable(std::string tableName);
-  //  std::shared_ptr<QueryTableImpl> tempTable(const std::vector<ColumnDataHolder> &columnDataHolders);
   std::shared_ptr<TableHandleImpl> timeTable(int64_t startTimeNanos, int64_t periodNanos);
+  void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
 
   std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket() const;
 
-  const Ticket &consoleId() const { return consoleId_; }
+  const std::optional<Ticket> &consoleId() const { return consoleId_; }
   const std::shared_ptr<Server> &server() const { return server_; }
   const std::shared_ptr<Executor> &executor() const { return executor_; }
   const std::shared_ptr<Executor> &flightExecutor() const { return flightExecutor_; }
 
 private:
-  Ticket consoleId_;
+  std::optional<Ticket> consoleId_;
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> executor_;
   std::shared_ptr<Executor> flightExecutor_;

@@ -221,9 +221,13 @@ def to_table(df: pd.DataFrame, cols: List[str] = None) -> Table:
         input_cols = []
         for col in cols:
             np_array = df.get(col).values
-            dtype = dtypes.from_np_dtype(np_array.dtype)
+            if isinstance(df.dtypes[col], pd.CategoricalDtype):
+                dtype = df.dtypes[col].categories.dtype
+            else:
+                dtype = np_array.dtype
+            dh_dtype = dtypes.from_np_dtype(dtype)
             np_array = _map_na(np_array)
-            input_cols.append(_make_input_column(col, np_array, dtype))
+            input_cols.append(_make_input_column(col, np_array, dh_dtype))
 
         return new_table(cols=input_cols)
     except DHError:

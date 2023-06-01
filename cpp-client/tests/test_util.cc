@@ -114,14 +114,14 @@ TableMakerForTests TableMakerForTests::create() {
   return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
 }
 
-Client TableMakerForTests::createClient() {
+Client TableMakerForTests::createClient(const ClientOptions &options) {
   const char *hostptr = std::getenv("DH_HOST");
   const char *portptr = std::getenv("DH_PORT");
   std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
   std::string port = (portptr == nullptr) ? "10000" : portptr;
   std::string connectionString(host + ":" + port);
   streamf(std::cerr, "Connecting to %o\n", connectionString);
-  auto client = Client::connect(connectionString);
+  auto client = Client::connect(connectionString, options);
   return client;
 }
 

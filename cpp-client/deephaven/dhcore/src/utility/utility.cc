@@ -11,6 +11,44 @@ using namespace std;
 namespace deephaven::dhcore::utility {
 
 namespace {
+const char encodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const char padCharacter = '=';
+}  // namespace
+
+// Adapted from
+// https://en.wikibooks.org/wiki/Algorithm_Implementation/Miscellaneous/Base64#C++
+std::string base64Encode(const std::string &inputBuffer) {
+  std::string encodedString;
+  encodedString.reserve(((inputBuffer.size() + 2) / 3) * 4);
+  size_t i = 0;
+  while (i + 2 < inputBuffer.size()) {
+    auto temp = uint32_t(inputBuffer[i++]) << 16;
+    temp |= uint32_t(inputBuffer[i++]) << 8;
+    temp |= uint32_t(inputBuffer[i++]);
+    encodedString.push_back(encodeLookup[(temp & 0x00FC0000) >> 18]);
+    encodedString.push_back(encodeLookup[(temp & 0x0003F000) >> 12]);
+    encodedString.push_back(encodeLookup[(temp & 0x00000FC0) >> 6]);
+    encodedString.push_back(encodeLookup[(temp & 0x0000003F)]);
+  }
+
+  if (i == inputBuffer.size() - 1) {
+    uint32_t temp = uint32_t(inputBuffer[i++]) << 16;
+    encodedString.push_back(encodeLookup[(temp & 0x00FC0000) >> 18]);
+    encodedString.push_back(encodeLookup[(temp & 0x0003F000) >> 12]);
+    encodedString.push_back(padCharacter);
+    encodedString.push_back(padCharacter);
+  } else if (i == inputBuffer.size() - 2) {
+    uint32_t temp = uint32_t(inputBuffer[i++]) << 16;
+    temp |= uint32_t(inputBuffer[i++]) << 8;
+    encodedString.push_back(encodeLookup[(temp & 0x00FC0000) >> 18]);
+    encodedString.push_back(encodeLookup[(temp & 0x0003F000) >> 12]);
+    encodedString.push_back(encodeLookup[(temp & 0x00000FC0) >> 6]);
+    encodedString.push_back(padCharacter);
+  }
+  return encodedString;
+}
+
+namespace {
 void dumpTillPercentOrEnd(ostream &result, const char **fmt);
 }  // namespace
 

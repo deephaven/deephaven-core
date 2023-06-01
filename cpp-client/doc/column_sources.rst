@@ -5,103 +5,103 @@ Description
 -----------
 
 A
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>` 
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>` 
 is an abstract class representing a Deephaven column. It represents a read-only view on that
 column. There is a derived class,
-:cpp:class:`MutableColumnSource <deephaven::client::column::MutableColumnSource>`
+:cpp:class:`MutableColumnSource <deephaven::dhcore::column::MutableColumnSource>`
 which provides a writable interface.
 
 You can access the data in a
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`
 via its
-:cpp:func:`fillChunk <deephaven::client::column::ColumnSource::fillChunk>`
+:cpp:func:`fillChunk <deephaven::dhcore::column::ColumnSource::fillChunk>`
 and
-:cpp:func:`fillChunkUnordered <deephaven::client::column::ColumnSource::fillChunkUnordered>`
+:cpp:func:`fillChunkUnordered <deephaven::dhcore::column::ColumnSource::fillChunkUnordered>`
 methods. Likewise, you can store data into a
-:cpp:class:`MutableColumnSource <deephaven::client::column::MutableColumnSource>`
+:cpp:class:`MutableColumnSource <deephaven::dhcore::column::MutableColumnSource>`
 via its
-:cpp:func:`fillFromChunk <deephaven::client::column::MutableColumnSource::fillFromChunk>`
+:cpp:func:`fillFromChunk <deephaven::dhcore::column::MutableColumnSource::fillFromChunk>`
 and
-:cpp:func:`fillFromChunkUnordered <deephaven::client::column::MutableColumnSource::fillFromChunkUnordered>`
+:cpp:func:`fillFromChunkUnordered <deephaven::dhcore::column::MutableColumnSource::fillFromChunkUnordered>`
 methods. These methods provide "bulk transfer" of data into and out of a
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`.
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`.
 We do not provide any methods to access single elements of a
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`
 because we want to encourage callers to use the more efficient bulk transfer methods.
 
 The
-:cpp:class:`ColumnSource <deephaven::client::column::ColumnSource>`
+:cpp:class:`ColumnSource <deephaven::dhcore::column::ColumnSource>`
 hierarchy is further divided into two parts:
-:cpp:class:`NumericColumnSource <deephaven::client::column::NumericColumnSource>`
+:cpp:class:`NumericColumnSource <deephaven::dhcore::column::NumericColumnSource>`
 and
-:cpp:class:`GenericColumnSource <deephaven::client::column::GenericColumnSource>`
+:cpp:class:`GenericColumnSource <deephaven::dhcore::column::GenericColumnSource>`
 (and their mutable counterparts
-:cpp:class:`MutableNumericColumnSource <deephaven::client::column::MutableNumericColumnSource>`
+:cpp:class:`MutableNumericColumnSource <deephaven::dhcore::column::MutableNumericColumnSource>`
 and
-:cpp:class:`MutableGenericColumnSource <deephaven::client::column::MutableGenericColumnSource>`).
+:cpp:class:`MutableGenericColumnSource <deephaven::dhcore::column::MutableGenericColumnSource>`).
 
-:cpp:class:`ColumnSource <deephaven::client::column::NumericColumnSource>`
+:cpp:class:`ColumnSource <deephaven::dhcore::column::NumericColumnSource>`
 is for representing
 columns containing the numeric Deephaven types (``int8_t``, ``int16_t``, ``int32_t``,
 ``int64_t``, ``float``, ``double``), whereas
-:cpp:class:`ColumnSource <deephaven::client::column::GenericColumnSource>`
+:cpp:class:`ColumnSource <deephaven::dhcore::column::GenericColumnSource>`
 is for representing
 the remaining Deephaven types (``bool``, ``std::string``, and
 :cpp:class:`DateTime <deephaven::client::DateTime>`).
 
 For these types we have a set of convenience typedefs:
 
-* :cpp:type:`Int8ColumnSource <deephaven::client::column::Int8ColumnSource>`
-* :cpp:type:`Int16ColumnSource <deephaven::client::column::Int16ColumnSource>`
-* :cpp:type:`Int32ColumnSource <deephaven::client::column::Int32ColumnSource>`
-* :cpp:type:`Int64ColumnSource <deephaven::client::column::Int64ColumnSource>`
-* :cpp:type:`FloatColumnSource <deephaven::client::column::FloatColumnSource>`
-* :cpp:type:`DoubleColumnSource <deephaven::client::column::DoubleColumnSource>`
-* :cpp:type:`BooleanColumnSource <deephaven::client::column::BooleanColumnSource>`
-* :cpp:type:`StringColumnSource <deephaven::client::column::StringColumnSource>`
-* :cpp:type:`DateTimeColumnSource <deephaven::client::column::DateTimeColumnSource>`
+* :cpp:type:`Int8ColumnSource <deephaven::dhcore::column::Int8ColumnSource>`
+* :cpp:type:`Int16ColumnSource <deephaven::dhcore::column::Int16ColumnSource>`
+* :cpp:type:`Int32ColumnSource <deephaven::dhcore::column::Int32ColumnSource>`
+* :cpp:type:`Int64ColumnSource <deephaven::dhcore::column::Int64ColumnSource>`
+* :cpp:type:`FloatColumnSource <deephaven::dhcore::column::FloatColumnSource>`
+* :cpp:type:`DoubleColumnSource <deephaven::dhcore::column::DoubleColumnSource>`
+* :cpp:type:`BooleanColumnSource <deephaven::dhcore::column::BooleanColumnSource>`
+* :cpp:type:`StringColumnSource <deephaven::dhcore::column::StringColumnSource>`
+* :cpp:type:`DateTimeColumnSource <deephaven::dhcore::column::DateTimeColumnSource>`
 
 Declarations
 ------------
 
-.. doxygenclass:: deephaven::client::column::ColumnSource
+.. doxygenclass:: deephaven::dhcore::column::ColumnSource
    :members:
 
-.. doxygenclass:: deephaven::client::column::MutableColumnSource
+.. doxygenclass:: deephaven::dhcore::column::MutableColumnSource
    :members:
 
-.. doxygenclass:: deephaven::client::column::NumericColumnSource
+.. doxygenclass:: deephaven::dhcore::column::NumericColumnSource
    :members:
 
-.. doxygenclass:: deephaven::client::column::GenericColumnSource
+.. doxygenclass:: deephaven::dhcore::column::GenericColumnSource
    :members:
 
-.. doxygenclass:: deephaven::client::column::MutableNumericColumnSource
+.. doxygenclass:: deephaven::dhcore::column::MutableNumericColumnSource
    :members:
 
-.. doxygenclass:: deephaven::client::column::MutableGenericColumnSource
+.. doxygenclass:: deephaven::dhcore::column::MutableGenericColumnSource
    :members:
 
-.. doxygentypedef:: deephaven::client::column::Int8ColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::Int8ColumnSource
 
-.. doxygentypedef:: deephaven::client::column::Int16ColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::Int16ColumnSource
 
-.. doxygentypedef:: deephaven::client::column::Int32ColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::Int32ColumnSource
 
-.. doxygentypedef:: deephaven::client::column::Int64ColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::Int64ColumnSource
 
-.. doxygentypedef:: deephaven::client::column::FloatColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::FloatColumnSource
 
-.. doxygentypedef:: deephaven::client::column::DoubleColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::DoubleColumnSource
 
-.. doxygentypedef:: deephaven::client::column::BooleanColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::BooleanColumnSource
 
-.. doxygentypedef:: deephaven::client::column::StringColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::StringColumnSource
 
-.. doxygentypedef:: deephaven::client::column::DateTimeColumnSource
+.. doxygentypedef:: deephaven::dhcore::column::DateTimeColumnSource
 
 Utility Declarations
 --------------------
 
-.. doxygenclass:: deephaven::client::column::ColumnSourceVisitor
+.. doxygenclass:: deephaven::dhcore::column::ColumnSourceVisitor
    :members:

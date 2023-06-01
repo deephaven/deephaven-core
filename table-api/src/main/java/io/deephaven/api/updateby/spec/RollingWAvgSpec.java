@@ -4,7 +4,6 @@ import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 
 /**
@@ -47,15 +46,14 @@ public abstract class RollingWAvgSpec extends RollingOpSpec {
                 weightCol);
     }
 
-    // internal use constructors
-    private static RollingWAvgSpec of(WindowScale revWindowScale, final String weightCol) {
+    public static RollingWAvgSpec of(WindowScale revWindowScale, final String weightCol) {
         return ImmutableRollingWAvgSpec.builder()
                 .weightCol(weightCol)
                 .revWindowScale(revWindowScale)
                 .build();
     }
 
-    private static RollingWAvgSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, final String weightCol) {
+    public static RollingWAvgSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, final String weightCol) {
         return ImmutableRollingWAvgSpec.builder()
                 .weightCol(weightCol)
                 .revWindowScale(revWindowScale)

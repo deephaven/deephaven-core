@@ -87,6 +87,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
   typedef io::deephaven::proto::backplane::script::grpc::ConsoleService ConsoleService;
   typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
+  typedef io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse ExecuteCommandResponse;
 
   typedef deephaven::client::utility::Executor Executor;
 
@@ -95,7 +96,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:
-  static std::shared_ptr<Server> createFromTarget(const std::string &target);
+  static std::shared_ptr<Server> createFromTarget(const std::string &target, const std::string &authorizationValue);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
@@ -129,7 +130,10 @@ public:
   void getConfigurationConstantsAsync(
       std::shared_ptr<SFCallback<ConfigurationConstantsResponse>> callback);
 
-  void startConsoleAsync(std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
+  void startConsoleAsync(std::string sessionType, std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
+
+  void executeCommandAsync(Ticket consoleId, std::string code,
+      std::shared_ptr<SFCallback<ExecuteCommandResponse>> callback);
 
   Ticket emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback);
 
