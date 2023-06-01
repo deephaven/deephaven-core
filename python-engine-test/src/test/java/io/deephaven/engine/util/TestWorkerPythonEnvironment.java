@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -34,7 +35,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
                     TestWorkerPythonEnvironment.class.getCanonicalName(),
                     new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 

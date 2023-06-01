@@ -26,6 +26,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -243,7 +244,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testTransformPartitionedTableThenMerge() {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false, true, 0, 4, 10,
+                5);
 
         final QueryTable sourceTable = testRefreshingTable(i(1).toTracking(),
                 intCol("Key", 1), intCol("Sentinel", 1), col("Sym", "a"), doubleCol("DoubleCol", 1.1));
@@ -446,7 +449,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testCrossDependencies() {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 2, 0, 0);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false, true, 0, 2, 0,
+                0);
 
         final QueryTable sourceTable = testRefreshingTable(i(1, 2).toTracking(),
                 col("USym", "aa", "bb"),
@@ -538,7 +543,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testCrossDependencies2() {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 2, 0, 0);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false, true, 0, 2, 0,
+                0);
 
         final QueryTable sourceTable = testRefreshingTable(i(1, 2).toTracking(),
                 col("USym", "aa", "bb"),
@@ -891,7 +898,9 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     public void testTransformDependencyCorrectness() {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 2, 0, 0);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false, true, 0, 2, 0,
+                0);
 
         final Table input = emptyTable(2).update("First=ii", "Second=100*ii");
         input.setRefreshing(true);

@@ -12,6 +12,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.client.impl.BarrageSubscriptionImpl.BarrageDataMarshaller;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
@@ -21,6 +22,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
@@ -180,7 +182,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             final Schema flatbufSchema = SchemaHelper.flatbufSchema(schemaBytes.asReadOnlyByteBuffer());
             final BarrageUtil.ConvertedArrowSchema schema = BarrageUtil.convertArrowSchema(flatbufSchema);
             this.barrageTable = BarrageTable.make(updateSourceCombiner,
-                    (UpdateGraph) ExecutionContext.getContext().getUpdateGraph(),
+                    ExecutionContext.getContext().getUpdateGraph(),
                     null, schema.tableDef, schema.attributes, viewport == null ? -1 : viewport.size());
 
             final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder()
@@ -295,7 +297,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
     }
 
     private void releaseBlinkRows() {
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph()).runWithinUnitTestCycle(() -> {
+        ExecutionContext.getContext().getUpdateGraph().cast()
+                .runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             final long lastKey = blinkRowSet.lastRowKey();
             update.removed = blinkRowSet.copy();
@@ -313,8 +316,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE; ++nr) {
@@ -322,8 +325,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
-            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                    .runWithinUnitTestCycle(updateSourceCombiner::run);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             client.validateBatches(nr, nr + 1);
         }
     }
@@ -332,8 +334,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
@@ -341,8 +343,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
-            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                    .runWithinUnitTestCycle(updateSourceCombiner::run);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             client.validateBatches(4 * nr, 4 * (nr + 1));
         }
     }
@@ -351,8 +352,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
         for (long nr = 0; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
@@ -360,8 +361,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             flushProducerTable();
             client.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
-            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                    .runWithinUnitTestCycle(updateSourceCombiner::run);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             client.validateBatches(4 * nr, 4 * (nr + 1));
         }
     }
@@ -372,8 +372,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client1 = new RemoteClient();
         flushProducerTable(); // empty snapshot + release of BATCH_SIZE
         client1.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client1.validateBatches(0, 1);
 
         releaseBlinkRows(); // get sent to client1
@@ -383,8 +383,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         client2.flushEventsToReplicatedTable();
 
         updateSourceCombiner.assertRefreshRequested();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
 
         client1.validateBatches(1, 3); // gets before and after snap
         client2.validateBatches(2, 3); // gets only after snap
@@ -394,8 +393,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client = new RemoteClient();
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         updateSourceCombiner.assertRefreshRequested();
 
         releaseBlinkRows();
@@ -403,13 +402,11 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         Assert.eqFalse(updateSourceCombiner.refreshRequested, "refreshRequested");
         client.flushEventsToReplicatedTable();
         updateSourceCombiner.assertRefreshRequested();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 1);
 
         updateSourceCombiner.assertRefreshRequested();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
     }
 
@@ -418,30 +415,27 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         final RemoteClient client = new RemoteClient(RowSetFactory.fromRange(2 * BATCH_SIZE, 3 * BATCH_SIZE - 1), null);
         flushProducerTable(); // empty snapshot
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
         releaseBlinkRows();
         flushProducerTable();
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(0, 0);
 
         releaseBlinkRows(3);
         flushProducerTable();
         client.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client.validateBatches(3, 4);
 
         for (long nr = 1; nr < NUM_ROWS / BATCH_SIZE / 4; ++nr) {
             releaseBlinkRows(4);
             flushProducerTable();
             client.flushEventsToReplicatedTable();
-            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                    .runWithinUnitTestCycle(updateSourceCombiner::run);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             client.validateBatches(4 * nr + 2, 4 * (nr + 1) - 1);
         }
     }
@@ -453,8 +447,8 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
         flushProducerTable(); // empty snapshot
         client1.flushEventsToReplicatedTable();
         client2.flushEventsToReplicatedTable();
-        ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                .runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         client1.validate(sourceTable.getSubTable(RowSetFactory.empty().toTracking()));
         client2.validate(sourceTable.getSubTable(RowSetFactory.empty().toTracking()));
 
@@ -464,8 +458,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
             client1.flushEventsToReplicatedTable();
             client2.flushEventsToReplicatedTable();
             updateSourceCombiner.assertRefreshRequested();
-            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph())
-                    .runWithinUnitTestCycle(updateSourceCombiner::run);
+            updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
             client1.validateBatches(4 * nr, 4 * (nr + 1));
             client2.validateBatches(4 * nr + 2, 4 * (nr + 1) - 1);
         }

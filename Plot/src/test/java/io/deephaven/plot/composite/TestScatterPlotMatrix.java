@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
@@ -29,7 +30,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         executionContext = TestExecutionContext.createForUnitTests().open();
     }
@@ -42,7 +43,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     }
 
     public void testScatterPlotMatrix() {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
         final int[][] ints = new int[length][length];
         final double[][] doubles = new double[length][length];

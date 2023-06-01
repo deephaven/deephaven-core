@@ -13,6 +13,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hotspot.JvmIntrospectionContext;
@@ -786,7 +787,8 @@ public class UpdateGraphProcessor implements UpdateGraph {
      */
     @TestUseOnly
     public void resetForUnitTests(final boolean after) {
-        resetForUnitTests(after, false, 0, 0, 0, 0);
+        this.<ControlledUpdateGraph>cast().resetForUnitTests(after, false, 0, 0, 0,
+                0);
     }
 
     /**

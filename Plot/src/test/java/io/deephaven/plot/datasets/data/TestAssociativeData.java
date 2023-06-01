@@ -5,6 +5,7 @@ package io.deephaven.plot.datasets.data;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
@@ -27,7 +28,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
 
         // prime the listeners

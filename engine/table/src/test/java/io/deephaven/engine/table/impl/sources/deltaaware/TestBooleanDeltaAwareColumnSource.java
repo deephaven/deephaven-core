@@ -10,12 +10,12 @@ package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.chunk.ObjectChunk;
 
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -29,13 +29,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
     @Before
     public void setUp() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 

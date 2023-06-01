@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.util.BooleanUtils;
@@ -210,7 +211,8 @@ public class TestRedirectedColumnSource {
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
         qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
-        ExecutionContext.getContext().getUpdateGraph().flushAllNormalNotificationsForUnitTests();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.flushAllNormalNotificationsForUnitTests();
 
         System.out.println("A:");
         showWithRowSet(a);

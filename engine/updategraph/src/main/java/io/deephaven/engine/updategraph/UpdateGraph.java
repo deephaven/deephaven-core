@@ -137,57 +137,20 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     @TestUseOnly
     void resetForUnitTests(final boolean after);
 
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Execute the given runnable wrapped with {@link #startCycleForUnitTests()} and
-     * {@link #completeCycleForUnitTests()}. Note that the runnable is run on the current thread.
-     *
-     * @param runnable the runnable to execute.
-     */
     @TestUseOnly
     <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable) throws T;
 
     // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * <p>
-     * Enable unit test mode.
-     * </p>
-     */
-    void enableUnitTestMode();
-
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Flush a single notification from the UGP queue. Note that this happens on a simulated UGP run thread, rather than
-     * this thread.
-     *
-     * @return whether a notification was found in the queue
-     */
 
     @TestUseOnly
     boolean flushOneNotificationForUnitTests();
 
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Refresh an update source on a simulated UGP run thread, rather than this thread.
-     *
-     * @param updateSource The update source to run
-     */
     @TestUseOnly
     void refreshUpdateSourceForUnitTests(@NotNull final Runnable updateSource);
 
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Begin the next update cycle while in {@link #enableUnitTestMode() unit-test} mode. Note that this happens on a
-     * simulated UGP run thread, rather than this thread.
-     */
     @TestUseOnly
     void startCycleForUnitTests();
 
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Do the second half of the update cycle, including flushing notifications, and completing the {@link LogicalClock}
-     * update cycle. Note that this happens on a simulated UGP run thread, rather than this thread.
-     */
     @TestUseOnly
     void completeCycleForUnitTests();
 
@@ -261,5 +224,10 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
             safePoints = 0;
             safePointPauseTimeMillis = 0;
         }
+    }
+
+    default <UP_TYPE extends UpdateGraph> UP_TYPE cast() {
+        //noinspection unchecked
+        return (UP_TYPE) this;
     }
 }

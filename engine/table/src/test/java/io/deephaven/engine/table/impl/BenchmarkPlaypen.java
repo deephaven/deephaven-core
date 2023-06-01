@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.parquet.table.ParquetTools;
@@ -104,7 +105,7 @@ public class BenchmarkPlaypen {
         final AutoTuningIncrementalReleaseFilter filter;
         if (incremental) {
             System.out.println("Running test incrementally.");
-            ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
             filter = new AutoTuningIncrementalReleaseFilter(new StreamLoggerImpl(), 0, 1_000_000L, 1.0, true);
             input = viewed.where(filter);
         } else {

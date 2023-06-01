@@ -31,6 +31,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
@@ -672,7 +673,8 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testUpdateIncrementalRandomized() {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 4, 2, 1);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
         final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
         try {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
@@ -694,7 +696,8 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testUpdateIncrementalRandomizedLarge() {
         // this test has large enough size that we will have individual column updates spread across threads
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false, true, 0, 4, 2, 1);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.resetForUnitTests(false, true, 0, 4, 2, 1);
         final boolean old = QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE;
         try {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
