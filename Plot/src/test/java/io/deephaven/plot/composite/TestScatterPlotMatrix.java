@@ -3,19 +3,16 @@
  */
 package io.deephaven.plot.composite;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
-import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,33 +20,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class TestScatterPlotMatrix extends BaseArrayTestCase {
+public class TestScatterPlotMatrix extends RefreshingTableTestCase {
     private final int length = 10;
 
-    private SafeCloseable executionContext;
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
-        executionContext.close();
-    }
-
     public void testScatterPlotMatrix() {
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
         final int[][] ints = new int[length][length];
         final double[][] doubles = new double[length][length];
         final long[][] longs = new long[length][length];
@@ -125,7 +101,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("dimension"));
         }
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        updateGraph.completeCycleForUnitTests();
     }
 
     public void testPointSize() {

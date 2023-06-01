@@ -10,7 +10,6 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.util.annotations.FinalDefault;
@@ -31,8 +30,8 @@ import java.util.function.UnaryOperator;
  * {@link #partitionedTransform(PartitionedTable, BinaryOperator)} or proxied joins with other like-keyed partitioned
  * tables.
  * <p>
- * Note that partitioned tables should {@link NotificationQueue.Dependency depend} on and
- * {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) manage} their
+ * Note that partitioned tables should {@link io.deephaven.engine.updategraph.NotificationQueue.Dependency depend} on
+ * and {@link io.deephaven.engine.liveness.LivenessManager#manage(LivenessReferent) manage} their
  * {@link Table#isRefreshing() refreshing} constituents.
  */
 public interface PartitionedTable extends LivenessNode, LogOutputAppendable {
