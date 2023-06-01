@@ -177,10 +177,10 @@ public class TestByteSegmentedSortedArray extends RefreshingTableTestCase {
             };
             asByte.addUpdateListener(asByteListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() ->
-                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
+                updateGraph.runWithinUnitTestCycle(() ->
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asByte.intSize());
                         final RowSet asByteRowSetCopy = asByte.getRowSet().copy()) {

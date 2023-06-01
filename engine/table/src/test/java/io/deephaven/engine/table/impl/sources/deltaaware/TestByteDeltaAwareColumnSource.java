@@ -53,7 +53,7 @@ public class TestByteDeltaAwareColumnSource {
         final long key1 = 6;
         final byte expected1 = ArrayGenerator.randomBytes(rng, 1)[0];
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final DeltaAwareColumnSource<Byte> source = new DeltaAwareColumnSource<>(byte.class);
         source.ensureCapacity(10);
 
@@ -62,7 +62,7 @@ public class TestByteDeltaAwareColumnSource {
         final byte actual1 = source.getByte(key1);
         assertEquals(NULL_BYTE, actual0);
         assertEquals(expected1, actual1);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test
@@ -74,15 +74,15 @@ public class TestByteDeltaAwareColumnSource {
         final byte expected0_0 = values[0];
         final byte expected0_1 = values[1];
         final byte expected1 = values[2];
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final DeltaAwareColumnSource<Byte> source = new DeltaAwareColumnSource<>(byte.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -96,7 +96,7 @@ public class TestByteDeltaAwareColumnSource {
         assertEquals(NULL_BYTE, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     /**

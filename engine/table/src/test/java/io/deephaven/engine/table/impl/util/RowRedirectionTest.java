@@ -28,9 +28,8 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         }
         rowRedirection.startTrackingPrevValues();
         rowRedirection1.startTrackingPrevValues();
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             for (int i1 = 0; i1 < 3; i1++) {
                 rowRedirection1.put(i1 * 2, i1 * 3);
             }
@@ -43,9 +42,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
             }
         });
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 rowRedirection.put((i + 1) % 3, i * 2);
             }
@@ -73,9 +70,8 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
 
         // Now set current values to 200 + ii * 3
         // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii * 2
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             for (int ii1 = 0; ii1 < 100; ++ii1) {
                 assertEquals(100 + ii1 * 2, rowRedirection.get(ii1));
             }

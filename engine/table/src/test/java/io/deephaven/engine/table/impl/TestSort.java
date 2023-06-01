@@ -3,16 +3,10 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -27,42 +21,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
 @Category(OutOfBandTest.class)
-public class TestSort extends BaseArrayTestCase {
-
-    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestSort.class, "QueryCompiler.logEnabled", false);
-
-    private boolean lastMemoize = false;
-    private boolean oldQueryCompilerLogEnabled;
-    private SafeCloseable executionContext;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-        lastMemoize = QueryTable.setMemoizeResults(false);
-        oldQueryCompilerLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        QueryCompiler.setLogEnabled(oldQueryCompilerLogEnabled);
-        QueryTable.setMemoizeResults(lastMemoize);
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
-        executionContext.close();
-    }
+public class TestSort extends RefreshingTableTestCase {
 
     @FunctionalInterface
     interface ThrowingConsumer<A, T extends Exception> {

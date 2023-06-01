@@ -80,11 +80,6 @@ public class TestParquetTools {
 
     @Before
     public void setUp() throws IOException {
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-
         testRootFile = Files.createTempDirectory(TestParquetTools.class.getName()).toFile();
         testRoot = testRootFile.toString();
     }

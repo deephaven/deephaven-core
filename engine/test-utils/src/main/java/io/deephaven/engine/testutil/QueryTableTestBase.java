@@ -119,8 +119,8 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
                         random, leftTable, leftColumnInfo);
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,

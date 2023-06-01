@@ -74,11 +74,11 @@ public abstract class IncrementalSortRedirectionBase {
         numCycles = remainingRows / cycleIncrement;
 
         // create the initial table
-        ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ugp.<ControlledUpdateGraph>cast().startCycleForUnitTests();
         ms = create(componentSize, numBuckets, numParts, initialSize, cycleIncrement);
         listener = new BlackholeListener(blackhole);
         ms.addUpdateListener(listener);
-        ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ugp.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
     }
 
@@ -110,7 +110,7 @@ public abstract class IncrementalSortRedirectionBase {
     @OperationsPerInvocation(REMAINING_ROWS)
     public void numRows() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+            ugp.<ControlledUpdateGraph>cast().startCycleForUnitTests();
             try {
                 filter.run();
             } finally {

@@ -47,9 +47,8 @@ public class TestDynamicTableWriter {
         writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.convertDateTime("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
-        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph12.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -95,9 +94,7 @@ public class TestDynamicTableWriter {
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row3 = writer.getRowWriter();
@@ -115,8 +112,7 @@ public class TestDynamicTableWriter {
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", (byte) 1, (byte) 17, (byte) 25),
                 charCol("CC", 'A', 'C', 'D'),
@@ -150,8 +146,8 @@ public class TestDynamicTableWriter {
         writer.getSetter("LC").setLong(4);
         writer.getSetter("FC").setFloat(5.5f);
         writer.writeRow();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected1 = newTable(byteCol("BC", (byte) 1),
                 charCol("CC", 'A'),
@@ -174,8 +170,7 @@ public class TestDynamicTableWriter {
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table expected2 = newTable(byteCol("BC", QueryConstants.NULL_BYTE),
                 charCol("CC", QueryConstants.NULL_CHAR),
@@ -202,8 +197,8 @@ public class TestDynamicTableWriter {
 
         addRow(writer, Row.Flags.SingleRow, "Fred", 1);
 
-        UpdateGraph updateGraph5 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph5.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table lonelyFred =
                 TableTools.newTable(TableTools.stringCol("A", "Fred"), TableTools.intCol("B", 1));
@@ -212,34 +207,29 @@ public class TestDynamicTableWriter {
         addRow(writer, Row.Flags.StartTransaction, "Barney", 2);
         addRow(writer, Row.Flags.None, "Betty", 3);
 
-        UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         TstUtils.assertTableEquals(lonelyFred, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Bam-Bam", 4);
 
         TstUtils.assertTableEquals(lonelyFred, result);
-        UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
 
         final Table withRubbles = TableTools.newTable(
                 TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam"), TableTools.intCol("B", 1, 2, 3, 4));
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Wilma", 5);
-        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.StartTransaction, "Pebbles", 6);
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         TstUtils.assertTableEquals(withRubbles, result);
 
         addRow(writer, Row.Flags.EndTransaction, "Wilma", 7);
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(result::run);
+        updateGraph.runWithinUnitTestCycle(result::run);
         final Table allTogether =
                 TableTools.newTable(TableTools.stringCol("A", "Fred", "Barney", "Betty", "Bam-Bam", "Pebbles", "Wilma"),
                         TableTools.intCol("B", 1, 2, 3, 4, 6, 7));

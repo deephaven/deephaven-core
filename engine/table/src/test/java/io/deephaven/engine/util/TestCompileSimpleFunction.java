@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 

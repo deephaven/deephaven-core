@@ -188,8 +188,8 @@ public class SparseSelectTest {
         assertTableEquals(selected, table);
         assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), TableTools.longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -200,8 +200,7 @@ public class SparseSelectTest {
         TableTools.show(table);
         TableTools.show(selected);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), TableTools.longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });

@@ -53,7 +53,7 @@ public class TestShortDeltaAwareColumnSource {
         final long key1 = 6;
         final short expected1 = ArrayGenerator.randomShorts(rng, 1)[0];
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final DeltaAwareColumnSource<Short> source = new DeltaAwareColumnSource<>(short.class);
         source.ensureCapacity(10);
 
@@ -62,7 +62,7 @@ public class TestShortDeltaAwareColumnSource {
         final short actual1 = source.getShort(key1);
         assertEquals(NULL_SHORT, actual0);
         assertEquals(expected1, actual1);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test
@@ -74,15 +74,15 @@ public class TestShortDeltaAwareColumnSource {
         final short expected0_0 = values[0];
         final short expected0_1 = values[1];
         final short expected1 = values[2];
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final DeltaAwareColumnSource<Short> source = new DeltaAwareColumnSource<>(short.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         source.startTrackingPrevValues();
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         source.set(key0, expected0_1);
         source.set(key1, expected1);
 
@@ -96,7 +96,7 @@ public class TestShortDeltaAwareColumnSource {
         assertEquals(NULL_SHORT, actual1_0);
         assertEquals(expected1, actual1_1);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     /**

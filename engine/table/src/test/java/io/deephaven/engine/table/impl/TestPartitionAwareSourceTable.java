@@ -360,8 +360,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         notification.reset();
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(SUT::refresh);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         notification.assertNotInvoked();
 
@@ -387,8 +387,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         errorNotification.reset();
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(SUT::refresh);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         errorNotification.assertInvoked();
 

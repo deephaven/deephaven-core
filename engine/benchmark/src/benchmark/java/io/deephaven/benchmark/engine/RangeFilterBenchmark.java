@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -51,6 +52,7 @@ public class RangeFilterBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
+        TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final BenchmarkTableBuilder builder;
@@ -161,11 +163,11 @@ public class RangeFilterBenchmark {
 
         final R result = function.apply(filtered);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

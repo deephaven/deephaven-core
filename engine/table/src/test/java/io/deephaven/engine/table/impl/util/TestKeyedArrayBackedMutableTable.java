@@ -166,8 +166,8 @@ public class TestKeyedArrayBackedMutableTable {
         mutableInputTable.addRow(randyMap, true, listener);
         SleepUtil.sleep(100);
         listener.assertIncomplete();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(kabut::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, input2), kabut);
         listener.waitForCompletion();
         listener.assertSuccess();
@@ -180,8 +180,7 @@ public class TestKeyedArrayBackedMutableTable {
         mutableInputTable.addRow(randyMap2, false, listener2);
         SleepUtil.sleep(100);
         listener2.assertIncomplete();
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(kabut::run);
+        updateGraph.runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, input2), kabut);
         listener2.waitForCompletion();
         listener2.assertFailure(IllegalArgumentException.class, "Can not edit keys Randy");
@@ -240,8 +239,8 @@ public class TestKeyedArrayBackedMutableTable {
                 CollectionUtil.mapFromArray(String.class, Object.class, "Name", "George", "Employer", "Cogswell");
         mutableInputTable.setRow(defaultValues, 0, cogMap);
         SleepUtil.sleep(100);
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(kabut::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(kabut::run);
         assertTableEquals(TableTools.merge(input, ex2).lastBy("Name"), kabut);
     }
 
@@ -307,8 +306,8 @@ public class TestKeyedArrayBackedMutableTable {
             refreshThread = new Thread(() -> {
                 // If this unexpected interruption happens, the test thread may hang in action.run()
                 // indefinitely. Best to hope it's already queued the pending action and proceed with run.
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
                     try {
                         gate.await();
                     } catch (InterruptedException ignored) {

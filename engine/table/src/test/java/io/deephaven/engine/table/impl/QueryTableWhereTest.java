@@ -90,9 +90,8 @@ public abstract class QueryTableWhereTest {
         assertTableEquals(whereResult, testRefreshingTable(
                 i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph3 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
@@ -103,8 +102,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
@@ -116,8 +114,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i(9));
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 6, 7));
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -128,8 +125,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i(2, 6, 7));
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
             addToTable(table, i(2, 4, 6), col("x", 1, 21, 3), col("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
@@ -173,8 +169,8 @@ public abstract class QueryTableWhereTest {
         assertTableEquals(whereResult, testRefreshingTable(
                 i(2, 6, 8).toTracking(), col("x", 1, 3, 4), col("y", 'a', 'c', 'f')));
 
-        UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 4, 5), col("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
@@ -187,8 +183,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), col("x", 3, 10), col("y", 'e', 'd'));
             table.notifyListeners(i(), i(), i(7, 9));
         });
@@ -202,8 +197,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i(9));
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 6, 7));
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
@@ -214,8 +208,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(base.removed, i(2, 6, 7));
         assertEquals(base.modified, i());
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
             addToTable(table, i(2, 4, 6), col("x", 1, 21, 3), col("y", 'a', 'x', 'c'));
             table.notifyListeners(i(2, 6), i(9), i(4));
@@ -252,107 +245,65 @@ public abstract class QueryTableWhereTest {
         final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-            TestCase.assertTrue(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
         });
 
-        // this will do the notification for table; which should first fire the recorder for setTable1
-        // this will do the notification for table; which should first fire the recorder for setTable2
-        // this will do the notification for table; which should first fire the merged listener for 1
-        // to get table 1 satisfied we need to still fire a notification for the filter execution, then the combined
-        // execution
-        // the merged notification for table 2 goes first
-        // we need to flush our intermediate notification
-        // and our final notification
-        // the next notification should be the merged listener for setTable2
-        // we need to flush our intermediate notification
-        // and our final notification
-        // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
-        // the dynamicFilter1 updates
-        // the dynamicFilter2 updates
-        // now that both filters are complete, we can run the merged listener
-        // and the filter execution
-        // and the combination
-        // and we are done
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(103), col("A", 5), col("B", 8));
             setTable.notifyListeners(i(103), i(), i());
 
-            TestCase.assertFalse(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
             // this will do the notification for table; which should first fire the recorder for setTable1
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
-                    .flushOneNotificationForUnitTests();
+            updateGraph.flushOneNotificationForUnitTests();
             // this will do the notification for table; which should first fire the recorder for setTable2
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
-                    .flushOneNotificationForUnitTests();
+            updateGraph.flushOneNotificationForUnitTests();
             // this will do the notification for table; which should first fire the merged listener for 1
-            UpdateGraph updateGraph7 = ExecutionContext.getContext().getUpdateGraph();
-            boolean flushed = updateGraph7.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            boolean flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
             // to get table 1 satisfied we need to still fire a notification for the filter execution, then the combined
             // execution
             if (QueryTable.FORCE_PARALLEL_WHERE) {
                 // the merged notification for table 2 goes first
-                UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph4.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
 
                 log.debug().append("Flushing parallel notifications for setTable1").endl();
-                TestCase.assertFalse(((QueryTable) setTable1)
-                        .satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+                TestCase.assertFalse(setTable1.satisfied(updateGraph.clock().currentStep()));
                 // we need to flush our intermediate notification
-                UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph3.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
                 // and our final notification
-                UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph2.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
             }
 
-            TestCase.assertTrue(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
             if (!QueryTable.FORCE_PARALLEL_WHERE) {
                 // the next notification should be the merged listener for setTable2
-                UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph2.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
             } else {
                 log.debug().append("Flushing parallel notifications for setTable2").endl();
                 // we need to flush our intermediate notification
-                UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph3.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
                 // and our final notification
-                UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph2.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
             }
 
@@ -360,90 +311,63 @@ public abstract class QueryTableWhereTest {
 
             // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
 
-            TestCase.assertTrue(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
             log.debug().append("Flushing DynamicFilter Notifications.").endl();
 
             // the dynamicFilter1 updates
-            UpdateGraph updateGraph6 = ExecutionContext.getContext().getUpdateGraph();
-            flushed = updateGraph6.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            TestCase.assertTrue(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertFalse(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
             // the dynamicFilter2 updates
-            UpdateGraph updateGraph5 = ExecutionContext.getContext().getUpdateGraph();
-            flushed = updateGraph5.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
             log.debug().append("Flushed DynamicFilter Notifications.").endl();
 
-            TestCase.assertTrue(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
 
             log.debug().append("Checking Composed.").endl();
 
-            TestCase.assertFalse(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
             // now that both filters are complete, we can run the merged listener
-            UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
-            flushed = updateGraph4.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
             if (QueryTable.FORCE_PARALLEL_WHERE) {
-                TestCase.assertFalse(
-                        composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+                TestCase.assertFalse(composed.satisfied(updateGraph.clock().currentStep()));
 
                 // and the filter execution
-                UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph3.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
                 // and the combination
-                UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-                flushed = updateGraph2.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                flushed = updateGraph.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
             }
 
             log.debug().append("Composed flushed.").endl();
 
-            TestCase.assertTrue(
-                    setTable1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    setTable2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter1.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    dynamicFilter2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-            TestCase.assertTrue(
-                    composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
+            TestCase.assertTrue(setTable1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(setTable2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter1.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(dynamicFilter2.satisfied(updateGraph.clock().currentStep()));
+            TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
 
             // and we are done
-            UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-            flushed = updateGraph2.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            flushed = updateGraph.flushOneNotificationForUnitTests();
             TestCase.assertFalse(flushed);
         });
 
@@ -461,9 +385,11 @@ public abstract class QueryTableWhereTest {
         final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
                 col("X", "A", "B", "C", "D", "E"));
 
-        final Table result = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table result = updateGraph.exclusiveLock().computeLocked(
                 () -> filteredTable.whereIn(setTable, "X"));
-        final Table resultInverse = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+        final Table resultInverse = updateGraph.exclusiveLock().computeLocked(
                 () -> filteredTable.whereNotIn(setTable, "X"));
         show(result);
         assertEquals(3, result.size());
@@ -471,8 +397,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(2, resultInverse.size());
         assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(filteredTable, i(6), col("X", "A"));
             filteredTable.notifyListeners(i(6), i(), i());
         });
@@ -482,8 +407,7 @@ public abstract class QueryTableWhereTest {
         assertEquals(2, resultInverse.size());
         assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(7), col("X", "D"));
             setTable.notifyListeners(i(7), i(), i());
         });
@@ -544,12 +468,12 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
         };
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 100; step++) {
             final boolean modSet = random.nextInt(10) < 1;
             final boolean modFiltered = random.nextBoolean();
 
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 if (modSet) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                             setSize, random, setTable, setInfo);
@@ -557,8 +481,7 @@ public abstract class QueryTableWhereTest {
             });
             validate(en);
 
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 if (modFiltered) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                             filteredSize, random, filteredTable, filteredInfo);
@@ -607,20 +530,16 @@ public abstract class QueryTableWhereTest {
                         new IntGenerator(0, 100),
                         new IntGenerator(0, 100)));
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> table.whereIn(table.where("intCol % 25 == 0"), "intCol2=intCol"));
-                }),
+                EvalNugget.from(() -> updateGraph.exclusiveLock().computeLocked(
+                        () -> table.whereIn(table.where("intCol % 25 == 0"), "intCol2=intCol"))),
         };
 
         try {
             for (int step = 0; step < 1000; step++) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast()
-                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                                GenerateTableUpdates.DEFAULT_PROFILE,
-                                size, random, table, filteredInfo));
+                updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, filteredInfo));
                 validate(en);
             }
         } catch (Exception e) {
@@ -632,13 +551,13 @@ public abstract class QueryTableWhereTest {
     public void testWhereInDiamond2() {
         final QueryTable table = testRefreshingTable(i(1, 2, 3).toTracking(), col("x", 1, 2, 3), col("y", 2, 4, 6));
         final Table setTable = table.where("x % 2 == 0").dropColumns("y");
-        final Table filteredTable = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                .computeLocked(() -> table.whereIn(setTable, "y=x"));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Table filteredTable = updateGraph.exclusiveLock().computeLocked(
+                () -> table.whereIn(setTable, "y=x"));
 
         TableTools.show(filteredTable);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(table, i(4), col("x", 4), col("y", 8));
             table.notifyListeners(i(4), i(), i());
         });
@@ -698,14 +617,12 @@ public abstract class QueryTableWhereTest {
         };
 
         try {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             for (int i = 0; i < 100; i++) {
                 log.debug().append("Step = " + i).endl();
 
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast()
-                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                                GenerateTableUpdates.DEFAULT_PROFILE,
-                                filteredSize, random, filteredTable, filteredInfo));
+                updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                        GenerateTableUpdates.DEFAULT_PROFILE, filteredSize, random, filteredTable, filteredInfo));
                 validate(en);
             }
         } catch (Exception e) {
@@ -735,10 +652,10 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> TableTools.merge(growingTable, m2).where("intCol % 3 == 0")),
         };
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 1; ii < 100; ++ii) {
             final int fii = PRIME * ii;
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(growingTable, i(fii), col("intCol", fii));
                 growingTable.notifyListeners(i(fii), i(), i());
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, filteredSize,
@@ -1216,9 +1133,9 @@ public abstract class QueryTableWhereTest {
         final Table filtered = source.where(incrementalReleaseFilter);
         final Table result = filtered.where("A >= 6_000_000L", "A < 7_000_000L");
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (filtered.size() < source.size()) {
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         assertEquals(1_000_000, result.size());

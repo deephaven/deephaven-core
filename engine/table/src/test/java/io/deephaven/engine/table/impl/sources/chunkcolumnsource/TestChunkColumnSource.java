@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -23,23 +24,13 @@ import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class TestChunkColumnSource {
-    @Before
-    public void setUp() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-    }
 
-    @After
-    public void tearDown() throws Exception {
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testSimple() {

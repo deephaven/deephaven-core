@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;

@@ -32,14 +32,14 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
-        final Table densified = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Table densified = updateGraph.sharedLock().computeLocked(
                 () -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph13 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph4 = updateGraph13.<ControlledUpdateGraph>cast();
-        updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added3 = RowSetFactory.fromRange(10000, 11000);
             queryTable.getRowSet().writableCast().insert(added3);
             queryTable.notifyListeners(added3, i(), i());
@@ -48,9 +48,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph3 = updateGraph12.<ControlledUpdateGraph>cast();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added2 = RowSetFactory.fromRange(11001, 11100);
             queryTable.getRowSet().writableCast().insert(added2);
             queryTable.notifyListeners(added2, i(), i());
@@ -59,9 +57,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added1 = RowSetFactory.fromRange(20000, 20100);
             queryTable.getRowSet().writableCast().insert(added1);
             queryTable.notifyListeners(added1, i(), i());
@@ -70,9 +66,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(30000, 30100);
             queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -86,14 +80,13 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final QueryTable queryTable = TstUtils.testRefreshingTable(
                 RowSetFactory.fromRange(0, 100).toTracking());
         final Table sentinelTable = queryTable.updateView("Sentinel=ii");
-        final Table densified = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final Table densified = updateGraph.sharedLock().computeLocked(
                 () -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet removed1 = RowSetFactory.fromRange(0, 100);
             final RowSet added = RowSetFactory.fromRange(10000, 10100);
             queryTable.getRowSet().writableCast().update(added, removed1);
@@ -111,8 +104,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(10000, 10100);
             queryTable.getRowSet().writableCast().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
@@ -148,53 +140,39 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final QueryTable queryTable = getTable(size, random, columnInfo);
         final Table simpleTable = TableTools.newTable(TableTools.col("Sym", "a"), TableTools.intCol("intCol", 30),
                 TableTools.doubleCol("doubleCol", 40.1)).updateView("K=-2L");
-        final Table source = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        final Table source = updateGraph.sharedLock().computeLocked(
                 () -> TableTools.merge(simpleTable, queryTable.updateView("K=k")).flatten());
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0));
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0)
-                                    .select());
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0)
+                                .select()),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.0));
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.0)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5));
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5)
-                                    .select());
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5)
+                                .select()),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 5.0));
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 5.0)),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
-                            .computeLocked(() -> SelectOverheadLimiter
-                                    .clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0).select());
-                },
+                EvalNugget.Sorted.from(
+                        () -> updateGraph.sharedLock()
+                                .computeLocked(() -> SelectOverheadLimiter
+                                        .clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0).select()),
                         "Sym"),
-                EvalNugget.Sorted.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
-                            () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0)
-                                    .select());
-                },
+                EvalNugget.Sorted.from(() -> updateGraph.sharedLock().computeLocked(
+                        () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 10.0)
+                                .select()),
                         "Sym"),
         };
 
@@ -212,19 +190,19 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
                 RowSetFactory.fromRange(0, 100).toTracking());
 
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final Table sentinelTable = queryTable.updateView("Sentinel=k");
-        final Table densified = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+        final Table densified = updateGraph.sharedLock().computeLocked(
                 () -> SelectOverheadLimiter.clampSelectOverhead(sentinelTable, 3.0));
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
         final SingletonLivenessManager densifiedManager = new SingletonLivenessManager(densified);
 
-        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(scopeCloseable::close);
+        updateGraph.exclusiveLock().doLocked(scopeCloseable::close);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added1 = RowSetFactory.fromRange(10000, 11000);
             queryTable.getRowSet().writableCast().insert(added1);
             queryTable.notifyListeners(added1, i(), i());
@@ -233,8 +211,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
             queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -249,7 +226,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         densified.dropReference();
         sentinelTable.dropReference();
 
-        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(densifiedManager::release);
+        updateGraph.exclusiveLock().doLocked(densifiedManager::release);
 
         org.junit.Assert.assertFalse(densified.tryRetainReference());
         org.junit.Assert.assertFalse(sentinelTable.tryRetainReference());

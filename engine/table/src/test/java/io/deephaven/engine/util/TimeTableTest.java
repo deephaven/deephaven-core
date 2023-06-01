@@ -69,9 +69,8 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
     private void tick(long tm) {
         clock.now = tm;
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateSourceCombiner::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }
 

@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
@@ -11,7 +10,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

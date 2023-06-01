@@ -197,9 +197,9 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final long step = updateGraph.clock().currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());

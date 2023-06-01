@@ -4,7 +4,6 @@
 package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;

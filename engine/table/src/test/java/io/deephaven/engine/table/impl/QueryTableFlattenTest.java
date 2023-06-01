@@ -259,8 +259,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                 final RowSetShiftData shifted) {
             ++updateCount;
 
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(modTable::run);
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(modTable::run);
             showWithRowSet(sourceTable);
 
             if (listener instanceof SimpleShiftObliviousListener) {
@@ -335,8 +335,8 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final Table expected = odds.sumBy("B");
         final Table actual = odds.flatten().sumBy("B");
         assertTableEquals(expected, actual);
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(upstream, RowSetFactory.fromRange(100_001, 200_000));
             upstream.notifyListeners(RowSetFactory.fromRange(100_001, 200_000), i(),
                     RowSetFactory.fromRange(0, 100_000));

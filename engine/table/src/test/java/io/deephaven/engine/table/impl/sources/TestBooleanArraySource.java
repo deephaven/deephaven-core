@@ -65,20 +65,20 @@ public class TestBooleanArraySource {
 
     private void testGetChunkGeneric(byte[] values, byte[] newValues, int chunkSize, RowSet rowSet) {
         final BooleanArraySource source;
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 

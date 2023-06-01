@@ -292,8 +292,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     void updateAndValidate(QueryTable src, Table result, ThrowingRunnable<?> updateFunc)
             throws Exception {
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateFunc);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateFunc);
 
         try {
             for (int ii = 0; ii < 2; ii++) {
@@ -401,9 +400,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast()
-                    .runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }

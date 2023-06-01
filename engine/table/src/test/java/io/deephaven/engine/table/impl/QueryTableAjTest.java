@@ -437,8 +437,8 @@ public class QueryTableAjTest {
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
             result1.addUpdateListener(listener);
 
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),
                         stringCol("SingleKey", "Key", "Key", "Key"),
                         byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),

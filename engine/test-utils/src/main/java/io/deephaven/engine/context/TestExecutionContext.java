@@ -1,6 +1,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 
 public class TestExecutionContext {
     public static ExecutionContext createForUnitTests() {
@@ -9,7 +10,7 @@ public class TestExecutionContext {
                 .newQueryScope()
                 .newQueryLibrary()
                 .setQueryCompiler(QueryCompiler.createForUnitTests())
-                .setUpdateGraph(ExecutionContext.getContext().getUpdateGraph())
+                .setUpdateGraph(new ControlledUpdateGraph())
                 .build();
     }
 }

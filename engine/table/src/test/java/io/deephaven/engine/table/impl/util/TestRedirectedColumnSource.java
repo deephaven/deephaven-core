@@ -109,11 +109,10 @@ public class TestRedirectedColumnSource {
         final IncrementalReleaseFilter incFilter = new IncrementalReleaseFilter(stepSz, stepSz);
         final Table live = t.where(incFilter).sort("IntsCol");
         final int chunkSz = stepSz - 7;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
             while (live.size() < t.size()) {
-                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incFilter::run);
+                updateGraph.runWithinUnitTestCycle(incFilter::run);
                 doFillAndCheck(live, "StringsCol", chunk, chunkSz);
             }
         }

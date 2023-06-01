@@ -69,15 +69,14 @@ public abstract class RedirectionBenchBase {
         chunkCapacity = Integer.parseInt(params.getParam("chunkCapacity"));
         skipResultsProcessing = Boolean.parseBoolean(params.getParam("skipResultsProcessing"));
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         final QueryData queryData = getQuery();
         for (int step = 0; step < queryData.steps; ++step) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
         }
         inputTable = queryData.live;
         nFillCols = queryData.fillCols.length;

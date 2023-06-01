@@ -106,8 +106,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         });
         result.getRowSet().writableCast().insert(builder.build());
         result.getRowSet().writableCast().initializePreviousValue();
-        UpdateGraph updateGraph1 = result.getUpdateGraph();
-        updateGraph1.addSource(result);
+        result.getUpdateGraph().addSource(result);
     }
 
     public BaseArrayBackedMutableTable setDescription(String newDescription) {
