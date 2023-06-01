@@ -84,7 +84,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 new IntGenerator(1, 100)));
 
         final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
-                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
+                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "PT01:00:00");
         final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
         EvalNugget[] en = new EvalNugget[] {
