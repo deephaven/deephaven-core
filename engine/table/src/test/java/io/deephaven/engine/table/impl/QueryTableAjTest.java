@@ -3,8 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.JoinMatch;
-import io.deephaven.api.expression.AsOfJoinMatchFactory.AsOfJoinResult;
+import io.deephaven.engine.table.impl.AsOfJoinMatchFactory.AsOfJoinResult;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -19,7 +18,6 @@ import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.Table;
-import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
@@ -36,7 +34,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;

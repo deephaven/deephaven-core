@@ -373,6 +373,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AsOfJoinTable aj) {
+            // TODO: add new as-of join RPC
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(aj.left()))
@@ -381,8 +382,10 @@ class BatchTableRequestBuilder {
             for (JoinMatch match : aj.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
-            // the final columnsToMatch is the comparison column
-            builder.addColumnsToMatch(aj.joinMatch().toRpcString());
+            final String lastColumn = aj.joinMatch().leftColumn().name()
+                    + aj.joinMatch().joinRule().operatorString()
+                    + aj.joinMatch().rightColumn().name();
+            builder.addColumnsToMatch(lastColumn);
             for (JoinAddition addition : aj.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
@@ -390,8 +393,6 @@ class BatchTableRequestBuilder {
         }
 
         private static AsOfJoinTablesRequest.MatchRule adapt(AsOfJoinRule rule) {
-            // todo: fix gRPC?
-            // this looks wrong, but we need to fix or update gRPC
             switch (rule) {
                 case LESS_THAN_EQUAL:
                     return AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL;

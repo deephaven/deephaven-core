@@ -1,12 +1,16 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.api.expression;
+package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.TableOperationsDefaults;
+import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.api.expression.ExpressionParser;
+import io.deephaven.api.expression.SelectFactoryConstants;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,7 +23,12 @@ import java.util.regex.Matcher;
 /**
  * {@link JoinMatch} Factory that accepts final value of either =, &lt;=, or &lt;, &gt; &gt;= and returns a JoinMatch[]
  * and either an {@link AsOfJoinRule}.
+ *
+ * <p>
+ * Deprecated: replace with {@link TableOperationsDefaults#splitToList(String)}, {@link JoinMatch#from(String...)},
+ * {@link AsOfJoinMatch#parseForAj(String)}, and/or {@link AsOfJoinMatch#parseForRaj(String)}.
  */
+@Deprecated
 public class AsOfJoinMatchFactory {
     public static class AsOfJoinResult {
         public final List<JoinMatch> matches;

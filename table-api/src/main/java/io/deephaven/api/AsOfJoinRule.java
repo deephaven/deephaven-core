@@ -19,6 +19,21 @@ public enum AsOfJoinRule {
     GREATER_THAN(">");
     // @formatter:on
 
+    public static AsOfJoinRule parse(String x) {
+        switch (x) {
+            case "<=":
+                return LESS_THAN_EQUAL;
+            case "<":
+                return LESS_THAN;
+            case ">=":
+                return GREATER_THAN_EQUAL;
+            case ">":
+                return GREATER_THAN;
+            default:
+                throw new IllegalArgumentException(String.format("Unable to parse AsOfJoinRule '%s'", x));
+        }
+    }
+
     private final String operatorString;
 
     AsOfJoinRule(String operatorString) {

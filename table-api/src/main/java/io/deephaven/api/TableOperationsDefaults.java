@@ -5,13 +5,17 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.util.ConcurrentMethod;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -161,16 +165,21 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return asOfJoin(rightTable, result.matches, result.joinMatch, Collections.emptyList());
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForAj(matches.get(matches.size() - 1)),
+                Collections.emptyList());
     }
 
     @Override
     default TOPS aj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getAjExpressions(splitToCollection(columnsToMatch));
-        return asOfJoin(rightTable, result.matches, result.joinMatch,
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForAj(matches.get(matches.size() - 1)),
                 JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
@@ -178,16 +187,21 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return asOfJoin(rightTable, result.matches, result.joinMatch, Collections.emptyList());
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForRaj(matches.get(matches.size() - 1)),
+                Collections.emptyList());
     }
 
     @Override
     default TOPS raj(TABLE rightTable, String columnsToMatch, String columnsToAdd) {
-        final AsOfJoinMatchFactory.AsOfJoinResult result =
-                AsOfJoinMatchFactory.getRajExpressions(splitToCollection(columnsToMatch));
-        return asOfJoin(rightTable, result.matches, result.joinMatch,
+        final List<String> matches = splitToList(columnsToMatch);
+        return asOfJoin(
+                rightTable,
+                JoinMatch.from(matches.subList(0, matches.size() - 1)),
+                AsOfJoinMatch.parseForRaj(matches.get(matches.size() - 1)),
                 JoinAddition.from(splitToCollection(columnsToAdd)));
     }
 
@@ -733,8 +747,15 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -------------------------------------------------------------------------------------------
 
     static Collection<String> splitToCollection(String string) {
-        return string.trim().isEmpty() ? Collections.emptyList()
-                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+        return splitToList(string);
+    }
+
+    static List<String> splitToList(String string) {
+        return string.trim().isEmpty()
+                ? Collections.emptyList()
+                : Arrays.stream(string.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
     }
 }

@@ -134,7 +134,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         }
 
         private static AsOfJoinRule adapt(MatchRule rule) {
-            // todo fix gRPC?
+            // TODO: add new as-of join RPC, mark JoinTablesGrpcImpl as deprecated
             // this looks wrong, but we need to also potentially transition the gRPC side, and preserve this old
             // behavior if desired.
             switch (rule) {
