@@ -9,8 +9,8 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -128,8 +128,8 @@ public class DeephavenApiServer {
         scriptSessionProvider.get();
         pluginRegistration.registerAll();
 
-        log.info().append("Starting UGP...").endl();
-        ug.<ControlledUpdateGraph>cast().start();
+        log.info().append("Starting UpdateGraph...").endl();
+        ug.<UpdateGraphProcessor>cast().start();
 
         EngineMetrics.maybeStartStatsCollection();
 
