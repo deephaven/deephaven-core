@@ -185,13 +185,13 @@ public class TestShortSegmentedSortedMultiset extends RefreshingTableTestCase {
             };
             asShort.addUpdateListener(asShortListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                            assertTrue(notify[2].isEmpty());
-                            table.notifyListeners(notify[0], notify[1], notify[2]);
-                        });
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    assertTrue(notify[2].isEmpty());
+                    table.notifyListeners(notify[0], notify[1], notify[2]);
+                });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asShort.intSize())) {
                     checkSsm(ssm, valueSource.getChunk(getContext, asShort.getRowSet()).asShortChunk(), countNull, desc);

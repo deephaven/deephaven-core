@@ -984,8 +984,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                 public void onGetSnapshot() {
                                     final ControlledUpdateGraph updateGraph =
                                             ExecutionContext.getContext().getUpdateGraph().cast();
-                                    updateGraph.runWithinUnitTestCycle(() ->
-                                            GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                    updateGraph.runWithinUnitTestCycle(
+                                            () -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                                                     GenerateTableUpdates.DEFAULT_PROFILE, size,
                                                     random, sourceTable, columnInfo));
                                 }
@@ -1190,7 +1190,6 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         Assert.equals(remoteClient.commandQueue.size(), "remoteClient.getValue().commandQueue.size()", 3); // mod, add,
                                                                                                            // snaphot
         remoteNugget.flushClientEvents();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(updateSourceCombiner::run);
         remoteNugget.validate("new viewport with modification");
     }

@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -176,10 +177,10 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
             };
             asLong.addUpdateListener(asLongListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() ->
-                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
+                updateGraph.runWithinUnitTestCycle(() ->
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asLong.intSize());
                         final RowSet asLongRowSetCopy = asLong.getRowSet().copy()) {
@@ -220,13 +221,13 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
             };
             asLong.addUpdateListener(asLongListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                            assertTrue(notify[2].isEmpty());
-                            table.notifyListeners(notify[0], notify[1], notify[2]);
-                        });
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    assertTrue(notify[2].isEmpty());
+                    table.notifyListeners(notify[0], notify[1], notify[2]);
+                });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asLong.intSize());
                      final RowSet asLongRowSetCopy = asLong.getRowSet().copy()) {

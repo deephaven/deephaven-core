@@ -8,7 +8,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;

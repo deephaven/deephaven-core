@@ -12,7 +12,6 @@ import io.deephaven.chunk.ObjectChunk;
 
 import io.deephaven.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -28,6 +27,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.base.testing.Shuffle;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.Rule;
