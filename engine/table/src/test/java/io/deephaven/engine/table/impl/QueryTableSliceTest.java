@@ -371,13 +371,13 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final long jj = j;
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            RowSet added1 = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
-                            upTable.getRowSet().writableCast().insert(added1);
-                            TableUpdate update =
-                                    new TableUpdateImpl(added1, RowSetFactory.empty(),
-                                            RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-                            upTable.notifyListeners(update);
-                        });
+                    RowSet added1 = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
+                    upTable.getRowSet().writableCast().insert(added1);
+                    TableUpdate update =
+                            new TableUpdateImpl(added1, RowSetFactory.empty(),
+                                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                    upTable.notifyListeners(update);
+                });
 
                 TstUtils.validate("", en);
             }

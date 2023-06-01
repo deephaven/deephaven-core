@@ -107,10 +107,10 @@ public class TestWindowCheck {
                 UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
                 UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            advanceTime(clock, en);
-                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
-                                    random, table, columnInfo);
-                        });
+                    advanceTime(clock, en);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
+                            random, table, columnInfo);
+                });
                 TstUtils.validate("Step " + step, en);
             } else {
                 UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
@@ -207,7 +207,8 @@ public class TestWindowCheck {
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < ExecutionContext.getContext().getUpdateGraph()
                 .clock().currentStep()) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
@@ -266,7 +267,8 @@ public class TestWindowCheck {
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < ExecutionContext.getContext().getUpdateGraph()
                 .clock().currentStep()) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);

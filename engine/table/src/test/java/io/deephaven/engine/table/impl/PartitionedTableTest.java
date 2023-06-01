@@ -290,19 +290,19 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final int iteration = ii + 1;
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final long baseLocation = iteration * 10L;
-                    final RowSet addRowSet = RowSetFactory.fromRange(baseLocation, baseLocation + 4);
-                    final int[] sentinels =
-                            {iteration * 5, iteration * 5 + 1, iteration * 5 + 2, iteration * 5 + 3, iteration * 5 + 4};
-                    addToTable(sourceTable, addRowSet, intCol("Key", 1, 3, iteration, iteration - 1, iteration * 2),
-                            intCol("Sentinel", sentinels), col("Sym", "aa", "bb", "cc", "dd", "ee"),
-                            doubleCol("DoubleCol", 2.2, 3.3, 4.4, 5.5, 6.6));
-                    sourceTable.notifyListeners(addRowSet, i(), i());
-                    if (printTableUpdates) {
-                        System.out.println("Source Table, iteration=" + iteration + ", added=" + addRowSet);
-                        TableTools.showWithRowSet(sourceTable);
-                    }
-                });
+                final long baseLocation = iteration * 10L;
+                final RowSet addRowSet = RowSetFactory.fromRange(baseLocation, baseLocation + 4);
+                final int[] sentinels =
+                        {iteration * 5, iteration * 5 + 1, iteration * 5 + 2, iteration * 5 + 3, iteration * 5 + 4};
+                addToTable(sourceTable, addRowSet, intCol("Key", 1, 3, iteration, iteration - 1, iteration * 2),
+                        intCol("Sentinel", sentinels), col("Sym", "aa", "bb", "cc", "dd", "ee"),
+                        doubleCol("DoubleCol", 2.2, 3.3, 4.4, 5.5, 6.6));
+                sourceTable.notifyListeners(addRowSet, i(), i());
+                if (printTableUpdates) {
+                    System.out.println("Source Table, iteration=" + iteration + ", added=" + addRowSet);
+                    TableTools.showWithRowSet(sourceTable);
+                }
+            });
             validate("iteration = " + iteration, en);
         }
     }
@@ -401,7 +401,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
         updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> TestCase.assertTrue(
-                        aa2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())));
+                aa2.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())));
 
         // We need to flush one notification: one for the source table because we do not require an intermediate
         // view table in this case
@@ -794,13 +794,13 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final boolean evenStep = step.longValue() % 2 == 0;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    base.notifyListeners(new TableUpdateImpl(
-                            RowSetFactory.empty(),
-                            RowSetFactory.empty(),
-                            evenStep ? evenModifies.copy() : oddModifies.copy(),
-                            RowSetShiftData.EMPTY,
-                            modifiedColumnSet));
-                });
+                base.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        evenStep ? evenModifies.copy() : oddModifies.copy(),
+                        RowSetShiftData.EMPTY,
+                        modifiedColumnSet));
+            });
 
             final Table[] tables = LongStream.range(0, 10).mapToObj((final long II) -> {
                 final boolean evenPos = II % 2 == 0;

@@ -121,11 +121,11 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
                 Random random) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
-                            random, leftTable, leftColumnInfo);
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
-                            random, rightTable, rightColumnInfo);
-                });
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
+                        random, leftTable, leftColumnInfo);
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
+                        random, rightTable, rightColumnInfo);
+            });
         }
 
         @Override

@@ -309,14 +309,14 @@ public class TestKeyedArrayBackedMutableTable {
                 // indefinitely. Best to hope it's already queued the pending action and proceed with run.
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            try {
-                                gate.await();
-                            } catch (InterruptedException ignored) {
-                                // If this unexpected interruption happens, the test thread may hang in action.run()
-                                // indefinitely. Best to hope it's already queued the pending action and proceed with run.
-                            }
-                            table.run();
-                        });
+                    try {
+                        gate.await();
+                    } catch (InterruptedException ignored) {
+                        // If this unexpected interruption happens, the test thread may hang in action.run()
+                        // indefinitely. Best to hope it's already queued the pending action and proceed with run.
+                    }
+                    table.run();
+                });
             });
 
             refreshThread.start();

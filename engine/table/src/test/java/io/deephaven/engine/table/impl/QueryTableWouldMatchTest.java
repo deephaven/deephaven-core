@@ -183,19 +183,19 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             // Tick both of them, and the table itself
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
-                    textTable.notifyListeners(i(), i(), i(0, 2));
+                addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
+                textTable.notifyListeners(i(), i(), i(0, 2));
 
-                    addToTable(t1, i(0, 1, 4, 11),
-                            col("Text", "Yo", "Hey", "Boat", "Yo"),
-                            col("Number", 100, 1, 300, 0),
-                            col("Bool", true, false, false, true));
-                    removeRows(t1, i(3));
-                    t1.notifyListeners(i(11), i(3), i(0, 1, 4));
+                addToTable(t1, i(0, 1, 4, 11),
+                        col("Text", "Yo", "Hey", "Boat", "Yo"),
+                        col("Number", 100, 1, 300, 0),
+                        col("Bool", true, false, false, true));
+                removeRows(t1, i(3));
+                t1.notifyListeners(i(11), i(3), i(0, 1, 4));
 
-                    addToTable(numberTable, i(3, 5), col("Number", 0, 1));
-                    numberTable.notifyListeners(i(3, 5), i(), i());
-                });
+                addToTable(numberTable, i(3, 5), col("Number", 0, 1));
+                numberTable.notifyListeners(i(3, 5), i(), i());
+            });
 
             show(t1);
             show(textTable);
@@ -312,27 +312,27 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 final int doit = i & 0x3;
                 UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            if (modSet) {
-                                if (doit == 0 || doit == 2) {
-                                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                            setSize, random, symSetTableBase, symSetInfo);
-                                }
+                    if (modSet) {
+                        if (doit == 0 || doit == 2) {
+                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                    setSize, random, symSetTableBase, symSetInfo);
+                        }
 
-                                if (doit == 1 || doit == 2) {
-                                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                            setSize, random, numSetTableBase, numSetInfo);
-                                }
-                            }
-                        });
+                        if (doit == 1 || doit == 2) {
+                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                    setSize, random, numSetTableBase, numSetInfo);
+                        }
+                    }
+                });
                 validate(en);
 
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            if (modFiltered) {
-                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                        filteredSize, random, matchTable, filteredInfo);
-                            }
-                        });
+                    if (modFiltered) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                filteredSize, random, matchTable, filteredInfo);
+                    }
+                });
                 validate(en);
             }
         } catch (Exception e) {

@@ -690,7 +690,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table exactJoinImpl(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         final UpdateGraph updateGraph = getUpdateGraph(table);
-//        final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(this, table);
+        // final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(this, table);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget(
                     "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)

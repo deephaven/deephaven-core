@@ -177,8 +177,8 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 if (appendOnly) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                     updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                                    generateAppends(stepSize, result.random, result.t, result.infos);
-                                });
+                        generateAppends(stepSize, result.random, result.t, result.infos);
+                    });
                     validate("Table", nuggets);
                 } else {
                     simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);

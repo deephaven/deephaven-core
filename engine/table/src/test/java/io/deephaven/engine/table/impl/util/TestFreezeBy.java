@@ -198,9 +198,9 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         allowingError(() -> {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(input, i(3), stringCol("Key", "A"), intCol("Sentinel", 4));
-                    input.notifyListeners(i(3), i(), i());
-                });
+                addToTable(input, i(3), stringCol("Key", "A"), intCol("Sentinel", 4));
+                input.notifyListeners(i(3), i(), i());
+            });
         }, exs -> {
             if (exs.size() != 1) {
                 return false;

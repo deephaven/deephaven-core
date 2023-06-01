@@ -297,9 +297,11 @@ public abstract class QueryTableWhereTest {
                     composed.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
             // this will do the notification for table; which should first fire the recorder for setTable1
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .flushOneNotificationForUnitTests();
             // this will do the notification for table; which should first fire the recorder for setTable2
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .flushOneNotificationForUnitTests();
             // this will do the notification for table; which should first fire the merged listener for 1
             UpdateGraph updateGraph7 = ExecutionContext.getContext().getUpdateGraph();
             boolean flushed = updateGraph7.<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
@@ -548,20 +550,20 @@ public abstract class QueryTableWhereTest {
 
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    if (modSet) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                setSize, random, setTable, setInfo);
-                    }
-                });
+                if (modSet) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            setSize, random, setTable, setInfo);
+                }
+            });
             validate(en);
 
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    if (modFiltered) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                filteredSize, random, filteredTable, filteredInfo);
-                    }
-                });
+                if (modFiltered) {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                            filteredSize, random, filteredTable, filteredInfo);
+                }
+            });
             validate(en);
         }
     }
@@ -615,8 +617,10 @@ public abstract class QueryTableWhereTest {
         try {
             for (int step = 0; step < 1000; step++) {
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                        size, random, table, filteredInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE,
+                                size, random, table, filteredInfo));
                 validate(en);
             }
         } catch (Exception e) {
@@ -698,8 +702,10 @@ public abstract class QueryTableWhereTest {
                 log.debug().append("Step = " + i).endl();
 
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                        filteredSize, random, filteredTable, filteredInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE,
+                                filteredSize, random, filteredTable, filteredInfo));
                 validate(en);
             }
         } catch (Exception e) {
@@ -733,11 +739,11 @@ public abstract class QueryTableWhereTest {
             final int fii = PRIME * ii;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(growingTable, i(fii), col("intCol", fii));
-                    growingTable.notifyListeners(i(fii), i(), i());
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, filteredSize,
-                            random, randomTable, filteredInfo);
-                });
+                addToTable(growingTable, i(fii), col("intCol", fii));
+                growingTable.notifyListeners(i(fii), i(), i());
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, filteredSize,
+                        random, randomTable, filteredInfo);
+            });
             validate(en);
         }
     }

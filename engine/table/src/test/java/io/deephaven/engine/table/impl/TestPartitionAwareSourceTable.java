@@ -288,7 +288,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             assertIsSatisfied();
             assertRowSetEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
-                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .completeCycleForUnitTests();
             }
         }
     }

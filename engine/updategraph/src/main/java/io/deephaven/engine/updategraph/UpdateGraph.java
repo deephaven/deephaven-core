@@ -192,7 +192,7 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     }
 
     default <UP_TYPE extends UpdateGraph> UP_TYPE cast() {
-        //noinspection unchecked
+        // noinspection unchecked
         return (UP_TYPE) this;
     }
 }

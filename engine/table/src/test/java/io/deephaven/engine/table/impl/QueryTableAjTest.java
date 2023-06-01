@@ -439,15 +439,15 @@ public class QueryTableAjTest {
 
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(right, i(4, 5, 6),
-                            stringCol("SingleKey", "Key", "Key", "Key"),
-                            byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
-                            longCol("LongCol", 4, 6, 5),
-                            doubleCol("DoubleCol", 4, 6, 5),
-                            stringCol("StringCol", "A", "D", "C"),
-                            col("BoolCol", null, true, false));
-                    right.notifyListeners(i(4, 5, 6), i(), i());
-                });
+                addToTable(right, i(4, 5, 6),
+                        stringCol("SingleKey", "Key", "Key", "Key"),
+                        byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
+                        longCol("LongCol", 4, 6, 5),
+                        doubleCol("DoubleCol", 4, 6, 5),
+                        stringCol("StringCol", "A", "D", "C"),
+                        col("BoolCol", null, true, false));
+                right.notifyListeners(i(4, 5, 6), i(), i());
+            });
 
             assertNotNull(listener.originalException());
             assertEquals(

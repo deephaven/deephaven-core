@@ -512,18 +512,18 @@ public class QueryTableSelectUpdateTest {
 
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final long keyToAdd = fstep + 1;
-                    final RowSet addedRowSet = i(keyToAdd);
-                    final RowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
-                    addToTable(rightTable, addedRowSet);
-                    removeRows(rightTable, removedRowSet);
-                    rightTable.notifyListeners(addedRowSet, removedRowSet, i());
+                final long keyToAdd = fstep + 1;
+                final RowSet addedRowSet = i(keyToAdd);
+                final RowSet removedRowSet = (fstep % 2 == 0) ? i(fstep) : i();
+                addToTable(rightTable, addedRowSet);
+                removeRows(rightTable, removedRowSet);
+                rightTable.notifyListeners(addedRowSet, removedRowSet, i());
 
-                    if (fstep % 100 == 99) {
-                        addToTable(leftTable, i(fstep));
-                        leftTable.notifyListeners(i(fstep), i(), i());
-                    }
-                });
+                if (fstep % 100 == 99) {
+                    addToTable(leftTable, i(fstep));
+                    leftTable.notifyListeners(i(fstep), i(), i());
+                }
+            });
 
             System.gc();
             RuntimeMemory.getInstance().read(sample);

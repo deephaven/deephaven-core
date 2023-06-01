@@ -560,7 +560,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
                 if (mod1) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table1, info1));
+                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> GenerateTableUpdates.generateTableUpdates(size, random, table1, info1));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
@@ -568,7 +569,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
                 if (mod2) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table2, info2));
+                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> GenerateTableUpdates.generateTableUpdates(size, random, table2, info2));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
@@ -576,7 +578,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
                 if (mod3) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(size, random, table3, info3));
+                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> GenerateTableUpdates.generateTableUpdates(size, random, table3, info3));
                 } else {
                     clock.startUpdateCycle();
                     clock.completeUpdateCycle();
@@ -663,9 +666,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int fii = PRIME * ii;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(table, i(fii), col("Sentinel", fii));
-                    table.notifyListeners(i(fii), i(), i());
-                });
+                addToTable(table, i(fii), col("Sentinel", fii));
+                table.notifyListeners(i(fii), i(), i());
+            });
         }
 
         TableTools.show(result, 100);
@@ -719,18 +722,18 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int fii = 2 * PRIME * ii + 1;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final long currKey = table.getRowSet().lastRowKey();
-                    removeRows(table, i(currKey));
-                    addToTable(table, i(fii), col("Sentinel", 1));
+                final long currKey = table.getRowSet().lastRowKey();
+                removeRows(table, i(currKey));
+                addToTable(table, i(fii), col("Sentinel", 1));
 
-                    TableUpdateImpl update = new TableUpdateImpl();
-                    update.added = i(fii);
-                    update.removed = i(currKey);
-                    update.modified = i();
-                    update.shifted = RowSetShiftData.EMPTY;
-                    update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                    table.notifyListeners(update);
-                });
+                TableUpdateImpl update = new TableUpdateImpl();
+                update.added = i(fii);
+                update.removed = i(currKey);
+                update.modified = i();
+                update.shifted = RowSetShiftData.EMPTY;
+                update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                table.notifyListeners(update);
+            });
             validate(ev);
         }
     }
@@ -796,21 +799,21 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             // Manually apply shift.
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final long currKey = table.getRowSet().lastRowKey();
-                    // Manually apply shift.
-                    removeRows(table, i(currKey));
-                    addToTable(table, i(fii), col("Sentinel", 1));
+                final long currKey = table.getRowSet().lastRowKey();
+                // Manually apply shift.
+                removeRows(table, i(currKey));
+                addToTable(table, i(fii), col("Sentinel", 1));
 
-                    TableUpdateImpl update = new TableUpdateImpl();
-                    update.added = i();
-                    update.removed = i();
-                    update.modified = i();
-                    final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
-                    builder.shiftRange(0, currKey, SHIFT_SIZE);
-                    update.shifted = builder.build();
-                    update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                    table.notifyListeners(update);
-                });
+                TableUpdateImpl update = new TableUpdateImpl();
+                update.added = i();
+                update.removed = i();
+                update.modified = i();
+                final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
+                builder.shiftRange(0, currKey, SHIFT_SIZE);
+                update.shifted = builder.build();
+                update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
+                table.notifyListeners(update);
+            });
             validate(ev);
         }
     }
@@ -921,9 +924,9 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int fii = PRIME * ii;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(table, i(fii), col("Sentinel", fii));
-                    table.notifyListeners(i(fii), i(), i());
-                });
+                addToTable(table, i(fii), col("Sentinel", fii));
+                table.notifyListeners(i(fii), i(), i());
+            });
         }
     }
 
@@ -996,19 +999,19 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int lastNextIdx = ((step + 1) * stepSize);
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final RowSet addRowSet = RowSetFactory.fromRange(firstNextIdx, lastNextIdx);
+                final RowSet addRowSet = RowSetFactory.fromRange(firstNextIdx, lastNextIdx);
 
-                    final int[] addInts = new int[stepSize];
-                    final char[] addChars = new char[stepSize];
+                final int[] addInts = new int[stepSize];
+                final char[] addChars = new char[stepSize];
 
-                    for (int ii = 0; ii < stepSize; ++ii) {
-                        addInts[ii] = firstNextIdx + ii;
-                        addChars[ii] = (char) ('a' + ((firstNextIdx + ii) % 26));
-                    }
+                for (int ii = 0; ii < stepSize; ++ii) {
+                    addInts[ii] = firstNextIdx + ii;
+                    addChars[ii] = (char) ('a' + ((firstNextIdx + ii) % 26));
+                }
 
-                    addToTable(testRefreshingTable, addRowSet, intCol("IntCol", addInts), charCol("CharCol", addChars));
-                    testRefreshingTable.notifyListeners(addRowSet, i(), i());
-                });
+                addToTable(testRefreshingTable, addRowSet, intCol("IntCol", addInts), charCol("CharCol", addChars));
+                testRefreshingTable.notifyListeners(addRowSet, i(), i());
+            });
 
             final long end = System.currentTimeMillis();
             final long stepDuration = end - stepStart;

@@ -116,20 +116,20 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
                 UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
+                    unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
-                            final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
-                            for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
-                                final UnitTestTimeSeriesFilter refreshFilter = ref.get();
-                                if (refreshFilter == null) {
-                                    collectedRefs.add(ref);
-                                } else {
-                                    refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
-                                    refreshFilter.run();
-                                }
-                            }
-                            filtersToRefresh.removeAll(collectedRefs);
-                        });
+                    final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
+                    for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
+                        final UnitTestTimeSeriesFilter refreshFilter = ref.get();
+                        if (refreshFilter == null) {
+                            collectedRefs.add(ref);
+                        } else {
+                            refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
+                            refreshFilter.run();
+                        }
+                    }
+                    filtersToRefresh.removeAll(collectedRefs);
+                });
                 TstUtils.validate("time update " + ii, en);
             }
         }

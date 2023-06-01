@@ -556,7 +556,8 @@ public class QueryTableJoinTest {
 
         System.out.println("Notifying listeners of modification.");
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
+        updateGraph1.<ControlledUpdateGraph>cast()
+                .runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
         System.out.println("Finished notifying listeners of modification.");
         TstUtils.validate(en);
 

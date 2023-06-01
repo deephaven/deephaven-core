@@ -96,7 +96,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 () -> (QueryTable) treed.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) treed,
                         WhereFilterFactory.getExpressions("Sentinel in 4, 6, 9, 11, 12, 13, 14, 15")));
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+                .startCycleForUnitTests();
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
@@ -853,7 +854,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     dynamicTable.addUpdateListener(listener);
                 }
                 lastResultSize = results.size();
-                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .completeCycleForUnitTests();
 
                 if (beforeStartAndAfterCycle) {
                     final List<Table> beforeStartAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
@@ -1275,7 +1277,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             if (withReset) {
                 while (((QueryTable) slowed).getLastNotificationStep() != ExecutionContext.getContext().getUpdateGraph()
                         .clock().currentStep()) {
-                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                            .flushOneNotificationForUnitTests();
                 }
             }
             final Table result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
@@ -1393,7 +1396,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (withReset) {
             while (((QueryTable) slowed).getLastNotificationStep() != ExecutionContext.getContext().getUpdateGraph()
                     .clock().currentStep()) {
-                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .flushOneNotificationForUnitTests();
             }
         }
         final PartitionedTable result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);

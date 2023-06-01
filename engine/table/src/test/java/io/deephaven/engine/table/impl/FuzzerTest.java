@@ -122,9 +122,9 @@ public class FuzzerTest {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    System.out.println("Step = " + fstep);
-                    timeTable.run();
-                });
+                System.out.println("Step = " + fstep);
+                timeTable.run();
+            });
             if (realtime) {
                 Thread.sleep(1000);
             } else {
@@ -158,9 +158,9 @@ public class FuzzerTest {
                 final int fstep = step;
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            System.out.println("Step = " + fstep);
-                            timeTable.run();
-                        });
+                    System.out.println("Step = " + fstep);
+                    timeTable.run();
+                });
                 Thread.sleep(fuzzDescriptor.sleepPerStep);
             }
         }
