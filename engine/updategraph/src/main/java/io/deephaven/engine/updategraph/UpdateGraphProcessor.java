@@ -659,7 +659,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         if (!ALLOW_UNIT_TEST_MODE) {
             // if we are in unit test mode we never want to start the UGP
             sources.add(updateSource);
-            this.<ControlledUpdateGraph>cast().start();
+            start();
         }
     }
 
