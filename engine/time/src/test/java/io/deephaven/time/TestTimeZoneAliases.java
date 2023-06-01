@@ -37,4 +37,16 @@ public class TestTimeZoneAliases extends BaseArrayTestCase {
         }
     }
 
+    public void testAddRmAlias() {
+        final String alias = "BA";
+        final String tz = "America/Argentina/Buenos_Aires";
+        TestCase.assertFalse(TimeZoneAliases.rmAlias(alias));
+        TestCase.assertFalse(TimeZoneAliases.getAllZones().containsKey(alias));
+        TimeZoneAliases.addAlias(alias, tz);
+        TestCase.assertTrue(TimeZoneAliases.getAllZones().containsKey(alias));
+        TestCase.assertEquals(ZoneId.of(tz), TimeZoneAliases.zoneId(alias));
+        TestCase.assertEquals(alias, TimeZoneAliases.zoneName(ZoneId.of(tz)));
+        TestCase.assertTrue(TimeZoneAliases.rmAlias(alias));
+        TestCase.assertFalse(TimeZoneAliases.getAllZones().containsKey(alias));
+    }
 }

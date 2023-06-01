@@ -1700,6 +1700,19 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.timeZone());
     }
 
+    public void testTimeZoneAliasAddRm() {
+        final String alias = "BA";
+        final String tz = "America/Argentina/Buenos_Aires";
+        TestCase.assertFalse(DateTimeUtils.timeZoneAliasRm(alias));
+        TestCase.assertFalse(TimeZoneAliases.getAllZones().containsKey(alias));
+        DateTimeUtils.timeZoneAliasAdd(alias, tz);
+        TestCase.assertTrue(TimeZoneAliases.getAllZones().containsKey(alias));
+        TestCase.assertEquals(ZoneId.of(tz), TimeZoneAliases.zoneId(alias));
+        TestCase.assertEquals(alias, TimeZoneAliases.zoneName(ZoneId.of(tz)));
+        TestCase.assertTrue(DateTimeUtils.timeZoneAliasRm(alias));
+        TestCase.assertFalse(TimeZoneAliases.getAllZones().containsKey(alias));
+    }
+
     public void testLowerBin() {
         final long second = 1000000000L;
         final long minute = 60 * second;

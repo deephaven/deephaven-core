@@ -116,6 +116,43 @@ def time_zone(tz: Optional[str]) -> TimeZone:
         raise DHError(e) from e
 
 
+def time_zone_alias_add(alias: str, tz: str) -> None:
+    """ Adds a new time zone alias.
+
+    Args:
+        alias (str): Alias name.
+        tz (str): Time zone name.
+
+    Returns:
+        None
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.timeZoneAliasAdd(alias, tz)
+    except Exception as e:
+        raise DHError(e) from e
+
+
+def time_zone_alias_rm(alias: str) -> bool:
+    """ Removes a time zone alias.
+
+    Args:
+        alias (str): Alias name.
+
+    Returns:
+        True if the alias was present; False if the alias was not present.
+
+    Raises:
+        DHError
+    """
+    try:
+        return _JDateTimeUtils.timeZoneAliasRm(alias)
+    except Exception as e:
+        raise DHError(e) from e
+
+
 # endregion
 
 # region Conversions: Time Units

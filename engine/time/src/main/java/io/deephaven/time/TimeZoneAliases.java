@@ -43,6 +43,7 @@ public class TimeZoneAliases {
          *
          * @param alias alias name
          * @param zoneId time zone id name
+         * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
          */
         public void addAlias(@NotNull final String alias, @NotNull final String zoneId) {
             Require.neqNull(alias, "alias");
@@ -67,6 +68,28 @@ public class TimeZoneAliases {
             aliasMap.put(alias, zoneId);
             reverseAliasMap.put(zoneId, alias);
             allZones.put(alias, tz);
+        }
+
+        /**
+         * Removes a time zone alias.
+         *
+         * @param alias alias name.
+         * @return true if the alias was present; false if the alias was not present.
+         * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+         */
+        public boolean rmAlias(@NotNull final String alias) {
+            Require.neqNull(alias, "alias");
+
+            final ZoneId zid = allZones.remove(alias);
+
+            if (zid == null) {
+                return false;
+            }
+
+            final String zidStr = aliasMap.remove(alias);
+            reverseAliasMap.remove(zidStr);
+
+            return true;
         }
 
         /**
@@ -209,4 +232,25 @@ public class TimeZoneAliases {
         return INSTANCE.getAllZones();
     }
 
+    /**
+     * Adds a new time zone alias.
+     *
+     * @param alias alias name
+     * @param zoneId time zone id name
+     * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+     */
+    public static void addAlias(@NotNull final String alias, @NotNull final String zoneId) {
+        INSTANCE.addAlias(alias, zoneId);
+    }
+
+    /**
+     * Removes a time zone alias.
+     *
+     * @param alias alias name.
+     * @return true if the alias was present; false if the alias was not present.
+     * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+     */
+    public static boolean rmAlias(@NotNull final String alias) {
+        return INSTANCE.rmAlias(alias);
+    }
 }

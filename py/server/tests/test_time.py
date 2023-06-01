@@ -66,6 +66,23 @@ class TimeTestCase(BaseTestCase):
         tz = time_zone(None)
         self.assertEqual(str(tz), "Etc/UTC")
 
+    def test_time_zone_alias_add_rm(self):
+        alias = "TestAlias"
+        tz_str = "Etc/UTC"
+
+        with self.assertRaises(DHError) as cm:
+            time_zone(alias)
+
+        self.assertFalse(time_zone_alias_rm(alias))
+        time_zone_alias_add(alias, tz_str)
+        tz = time_zone(alias)
+        self.assertEqual(str(tz), tz_str)
+        self.assertTrue(time_zone_alias_rm(alias))
+
+        with self.assertRaises(DHError) as cm:
+            time_zone(alias)
+
+
     # endregion
     
     # region: Conversions: Time Units

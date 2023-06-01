@@ -148,7 +148,7 @@ public class DateTimeUtils {
      * One 365 day year in nanoseconds. This is 365 days of wall time and does not take into account calendar
      * adjustments.
      */
-    public static final long YEAR_365 = 365*DAY;
+    public static final long YEAR_365 = 365 * DAY;
 
     /**
      * One average year in nanoseconds. This is 365.2425 days of wall time and does not take into account calendar
@@ -496,6 +496,28 @@ public class DateTimeUtils {
      */
     public static ZoneId timeZone() {
         return ZoneId.systemDefault();
+    }
+
+    /**
+     * Adds a new time zone alias.
+     *
+     * @param alias alias name
+     * @param timeZone time zone id name
+     * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+     */
+    public static void timeZoneAliasAdd(@NotNull final String alias, @NotNull final String timeZone) {
+        TimeZoneAliases.addAlias(alias, timeZone);
+    }
+
+    /**
+     * Removes a time zone alias.
+     *
+     * @param alias alias name.
+     * @return true if the alias was present; false if the alias was not present.
+     * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+     */
+    public static boolean timeZoneAliasRm(@NotNull final String alias) {
+        return TimeZoneAliases.rmAlias(alias);
     }
 
     // endregion
