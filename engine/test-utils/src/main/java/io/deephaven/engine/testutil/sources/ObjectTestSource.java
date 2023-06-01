@@ -43,7 +43,8 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     protected Long2ObjectOpenHashMap<T> prevData;
 
     private final UpdateCommitter<ObjectTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), ObjectTestSource::flushPrevious);
+            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                    ObjectTestSource::flushPrevious);
 
     // region empty constructor
     public ObjectTestSource(Class<T> type) {

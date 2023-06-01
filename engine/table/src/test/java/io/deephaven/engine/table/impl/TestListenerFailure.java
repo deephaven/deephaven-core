@@ -41,9 +41,9 @@ public class TestListenerFailure extends RefreshingTableTestCase {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
-                    source.notifyListeners(i(4, 5), i(), i());
-                });
+                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
+                source.notifyListeners(i(4, 5), i(), i());
+            });
             return null;
         }, TestListenerFailure::isNpe);
 
@@ -106,9 +106,9 @@ public class TestListenerFailure extends RefreshingTableTestCase {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
-                    source.notifyListeners(i(4, 5), i(), i());
-                });
+                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
+                source.notifyListeners(i(4, 5), i(), i());
+            });
             return null;
         }, TestListenerFailure::isFilterNpe);
 

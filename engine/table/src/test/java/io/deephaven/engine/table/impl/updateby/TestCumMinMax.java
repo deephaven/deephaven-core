@@ -141,7 +141,8 @@ public class TestCumMinMax extends BaseUpdateByTest {
         for (int ii = 0; ii < 100; ii++) {
             if (appendOnly) {
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
                 TstUtils.validate("Table", nuggets);
             } else {
                 simulateShiftAwareStep(100, billy, t, result.infos, nuggets);

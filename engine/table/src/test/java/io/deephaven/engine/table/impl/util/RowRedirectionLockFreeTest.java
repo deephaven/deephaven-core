@@ -199,23 +199,23 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
-                    keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
-                    final Random rng = new Random(step);
-                    final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
-                    // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-                    long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
-                    final WritableRowRedirectionLockFree ix = index;
-                    for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
-                        final long key = keys[ii1];
-                        final long value = step * oneBillion + ii1;
-                        ix.put(key, value);
-                    }
-                    for (int ii1 = numKeysToInsert; ii1 < keys.length; ++ii1) {
-                        final long key = keys[ii1];
-                        ix.remove(key);
-                    }
-                });
+                final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
+                final Random rng = new Random(step);
+                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
+                // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
+                long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
+                final WritableRowRedirectionLockFree ix = index;
+                for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
+                    final long key = keys[ii1];
+                    final long value = step * oneBillion + ii1;
+                    ix.put(key, value);
+                }
+                for (int ii1 = numKeysToInsert; ii1 < keys.length; ++ii1) {
+                    final long key = keys[ii1];
+                    ix.remove(key);
+                }
+            });
 
             // waste some time doing something else
             final WritableRowRedirectionLockFree privateIndex =

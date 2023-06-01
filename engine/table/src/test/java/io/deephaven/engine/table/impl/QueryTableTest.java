@@ -2065,32 +2065,32 @@ public class QueryTableTest extends QueryTableTestBase {
 
                 final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                 updateGraph.runWithinUnitTestCycle(() -> {
-                            if (printTableUpdates) {
-                                System.out.println("Step = " + fstep + ", modStamp=" + modStamp + ", modRight=" + modRight
-                                        + ", modifyRightFirst=" + modifyRightFirst);
-                            }
+                    if (printTableUpdates) {
+                        System.out.println("Step = " + fstep + ", modStamp=" + modStamp + ", modRight=" + modRight
+                                + ", modifyRightFirst=" + modifyRightFirst);
+                    }
 
-                            if (modifyRightFirst) {
-                                GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
-                            }
-                            if (modStamp) {
-                                final long lastStamp1 = stampTable.getRowSet().lastRowKey();
-                                final int numAdditions = 1 + random.nextInt(stampSize);
-                                final RowSet stampsToAdd =
-                                        RowSetFactory.fromRange(lastStamp1 + 1, lastStamp1 + numAdditions);
+                    if (modifyRightFirst) {
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
+                    }
+                    if (modStamp) {
+                        final long lastStamp1 = stampTable.getRowSet().lastRowKey();
+                        final int numAdditions = 1 + random.nextInt(stampSize);
+                        final RowSet stampsToAdd =
+                                RowSetFactory.fromRange(lastStamp1 + 1, lastStamp1 + numAdditions);
 
-                                final ColumnHolder<?>[] columnAdditions = new ColumnHolder<?>[stampInfo.length];
-                                for (int ii = 0; ii < columnAdditions.length; ii++) {
-                                    columnAdditions[ii] = stampInfo[ii].generateUpdateColumnHolder(stampsToAdd, random);
-                                }
-                                addToTable(stampTable, stampsToAdd, columnAdditions);
-                                stampTable.notifyListeners(stampsToAdd, RowSetFactory.empty(),
-                                        RowSetFactory.empty());
-                            }
-                            if (!modifyRightFirst && modRight) {
-                                GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
-                            }
-                        });
+                        final ColumnHolder<?>[] columnAdditions = new ColumnHolder<?>[stampInfo.length];
+                        for (int ii = 0; ii < columnAdditions.length; ii++) {
+                            columnAdditions[ii] = stampInfo[ii].generateUpdateColumnHolder(stampsToAdd, random);
+                        }
+                        addToTable(stampTable, stampsToAdd, columnAdditions);
+                        stampTable.notifyListeners(stampsToAdd, RowSetFactory.empty(),
+                                RowSetFactory.empty());
+                    }
+                    if (!modifyRightFirst && modRight) {
+                        GenerateTableUpdates.generateTableUpdates(filteredSize, random, base, rightInfo);
+                    }
+                });
                 if (modStamp) {
                     System.out.println("Snapshot Size: " + snapshot.size());
                     TableTools.showWithRowSet(snapshot);
@@ -2532,11 +2532,11 @@ public class QueryTableTest extends QueryTableTestBase {
             // This is too big, we should fail
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
-                    final long bigIndex = 1L << 55;
-                    addToTable(table, i(bigIndex), intCol("X", 3),
-                            new ColumnHolder<>("Y", String[].class, String.class, false, new String[] {"f"}));
-                    table.notifyListeners(i(bigIndex), i(), i());
-                });
+                final long bigIndex = 1L << 55;
+                addToTable(table, i(bigIndex), intCol("X", 3),
+                        new ColumnHolder<>("Y", String[].class, String.class, false, new String[] {"f"}));
+                table.notifyListeners(i(bigIndex), i(), i());
+            });
             TableTools.showWithRowSet(t1);
 
             if (errorListener.originalException() == null) {
@@ -2568,10 +2568,10 @@ public class QueryTableTest extends QueryTableTestBase {
             // This is too big, we should fail
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
-                    addToTable(table, i(9), col("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false,
-                            new String[] {"f", "g", "h", "i", "j", "k"}));
-                    table.notifyListeners(i(9), i(), i());
-                });
+                addToTable(table, i(9), col("X", 3), new ColumnHolder<>("Y", String[].class, String.class, false,
+                        new String[] {"f", "g", "h", "i", "j", "k"}));
+                table.notifyListeners(i(9), i(), i());
+            });
             TableTools.showWithRowSet(t1);
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
@@ -2586,7 +2586,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                });
+            });
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
             assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
@@ -3248,11 +3248,11 @@ public class QueryTableTest extends QueryTableTestBase {
             final int key = i++;
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
-                    final RowSet addRowSet = i(key);
-                    addToTable(t1, addRowSet, intCol("T", key));
-                    t1.notifyListeners(addRowSet, i(), i());
-                    TableTools.show(result);
-                });
+                final RowSet addRowSet = i(key);
+                addToTable(t1, addRowSet, intCol("T", key));
+                t1.notifyListeners(addRowSet, i(), i());
+                TableTools.show(result);
+            });
         }
         assertEquals(0, getUpdateErrors().size());
     }

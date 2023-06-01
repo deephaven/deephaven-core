@@ -100,47 +100,47 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final RowSet addRowSet = RowSetFactory.fromRange(foffset, foffset + leftJoinKey.length - 1);
-                    addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
-                            intCol("LeftSentinel", leftSentinel));
-                    leftTable.notifyListeners(addRowSet.copy(), i(), i());
+                final RowSet addRowSet = RowSetFactory.fromRange(foffset, foffset + leftJoinKey.length - 1);
+                addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
+                        intCol("LeftSentinel", leftSentinel));
+                leftTable.notifyListeners(addRowSet.copy(), i(), i());
 
 
-                    final RowSetBuilderSequential modIndexBuilder = RowSetFactory.builderSequential();
+                final RowSetBuilderSequential modIndexBuilder = RowSetFactory.builderSequential();
 
-                    int slot = random.nextInt(foffset / 100);
-                    for (int ii = 0; ii < 100; ++ii) {
-                        modIndexBuilder.appendKey(slot);
-                        slot += 1 + random.nextInt(foffset / 100);
-                        if (slot >= foffset) {
-                            break;
-                        }
+                int slot = random.nextInt(foffset / 100);
+                for (int ii = 0; ii < 100; ++ii) {
+                    modIndexBuilder.appendKey(slot);
+                    slot += 1 + random.nextInt(foffset / 100);
+                    if (slot >= foffset) {
+                        break;
                     }
+                }
 
-                    final RowSet modRowSet = modIndexBuilder.build();
-                    final String[] rightModifications = new String[modRowSet.intSize()];
-                    final int[] rightModifySentinel = new int[modRowSet.intSize()];
+                final RowSet modRowSet = modIndexBuilder.build();
+                final String[] rightModifications = new String[modRowSet.intSize()];
+                final int[] rightModifySentinel = new int[modRowSet.intSize()];
 
-                    final MutableInt position = new MutableInt();
-                    modRowSet.forAllRowKeys((long ll) -> {
-                        final int ii = (int) ll;
-                        if (ii % 2 == 0) {
-                            // make something that exists go away
-                            rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
-                        } else {
-                            // make something that did not exist come back
-                            rightModifications[position.intValue()] = Integer.toString(ii * 10);
-                        }
-                        rightModifySentinel[position.intValue()] = ii * 100 + 25;
-                        position.increment();
-                    });
-
-                    addToTable(rightTable, addRowSet, stringCol("JoinKey", rightJoinKey),
-                            intCol("RightSentinel", rightSentinel));
-                    addToTable(rightTable, modRowSet, stringCol("JoinKey", rightModifications),
-                            intCol("RightSentinel", rightModifySentinel));
-                    rightTable.notifyListeners(addRowSet, i(), modRowSet);
+                final MutableInt position = new MutableInt();
+                modRowSet.forAllRowKeys((long ll) -> {
+                    final int ii = (int) ll;
+                    if (ii % 2 == 0) {
+                        // make something that exists go away
+                        rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
+                    } else {
+                        // make something that did not exist come back
+                        rightModifications[position.intValue()] = Integer.toString(ii * 10);
+                    }
+                    rightModifySentinel[position.intValue()] = ii * 100 + 25;
+                    position.increment();
                 });
+
+                addToTable(rightTable, addRowSet, stringCol("JoinKey", rightJoinKey),
+                        intCol("RightSentinel", rightSentinel));
+                addToTable(rightTable, modRowSet, stringCol("JoinKey", rightModifications),
+                        intCol("RightSentinel", rightModifySentinel));
+                rightTable.notifyListeners(addRowSet, i(), modRowSet);
+            });
             TstUtils.validate(en);
         }
     }
@@ -380,9 +380,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
-                            random, rightTable, rightColumnInfos);
-                });
+                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
+                        random, rightTable, rightColumnInfos);
+            });
 
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Expected");
@@ -618,9 +618,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
-                    right2.notifyListeners(i(3), i(), i());
-                });
+                TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
+                right2.notifyListeners(i(3), i(), i());
+            });
         }
 
         assertNotNull(listener.originalException());
@@ -662,9 +662,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
-                    right2.notifyListeners(i(3), i(), i());
-                });
+                TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
+                right2.notifyListeners(i(3), i(), i());
+            });
         }
 
         assertNotNull(listener.originalException());
@@ -1049,7 +1049,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
         UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
+        updateGraph.<ControlledUpdateGraph>cast()
+                .runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
         TstUtils.validate(en);
     }
 
@@ -1585,9 +1586,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (int ii = 0; ii < 10; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            generateAppends(10_000, random, leftTable, leftColumnInfo);
-                            generateAppends(10_000, random, rightTable, rightColumnInfo);
-                        });
+                generateAppends(10_000, random, leftTable, leftColumnInfo);
+                generateAppends(10_000, random, rightTable, rightColumnInfo);
+            });
         }
     }
 
@@ -1614,9 +1615,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         for (int ii = 0; ii < 10; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            generateAppends(100_000, random, leftTable, leftColumnInfo);
-                            generateAppends(100_000, random, rightTable, rightColumnInfo);
-                        });
+                generateAppends(100_000, random, leftTable, leftColumnInfo);
+                generateAppends(100_000, random, rightTable, rightColumnInfo);
+            });
         }
     }
 

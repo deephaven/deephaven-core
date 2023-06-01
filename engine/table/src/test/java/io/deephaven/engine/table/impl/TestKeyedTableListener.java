@@ -86,7 +86,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
         UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                () -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
 
         keyedTableListener.unsubscribe(aKey, mockListener);
         keyedTableListener.unsubscribe(bKey, mockListener);

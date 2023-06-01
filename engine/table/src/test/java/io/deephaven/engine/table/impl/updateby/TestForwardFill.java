@@ -402,7 +402,8 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+            updateGraph.<ControlledUpdateGraph>cast()
+                    .runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }

@@ -1354,7 +1354,8 @@ public class KafkaTools {
 
     private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
 
-        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
+        private final UpdateSourceCombiner refreshCombiner =
+                new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {

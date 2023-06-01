@@ -96,10 +96,10 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
-                            columnInfo, true, false, false);
-                    symbolTable.notifyListeners(updates[0], updates[1], updates[2]);
-                });
+                final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
+                        columnInfo, true, false, false);
+                symbolTable.notifyListeners(updates[0], updates[1], updates[2]);
+            });
         }
     }
 

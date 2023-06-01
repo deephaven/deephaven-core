@@ -639,9 +639,9 @@ public class TestEms extends BaseUpdateByTest {
                 if (appendOnly) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                     updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                                    generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
-                                    generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
-                                });
+                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
+                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
+                    });
                     validate("Table", nuggets);
                     validate("Table", timeNuggets);
                 } else {

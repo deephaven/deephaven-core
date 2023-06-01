@@ -119,31 +119,32 @@ public class BlinkTableAggregationTest {
             try {
                 UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph1.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
-                            if (normalStepInserted.isNonempty()) {
-                                normal.getRowSet().writableCast().insert(normalStepInserted);
-                                normal.notifyListeners(
-                                        new TableUpdateImpl(normalStepInserted, RowSetFactory.empty(),
-                                                RowSetFactory.empty(), RowSetShiftData.EMPTY,
-                                                ModifiedColumnSet.EMPTY));
-                            }
-                        });
+                    if (normalStepInserted.isNonempty()) {
+                        normal.getRowSet().writableCast().insert(normalStepInserted);
+                        normal.notifyListeners(
+                                new TableUpdateImpl(normalStepInserted, RowSetFactory.empty(),
+                                        RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                                        ModifiedColumnSet.EMPTY));
+                    }
+                });
                 final RowSet finalBlinkLastInserted = blinkLastInserted;
                 UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                 updateGraph.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
-                            if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
-                                if (blinkInternalRowSet != null) {
-                                    blinkInternalRowSet.clear();
-                                    blinkInternalRowSet.insert(normalStepInserted);
-                                }
-                                blink.getRowSet().writableCast().clear();
-                                blink.getRowSet().writableCast().insert(blinkStepInserted);
-                                blink.notifyListeners(new TableUpdateImpl(blinkStepInserted.copy(), finalBlinkLastInserted,
-                                        RowSetFactory.empty(), RowSetShiftData.EMPTY,
-                                        ModifiedColumnSet.EMPTY));
-                            }
-                        });
+                    if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
+                        if (blinkInternalRowSet != null) {
+                            blinkInternalRowSet.clear();
+                            blinkInternalRowSet.insert(normalStepInserted);
+                        }
+                        blink.getRowSet().writableCast().clear();
+                        blink.getRowSet().writableCast().insert(blinkStepInserted);
+                        blink.notifyListeners(new TableUpdateImpl(blinkStepInserted.copy(), finalBlinkLastInserted,
+                                RowSetFactory.empty(), RowSetShiftData.EMPTY,
+                                ModifiedColumnSet.EMPTY));
+                    }
+                });
             } finally {
-                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                        .completeCycleForUnitTests();
             }
             try {
                 TstUtils.assertTableEquals(expected, addOnlyExpected);

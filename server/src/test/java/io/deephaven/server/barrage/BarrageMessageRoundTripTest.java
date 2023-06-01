@@ -575,8 +575,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -611,8 +612,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = shifted.build();
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -630,8 +632,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             helper.runTest(() -> {
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                        helper.size, helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE,
+                                helper.size, helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -662,8 +666,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -698,8 +703,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.shifted = shifted.build();
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -717,8 +723,10 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         final Consumer<TestHelper> runOne = helper -> {
             helper.runTest(() -> {
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                        helper.size, helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE,
+                                helper.size, helper.random, helper.sourceTable, helper.columnInfo));
             });
         };
 
@@ -751,8 +759,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                         maybeChangeSub(numSteps.intValue(), rt, pt);
 
                         UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                                                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
+                        updateGraph.<ControlledUpdateGraph>cast()
+                                .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                        GenerateTableUpdates.DEFAULT_PROFILE, size, random, sourceTable, columnInfo));
                     }
 
                     // flush producer
@@ -980,11 +989,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                             final RemoteNugget nugget = new RemoteNugget(makeTable) {
                                 @Override
                                 public void onGetSnapshot() {
-                                    UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates
-                                                                                .generateShiftAwareTableUpdates(
-                                                                                        GenerateTableUpdates.DEFAULT_PROFILE, size,
-                                                                                        random, sourceTable, columnInfo));
+                                    UpdateGraph updateGraph =
+                                            ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
+                                    updateGraph.<ControlledUpdateGraph>cast()
+                                            .runWithinUnitTestCycle(() -> GenerateTableUpdates
+                                                    .generateShiftAwareTableUpdates(
+                                                            GenerateTableUpdates.DEFAULT_PROFILE, size,
+                                                            random, sourceTable, columnInfo));
                                 }
                             };
                             nuggets.add(nugget);
@@ -1234,13 +1245,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final RowSet newRows = newRowsBuilder.build();
             UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(queryTable, newRows, col("intCol", values));
-                    queryTable.notifyListeners(new TableUpdateImpl(
-                            newRows,
-                            RowSetFactory.empty(),
-                            RowSetFactory.empty(),
-                            RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
-                });
+                TstUtils.addToTable(queryTable, newRows, col("intCol", values));
+                queryTable.notifyListeners(new TableUpdateImpl(
+                        newRows,
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+            });
         }
 
         // Coalesce these to ensure mappings larger than a single chunk are handled correctly.
@@ -1261,13 +1272,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             final RowSet modRows = modRowsBuilder.build();
             UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    TstUtils.addToTable(queryTable, modRows, col("intCol", values));
-                    queryTable.notifyListeners(new TableUpdateImpl(
-                            RowSetFactory.empty(),
-                            RowSetFactory.empty(),
-                            modRows,
-                            RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
-                });
+                TstUtils.addToTable(queryTable, modRows, col("intCol", values));
+                queryTable.notifyListeners(new TableUpdateImpl(
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        modRows,
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL));
+            });
         }
 
         // Coalesce these to ensure mappings larger than a single chunk are handled correctly.
@@ -1335,8 +1346,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }
@@ -1399,8 +1411,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
                 UpdateGraph updateGraph = ((UpdateGraph) ExecutionContext.getContext().getUpdateGraph());
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
-                                        helper.random, helper.sourceTable, helper.columnInfo));
+                updateGraph.<ControlledUpdateGraph>cast()
+                        .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(update,
+                                helper.random, helper.sourceTable, helper.columnInfo));
             });
         }
     }

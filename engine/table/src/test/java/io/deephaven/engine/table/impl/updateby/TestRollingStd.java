@@ -718,7 +718,8 @@ public class TestRollingStd extends BaseUpdateByTest {
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            updateGraph.<ControlledUpdateGraph>cast()
+                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -741,7 +742,8 @@ public class TestRollingStd extends BaseUpdateByTest {
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            updateGraph.<ControlledUpdateGraph>cast()
+                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -878,7 +880,8 @@ public class TestRollingStd extends BaseUpdateByTest {
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
     }
@@ -901,7 +904,8 @@ public class TestRollingStd extends BaseUpdateByTest {
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
     }

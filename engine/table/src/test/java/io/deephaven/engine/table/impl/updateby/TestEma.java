@@ -542,9 +542,9 @@ public class TestEma extends BaseUpdateByTest {
                 if (appendOnly) {
                     UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
                     updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                                    generateAppends(100, billy, tickResult.t, tickResult.infos);
-                                    generateAppends(100, billy, timeResult.t, timeResult.infos);
-                                });
+                        generateAppends(100, billy, tickResult.t, tickResult.infos);
+                        generateAppends(100, billy, timeResult.t, timeResult.infos);
+                    });
                     validate("Table", nuggets);
                     validate("Table", timeNuggets);
                 } else {

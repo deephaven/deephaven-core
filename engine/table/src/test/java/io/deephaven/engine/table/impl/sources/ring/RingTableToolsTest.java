@@ -101,9 +101,9 @@ public class RingTableToolsTest {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    streamHelper.addAndNotify(appendSize, holders);
-                    checkEquals(tail, ring);
-                });
+                streamHelper.addAndNotify(appendSize, holders);
+                checkEquals(tail, ring);
+            });
         }
         assertThat(tail.size()).isEqualTo(capacity);
         assertThat(ring.size()).isEqualTo(capacity);

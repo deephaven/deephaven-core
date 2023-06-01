@@ -391,7 +391,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertFalse(sentSum.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
         while (!fa.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())) {
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
+                    .flushOneNotificationForUnitTests();
         }
         assertTrue(fa.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();

@@ -67,12 +67,12 @@ public class AppendOnlyFixedSizePageRegionTest {
             UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
             UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    clock.advance();
-                    for (final TimeTable timeTable : timeTables) {
-                        timeTable.run();
-                    }
-                    dependentRegistrar.run();
-                });
+                clock.advance();
+                for (final TimeTable timeTable : timeTables) {
+                    timeTable.run();
+                }
+                dependentRegistrar.run();
+            });
             System.out.println("Cycle start time: " + clock.instantNanos());
             TstUtils.assertTableEquals(expected, actual);
         }

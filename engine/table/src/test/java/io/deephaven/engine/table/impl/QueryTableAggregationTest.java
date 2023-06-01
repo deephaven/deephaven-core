@@ -2514,15 +2514,15 @@ public class QueryTableAggregationTest {
         for (int step = 0; step < 50; step++) {
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final RowSet keysToAdd =
-                            newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
-                    final ColumnHolder<?>[] columnAdditions = new ColumnHolder[columnInfo.length];
-                    for (int column = 0; column < columnAdditions.length; column++) {
-                        columnAdditions[column] = columnInfo[column].generateUpdateColumnHolder(keysToAdd, random);
-                    }
-                    addToTable(queryTable, keysToAdd, columnAdditions);
-                    queryTable.notifyListeners(keysToAdd, i(), i());
-                });
+                final RowSet keysToAdd =
+                        newIndex(random.nextInt(size / 2 + 1), queryTable.getRowSet(), random);
+                final ColumnHolder<?>[] columnAdditions = new ColumnHolder[columnInfo.length];
+                for (int column = 0; column < columnAdditions.length; column++) {
+                    columnAdditions[column] = columnInfo[column].generateUpdateColumnHolder(keysToAdd, random);
+                }
+                addToTable(queryTable, keysToAdd, columnAdditions);
+                queryTable.notifyListeners(keysToAdd, i(), i());
+            });
             validate("i = " + step, en);
         }
 
@@ -2875,20 +2875,20 @@ public class QueryTableAggregationTest {
             // Modifies and Adds in post-shift keyspace.
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    final RowSet added = RowSetFactory.fromRange(size * (fstep + 1), size * (fstep + 2) - 1);
-                    queryTable.getRowSet().writableCast().insert(added);
+                final RowSet added = RowSetFactory.fromRange(size * (fstep + 1), size * (fstep + 2) - 1);
+                queryTable.getRowSet().writableCast().insert(added);
 
-                    // Modifies and Adds in post-shift keyspace.
-                    final ColumnHolder<?>[] columnHolders = new ColumnHolder[columnInfos.length];
-                    for (int ii = 0; ii < columnInfos.length; ii++) {
-                        final ColumnInfo<?, ?> ci = columnInfos[ii];
-                        columnHolders[ii] = ci.generateUpdateColumnHolder(added, random);
-                    }
-                    addToTable(queryTable, added, columnHolders);
+                // Modifies and Adds in post-shift keyspace.
+                final ColumnHolder<?>[] columnHolders = new ColumnHolder[columnInfos.length];
+                for (int ii = 0; ii < columnInfos.length; ii++) {
+                    final ColumnInfo<?, ?> ci = columnInfos[ii];
+                    columnHolders[ii] = ci.generateUpdateColumnHolder(added, random);
+                }
+                addToTable(queryTable, added, columnHolders);
 
-                    queryTable.notifyListeners(added, i(), i());
-                    validate("step = " + fstep, en);
-                });
+                queryTable.notifyListeners(added, i(), i());
+                validate("step = " + fstep, en);
+            });
         }
     }
 

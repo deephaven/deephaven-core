@@ -477,9 +477,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
             final int fii = ii;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(queryTable, i(fii), col("intCol", values[fii]));
-                    queryTable.notifyListeners(i(fii), i(), i());
-                });
+                addToTable(queryTable, i(fii), col("intCol", values[fii]));
+                queryTable.notifyListeners(i(fii), i(), i());
+            });
 
             adds += simpleListener.update.added().size();
             removes += simpleListener.update.removed().size();
@@ -600,9 +600,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
             final int fii = 8059 * ii;
             UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
             updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                    addToTable(table, i(fii), col("Sentinel", fii));
-                    table.notifyListeners(i(fii), i(), i());
-                });
+                addToTable(table, i(fii), col("Sentinel", fii));
+                table.notifyListeners(i(fii), i(), i());
+            });
         }
 
         TableTools.show(sorted);
