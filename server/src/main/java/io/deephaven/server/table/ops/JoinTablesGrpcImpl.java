@@ -134,15 +134,18 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         }
 
         private static AsOfJoinRule adapt(MatchRule rule) {
+            // todo fix gRPC?
+            // this looks wrong, but we need to also potentially transition the gRPC side, and preserve this old
+            // behavior if desired.
             switch (rule) {
                 case LESS_THAN_EQUAL:
-                    return AsOfJoinRule.LESS_THAN_EQUAL;
-                case LESS_THAN:
-                    return AsOfJoinRule.LESS_THAN;
-                case GREATER_THAN_EQUAL:
                     return AsOfJoinRule.GREATER_THAN_EQUAL;
-                case GREATER_THAN:
+                case LESS_THAN:
                     return AsOfJoinRule.GREATER_THAN;
+                case GREATER_THAN_EQUAL:
+                    return AsOfJoinRule.LESS_THAN_EQUAL;
+                case GREATER_THAN:
+                    return AsOfJoinRule.LESS_THAN;
                 default:
                     throw new RuntimeException("Unsupported join type: " + rule);
             }

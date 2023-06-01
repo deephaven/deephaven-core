@@ -1830,21 +1830,21 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table asOfJoin(
             Table rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            AsOfJoinMatch joinMatch,
+            Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         final MatchPair[] matches = Stream.concat(
-                columnsToMatch.stream().map(MatchPair::of),
-                Stream.of(new MatchPair(joinMatch.leftColumn().name(), joinMatch.rightColumn().name())))
+                exactMatches.stream().map(MatchPair::of),
+                Stream.of(new MatchPair(asOfMatch.leftColumn().name(), asOfMatch.rightColumn().name())))
                 .toArray(MatchPair[]::new);
         final MatchPair[] additions = MatchPair.fromAddition(columnsToAdd);
-        final AsOfJoinRule joinRule = joinMatch.joinRule();
+        final AsOfJoinRule joinRule = asOfMatch.joinRule();
         switch (joinRule) {
-            case LESS_THAN_EQUAL:
-            case LESS_THAN:
-                return ajImpl(rightTable, matches, additions, joinRule);
             case GREATER_THAN_EQUAL:
             case GREATER_THAN:
+                return ajImpl(rightTable, matches, additions, joinRule);
+            case LESS_THAN_EQUAL:
+            case LESS_THAN:
                 return rajImpl(rightTable, matches, additions, joinRule);
             default:
                 throw new IllegalStateException("Unexpected join rule " + joinRule);
@@ -1908,25 +1908,25 @@ public class QueryTable extends BaseTable<QueryTable> {
 
         final boolean disallowExactMatch;
         switch (joinRule) {
-            case LESS_THAN:
+            case GREATER_THAN:
                 if (order != SortingOrder.Ascending) {
                     throw new IllegalArgumentException("Invalid as of match rule for raj: " + joinRule);
                 }
                 disallowExactMatch = true;
                 break;
-            case LESS_THAN_EQUAL:
+            case GREATER_THAN_EQUAL:
                 if (order != SortingOrder.Ascending) {
                     throw new IllegalArgumentException("Invalid as of match rule for raj: " + joinRule);
                 }
                 disallowExactMatch = false;
                 break;
-            case GREATER_THAN:
+            case LESS_THAN:
                 if (order != SortingOrder.Descending) {
                     throw new IllegalArgumentException("Invalid as of match rule for aj: " + joinRule);
                 }
                 disallowExactMatch = true;
                 break;
-            case GREATER_THAN_EQUAL:
+            case LESS_THAN_EQUAL:
                 if (order != SortingOrder.Descending) {
                     throw new IllegalArgumentException("Invalid as of match rule for aj: " + joinRule);
                 }

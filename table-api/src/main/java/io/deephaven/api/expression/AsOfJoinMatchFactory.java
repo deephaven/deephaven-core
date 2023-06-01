@@ -36,30 +36,8 @@ public class AsOfJoinMatchFactory {
     static {
         final BiFunction<JoinMatch, AsOfJoinRule, AsOfJoinMatch> bif =
                 (joinMatch, joinRule) -> AsOfJoinMatch.of(joinMatch.left(), joinRule, joinMatch.right());
-        registerSingularFactory(asOfJoinParser, AsOfJoinRule.LESS_THAN_EQUAL, bif);
+        registerSingularFactory(asOfJoinParser, AsOfJoinRule.GREATER_THAN_EQUAL, bif);
         asOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
-                SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*<=\\s*("
-                        + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
-            @Override
-            public AsOfJoinMatch getExpression(String expression, Matcher matcher, Object... args) {
-                final ColumnName firstColumn = ColumnName.of(matcher.group(1));
-                final ColumnName secondColumn = ColumnName.of(matcher.group(2));
-                return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.LESS_THAN_EQUAL, secondColumn);
-            }
-        });
-        asOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
-                SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*<\\s*("
-                        + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
-            @Override
-            public AsOfJoinMatch getExpression(String expression, Matcher matcher, Object... args) {
-                final ColumnName firstColumn = ColumnName.of(matcher.group(1));
-                final ColumnName secondColumn = ColumnName.of(matcher.group(2));
-                return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.LESS_THAN, secondColumn);
-            }
-        });
-
-        registerSingularFactory(reverseAsOfJoinParser, AsOfJoinRule.GREATER_THAN_EQUAL, bif);
-        reverseAsOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
                 SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*>=\\s*("
                         + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
             @Override
@@ -69,7 +47,7 @@ public class AsOfJoinMatchFactory {
                 return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.GREATER_THAN_EQUAL, secondColumn);
             }
         });
-        reverseAsOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
+        asOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
                 SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*>\\s*("
                         + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
             @Override
@@ -77,6 +55,28 @@ public class AsOfJoinMatchFactory {
                 final ColumnName firstColumn = ColumnName.of(matcher.group(1));
                 final ColumnName secondColumn = ColumnName.of(matcher.group(2));
                 return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.GREATER_THAN, secondColumn);
+            }
+        });
+
+        registerSingularFactory(reverseAsOfJoinParser, AsOfJoinRule.LESS_THAN_EQUAL, bif);
+        reverseAsOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
+                SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*<=\\s*("
+                        + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
+            @Override
+            public AsOfJoinMatch getExpression(String expression, Matcher matcher, Object... args) {
+                final ColumnName firstColumn = ColumnName.of(matcher.group(1));
+                final ColumnName secondColumn = ColumnName.of(matcher.group(2));
+                return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.LESS_THAN_EQUAL, secondColumn);
+            }
+        });
+        reverseAsOfJoinParser.registerFactory(new AbstractExpressionFactory<AsOfJoinMatch>(
+                SelectFactoryConstants.START_PTRN + "(" + SelectFactoryConstants.ID_PTRN + ")\\s*<\\s*("
+                        + SelectFactoryConstants.ID_PTRN + ")" + SelectFactoryConstants.END_PTRN) {
+            @Override
+            public AsOfJoinMatch getExpression(String expression, Matcher matcher, Object... args) {
+                final ColumnName firstColumn = ColumnName.of(matcher.group(1));
+                final ColumnName secondColumn = ColumnName.of(matcher.group(2));
+                return AsOfJoinMatch.of(firstColumn, AsOfJoinRule.LESS_THAN, secondColumn);
             }
         });
     }

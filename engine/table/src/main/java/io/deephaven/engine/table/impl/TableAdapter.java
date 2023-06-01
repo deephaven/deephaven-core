@@ -254,7 +254,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, AsOfJoinMatch joinMatch,
+    default Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> exactMatches, AsOfJoinMatch asOfMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }

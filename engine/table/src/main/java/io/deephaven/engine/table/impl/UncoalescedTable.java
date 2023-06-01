@@ -325,9 +325,9 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch, AsOfJoinMatch joinMatch,
+    public Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> exactMatches, AsOfJoinMatch asOfMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
-        return coalesce().asOfJoin(rightTable, columnsToMatch, joinMatch, columnsToAdd);
+        return coalesce().asOfJoin(rightTable, exactMatches, asOfMatch, columnsToAdd);
     }
 
     @Override

@@ -390,15 +390,17 @@ class BatchTableRequestBuilder {
         }
 
         private static AsOfJoinTablesRequest.MatchRule adapt(AsOfJoinRule rule) {
+            // todo: fix gRPC?
+            // this looks wrong, but we need to fix or update gRPC
             switch (rule) {
                 case LESS_THAN_EQUAL:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL;
-                case LESS_THAN:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN;
-                case GREATER_THAN_EQUAL:
                     return AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL;
-                case GREATER_THAN:
+                case LESS_THAN:
                     return AsOfJoinTablesRequest.MatchRule.GREATER_THAN;
+                case GREATER_THAN_EQUAL:
+                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL;
+                case GREATER_THAN:
+                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN;
                 default:
                     throw new IllegalArgumentException(String.format("Unrecognized AsOfJoinRule %s", rule));
             }

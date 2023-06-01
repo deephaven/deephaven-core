@@ -523,10 +523,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy asOfJoin(TableOperations<?, ?> rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            AsOfJoinMatch joinMatch, Collection<? extends JoinAddition> columnsToAdd) {
-        return complexTransform(rightTable, (ct, ot) -> ct.asOfJoin(ot, columnsToMatch, joinMatch, columnsToAdd),
-                columnsToMatch);
+            Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch, Collection<? extends JoinAddition> columnsToAdd) {
+        return complexTransform(rightTable, (ct, ot) -> ct.asOfJoin(ot, exactMatches, asOfMatch, columnsToAdd),
+                exactMatches);
     }
 
     @Override

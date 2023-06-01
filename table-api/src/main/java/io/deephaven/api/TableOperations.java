@@ -427,8 +427,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn&lt;=rightColumn",
-     *        "leftColumn&lt;rightColumn", or "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
+     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
      * @return a new table joined according to the specification in columnsToMatch
      */
     TOPS aj(TABLE rightTable, String columnsToMatch);
@@ -440,8 +440,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn&lt;=rightColumn",
-     *        "leftColumn&lt;rightColumn", or "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn>=rightColumn"},
+     *        {@code "leftColumn>rightColumn"}, {@code "columnFoundInBoth"}).
      * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
@@ -457,8 +457,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}.
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn&gt;=rightColumn",
-     *        "leftColumn&gt;rightColumn", or "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
+     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
      * @return a new table joined according to the specification in columnsToMatch
      */
     TOPS raj(TABLE rightTable, String columnsToMatch);
@@ -470,8 +470,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Delegates to {@link #asOfJoin(Object, Collection, AsOfJoinMatch, Collection)}
      *
      * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn&gt;=rightColumn",
-     *        "leftColumn&gt;rightColumn", or "columnFoundInBoth").
+     * @param columnsToMatch A comma separated list of match conditions ({@code "leftColumn<=rightColumn"},
+     *        {@code "leftColumn<rightColumn"}, {@code "columnFoundInBoth"}).
      * @param columnsToAdd A comma separated list with the columns from the left side that need to be added to the right
      *        side as a result of the match.
      * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
@@ -482,8 +482,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     TOPS asOfJoin(
             TABLE rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            AsOfJoinMatch joinMatch,
+            Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch,
             Collection<? extends JoinAddition> columnsToAdd);
 
     // -------------------------------------------------------------------------------------------

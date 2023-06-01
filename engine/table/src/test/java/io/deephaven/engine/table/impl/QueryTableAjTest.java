@@ -72,7 +72,7 @@ public class QueryTableAjTest {
                 intCol("Sentinel", 1, 2, 3, 4, 5, 6, 7));
 
         try {
-            left.aj(right, "LeftStamp<=RightStamp");
+            left.aj(right, "LeftStamp>=RightStamp");
             TestCase.fail("Expected conflicting column exception!");
         } catch (RuntimeException e) {
             assertEquals(e.getMessage(), "Conflicting column names [Bucket]");
@@ -86,7 +86,7 @@ public class QueryTableAjTest {
                 longCol("LeftStamp", 1L, 10L, 50L, 3L, 4L, 60L));
 
         try {
-            left.aj(null, "LeftStamp<=RightStamp");
+            left.aj(null, "LeftStamp>=RightStamp");
             TestCase.fail("Expected null argument exception!");
         } catch (RuntimeException e) {
             assertEquals("aj() requires a non-null right hand side table.", e.getMessage());
@@ -124,7 +124,7 @@ public class QueryTableAjTest {
         System.out.println("Right");
         TableTools.show(right);
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -132,7 +132,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {1, 2, 5, NULL_INT, NULL_INT, 5}, intColumn(result, "Sentinel"));
 
-        final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
+        final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -141,7 +141,7 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {NULL_INT, 2, 3, NULL_INT, NULL_INT, 5},
                 intColumn(ltResult, "Sentinel"));
 
-        final Table reverseResult = left.raj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -150,7 +150,7 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {1, 4, 5, NULL_INT, 6, NULL_INT},
                 intColumn(reverseResult, "Sentinel"));
 
-        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
+        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -176,7 +176,7 @@ public class QueryTableAjTest {
         System.out.println("Right");
         TableTools.show(right);
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -184,7 +184,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
-        final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
+        final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -193,7 +193,7 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
-        final Table reverseResult = left.raj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -201,7 +201,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
-        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
+        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -230,7 +230,7 @@ public class QueryTableAjTest {
         System.out.println("Right");
         TableTools.show(right);
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -238,7 +238,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
-        final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
+        final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -255,7 +255,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
-        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
+        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -276,7 +276,7 @@ public class QueryTableAjTest {
                 intCol("RightStamp", 1, 2, 3, 4, 5),
                 intCol("Sentinel", 1, 2, 3, 4, 5));
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -296,7 +296,7 @@ public class QueryTableAjTest {
                 intCol("RightStamp", 1, 1),
                 intCol("Sentinel", 1, 2));
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -311,7 +311,7 @@ public class QueryTableAjTest {
                 intCol("RightStamp", 1, 1, 1),
                 intCol("Sentinel", 1, 2, 3));
 
-        final Table result2 = left2.aj(right2, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result2 = left2.aj(right2, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -334,7 +334,7 @@ public class QueryTableAjTest {
         System.out.println("Right");
         TableTools.show(right);
 
-        final Table result = left.aj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
+        final Table result = left.aj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -342,7 +342,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, NULL_INT, 5, 5, 1}, intColumn(result, "Sentinel"));
 
-        final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
+        final Table ltResult = left.aj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -351,7 +351,7 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
-        final Table reverseResult = left.raj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -359,7 +359,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {3, 2, 4, 2, 4, NULL_INT, 5, 1}, intColumn(reverseResult, "Sentinel"));
 
-        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
+        final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
@@ -390,7 +390,7 @@ public class QueryTableAjTest {
     }
 
     private void doFloatTest(Table left, Table right, final String leftStamp, final String rightStamp) {
-        final Table result = left.aj(right, leftStamp + "<=" + rightStamp, "Sentinel");
+        final Table result = left.aj(right, leftStamp + ">=" + rightStamp, "Sentinel");
         System.out.println("Result");
         TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
@@ -398,7 +398,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {1, 5, 0, 1, 3, 5}, intColumn(result, "Sentinel"));
 
-        final Table ltResult = left.aj(right, leftStamp + "<" + rightStamp, "Sentinel");
+        final Table ltResult = left.aj(right, leftStamp + ">" + rightStamp, "Sentinel");
         System.out.println("LT Result");
         TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
@@ -406,7 +406,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {0, 3, NULL_INT, 1, 2, 3}, intColumn(ltResult, "Sentinel"));
 
-        final Table reverseResult = left.raj(right, leftStamp + ">=" + rightStamp, "Sentinel");
+        final Table reverseResult = left.raj(right, leftStamp + "<=" + rightStamp, "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
@@ -414,7 +414,7 @@ public class QueryTableAjTest {
 
         BaseArrayTestCase.assertEquals(new int[] {1, 4, 0, 2, 3, 4}, intColumn(reverseResult, "Sentinel"));
 
-        final Table reverseResultGt = left.raj(right, leftStamp + ">" + rightStamp, "Sentinel");
+        final Table reverseResultGt = left.raj(right, leftStamp + "<" + rightStamp, "Sentinel");
         System.out.println("Reverse Result GT");
         TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
@@ -506,7 +506,7 @@ public class QueryTableAjTest {
                         new IntGenerator(20_000_000, 20_010_000)));
 
         final String stampMatch =
-                "LeftStamp" + (noexact ? (reverse ? ">" : "<") : (reverse ? ">=" : "<=")) + "RightStamp";
+                "LeftStamp" + (noexact ? (reverse ? "<" : ">") : (reverse ? "<=" : ">=")) + "RightStamp";
         final Table result;
         if (reverse) {
             result = leftTable.raj(rightTable, stampMatch, "RightSentinel");
@@ -901,19 +901,19 @@ public class QueryTableAjTest {
         // we compare our initial values to the static case; which we have a separate test for. This is meant to give
         // us some confidence in our initial algorithm, whcih we then use to compare the incrmental results.
         if (withZeroKeys) {
-            doInitialAjComparison(leftTable, rightSorted, "LeftStamp<=RightStamp", false, false, control);
-            doInitialAjComparison(leftTable, rightSorted, "LeftStamp<RightStamp", false, true, control);
+            doInitialAjComparison(leftTable, rightSorted, "LeftStamp>=RightStamp", false, false, control);
+            doInitialAjComparison(leftTable, rightSorted, "LeftStamp>RightStamp", false, true, control);
             if (withReverse) {
-                doInitialAjComparison(leftTable, rightSorted, "LeftStamp>=RightStamp", true, false, control);
-                doInitialAjComparison(leftTable, rightSorted, "LeftStamp>RightStamp", true, true, control);
+                doInitialAjComparison(leftTable, rightSorted, "LeftStamp<=RightStamp", true, false, control);
+                doInitialAjComparison(leftTable, rightSorted, "LeftStamp<RightStamp", true, true, control);
             }
         }
         if (withBuckets) {
-            doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp<=RightStamp", false, false, control);
-            doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp<RightStamp", false, true, control);
+            doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp>=RightStamp", false, false, control);
+            doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp>RightStamp", false, true, control);
             if (withReverse) {
-                doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp>=RightStamp", true, false, control);
-                doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp>RightStamp", true, true, control);
+                doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp<=RightStamp", true, false, control);
+                doInitialAjComparison(leftTable, rightSorted, "Bucket,LeftStamp<RightStamp", true, true, control);
             }
         }
 
@@ -931,9 +931,9 @@ public class QueryTableAjTest {
                                         MatchPairFactory.getExpressions("LeftStamp=RightStamp"),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, false)),
-                                // < aj
+                                // > aj
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
-                                        oldStyleArray(AsOfJoinMatchFactory.getAjExpressions("LeftStamp<RightStamp")),
+                                        oldStyleArray(AsOfJoinMatchFactory.getAjExpressions("LeftStamp>RightStamp")),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, true))),
                         !withReverse ? Stream.empty()
@@ -943,10 +943,10 @@ public class QueryTableAjTest {
                                                 MatchPairFactory.getExpressions("LeftStamp=RightStamp"),
                                                 MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                                 SortingOrder.Descending, false)),
-                                        // > raj
+                                        // < raj
                                         EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
                                                 oldStyleArray(
-                                                        AsOfJoinMatchFactory.getRajExpressions("LeftStamp>RightStamp")),
+                                                        AsOfJoinMatchFactory.getRajExpressions("LeftStamp<RightStamp")),
                                                 MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                                 SortingOrder.Descending, true)))),
                 !withBuckets ? Stream.empty()
@@ -960,10 +960,10 @@ public class QueryTableAjTest {
                                         MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, false)),
-                                // < aj, with a bucket
+                                // > aj, with a bucket
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightSorted,
                                         oldStyleArray(AsOfJoinMatchFactory.getAjExpressions("Bucket",
-                                                "LeftStamp<RightStamp")),
+                                                "LeftStamp>RightStamp")),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Ascending, true)))),
                 !withBuckets || !withReverse ? Stream.empty()
@@ -973,10 +973,10 @@ public class QueryTableAjTest {
                                         MatchPairFactory.getExpressions("Bucket", "LeftStamp=RightStamp"),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Descending, false)),
-                                // > raj, with a bucket
+                                // < raj, with a bucket
                                 EvalNugget.from(() -> AsOfJoinHelper.asOfJoin(control, leftTable, rightReversed,
                                         oldStyleArray(AsOfJoinMatchFactory.getRajExpressions("Bucket",
-                                                "LeftStamp>RightStamp")),
+                                                "LeftStamp<RightStamp")),
                                         MatchPairFactory.getExpressions("RightStamp", "RightSentinel"),
                                         SortingOrder.Descending, true))))
                 .toArray(EvalNuggetInterface[]::new);
@@ -1095,49 +1095,49 @@ public class QueryTableAjTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.aj(rightTable, "LeftStamp<=RightStamp", "RightSentinel");
+                        return leftTable.aj(rightTable, "LeftStamp>=RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.aj(rightTable, "LeftStamp<RightStamp", "RightSentinel");
+                        return leftTable.aj(rightTable, "LeftStamp>RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.raj(rightTable, "LeftStamp>=RightStamp", "RightSentinel");
+                        return leftTable.raj(rightTable, "LeftStamp<=RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.raj(rightTable, "LeftStamp>RightStamp", "RightSentinel");
+                        return leftTable.raj(rightTable, "LeftStamp<RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.aj(rightTable, "Bucket,LeftStamp<=RightStamp", "RightSentinel");
+                        return leftTable.aj(rightTable, "Bucket,LeftStamp>=RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.aj(rightTable, "Bucket,LeftStamp<RightStamp", "RightSentinel");
+                        return leftTable.aj(rightTable, "Bucket,LeftStamp>RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.raj(rightTable, "Bucket,LeftStamp>=RightStamp", "RightSentinel");
+                        return leftTable.raj(rightTable, "Bucket,LeftStamp<=RightStamp", "RightSentinel");
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return leftTable.raj(rightTable, "Bucket,LeftStamp>RightStamp", "RightSentinel");
+                        return leftTable.raj(rightTable, "Bucket,LeftStamp<RightStamp", "RightSentinel");
                     }
                 }
         };
