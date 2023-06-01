@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.SignStyle;
 import java.time.temporal.ChronoField;
+import java.time.zone.ZoneRulesException;
 import java.util.Date;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -97,7 +98,7 @@ public class DateTimeUtils {
     // region Constants
 
     /**
-     * A zero length array of date times.
+     * A zero length array of {@link Instant instants}.
      */
     public static final Instant[] ZERO_LENGTH_INSTANT_ARRAY = new Instant[0];
 
@@ -149,17 +150,17 @@ public class DateTimeUtils {
     public static final long YEAR_AVG = 31556952000000000L;
 
     /**
-     * Maximum time in microseconds that can be converted to a date time without overflow.
+     * Maximum time in microseconds that can be converted to an instant without overflow.
      */
     private static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
 
     /**
-     * Maximum time in milliseconds that can be converted to a date time without overflow.
+     * Maximum time in milliseconds that can be converted to an instant without overflow.
      */
     private static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
 
     /**
-     * Maximum time in seconds that can be converted to a date time without overflow.
+     * Maximum time in seconds that can be converted to an instant without overflow.
      */
     private static final long MAX_CONVERTIBLE_SECONDS = Long.MAX_VALUE / 1_000_000_000L;
 
@@ -198,56 +199,56 @@ public class DateTimeUtils {
     // region Overflow / Underflow
 
     /**
-     * A type of RuntimeException thrown when operations resulting in date time values would exceed the range available
-     * by max or min long nanoseconds.
+     * A type of RuntimeException thrown when operations resulting in {@link Instant instant} values would exceed the
+     * range available by max or min long nanoseconds.
      */
-    public static class DateTimeOverflowException extends RuntimeException {
+    public static class InstantOverflowException extends RuntimeException {
         /**
          * Creates a new overflow exception.
          */
         @SuppressWarnings("unused")
-        private DateTimeOverflowException() {
+        private InstantOverflowException() {
             super("Operation failed due to overflow");
         }
 
         /**
          * Creates a new overflow exception.
          *
-         * @param cause cause of the overflow.
+         * @param cause the cause of the overflow
          */
-        private DateTimeOverflowException(@NotNull final Throwable cause) {
+        private InstantOverflowException(@NotNull final Throwable cause) {
             super("Operation failed due to overflow", cause);
         }
 
         /**
          * Creates a new overflow exception.
          *
-         * @param message error string.
+         * @param message the error string
          */
-        private DateTimeOverflowException(@NotNull final String message) {
+        private InstantOverflowException(@NotNull final String message) {
             super(message);
         }
 
         /**
          * Creates a new overflow exception.
          *
-         * @param message error message.
-         * @param cause cause of the overflow.
+         * @param message the error message
+         * @param cause the cause of the overflow
          */
         @SuppressWarnings("unused")
-        private DateTimeOverflowException(@NotNull final String message, @NotNull final Throwable cause) {
+        private InstantOverflowException(@NotNull final String message, @NotNull final Throwable cause) {
             super(message, cause);
         }
     }
 
-    // + can only result in flow if both positive or both negative
+    // + can only result in overflow if both positive or both negative
     @SuppressWarnings("SameParameterValue")
     private static long checkOverflowPlus(final long l1, final long l2, final boolean minusOperation) {
         if (l1 > 0 && l2 > 0 && Long.MAX_VALUE - l1 < l2) {
             final String message = minusOperation
                     ? "Subtracting " + -l2 + " nanos from " + l1 + " would overflow"
                     : "Adding " + l2 + " nanos to " + l1 + " would overflow";
-            throw new DateTimeOverflowException(message);
+            throw new InstantOverflowException(message);
         }
 
         if (l1 < 0 && l2 < 0) {
@@ -257,13 +258,13 @@ public class DateTimeUtils {
         return l1 + l2;
     }
 
-    // - can only result in flow if one is positive and one is negative
+    // - can only result in overflow if one is positive and one is negative
     private static long checkUnderflowMinus(final long l1, final long l2, final boolean minusOperation) {
         if (l1 < 0 && l2 > 0 && Long.MIN_VALUE + l2 > -l1) {
             final String message = minusOperation
                     ? "Subtracting " + l2 + " nanos from " + l1 + " would underflow"
                     : "Adding " + -l2 + " nanos to " + l1 + " would underflow";
-            throw new DateTimeOverflowException(message);
+            throw new InstantOverflowException(message);
         }
 
         if (l1 > 0 && l2 < 0) {
@@ -275,7 +276,7 @@ public class DateTimeUtils {
 
     private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
         if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
-            throw new DateTimeOverflowException("Numeric overflow detected during conversion of " + epochSecond
+            throw new InstantOverflowException("Numeric overflow detected during conversion of " + epochSecond
                     + " to nanoseconds");
         }
 
@@ -297,7 +298,7 @@ public class DateTimeUtils {
      * Set the clock used to compute the current time. This allows a custom clock to be used instead of the current
      * system clock. This is mainly used for replay simulations.
      *
-     * @param clock clock used to compute the current time. Null uses the system clock.
+     * @param clock the clock used to compute the current time; if {@code null}, use the system clock
      */
     @ScriptApi
     public static void setClock(@Nullable final Clock clock) {
@@ -308,8 +309,8 @@ public class DateTimeUtils {
      * Returns the clock used to compute the current time. This may be the current system clock, or it may be an
      * alternative clock used for replay simulations.
      *
+     * @return the current clock
      * @see #setClock(Clock)
-     * @return current clock.
      */
     @NotNull
     @ScriptApi
@@ -318,13 +319,14 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date time according to the current clock. Under most circumstances, this method will return
-     * the current system time, but during replay simulations, this method can return the replay time.
+     * Provides the current {@link Instant instant} with nanosecond resolution according to the {@link #currentClock()
+     * current clock}. Under most circumstances, this method will return the current system time, but during replay
+     * simulations, this method can return the replay time.
      *
+     * @return the current instant with nanosecond resolution according to the current clock
      * @see #currentClock()
      * @see #setClock(Clock)
      * @see #nowSystem()
-     * @return the current date time according to the current clock.
      */
     @ScriptApi
     @NotNull
@@ -333,14 +335,14 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date time, with millisecond resolution, according to the current clock. Under most
-     * circumstances, this method will return the current system time, but during replay simulations, this method can
-     * return the replay time.
+     * Provides the current {@link Instant instant} with millisecond resolution according to the {@link #currentClock()
+     * current clock}. Under most circumstances, this method will return the current system time, but during replay
+     * simulations, this method can return the replay time.
      *
+     * @return the current instant with millisecond resolution according to the current clock
      * @see #currentClock()
      * @see #setClock(Clock)
      * @see #nowSystemMillisResolution()
-     * @return the current date time, with millisecond resolution, according to the current clock.
      */
     @ScriptApi
     @NotNull
@@ -349,11 +351,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date time according to the system clock. Note that the system time may not be desirable
-     * during replay simulations.
+     * Provides the current {@link Instant instant} with nanosecond resolution according to the {@link Clock#system()
+     * system clock}. Note that the system time may not be desirable during replay simulations.
      *
+     * @return the current instant with nanosecond resolution according to the system clock
      * @see #now()
-     * @return the current date time according to the system clock.
      */
     @ScriptApi
     @NotNull
@@ -362,11 +364,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date time, with millisecond resolution, according to the system clock. Note that the system
-     * time may not be desirable during replay simulations.
+     * Provides the current {@link Instant instant} with millisecond resolution according to the {@link Clock#system()
+     * system clock}. Note that the system time may not be desirable during replay simulations.
      *
+     * @return the current instant with millisecond resolution according to the system clock
      * @see #nowMillisResolution()
-     * @return the current date time, with millisecond resolution, according to the system clock.
      */
     @ScriptApi
     @NotNull
@@ -434,14 +436,14 @@ public class DateTimeUtils {
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
     /**
-     * Provides the current date string according to the current clock. Under most circumstances, this method will
-     * return the date according to current system time, but during replay simulations, this method can return the date
-     * according to replay time.
+     * Provides the current date string according to the {@link #currentClock() current clock}. Under most
+     * circumstances, this method will return the date according to current system time, but during replay simulations,
+     * this method can return the date according to replay time.
      *
-     * @param timeZone time zone.
+     * @param timeZone the time zone
+     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd"
      * @see #currentClock()
      * @see #setClock(Clock)
-     * @return the current date according to the current clock and time zone formatted as "yyyy-MM-dd".
      */
     @ScriptApi
     @NotNull
@@ -450,14 +452,15 @@ public class DateTimeUtils {
     }
 
     /**
-     * Provides the current date string according to the current clock and the default time zone. Under most
-     * circumstances, this method will return the date according to current system time, but during replay simulations,
-     * this method can return the date according to replay time.
+     * Provides the current date string according to the {@link #currentClock() current clock} and the
+     * {@link ZoneId#systemDefault() default time zone}. Under most circumstances, this method will return the date
+     * according to current system time, but during replay simulations, this method can return the date according to
+     * replay time.
      *
+     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd"
      * @see #currentClock()
      * @see #setClock(Clock)
      * @see ZoneId#systemDefault()
-     * @return the current date according to the current clock and default time zone formatted as "yyyy-MM-dd".
      */
     @ScriptApi
     @NotNull
@@ -472,18 +475,20 @@ public class DateTimeUtils {
     /**
      * Gets the time zone for a time zone name.
      *
-     * @param timeZone time zone name.
-     * @return time zone.
-     * @throws RuntimeException if the time zone does not exist.
+     * @param timeZone the time zone name
+     * @return the corresponding time zone
+     * @throws NullPointerException if {@code timeZone} is {@code null}
+     * @throws DateTimeException if {@code timeZone} has an invalid format
+     * @throws ZoneRulesException if {@code timeZone} cannot be found
      */
     public static ZoneId timeZone(@NotNull String timeZone) {
         return TimeZoneAliases.zoneId(timeZone);
     }
 
     /**
-     * Gets the system default time zone.
+     * Gets the {@link ZoneId#systemDefault() system default time zone}.
      *
-     * @return time zone.
+     * @return the system default time zone
      * @see ZoneId#systemDefault()
      */
     public static ZoneId timeZone() {
@@ -493,8 +498,8 @@ public class DateTimeUtils {
     /**
      * Adds a new time zone alias.
      *
-     * @param alias alias name
-     * @param timeZone time zone id name
+     * @param alias the alias name
+     * @param timeZone the time zone id name
      * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
      */
     public static void timeZoneAliasAdd(@NotNull final String alias, @NotNull final String timeZone) {
@@ -504,9 +509,8 @@ public class DateTimeUtils {
     /**
      * Removes a time zone alias.
      *
-     * @param alias alias name.
-     * @return true if the alias was present; false if the alias was not present.
-     * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
+     * @param alias the alias name
+     * @return whether {@code alias} was present
      */
     public static boolean timeZoneAliasRm(@NotNull final String alias) {
         return TimeZoneAliases.rmAlias(alias);
@@ -519,9 +523,9 @@ public class DateTimeUtils {
     /**
      * Converts microseconds to nanoseconds.
      *
-     * @param micros microseconds to convert.
+     * @param micros the microseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         microseconds converted to nanoseconds.
+     *         microseconds converted to nanoseconds
      */
     @ScriptApi
     public static long microsToNanos(final long micros) {
@@ -529,7 +533,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
         if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
-            throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
+            throw new InstantOverflowException("Converting " + micros + " micros to nanos would overflow");
         }
         return micros * 1000;
     }
@@ -537,9 +541,9 @@ public class DateTimeUtils {
     /**
      * Converts milliseconds to nanoseconds.
      *
-     * @param millis milliseconds to convert.
+     * @param millis the milliseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         milliseconds converted to nanoseconds.
+     *         milliseconds converted to nanoseconds
      */
     @ScriptApi
     public static long millisToNanos(final long millis) {
@@ -547,7 +551,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
         if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
-            throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
+            throw new InstantOverflowException("Converting " + millis + " millis to nanos would overflow");
         }
         return millis * 1000000;
     }
@@ -555,9 +559,9 @@ public class DateTimeUtils {
     /**
      * Converts seconds to nanoseconds.
      *
-     * @param seconds seconds to convert.
+     * @param seconds the seconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         seconds converted to nanoseconds.
+     *         seconds converted to nanoseconds
      */
     @ScriptApi
     public static long secondsToNanos(final long seconds) {
@@ -565,7 +569,7 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
         if (Math.abs(seconds) > MAX_CONVERTIBLE_SECONDS) {
-            throw new DateTimeOverflowException("Converting " + seconds + " seconds to nanos would overflow");
+            throw new InstantOverflowException("Converting " + seconds + " seconds to nanos would overflow");
         }
 
         return seconds * 1000000000L;
@@ -574,9 +578,9 @@ public class DateTimeUtils {
     /**
      * Converts nanoseconds to microseconds.
      *
-     * @param nanos nanoseconds to convert.
+     * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to microseconds, rounded down.
+     *         nanoseconds converted to microseconds, rounded down
      */
     @ScriptApi
     public static long nanosToMicros(final long nanos) {
@@ -589,9 +593,9 @@ public class DateTimeUtils {
     /**
      * Converts milliseconds to microseconds.
      *
-     * @param millis milliseconds to convert.
+     * @param millis the milliseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         milliseconds converted to microseconds, rounded down.
+     *         milliseconds converted to microseconds, rounded down
      */
     @ScriptApi
     public static long millisToMicros(final long millis) {
@@ -604,9 +608,9 @@ public class DateTimeUtils {
     /**
      * Converts seconds to microseconds.
      *
-     * @param seconds seconds to convert.
+     * @param seconds the seconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         seconds converted to microseconds, rounded down.
+     *         seconds converted to microseconds, rounded down
      */
     @ScriptApi
     public static long secondsToMicros(final long seconds) {
@@ -619,9 +623,9 @@ public class DateTimeUtils {
     /**
      * Converts nanoseconds to milliseconds.
      *
-     * @param nanos nanoseconds to convert.
+     * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to milliseconds, rounded down.
+     *         nanoseconds converted to milliseconds, rounded down
      */
     @ScriptApi
     public static long nanosToMillis(final long nanos) {
@@ -635,9 +639,9 @@ public class DateTimeUtils {
     /**
      * Converts microseconds to milliseconds.
      *
-     * @param micros microseconds to convert.
+     * @param micros the microseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         microseconds converted to milliseconds, rounded down.
+     *         microseconds converted to milliseconds, rounded down
      */
     @ScriptApi
     public static long microsToMillis(final long micros) {
@@ -651,9 +655,9 @@ public class DateTimeUtils {
     /**
      * Converts seconds to milliseconds.
      *
-     * @param seconds nanoseconds to convert.
+     * @param seconds the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         seconds converted to milliseconds, rounded down.
+     *         seconds converted to milliseconds, rounded down
      */
     @ScriptApi
     public static long secondsToMillis(final long seconds) {
@@ -667,9 +671,9 @@ public class DateTimeUtils {
     /**
      * Converts nanoseconds to seconds.
      *
-     * @param nanos nanoseconds to convert.
+     * @param nanos the nanoseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         nanoseconds converted to seconds, rounded down.
+     *         nanoseconds converted to seconds, rounded down
      */
     @ScriptApi
     public static long nanosToSeconds(final long nanos) {
@@ -682,9 +686,9 @@ public class DateTimeUtils {
     /**
      * Converts microseconds to seconds.
      *
-     * @param micros microseconds to convert.
+     * @param micros the microseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         microseconds converted to seconds, rounded down.
+     *         microseconds converted to seconds, rounded down
      */
     @ScriptApi
     public static long microsToSeconds(final long micros) {
@@ -697,9 +701,9 @@ public class DateTimeUtils {
     /**
      * Converts milliseconds to seconds.
      *
-     * @param millis milliseconds to convert.
+     * @param millis the milliseconds to convert
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *         milliseconds converted to seconds, rounded down.
+     *         milliseconds converted to seconds, rounded down
      */
     @ScriptApi
     public static long millisToSeconds(final long millis) {
@@ -715,10 +719,10 @@ public class DateTimeUtils {
 
 
     /**
-     * Converts a date time to an {@link Instant}.
+     * Converts a {@link ZonedDateTime} to an {@link Instant}.
      *
-     * @param dateTime date time to convert.
-     * @return {@link Instant}, or null if dateTime is null.
+     * @param dateTime the zoned date time to convert
+     * @return the resulting instant, or null if {@code dateTime} is {@code null}
      */
     @ScriptApi
     @Nullable
@@ -731,16 +735,18 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date, time, and time zone to an {@link Instant}.
+     * Converts a {@link LocalDate}, {@link LocalTime}, and {@link ZoneId} to an {@link Instant}.
      *
-     * @param date date.
-     * @param time local time.
-     * @param timeZone time zone.
-     * @return {@link Instant}, or null if any input is null.
+     * @param date the local date
+     * @param time the local time
+     * @param timeZone the time zone
+     * @return the resulting instant, or {@code null} if any input is {@code null}
      */
     @ScriptApi
     @Nullable
-    public static Instant toInstant(@Nullable final LocalDate date, @Nullable final LocalTime time,
+    public static Instant toInstant(
+            @Nullable final LocalDate date,
+            @Nullable final LocalTime time,
             @Nullable ZoneId timeZone) {
         if (date == null || time == null || timeZone == null) {
             return null;
@@ -753,37 +759,37 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a date time to an {@link Instant}.
+     * Converts a {@link Date} to an {@link Instant}.
      *
-     * @param dateTime date time to convert.
-     * @return {@link Instant}, or null if any input is null.
+     * @param date the date to convert
+     * @return the resulting instant, or null if {@code date} is {@code null}
      */
     @ScriptApi
     @Nullable
     @Deprecated
-    public static Instant toInstant(@Nullable final Date dateTime) {
-        if (dateTime == null) {
+    public static Instant toInstant(@Nullable final Date date) {
+        if (date == null) {
             return null;
         }
 
-        return epochMillisToInstant(dateTime.getTime());
+        return epochMillisToInstant(date.getTime());
     }
 
     /**
-     * Converts a date time to a {@link ZonedDateTime}.
+     * Converts an {@link Instant} to a {@link ZonedDateTime}.
      *
-     * @param dateTime date time to convert.
-     * @param timeZone time zone.
-     * @return {@link ZonedDateTime}, or null if any input is null.
+     * @param instant the instant to convert
+     * @param timeZone the time zone to use
+     * @return the resulting zoned date time, or {@code null} if any input is {@code null}
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final Instant dateTime, @Nullable ZoneId timeZone) {
-        if (dateTime == null || timeZone == null) {
+    public static ZonedDateTime toZonedDateTime(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        if (instant == null || timeZone == null) {
             return null;
         }
 
-        return ZonedDateTime.ofInstant(dateTime, timeZone);
+        return ZonedDateTime.ofInstant(instant, timeZone);
     }
 
     /**
@@ -1309,7 +1315,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to add.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified number of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1321,7 +1327,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plusNanos(nanos);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1332,7 +1338,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to add.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified number of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1344,7 +1350,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plusNanos(nanos);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1355,7 +1361,7 @@ public class DateTimeUtils {
      * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1367,7 +1373,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plus(duration);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1378,7 +1384,7 @@ public class DateTimeUtils {
      * @param period time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1390,7 +1396,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plus(period);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1401,7 +1407,7 @@ public class DateTimeUtils {
      * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1413,7 +1419,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plus(duration);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1424,7 +1430,7 @@ public class DateTimeUtils {
      * @param period time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time plus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1436,7 +1442,7 @@ public class DateTimeUtils {
         try {
             return dateTime.plus(period);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1447,7 +1453,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to subtract.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified number of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1459,7 +1465,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minusNanos(nanos);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1470,7 +1476,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to subtract.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified number of nanoseconds.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1482,7 +1488,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minusNanos(nanos);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1493,7 +1499,7 @@ public class DateTimeUtils {
      * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1505,7 +1511,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minus(duration);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1516,7 +1522,7 @@ public class DateTimeUtils {
      * @param period time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1528,7 +1534,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minus(period);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1539,7 +1545,7 @@ public class DateTimeUtils {
      * @param duration time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1551,7 +1557,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minus(duration);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1562,7 +1568,7 @@ public class DateTimeUtils {
      * @param period time period.
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting date time minus
      *         the specified time period.
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range.
+     * @throws InstantOverflowException if the resultant date time exceeds the supported range.
      */
     @ScriptApi
     @Nullable
@@ -1574,7 +1580,7 @@ public class DateTimeUtils {
         try {
             return dateTime.minus(period);
         } catch (Exception ex) {
-            throw new DateTimeOverflowException(ex);
+            throw new InstantOverflowException(ex);
         }
     }
 
@@ -1585,7 +1591,7 @@ public class DateTimeUtils {
      * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and
      *         dateTime2 in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long minus(@Nullable final Instant dateTime1, @Nullable final Instant dateTime2) {
@@ -1603,7 +1609,7 @@ public class DateTimeUtils {
      * @param dateTime2 second date time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and
      *         dateTime2 in nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long minus(@Nullable final ZonedDateTime dateTime1, @Nullable final ZonedDateTime dateTime2) {
@@ -1621,7 +1627,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffNanos(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1635,7 +1641,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         nanoseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffNanos(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1649,7 +1655,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         microseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMicros(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1667,7 +1673,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         microseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMicros(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1685,7 +1691,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         milliseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMillis(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1703,7 +1709,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in
      *         milliseconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static long diffMillis(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1721,7 +1727,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         seconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffSeconds(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1739,7 +1745,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         seconds.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffSeconds(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1757,7 +1763,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         minutes.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffMinutes(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1775,7 +1781,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         minutes.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffMinutes(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1793,7 +1799,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         days.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffDays(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1811,7 +1817,7 @@ public class DateTimeUtils {
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         days.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffDays(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1824,14 +1830,14 @@ public class DateTimeUtils {
 
     /**
      * Returns the difference in years between two date time values.
-     *
+     * <p>
      * Years are defined in terms of 365 day years.
      *
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         years.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYears365(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1844,14 +1850,14 @@ public class DateTimeUtils {
 
     /**
      * Returns the difference in years between two date time values.
-     *
+     * <p>
      * Years are defined in terms of 365 day years.
      *
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         years.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYears365(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -1864,14 +1870,14 @@ public class DateTimeUtils {
 
     /**
      * Returns the difference in years between two date time values.
-     *
+     * <p>
      * Years are defined in terms of 365.2425 day years.
      *
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         years.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYearsAvg(@Nullable final Instant start, @Nullable final Instant end) {
@@ -1884,14 +1890,14 @@ public class DateTimeUtils {
 
     /**
      * Returns the difference in years between two date time values.
-     *
+     * <p>
      * Years are defined in terms of 365.2425 day years.
      *
      * @param start start time.
      * @param end end time.
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in
      *         years.
-     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows.
+     * @throws InstantOverflowException if the datetime arithmetic overflows or underflows.
      */
     @ScriptApi
     public static double diffYearsAvg(@Nullable final ZonedDateTime start, @Nullable final ZonedDateTime end) {
@@ -2280,7 +2286,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2301,7 +2307,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2321,7 +2327,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of milliseconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2342,7 +2348,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of milliseconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2362,7 +2368,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of seconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2383,7 +2389,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of seconds that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2403,7 +2409,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2424,7 +2430,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of minutes that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2444,7 +2450,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of hours that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -2465,7 +2471,7 @@ public class DateTimeUtils {
 
     /**
      * Returns the number of hours that have elapsed since the top of the day.
-     *
+     * <p>
      * On days when daylight savings time events occur, results may be different from what is expected based upon the
      * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
      * upon if the daylight savings time adjustment is forwards or backwards.
@@ -3205,7 +3211,7 @@ public class DateTimeUtils {
      * with a negative sign.
      * <p>
      * Examples:
-     * 
+     *
      * <pre>
      *   "P2Y"             -- Period.ofYears(2)
      *   "P3M"             -- Period.ofMonths(3)
@@ -3246,7 +3252,7 @@ public class DateTimeUtils {
      * with a negative sign.
      * <p>
      * Examples:
-     * 
+     *
      * <pre>
      *   "P2Y"             -- Period.ofYears(2)
      *   "P3M"             -- Period.ofMonths(3)
@@ -3285,7 +3291,7 @@ public class DateTimeUtils {
      * a negative sign.
      * <p>
      * Examples:
-     * 
+     *
      * <pre>
      *    "PT20.345S" -- parses as "20.345 seconds"
      *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
@@ -3326,7 +3332,7 @@ public class DateTimeUtils {
      * a negative sign.
      * <p>
      * Examples:
-     * 
+     *
      * <pre>
      *    "PT20.345S" -- parses as "20.345 seconds"
      *    "PT15M"     -- parses as "15 minutes" (where a minute is 60 seconds)
@@ -3358,7 +3364,7 @@ public class DateTimeUtils {
 
     /**
      * Parses the string argument as nanoseconds since the Epoch.
-     *
+     * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
      * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
@@ -3385,7 +3391,7 @@ public class DateTimeUtils {
 
     /**
      * Parses the string argument as a date time.
-     *
+     * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
      * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others. Additionally, date time strings can be integer values that
      * are nanoseconds, milliseconds, or seconds from the Epoch. Expected date ranges are used to infer the units.
@@ -3621,7 +3627,7 @@ public class DateTimeUtils {
 
     /**
      * Parses the string argument as a local date, which is a date without a time or time zone.
-     *
+     * <p>
      * Date strings are formatted according to the ISO 8601 date time format as {@code YYYY-MM-DD}.
      *
      * @param s date string.
@@ -3646,7 +3652,7 @@ public class DateTimeUtils {
 
     /**
      * Parses the string argument as a local date, which is a date without a time or time zone.
-     *
+     * <p>
      * Date strings are formatted according to the ISO 8601 date time format as {@code YYYY-MM-DD}.
      *
      * @param s date string.
