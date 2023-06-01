@@ -972,6 +972,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("11:14:32.123"));
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("11:14:32.1234"));
 
+        TestCase.assertEquals(ChronoField.MINUTE_OF_HOUR, DateTimeUtils.parseTimePrecision("PT11:14"));
+        TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE, DateTimeUtils.parseTimePrecision("PT11:14:32"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("PT11:14:32.1"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("PT11:14:32.12"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("PT11:14:32.123"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecision("PT11:14:32.1234"));
+
         try {
             DateTimeUtils.parseTimePrecision("JUNK");
             TestCase.fail("Should have thrown an exception");
@@ -1009,6 +1016,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("11:14:32.12"));
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("11:14:32.123"));
         TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("11:14:32.1234"));
+
+
+        TestCase.assertEquals(ChronoField.MINUTE_OF_HOUR, DateTimeUtils.parseTimePrecisionQuiet("PT11:14"));
+        TestCase.assertEquals(ChronoField.SECOND_OF_MINUTE, DateTimeUtils.parseTimePrecisionQuiet("PT11:14:32"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("PT11:14:32.1"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("PT11:14:32.12"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("PT11:14:32.123"));
+        TestCase.assertEquals(ChronoField.MILLI_OF_SECOND, DateTimeUtils.parseTimePrecisionQuiet("PT11:14:32.1234"));
 
         TestCase.assertNull(DateTimeUtils.parseTimePrecisionQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseTimePrecisionQuiet(null));

@@ -3561,7 +3561,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+     * Returns a {@link ChronoField} indicating the level of precision in a time, datetime, or period nanos string.
      *
      * @param s time string.
      * @return {@link ChronoField} for the finest units in the string (e.g. "10:00:00" would yield SecondOfMinute).
@@ -3585,6 +3585,10 @@ public class DateTimeUtils {
                         return parts[i].field;
                     }
                 }
+            }
+
+            if (TIME_DURATION_PATTERN.matcher(s).matches()) {
+                return parseTimePrecision(s.replace("PT", ""));
             }
 
             throw new RuntimeException("Time precision does not match expected pattern");

@@ -2028,7 +2028,7 @@ def parse_zdt(s: str, quiet: bool = False) -> Optional[ZonedDateTime]:
 
 
 def parse_time_precision(s: str, quiet: bool = False) -> Optional[str]:
-    """ Returns a string indicating the level of precision in a time or datetime string (e.g. 'SecondOfMinute').
+    """ Returns a string indicating the level of precision in a time, datetime, or period nanos string. (e.g. 'SecondOfMinute').
 
     Args:
         s (str): Time string.
