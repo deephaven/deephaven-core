@@ -32,6 +32,7 @@ import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -2330,6 +2331,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             parents.add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
+            }
+            if (parent instanceof NotificationQueue.Dependency) {
+                // ensure that we are in the same update graph
+                this.parent.getUpdateGraph((NotificationQueue.Dependency) parent);
             }
         }
     }
