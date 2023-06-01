@@ -31,7 +31,7 @@ class Tools {
                     // If system is set to use intellij paths, lets make gradle point to same annotation
                     // processor output location as intellij, so we don't wind up with duplicated classes
                     // when intellij picks up its own annotation processor output plus gradle's.
-                    javac.options.annotationProcessorGeneratedSourcesDirectory = outputDir
+                    javac.options.generatedSourceOutputDirectory = outputDir
                     // make sure this directory always exists.
                     p.mkdir(outputDir)
                     // Make sure we clean our output whenever build/ is deleted.

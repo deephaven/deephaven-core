@@ -42,7 +42,7 @@ String devRoot = rootDir.absolutePath
 task groovyStaticImportGenerator(type: JavaExec, dependsOn: 'classes') {
     description 'Run GroovyStaticImportGenerator'
 
-    main = 'io.deephaven.libs.GroovyStaticImportGenerator'
+    mainClass.set 'io.deephaven.libs.GroovyStaticImportGenerator'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -51,7 +51,7 @@ task groovyStaticImportGenerator(type: JavaExec, dependsOn: 'classes') {
 task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GroovyStaticImportGenerator to assert that the generated code has not changed'
 
-    main = 'io.deephaven.libs.GroovyStaticImportGenerator'
+    mainClass.set 'io.deephaven.libs.GroovyStaticImportGenerator'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -62,7 +62,7 @@ task groovyStaticImportGeneratorAssert(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods'
 
-    main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
+    mainClass.set 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -73,7 +73,7 @@ task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
 task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateAxesPlotMethods to assert that the generated code has not changed'
 
-    main = 'io.deephaven.plot.util.GenerateAxesPlotMethods'
+    mainClass.set 'io.deephaven.plot.util.GenerateAxesPlotMethods'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -85,7 +85,7 @@ task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries'
 
-    main = 'io.deephaven.plot.util.GenerateMultiSeries'
+    mainClass.set 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -96,7 +96,7 @@ task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
 task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateMultiSeries to assert that the generated code has not changed'
 
-    main = 'io.deephaven.plot.util.GenerateMultiSeries'
+    mainClass.set 'io.deephaven.plot.util.GenerateMultiSeries'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -109,7 +109,7 @@ task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable'
     dependsOn generateAxesPlotMethods, generateMultiSeries
 
-    main = 'io.deephaven.plot.util.GenerateFigureImmutable'
+    mainClass.set 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -121,7 +121,7 @@ task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GenerateFigureImmutable to assert that the generated code has not changed'
     dependsOn generateAxesPlotMethodsAssert, generateMultiSeriesAssert
 
-    main = 'io.deephaven.plot.util.GenerateFigureImmutable'
+    mainClass.set 'io.deephaven.plot.util.GenerateFigureImmutable'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -134,7 +134,7 @@ task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience'
     dependsOn generateFigureImmutable
 
-    main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
+    mainClass.set 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -146,7 +146,7 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePlottingConvenience to assert that the generated code has not changed'
     dependsOn generateFigureImmutableAssert
 
-    main = 'io.deephaven.plot.util.GeneratePlottingConvenience'
+    mainClass.set 'io.deephaven.plot.util.GeneratePlottingConvenience'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -158,7 +158,7 @@ task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonFigureWrapper'
     dependsOn generatePlottingConvenience
 
-    main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
+    mainClass.set 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
@@ -171,7 +171,7 @@ task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     description 'Run GeneratePythonFigureWrapper'
     dependsOn generatePlottingConvenienceAssert
 
-    main = 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
+    mainClass.set 'io.deephaven.plot.util.GeneratePyV2FigureAPI'
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
