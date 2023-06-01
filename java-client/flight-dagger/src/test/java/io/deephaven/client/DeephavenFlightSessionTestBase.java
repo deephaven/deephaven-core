@@ -5,6 +5,7 @@ package io.deephaven.client;
 
 import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
@@ -19,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerTestBase {
 
-    SafeCloseable executionContext;
     BufferAllocator bufferAllocator;
     ScheduledExecutorService sessionScheduler;
     FlightSession flightSession;
@@ -28,7 +28,6 @@ public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerT
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
         ManagedChannel channel = channelBuilder().build();
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
@@ -47,7 +46,6 @@ public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerT
         if (!sessionScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
             throw new RuntimeException("Scheduler not shutdown within 5 seconds");
         }
-        executionContext.close();
         super.tearDown();
     }
 }
