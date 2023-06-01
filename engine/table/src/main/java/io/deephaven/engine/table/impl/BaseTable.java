@@ -438,6 +438,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
             }
+            if (parent instanceof NotificationQueue.Dependency) {
+                // ensure that we are in the same update graph
+                getUpdateGraph((NotificationQueue.Dependency) parent);
+            }
         }
     }
 

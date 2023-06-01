@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -165,14 +166,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         if (constituentsToUse.length == 0) {
             throw new IllegalArgumentException("No non-null constituents provided");
         }
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        for (Table constituent : constituentsToUse) {
-            if (constituent.isRefreshing() && constituent.getUpdateGraph() != updateGraph) {
-                throw new IllegalStateException("Constituent table uses a different update context than what is "
-                        + " currently active. Constituent: " + constituent.getUpdateGraph() + ", active context: "
-                        + updateGraph);
-            }
-        }
+        // validate that the update graph is consistent
 
         final TableDefinition constituentDefinitionToUse =
                 constituentDefinition == null ? constituentsToUse[0].getDefinition() : constituentDefinition;
@@ -181,14 +175,20 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         final TrackingRowSet rowSet = RowSetFactory.flat(constituentsToUse.length).toTracking();
         final Map<String, ColumnSource<?>> columnSources =
                 Map.of(CONSTITUENT.name(), InMemoryColumnSource.getImmutableMemoryColumnSource(constituentsToUse));
-        final Table table = new QueryTable(
-                CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
-                rowSet,
-                columnSources) {
-            {
-                setFlat();
-            }
-        };
+
+        final Table table;
+        final UpdateGraph updateGraph = constituents[0].getUpdateGraph(constituents);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            table = new QueryTable(
+                    CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
+                    rowSet,
+                    columnSources) {
+                {
+                    setFlat();
+                }
+            };
+        }
+
         for (final Table constituent : constituentsToUse) {
             table.addParentReference(constituent);
         }
