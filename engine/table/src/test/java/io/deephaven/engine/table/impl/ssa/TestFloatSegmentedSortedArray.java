@@ -177,10 +177,10 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
             };
             asFloat.addUpdateListener(asFloatListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() ->
-                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
+                updateGraph.runWithinUnitTestCycle(() ->
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize());
                         final RowSet asFloatRowSetCopy = asFloat.getRowSet().copy()) {
@@ -221,13 +221,13 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
             };
             asFloat.addUpdateListener(asFloatListener);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             while (desc.advance(50)) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                            final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                            assertTrue(notify[2].isEmpty());
-                            table.notifyListeners(notify[0], notify[1], notify[2]);
-                        });
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                    assertTrue(notify[2].isEmpty());
+                    table.notifyListeners(notify[0], notify[1], notify[2]);
+                });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asFloat.intSize());
                      final RowSet asFloatRowSetCopy = asFloat.getRowSet().copy()) {

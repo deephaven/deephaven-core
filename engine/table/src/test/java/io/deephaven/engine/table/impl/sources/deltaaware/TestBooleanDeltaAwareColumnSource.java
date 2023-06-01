@@ -10,21 +10,19 @@ package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.chunk.ObjectChunk;
 
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.chunk.BooleanChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 
-import org.junit.After;
-import org.junit.Before;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,27 +30,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {
 
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
-
-    @Before
-    public void setUp() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
-    }
 
     @Test
     public void simple1() {
