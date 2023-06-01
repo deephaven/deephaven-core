@@ -209,14 +209,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 joined_pt_proxy = pt_proxy.aj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.aj(right_table, on=["a < a"], joins="e")
+                joined_pt_proxy = pt_proxy.aj(right_table, on=["a > a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
             with self.subTest("reverse as-of join"):
                 joined_pt_proxy = pt_proxy.raj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.raj(right_table, on=["a > a"], joins="e")
+                joined_pt_proxy = pt_proxy.raj(right_table, on=["a < a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
         with self.subTest("Join with another Proxy"):

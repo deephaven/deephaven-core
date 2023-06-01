@@ -9,7 +9,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RawString;
-import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
@@ -94,7 +93,6 @@ import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
@@ -375,38 +373,38 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AsOfJoinTable aj) {
+            // TODO: add new as-of join RPC
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(aj.left()))
                     .setRightId(ref(aj.right()))
-                    .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
-                            ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
-                            : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
+                    .setAsOfMatchRule(adapt(aj.joinMatch().joinRule()));
             for (JoinMatch match : aj.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
+            final String lastColumn = aj.joinMatch().leftColumn().name()
+                    + aj.joinMatch().joinRule().operatorString()
+                    + aj.joinMatch().rightColumn().name();
+            builder.addColumnsToMatch(lastColumn);
             for (JoinAddition addition : aj.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
             out = op(Builder::setAsOfJoin, builder.build());
         }
 
-        @Override
-        public void visit(ReverseAsOfJoinTable raj) {
-            AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setResultId(ticket)
-                    .setLeftId(ref(raj.left()))
-                    .setRightId(ref(raj.right()))
-                    .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
-                            ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
-                            : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
-            for (JoinMatch match : raj.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
+        private static AsOfJoinTablesRequest.MatchRule adapt(AsOfJoinRule rule) {
+            switch (rule) {
+                case LESS_THAN_EQUAL:
+                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL;
+                case LESS_THAN:
+                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN;
+                case GREATER_THAN_EQUAL:
+                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL;
+                case GREATER_THAN:
+                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN;
+                default:
+                    throw new IllegalArgumentException(String.format("Unrecognized AsOfJoinRule %s", rule));
             }
-            for (JoinAddition addition : raj.additions()) {
-                builder.addColumnsToAdd(Strings.of(addition));
-            }
-            out = op(Builder::setAsOfJoin, builder.build());
         }
 
         @Override

@@ -51,7 +51,6 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
-_JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
@@ -1259,8 +1258,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -1289,8 +1288,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
@@ -3016,8 +3015,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -3050,8 +3049,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
