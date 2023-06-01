@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -18,6 +19,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
 
     private transient OrderedLongSet prevInnerSet;
 
+    private final LogicalClock clock;
     private final WritableRowSetImpl prev = new UnmodifiableRowSetImpl();
 
     /**
@@ -34,16 +36,17 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
 
     public TrackingWritableRowSetImpl(final OrderedLongSet innerSet) {
         super(innerSet);
+        this.clock = ExecutionContext.getContext().getUpdateGraph().clock();
         this.prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 
     private OrderedLongSet checkAndGetPrev() {
-        if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() == changeTimeStep) {
+        if (clock.currentStep() == changeTimeStep) {
             return prevInnerSet;
         }
         synchronized (this) {
-            final long currentClockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentClockStep = clock.currentStep();
             if (currentClockStep == changeTimeStep) {
                 return prevInnerSet;
             }

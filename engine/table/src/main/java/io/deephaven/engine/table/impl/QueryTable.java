@@ -3607,13 +3607,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static void checkInitiateOperation(@NotNull final Table table) {
         if (table.isRefreshing()) {
-            ExecutionContext.getContext().getUpdateGraph().checkInitiateTableOperation();
+            table.getUpdateGraph().checkInitiateTableOperation();
         }
     }
 
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
-            ExecutionContext.getContext().getUpdateGraph().checkInitiateTableOperation();
+            first.getUpdateGraph(second).checkInitiateTableOperation();
         }
     }
 

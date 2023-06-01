@@ -91,12 +91,19 @@ public interface NotificationQueue {
          */
         static UpdateGraph getUpdateGraph(@Nullable Dependency first, Dependency... dependencies) {
             UpdateGraph graph = null;
+            UpdateGraph firstNonNullGraph = null;
 
-            if (first != null && !DynamicNode.isDynamicAndNotRefreshing(first)) {
-                graph = first.getUpdateGraph();
+            if (first != null) {
+                firstNonNullGraph = first.getUpdateGraph();
+                if (!DynamicNode.isDynamicAndNotRefreshing(first)) {
+                    graph = first.getUpdateGraph();
+                }
             }
 
             for (final Dependency other : dependencies) {
+                if (other != null && firstNonNullGraph == null) {
+                    firstNonNullGraph = other.getUpdateGraph();
+                }
                 if (other == null || DynamicNode.isDynamicAndNotRefreshing(other)) {
                     continue;
                 }
@@ -108,7 +115,7 @@ public interface NotificationQueue {
                 }
             }
 
-            return graph;
+            return graph == null ? firstNonNullGraph : graph;
         }
     }
 
