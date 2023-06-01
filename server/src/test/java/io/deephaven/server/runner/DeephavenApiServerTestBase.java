@@ -7,6 +7,7 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.io.logger.LogBuffer;
@@ -18,6 +19,7 @@ import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.console.NoConsoleSessionModule;
 import io.deephaven.server.log.LogModule;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.testing.GrpcCleanupRule;
@@ -73,8 +75,7 @@ public abstract class DeephavenApiServerTestBase {
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    @Rule
-    public final EngineCleanup framework = new EngineCleanup();
+    private SafeCloseable executionContext;
 
     private TestComponent serverComponent;
     private LogBuffer logBuffer;
@@ -82,6 +83,7 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
+        executionContext = TestExecutionContext.createForUnitTests().open();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();
@@ -122,6 +124,7 @@ public abstract class DeephavenApiServerTestBase {
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.resetForUnitTests(true);
         }
+        executionContext.close();
     }
 
     public DeephavenApiServer server() {
