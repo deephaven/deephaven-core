@@ -174,6 +174,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZone("America/Denver"));
         TestCase.assertEquals(ZoneId.of("America/New_York"), DateTimeUtils.parseTimeZone("NY"));
         TestCase.assertEquals(ZoneId.of("Asia/Yerevan"), DateTimeUtils.parseTimeZone("Asia/Yerevan"));
+        TestCase.assertEquals(ZoneId.of("GMT+2"), DateTimeUtils.parseTimeZone("GMT+2"));
+        TestCase.assertEquals(ZoneId.of("UTC+01:00"), DateTimeUtils.parseTimeZone("UTC+01:00"));
 
         try {
             DateTimeUtils.parseTimeZone("JUNK");
@@ -195,6 +197,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(ZoneId.of("America/Denver"), DateTimeUtils.parseTimeZoneQuiet("America/Denver"));
         TestCase.assertEquals(ZoneId.of("America/New_York"), DateTimeUtils.parseTimeZoneQuiet("NY"));
         TestCase.assertEquals(ZoneId.of("Asia/Yerevan"), DateTimeUtils.parseTimeZoneQuiet("Asia/Yerevan"));
+        TestCase.assertEquals(ZoneId.of("GMT+2"), DateTimeUtils.parseTimeZoneQuiet("GMT+2"));
+        TestCase.assertEquals(ZoneId.of("UTC+01:00"), DateTimeUtils.parseTimeZoneQuiet("UTC+01:00"));
 
         TestCase.assertNull(DateTimeUtils.parseTimeZoneQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseTimeZoneQuiet(null));
