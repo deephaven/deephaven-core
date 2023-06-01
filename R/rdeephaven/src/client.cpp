@@ -1,8 +1,8 @@
-#include <memory>
-#include <exception>
 #include <iostream>
-#include <sstream>
+#include <utility>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include "deephaven/client/client.h"
 #include "deephaven/client/flight.h"
@@ -13,7 +13,6 @@
 #include <Rcpp.h>
 
 
-// TODO: determine if Rcpp generates docs from here and document for internal use
 // TODO: good error handling
 
 
@@ -22,6 +21,11 @@
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
+
+    /**
+     * All of the following methods that return TableHandleWrapper* call directly into the C++ client.
+     * Please see the corresponding methods in deephaven/client/client.h for C++ level documentation.
+    */
 
     TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
         return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
@@ -39,6 +43,12 @@ public:
         return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
     };
 
+    /////////////////////////////// INTERNAL METHODS TO USE FROM R
+
+    /**
+     * Creates and returns a pointer to an ArrowArrayStream C struct containing the data from the table referenced by internal_tbl_hdl.
+     * Intended to be used for creating an Arrow RecordBatchReader in R via RecordBatchReader$import_from_c(ptr).
+    */
     SEXP getArrowArrayStreamPtr() {
 
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
@@ -56,10 +66,6 @@ public:
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
     };
 
-    void print() {
-        std::cout << internal_tbl_hdl.stream(true) << '\n';
-    };
-
 private:
     deephaven::client::TableHandle internal_tbl_hdl;
 };
@@ -68,25 +74,48 @@ private:
 class ClientWrapper {
 public:
 
+    /**
+     * The following methods that are not marked as internal call directly into the C++ client.
+     * Please see the corresponding methods in deephaven/client/client.h for C++ level documentation.
+    */
+
     TableHandleWrapper* emptyTable(int64_t size) {
         return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
     };
+
     TableHandleWrapper* openTable(std::string tableName) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
+
+        // we have to instantiate first and try a method, as .fetchTable does not complain if the table does not exist
+        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.fetchTable(tableName);
+        try {
+            std::shared_ptr<arrow::flight::FlightStreamReader> fsr = table_handle.getFlightStreamReader();
+        } catch(...) {
+            std::cout << "Error: The table you've requested does not exist on the server.\n";
+            return NULL;
+        }
+        return new TableHandleWrapper(table_handle);
     };
 
     void runScript(std::string code) {
         internal_tbl_hdl_mngr.runScript(code);
     };
 
-    // INTERNAL USE METHODS
+    /////////////////////////////// INTERNAL METHODS TO USE FROM R
 
+    /**
+     * Allocates memory for an ArrowArrayStream C struct and returns a pointer to the new chunk of memory.
+     * Intended to be used to get a pointer to pass to Arrow's R library RecordBatchReader$export_to_c(ptr).
+    */
     SEXP newArrowArrayStreamPtr() {
-
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
     };
 
+    /**
+     * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
+     * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
+     * @param new_table_name Name for the new table that will appear on the server.
+    */
     TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, std::string new_table_name) {
 
         // this is all essentially preamble to enable us to write to the server
@@ -124,12 +153,24 @@ private:
     deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
 
-    friend ClientWrapper* newClientWrapper(const std::string &target, const std::string &authType, const std::vector<std::string> &credentials, const std::string &sessionType);
+    friend ClientWrapper* newClientWrapper(const std::string &target, const std::string &sessionType,
+                                           const std::string &authType, const std::string &key, const std::string &value);
 };
 
 // factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
 // the current implementation of passing authentication args to C++ client is terrible and needs to be redone. Only this could make Rcpp happy in a days work
-ClientWrapper* newClientWrapper(const std::string &target, const std::string &authType, const std::vector<std::string> &credentials, const std::string &sessionType) {
+
+/**
+ * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
+ * @param target URL that the server is running on.
+ * @param sessionType Type of console to start with this client connection, can be "none", "python", or "groovy". The ClientWrapper::runScript() method will only work
+ *                    with the language specified here.
+ * @param authType Type of authentication to use, can be "default", "basic", or "custom". "basic" uses username/password auth, "custom" uses general key/value auth.
+ * @param key Key credential for authentication, can be a username if authType is "basic", or a general key if authType is "custom". Set to "" if authType is "default".
+ * @param value Value credential for authentication, can be a password if authType is "basic", or a general value if authType is "custom". Set to "" if authType is "default".
+ */
+ClientWrapper* newClientWrapper(const std::string &target, const std::string &sessionType,
+                                const std::string &authType, const std::string &key, const std::string &value) {
 
     deephaven::client::ClientOptions client_options = deephaven::client::ClientOptions();
 
@@ -137,10 +178,10 @@ ClientWrapper* newClientWrapper(const std::string &target, const std::string &au
         client_options.setDefaultAuthentication();
     } else if (authType == "basic") {
         std::cout << "basic auth!\n";
-        client_options.setBasicAuthentication(credentials[0], credentials[1]);
+        client_options.setBasicAuthentication(key, value);
     } else if (authType == "custom") {
         std::cout << "custom auth!\n";
-        client_options.setCustomAuthentication(credentials[0], credentials[1]);
+        client_options.setCustomAuthentication(key, value);
     } else {
         std::cout << "complain about invalid authType\n";
     }
@@ -160,7 +201,6 @@ ClientWrapper* newClientWrapper(const std::string &target, const std::string &au
 
 using namespace Rcpp;
 
-RCPP_EXPOSED_AS(arrow::RecordBatchReader)
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
@@ -171,12 +211,11 @@ RCPP_MODULE(ClientModule) {
     .method("view", &TableHandleWrapper::view)
     .method("drop_columns", &TableHandleWrapper::dropColumns)
     .method("update", &TableHandleWrapper::update)
-    .method("print", &TableHandleWrapper::print)
     .method(".get_arrowArrayStream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;
 
     class_<ClientWrapper>("Client")
-    .factory<const std::string&, const std::string&, const std::vector<std::string>&, const std::string&>(newClientWrapper)
+    .factory<const std::string&, const std::string&, const std::string&, const std::string&, const std::string&>(newClientWrapper)
     .method("empty_table", &ClientWrapper::emptyTable)
     .method("open_table", &ClientWrapper::openTable)
     .method("run_script", &ClientWrapper::runScript)
