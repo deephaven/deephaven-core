@@ -106,8 +106,8 @@ compileJava.dependsOn generateProtobuf
 sourceSets {
   main {
     java {
-      srcDir 'build/generated/source/proto/main/grpc'
-      srcDir 'build/generated/source/proto/main/java'
+      srcDir(generateProtobuf).include("**/*.java")
+//      srcDir 'build/generated/source/proto/main/java'
     }
     resources {
       srcDir 'src/main/proto/deephaven/proto'
