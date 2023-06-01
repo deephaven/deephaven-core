@@ -1683,7 +1683,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 {"JP", "Asia/Tokyo"},
                 {"SG", "Asia/Singapore"},
                 {"UTC", "UTC"},
-                {"America/Argentina/Buenos_Aires", "America/Argentina/Buenos_Aires"}
+                {"America/Argentina/Buenos_Aires", "America/Argentina/Buenos_Aires"},
+                {"GMT+2", "GMT+2"},
+                {"UTC+01:00", "UTC+01:00"}
         };
 
         for (final String[] v : values) {
