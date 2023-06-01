@@ -1618,13 +1618,11 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec keySpec,
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
-        if (table.isRefreshing()) {
-            if (!ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-                if (!ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
-                    throw new KafkaPublisherException(
-                            "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
-                }
-            }
+        if (table.isRefreshing()
+                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
+                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+            throw new KafkaPublisherException(
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;

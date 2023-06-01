@@ -4,7 +4,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -52,7 +51,7 @@ public abstract class IncrementalSortRedirectionBase {
     private static final int REMAINING_ROWS = 1000000;
 
     private EngineCleanup engine;
-    private UpdateGraph ug;
+    private ControlledUpdateGraph ug;
     private IncrementalReleaseFilter filter;
     private Table ms;
     private int numCycles;
@@ -62,7 +61,7 @@ public abstract class IncrementalSortRedirectionBase {
     public void setup(Blackhole blackhole) throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        ug = ExecutionContext.getContext().getUpdateGraph();
+        ug = ExecutionContext.getContext().getUpdateGraph().cast();
 
         final int componentSize = 2000000;
         final int numBuckets = 2000;
@@ -74,11 +73,11 @@ public abstract class IncrementalSortRedirectionBase {
         numCycles = remainingRows / cycleIncrement;
 
         // create the initial table
-        ug.<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ug.startCycleForUnitTests();
         ms = create(componentSize, numBuckets, numParts, initialSize, cycleIncrement);
         listener = new BlackholeListener(blackhole);
         ms.addUpdateListener(listener);
-        ug.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        ug.completeCycleForUnitTests();
 
     }
 
@@ -110,11 +109,11 @@ public abstract class IncrementalSortRedirectionBase {
     @OperationsPerInvocation(REMAINING_ROWS)
     public void numRows() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ug.<ControlledUpdateGraph>cast().startCycleForUnitTests();
+            ug.startCycleForUnitTests();
             try {
                 filter.run();
             } finally {
-                ug.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                ug.completeCycleForUnitTests();
             }
             if (listener.e != null) {
                 throw listener.e;

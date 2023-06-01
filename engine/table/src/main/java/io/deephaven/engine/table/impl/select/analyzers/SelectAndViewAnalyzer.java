@@ -332,7 +332,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             UpdateGraph updateGraph, RowSet parentRowset, String name, SelectColumn sc, WritableColumnSource<?> cs,
             WritableColumnSource<?> underlyingSource, String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder,
             boolean isRedirected, boolean flattenResult, boolean alreadyFlattened) {
-        return new SelectColumnLayer(updateGraph, parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
+        return new SelectColumnLayer(updateGraph, parentRowset, this, name, sc, cs, underlyingSource,
+                parentColumnDependencies,
                 mcsBuilder, isRedirected, flattenResult, alreadyFlattened);
     }
 

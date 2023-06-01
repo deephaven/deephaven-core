@@ -20,6 +20,7 @@ import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TLongLongHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.tuple.ArrayTuple;
 
 import java.util.HashSet;
@@ -146,7 +147,7 @@ public class HashSetBackedTableFactory {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private final class HashSetBackedTable extends QueryTable implements Runnable {
         HashSetBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {

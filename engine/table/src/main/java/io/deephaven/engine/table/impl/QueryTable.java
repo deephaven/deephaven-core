@@ -690,7 +690,6 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table exactJoinImpl(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         final UpdateGraph updateGraph = getUpdateGraph(table);
-        // final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(this, table);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return QueryPerformanceRecorder.withNugget(
                     "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
@@ -1496,7 +1495,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
                     final UpdateGraph ourUpdateGraph = ExecutionContext.getContext().getUpdateGraph();
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null;
-                         final SafeCloseable ignored2 = ExecutionContext.getDefaultContext().withUpdateGraph(ourUpdateGraph).open()) {
+                            final SafeCloseable ignored2 =
+                                    ExecutionContext.getDefaultContext().withUpdateGraph(ourUpdateGraph).open()) {
                         // we open the default context here to ensure that the update processing happens in the default
                         // context whether it is processed in parallel or not
                         try (final RowSet emptyRowSet = RowSetFactory.empty();

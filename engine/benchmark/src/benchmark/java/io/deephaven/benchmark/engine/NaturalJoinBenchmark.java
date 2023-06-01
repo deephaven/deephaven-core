@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.metrics.MetricsManager;
@@ -51,6 +52,7 @@ public class NaturalJoinBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
+        TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;

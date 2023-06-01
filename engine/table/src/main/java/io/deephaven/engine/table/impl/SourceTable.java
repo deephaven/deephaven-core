@@ -174,8 +174,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             return;
                         }
                         rowSet.initializePreviousValue();
-                        final long currentClockValue =
-                                ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+                        final long currentClockValue = getUpdateGraph().clock().currentValue();
                         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                                 ? LogicalClock.getStep(currentClockValue) - 1
                                 : LogicalClock.getStep(currentClockValue));

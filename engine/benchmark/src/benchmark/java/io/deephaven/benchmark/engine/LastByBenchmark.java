@@ -6,6 +6,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
@@ -68,6 +69,7 @@ public class LastByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
+        TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 

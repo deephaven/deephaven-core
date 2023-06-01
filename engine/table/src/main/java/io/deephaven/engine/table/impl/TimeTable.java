@@ -44,17 +44,13 @@ import static io.deephaven.util.type.TypeUtils.box;
  *
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
  *
- * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to the {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
 public final class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     public static class Builder {
-        private UpdateSourceRegistrar registrar;
-
-        {
-            registrar = ExecutionContext.getContext().getUpdateGraph();
-        }
+        private UpdateSourceRegistrar registrar = ExecutionContext.getContext().getUpdateGraph();
 
         private Clock clock;
         private DateTime startTime;

@@ -8,6 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.sources.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -130,7 +131,7 @@ public class FunctionGeneratedTableFactory {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private final class FunctionBackedTable extends QueryTable implements Runnable {
         FunctionBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {

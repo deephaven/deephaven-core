@@ -6,6 +6,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.ChunkSource;
@@ -68,6 +69,7 @@ public abstract class RedirectionBenchBase {
         chunkCapacity = Integer.parseInt(params.getParam("chunkCapacity"));
         skipResultsProcessing = Boolean.parseBoolean(params.getParam("skipResultsProcessing"));
 
+        TestExecutionContext.createForUnitTests().open();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
 

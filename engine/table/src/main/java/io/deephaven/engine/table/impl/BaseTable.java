@@ -522,7 +522,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public void addUpdateListener(final ShiftObliviousListener listener, final boolean replayInitialImage) {
-        // TODO NOCOMMIT NATE: check update graph consistency
         addUpdateListener(new LegacyListenerAdapter(listener, getRowSet()));
         if (replayInitialImage) {
             if (isRefreshing()) {
@@ -541,6 +540,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             throw new IllegalStateException("Can not listen to failed table " + description);
         }
         if (isRefreshing()) {
+            // ensure that listener is in the same update graph if applicable
+            if (listener instanceof NotificationQueue.Dependency) {
+                getUpdateGraph((NotificationQueue.Dependency) listener);
+            }
             ensureChildListenerReferences().add(listener);
         }
     }
