@@ -244,7 +244,7 @@ public class QueryTableAjTest {
         BaseArrayTestCase.assertEquals(new int[] {2, 1, NULL_INT, 1, NULL_INT, 5, NULL_INT, NULL_INT},
                 intColumn(ltResult, "Sentinel"));
 
-        final Table reverseResult = left.raj(right, "Bucket,LeftStamp>=RightStamp", "Sentinel");
+        final Table reverseResult = left.raj(right, "Bucket,LeftStamp<=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
         TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
