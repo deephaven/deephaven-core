@@ -12,7 +12,6 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;

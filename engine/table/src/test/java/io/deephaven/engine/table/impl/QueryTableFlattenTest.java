@@ -12,7 +12,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import junit.framework.TestCase;
 import org.junit.Assert;
 
