@@ -3,6 +3,7 @@ package io.deephaven.engine.bench;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -73,11 +74,11 @@ public abstract class IncrementalSortRedirectionBase {
         numCycles = remainingRows / cycleIncrement;
 
         // create the initial table
-        ugp.startCycleForUnitTests();
+        ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         ms = create(componentSize, numBuckets, numParts, initialSize, cycleIncrement);
         listener = new BlackholeListener(blackhole);
         ms.addUpdateListener(listener);
-        ugp.completeCycleForUnitTests();
+        ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
     }
 
@@ -109,11 +110,11 @@ public abstract class IncrementalSortRedirectionBase {
     @OperationsPerInvocation(REMAINING_ROWS)
     public void numRows() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ugp.startCycleForUnitTests();
+            ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
             try {
                 filter.run();
             } finally {
-                ugp.completeCycleForUnitTests();
+                ugp.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
             }
             if (listener.e != null) {
                 throw listener.e;

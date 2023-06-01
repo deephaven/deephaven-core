@@ -10,6 +10,7 @@ import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -41,7 +42,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 6)));
 
         // Add
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph13 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph4 = updateGraph13.<ControlledUpdateGraph>cast();
+        updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(7, 9), col("Text", "Cake", "Zips For Fun"),
                     col("Number", 6, 1),
                     col("Bool", false, false));
@@ -59,7 +62,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Remove
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph3 = updateGraph12.<ControlledUpdateGraph>cast();
+        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             removeRows(t1, i(1, 3));
             t1.notifyListeners(i(), i(1, 3), i());
         });
@@ -75,7 +80,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Modify
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(4, 5),
                     col("Text", "Kittie", "Bacon"),
                     col("Number", 2, 1),
@@ -94,7 +101,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // All 3
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(0, 1, 4, 11),
                     col("Text", "Apple", "Bagel", "Boat", "YAY"),
                     col("Number", 100, -200, 300, 400),
@@ -143,7 +152,8 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick one filter table
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Cheese", "Yo"));
             textTable.notifyListeners(i(2), i(), i(0));
         });
@@ -154,7 +164,8 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick both of them
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Lets go", "Hey"));
             textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -170,20 +181,21 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         if (isRefreshing) {
             // Tick both of them, and the table itself
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
-                textTable.notifyListeners(i(), i(), i(0, 2));
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
+                    textTable.notifyListeners(i(), i(), i(0, 2));
 
-                addToTable(t1, i(0, 1, 4, 11),
-                        col("Text", "Yo", "Hey", "Boat", "Yo"),
-                        col("Number", 100, 1, 300, 0),
-                        col("Bool", true, false, false, true));
-                removeRows(t1, i(3));
-                t1.notifyListeners(i(11), i(3), i(0, 1, 4));
+                    addToTable(t1, i(0, 1, 4, 11),
+                            col("Text", "Yo", "Hey", "Boat", "Yo"),
+                            col("Number", 100, 1, 300, 0),
+                            col("Bool", true, false, false, true));
+                    removeRows(t1, i(3));
+                    t1.notifyListeners(i(11), i(3), i(0, 1, 4));
 
-                addToTable(numberTable, i(3, 5), col("Number", 0, 1));
-                numberTable.notifyListeners(i(3, 5), i(), i());
-            });
+                    addToTable(numberTable, i(3, 5), col("Number", 0, 1));
+                    numberTable.notifyListeners(i(3, 5), i(), i());
+                });
 
             show(t1);
             show(textTable);
@@ -298,27 +310,29 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 final boolean modFiltered = random.nextBoolean();
 
                 final int doit = i & 0x3;
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    if (modSet) {
-                        if (doit == 0 || doit == 2) {
-                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                    setSize, random, symSetTableBase, symSetInfo);
-                        }
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            if (modSet) {
+                                if (doit == 0 || doit == 2) {
+                                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                            setSize, random, symSetTableBase, symSetInfo);
+                                }
 
-                        if (doit == 1 || doit == 2) {
-                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                    setSize, random, numSetTableBase, numSetInfo);
-                        }
-                    }
-                });
+                                if (doit == 1 || doit == 2) {
+                                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                            setSize, random, numSetTableBase, numSetInfo);
+                                }
+                            }
+                        });
                 validate(en);
 
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    if (modFiltered) {
-                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                                filteredSize, random, matchTable, filteredInfo);
-                    }
-                });
+                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            if (modFiltered) {
+                                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                        filteredSize, random, matchTable, filteredInfo);
+                            }
+                        });
                 validate(en);
             }
         } catch (Exception e) {

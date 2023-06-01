@@ -14,10 +14,12 @@ import io.deephaven.engine.table.impl.locations.impl.*;
 import io.deephaven.engine.table.impl.select.SimulationClock;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.*;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
@@ -62,13 +64,15 @@ public class AppendOnlyFixedSizePageRegionTest {
         TstUtils.assertTableEquals(expected, actual);
         clock.start();
         while (!clock.done()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                clock.advance();
-                for (final TimeTable timeTable : timeTables) {
-                    timeTable.run();
-                }
-                dependentRegistrar.run();
-            });
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    clock.advance();
+                    for (final TimeTable timeTable : timeTables) {
+                        timeTable.run();
+                    }
+                    dependentRegistrar.run();
+                });
             System.out.println("Cycle start time: " + clock.instantNanos());
             TstUtils.assertTableEquals(expected, actual);
         }

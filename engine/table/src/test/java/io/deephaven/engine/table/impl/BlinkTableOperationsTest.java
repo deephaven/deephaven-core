@@ -11,10 +11,12 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
@@ -113,31 +115,33 @@ public class BlinkTableOperationsTest {
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
 
-            ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
             try {
                 final RowSet finalNormalLastInserted = normalLastInserted;
-                ExecutionContext.getContext().getUpdateGraph().refreshUpdateSourceForUnitTests(() -> {
-                    if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
-                        normal.getRowSet().writableCast().update(normalStepInserted, finalNormalLastInserted);
-                        normal.notifyListeners(new TableUpdateImpl(normalStepInserted.copy(), finalNormalLastInserted,
-                                RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
-                    }
-                });
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph1.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
+                            if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
+                                normal.getRowSet().writableCast().update(normalStepInserted, finalNormalLastInserted);
+                                normal.notifyListeners(new TableUpdateImpl(normalStepInserted.copy(), finalNormalLastInserted,
+                                        RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                            }
+                        });
                 final RowSet finalBlinkLastInserted = blinkLastInserted;
-                ExecutionContext.getContext().getUpdateGraph().refreshUpdateSourceForUnitTests(() -> {
-                    if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
-                        if (blinkInternalRowSet != null) {
-                            blinkInternalRowSet.clear();
-                            blinkInternalRowSet.insert(normalStepInserted);
-                        }
-                        blink.getRowSet().writableCast().clear();
-                        blink.getRowSet().writableCast().insert(blinkStepInserted);
-                        blink.notifyListeners(new TableUpdateImpl(blinkStepInserted.copy(), finalBlinkLastInserted,
-                                RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
-                    }
-                });
+                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
+                            if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
+                                if (blinkInternalRowSet != null) {
+                                    blinkInternalRowSet.clear();
+                                    blinkInternalRowSet.insert(normalStepInserted);
+                                }
+                                blink.getRowSet().writableCast().clear();
+                                blink.getRowSet().writableCast().insert(blinkStepInserted);
+                                blink.notifyListeners(new TableUpdateImpl(blinkStepInserted.copy(), finalBlinkLastInserted,
+                                        RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
+                            }
+                        });
             } finally {
-                ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
             }
             try {
                 TstUtils.assertTableEquals(expected, blinkExpected);

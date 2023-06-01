@@ -11,6 +11,7 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
+import io.deephaven.engine.updategraph.UpdateGraph;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -27,7 +28,9 @@ class IncrementalBenchmark {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -43,7 +46,9 @@ class IncrementalBenchmark {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         for (int currentStep = 0; currentStep <= steps; currentStep++) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -101,8 +106,10 @@ class IncrementalBenchmark {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         while (filtered1.size() < inputTable1.size() || filtered2.size() < inputTable2.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter1::run);
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter2::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter1::run);
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter2::run);
         }
 
         if (failureListener != null) {

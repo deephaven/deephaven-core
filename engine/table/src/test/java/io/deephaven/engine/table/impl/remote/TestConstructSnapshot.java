@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.remote;
 
 import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -35,18 +36,18 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
 
         changed.setValue(0);
         final Thread t = new Thread(snapshot_test);
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         t.start();
         t.join();
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         assertEquals(0, changed.longValue());
 
         changed.setValue(0);
         final Thread t2 = new Thread(snapshot_test);
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         t2.start();
         SleepUtil.sleep(100);
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         t2.join();
         assertEquals(1, changed.longValue());
     }

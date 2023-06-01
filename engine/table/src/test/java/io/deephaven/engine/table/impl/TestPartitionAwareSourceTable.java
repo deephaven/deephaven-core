@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -25,6 +26,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -267,7 +269,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         if (coalesceAndListen) {
             if (ciType == ConcurrentInstantiationType.UpdatingClosed
                     || ciType == ConcurrentInstantiationType.UpdatingOpen) {
-                ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
             }
             try {
                 coalesced = SUT.coalesce();
@@ -286,7 +288,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             assertIsSatisfied();
             assertRowSetEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
-                ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
             }
         }
     }
@@ -335,12 +337,12 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
         notification.reset();
         if (ExecutionContext.getContext().getUpdateGraph().clock().currentState() == LogicalClock.State.Idle) {
-            ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         }
         try {
             SUT.refresh();
         } finally {
-            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
         assertIsSatisfied();
         notification.assertInvoked();
@@ -357,7 +359,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         notification.reset();
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(SUT::refresh);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         notification.assertNotInvoked();
 
@@ -383,7 +386,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
 
         errorNotification.reset();
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(SUT::refresh);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
         errorNotification.assertInvoked();
 

@@ -281,6 +281,7 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage();
 
         // export mid-tick
+        // Must be off-thread to use concurrent instantiation
         updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + 42);
@@ -335,8 +336,9 @@ public class ExportTableUpdateListenerTest {
     }
 
     private void expectNoMessage() {
+        // flush our terminal notification
         updateGraph.runWithinUnitTestCycle(() -> {
-        }); // flush our terminal notification
+        });
         final ExportedTableUpdateMessage batch = observer.msgQueue.poll();
         Assert.eqNull(batch, "batch");
     }

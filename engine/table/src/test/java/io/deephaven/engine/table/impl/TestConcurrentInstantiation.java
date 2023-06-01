@@ -20,15 +20,13 @@ import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
@@ -98,7 +96,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 () -> (QueryTable) treed.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) treed,
                         WhereFilterFactory.getExpressions("Sentinel in 4, 6, 9, 11, 12, 13, 14, 15")));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
@@ -116,13 +114,13 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Future<Table> future3 = pool.submit(callable);
         assertTableEquals(rawSorted, table2);
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         final Table table3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
         assertTableEquals(rawSorted, table2);
         assertTableEquals(table2, table3);
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         TstUtils.addToTable(source,
                 i(11),
                 col("Sentinel", 12),
@@ -134,7 +132,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(table3, table4);
 
         source.notifyListeners(i(11), i(), i());
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         assertArrayEquals(
                 new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
@@ -150,7 +148,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableStart = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table flat = pool.submit(table::flatten).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -171,7 +169,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(prevTable(flat), tableStart);
         TstUtils.assertTableEquals(prevTable(flat2), tableStart);
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(table, flat);
         TstUtils.assertTableEquals(table, flat2);
@@ -189,7 +187,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.updateView("z=x*4");
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -209,7 +207,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, updateView1);
         TstUtils.assertTableEquals(tableUpdate, updateView2);
@@ -226,7 +224,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.view("y", "z=x*4");
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table updateView1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -246,7 +244,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(updateView1));
         TstUtils.assertTableEquals(tableStart, prevTable(updateView2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, updateView1);
         TstUtils.assertTableEquals(tableUpdate, updateView2);
@@ -264,7 +262,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.dropColumns("z");
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table dropColumns1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -284,7 +282,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns1));
         TstUtils.assertTableEquals(tableStart, prevTable(dropColumns2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, dropColumns1);
         TstUtils.assertTableEquals(tableUpdate, dropColumns2);
@@ -300,7 +298,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableUpdate = TstUtils.testRefreshingTable(i(2, 3, 6).toTracking(),
                 col("x", 1, 4, 3), col("y", "a", "d", "c"), col("z", true, true, true));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -320,7 +318,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, filter1);
         TstUtils.assertTableEquals(tableUpdate, filter2);
@@ -335,7 +333,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 col("x", 4, 3), col("y", "d", "c"), col("z", true, true));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table filter1 = pool.submit(() -> table.where("z")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -355,7 +353,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(filter1));
         TstUtils.assertTableEquals(tableStart, prevTable(filter2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         showWithRowSet(table);
         showWithRowSet(filter1);
@@ -380,7 +378,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final DynamicWhereFilter filter = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
         try {
@@ -395,7 +393,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableStart, prevTable(filter2));
         table.notifyListeners(i(3), i(), i(2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         final Table filter1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TstUtils.assertTableEquals(testUpdate, filter1);
@@ -410,7 +408,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 col("x", 4, 3, 2, 1), col("y", "d", "c", "b", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table sort1 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -430,7 +428,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(sort1));
         TstUtils.assertTableEquals(tableStart, prevTable(sort2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, sort1);
         TstUtils.assertTableEquals(tableUpdate, sort2);
@@ -449,7 +447,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table tableUpdate3 = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6).toTracking(),
                 col("x", 6, 5, 4, 3, 2, 1), col("y", "f", "e", "d", "c", "b", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table reverse1 = pool.submit(table::reverse).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -469,13 +467,14 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(reverse1));
         TstUtils.assertTableEquals(tableStart, prevTable(reverse2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, reverse1);
         TstUtils.assertTableEquals(tableUpdate, reverse2);
         TstUtils.assertTableEquals(tableUpdate, reverse3);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), col("x", 5), col("y", "e"));
             table.notifyListeners(i(10000), i(), i());
         });
@@ -486,7 +485,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate2, reverse2);
         assertTableEquals(tableUpdate2, reverse3);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10001), col("x", 6), col("y", "f"));
             table.notifyListeners(i(10001), i(), i());
         });
@@ -503,7 +503,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("x", 1, 2, 3), col("y", "a", "a", "a"));
         final PartitionedTable pt = table.partitionBy("y");
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -511,8 +511,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         // We need to flush two notifications: one for the source table and one for the "withView" table in the
         // aggregation helper.
-        ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
-        ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
 
         final Table tableA = pt.constituentFor("a");
         final Table tableD = pt.constituentFor("d");
@@ -528,7 +528,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.assertTableEquals(tableD, sortD);
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     public void testChain() throws ExecutionException, InterruptedException, TimeoutException {
@@ -542,7 +542,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.updateView("u=x*4").where("z").sortDescending("x");
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table chain1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -564,7 +564,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(chain1));
         TstUtils.assertTableEquals(tableStart, prevTable(chain2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, chain1);
         TstUtils.assertTableEquals(tableUpdate, chain2);
@@ -698,7 +698,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     beforeStartFirstHalf.add(pool.submit(splitCallable.first).get(TIMEOUT_LENGTH, TIMEOUT_UNIT));
                 }
 
-                ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
                 if (beforeUpdate) {
                     // before we update the underlying data
@@ -853,7 +853,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                     dynamicTable.addUpdateListener(listener);
                 }
                 lastResultSize = results.size();
-                ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
                 if (beforeStartAndAfterCycle) {
                     final List<Table> beforeStartAndAfterCycleSplitResults = new ArrayList<>(splitCallables.size());
@@ -1001,7 +1001,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table expected2 = newTable(col("y", "a", "d", "b", "c"));
         final Table expected2outOfOrder = newTable(col("y", "a", "b", "c", "d"));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Callable<Table> callable = () -> table.selectDistinct("y");
 
@@ -1027,7 +1027,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(expected2, distinct3);
         TstUtils.assertTableEquals(expected2, prevTable(distinct3));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(expected2outOfOrder, distinct1);
         TstUtils.assertTableEquals(expected2outOfOrder, distinct2);
@@ -1082,7 +1082,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             final Table slowed = table.updateView("z=barrierFunction.apply(y)");
             final Table expected1 = newTable(col("z", "a", "b"));
 
-            ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
             final Callable<Table> callable = () -> slowed.selectDistinct("z");
 
@@ -1095,7 +1095,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
             barrierFunction.sleepDuration = 0;
 
-            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
             final Table distinct1 = future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
             TstUtils.assertTableEquals(expected1, distinct1);
@@ -1221,7 +1221,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             final Table expected2 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                     .computeLocked(() -> function.apply(table2));
 
-            ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
             final Future<Table> future1 = pool.submit(callable);
             final Table result1;
@@ -1275,7 +1275,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             if (withReset) {
                 while (((QueryTable) slowed).getLastNotificationStep() != ExecutionContext.getContext().getUpdateGraph()
                         .clock().currentStep()) {
-                    ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
                 }
             }
             final Table result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
@@ -1296,7 +1296,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             TableTools.show(expected2);
             TstUtils.assertTableEquals(expected2, result3, TableDiff.DiffItems.DoublesExact);
 
-            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
             if (hasKeys) {
                 TstUtils.assertTableEquals(expected2.sort("KeyColumn"), result1.sort("KeyColumn"),
@@ -1346,7 +1346,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table expected2 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                 () -> table2.silent().partitionBy("KeyColumn").merge().select());
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Future<PartitionedTable> future1 = pool.submit(callable);
         final PartitionedTable result1;
@@ -1393,7 +1393,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         if (withReset) {
             while (((QueryTable) slowed).getLastNotificationStep() != ExecutionContext.getContext().getUpdateGraph()
                     .clock().currentStep()) {
-                ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
             }
         }
         final PartitionedTable result3 = future3.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
@@ -1412,7 +1412,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertNull(result3c);
         TstUtils.assertTableEquals(expected2.where("KeyColumn = `d`"), result3d);
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(expected2, result1.merge());
         TstUtils.assertTableEquals(expected2, result2.merge());
@@ -1532,10 +1532,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         SleepUtil.sleep(100);
 
         // add a row to the table
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         TstUtils.addToTable(table, i(10), col("y", "e"));
         table.notifyListeners(i(10), i(), i());
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         // now get the answer
         final String[] answer = future.get(5000, TimeUnit.MILLISECONDS);
@@ -1552,7 +1552,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 TableTools.newTable(col("x", 1, 4, 2, 3), col("y", "a", "d", "b", "c"),
                         col("z", true, true, false, true));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         final Table snap1 = pool.submit(() -> table.snapshot()).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -1572,7 +1572,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(snap1));
         TstUtils.assertTableEquals(tableStart, prevTable(snap2));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableStart, snap1);
         TstUtils.assertTableEquals(tableStart, snap2);
@@ -1596,15 +1596,17 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.assertTableEquals(snap, base);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final TableUpdate downstream1 = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-            TstUtils.addToTable(base, downstream.added(), col("x", 2));
-            base.notifyListeners(downstream);
+            TstUtils.addToTable(base, downstream1.added(), col("x", 2));
+            base.notifyListeners(downstream1);
         });
         TstUtils.assertTableEquals(snap, prevTable(base));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(trigger, downstream.added());

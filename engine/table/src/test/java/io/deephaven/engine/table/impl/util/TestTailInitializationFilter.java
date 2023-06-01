@@ -8,7 +8,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.sources.DateTimeTestSource;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
@@ -45,7 +47,9 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
                 () -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
         assertTableEquals(filtered, expected);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final DateTime[] data2 = new DateTime[4];
             data2[0] = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
             data2[1] = DateTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");

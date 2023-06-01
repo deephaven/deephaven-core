@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -18,7 +20,9 @@ public class TestSimulationClock extends RefreshingTableTestCase {
         final SimulationClock clock = new SimulationClock(start, DateTimeUtils.plus(start, 1), 1);
         clock.start();
         for (int ci = 0; ci < 2; ++ci) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(clock::advance);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(clock::advance);
         }
         clock.awaitDoneUninterruptibly();
     }

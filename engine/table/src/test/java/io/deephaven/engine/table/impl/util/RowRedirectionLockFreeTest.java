@@ -4,9 +4,11 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -194,24 +196,26 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
-                keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
-                final Random rng = new Random(step);
-                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
-                // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-                long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
-                final WritableRowRedirectionLockFree ix = index;
-                for (int ii = 0; ii < numKeysToInsert; ++ii) {
-                    final long key = keys[ii];
-                    final long value = step * oneBillion + ii;
-                    ix.put(key, value);
-                }
-                for (int ii = numKeysToInsert; ii < keys.length; ++ii) {
-                    final long key = keys[ii];
-                    ix.remove(key);
-                }
-            });
+            // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    final long step = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                    keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
+                    final Random rng = new Random(step);
+                    final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
+                    // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
+                    long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
+                    final WritableRowRedirectionLockFree ix = index;
+                    for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
+                        final long key = keys[ii1];
+                        final long value = step * oneBillion + ii1;
+                        ix.put(key, value);
+                    }
+                    for (int ii1 = numKeysToInsert; ii1 < keys.length; ++ii1) {
+                        final long key = keys[ii1];
+                        ix.remove(key);
+                    }
+                });
 
             // waste some time doing something else
             final WritableRowRedirectionLockFree privateIndex =

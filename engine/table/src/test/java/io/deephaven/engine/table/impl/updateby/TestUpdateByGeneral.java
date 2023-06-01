@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -17,6 +18,7 @@ import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -173,9 +175,10 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
-                    ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                        generateAppends(stepSize, result.random, result.t, result.infos);
-                    });
+                    UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                                    generateAppends(stepSize, result.random, result.t, result.infos);
+                                });
                     validate("Table", nuggets);
                 } else {
                     simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
@@ -205,22 +208,30 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final QueryTable result = (QueryTable) table.updateBy(
                 List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // Add to "B" bucket
+        UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
             table.notifyListeners(i(8), i(), i());
         });
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // New "C" bucket in isolation
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
             table.notifyListeners(i(9), i(), i());
         });
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // Row from "B" bucket to "C" bucket
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
             table.notifyListeners(i(), i(), i(8));
         });
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // New "D" bucket
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
             table.notifyListeners(i(10, 11), i(), i());
         });

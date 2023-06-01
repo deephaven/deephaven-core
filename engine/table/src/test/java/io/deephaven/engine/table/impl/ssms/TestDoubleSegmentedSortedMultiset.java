@@ -13,9 +13,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -184,11 +186,12 @@ public class TestDoubleSegmentedSortedMultiset extends RefreshingTableTestCase {
             asDouble.addUpdateListener(asDoubleListener);
 
             while (desc.advance(50)) {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
-                    assertTrue(notify[2].isEmpty());
-                    table.notifyListeners(notify[0], notify[1], notify[2]);
-                });
+                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
+                            assertTrue(notify[2].isEmpty());
+                            table.notifyListeners(notify[0], notify[1], notify[2]);
+                        });
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asDouble.intSize())) {
                     checkSsm(ssm, valueSource.getChunk(getContext, asDouble.getRowSet()).asDoubleChunk(), countNull, desc);

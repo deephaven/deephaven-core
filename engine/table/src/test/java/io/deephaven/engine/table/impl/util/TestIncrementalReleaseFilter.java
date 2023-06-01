@@ -4,8 +4,10 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -29,7 +31,9 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(2, filtered.size());
 
         for (int ii = 0; ii <= 10; ++ii) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
@@ -54,7 +58,9 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             cycles++;
         }
         assertTableEquals(source, filtered);
@@ -102,7 +108,9 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         int steps = 0;
 
         while (filtered.size() < source.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             if (steps++ > 100) {
                 TestCase.fail("Did not release rows promptly.");
             }
@@ -126,7 +134,8 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
             if (cycles++ > (2 * (source.size() * 100) / cycleTime)) {
                 TestCase.fail("Did not release rows promptly.");

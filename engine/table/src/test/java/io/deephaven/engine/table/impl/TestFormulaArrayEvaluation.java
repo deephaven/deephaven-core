@@ -21,12 +21,14 @@ import io.deephaven.engine.table.impl.sources.ShiftedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.ViewColumnSource;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -75,7 +77,9 @@ public class TestFormulaArrayEvaluation {
                 EvalNugget.from(() -> queryTable.view("newCol=Value / 2", "newCol2=newCol_[i-2] * 4")),
                 EvalNugget.from(() -> queryTable.view("newCol=Value / 2", "newCol2=newCol_[i+2] * 4")),
         };
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(queryTable,
                     i(10, 12, 18),
                     intCol("Sentinel", 56, 57, 510),
@@ -1349,7 +1353,9 @@ public class TestFormulaArrayEvaluation {
 
         TstUtils.validate("", en);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        /* ModifiedColumnSet.ALL */
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(queryTable,
                     i(10, 12, 18),
                     intCol("Sentinel", 56, 57, 510),

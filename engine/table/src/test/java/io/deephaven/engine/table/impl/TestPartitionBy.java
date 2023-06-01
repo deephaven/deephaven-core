@@ -13,6 +13,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -143,17 +144,19 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
-                table.notifyListeners(i(8), i(), i());
-            });
+            UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
+                    table.notifyListeners(i(8), i(), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
-            });
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
+                });
 
             final ErrorListener listenerA = new ErrorListener(tableA);
             final ErrorListener listenerB = new ErrorListener(tableB);
@@ -163,10 +166,11 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertNull(listenerA.originalException());
             assertNull(listenerB.originalException());
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.removeRows(table, i(8));
-                table.notifyListeners(i(), i(8), i());
-            });
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.removeRows(table, i(8));
+                    table.notifyListeners(i(), i(8), i());
+                });
 
             assertNotNull(listenerA.originalException());
             assertNotNull(listenerB.originalException());
@@ -199,79 +203,95 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
-                table.notifyListeners(i(8), i(), i());
-            });
+            UpdateGraph updateGraph7 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph7.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
+                    table.notifyListeners(i(8), i(), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new
-                                                                                      // state
-                table.notifyListeners(i(9), i(), i());
-            });
-
-            assertTableEquals(tableA, table.where("Key=`A`"));
-            assertTableEquals(tableB, table.where("Key=`B`"));
-            expectLivenessException(() -> byKey.constituentFor("C"));
-
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Modified row, wants to move from existent state to nonexistent state
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11));
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Added row, wants to make new
+            // state
+            UpdateGraph updateGraph6 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph6.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new
+                                                                                          // state
+                    table.notifyListeners(i(9), i(), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Modified row, staying in nonexistent state
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12));
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, wants to move from existent state to nonexistent state
+            UpdateGraph updateGraph5 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph5.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Modified row, wants to move from existent state to nonexistent state
+                    TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11));
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Modified row, wants to move from nonexistent state to existent state
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13));
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, staying in nonexistent state
+            UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Modified row, staying in nonexistent state
+                    TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12));
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Modified row, staying in existent state
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14));
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, wants to move from nonexistent state to existent state
+            UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Modified row, wants to move from nonexistent state to existent state
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13));
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Removed row from a nonexistent state
-                TstUtils.removeRows(table, i(9));
-                table.notifyListeners(i(), i(9), i());
-            });
+            // Modified row, staying in existent state
+            UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Modified row, staying in existent state
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14));
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                // Removed row from an existent state
-                TstUtils.removeRows(table, i(8));
-                table.notifyListeners(i(), i(8), i());
-            });
+            // Removed row from a nonexistent state
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Removed row from a nonexistent state
+                    TstUtils.removeRows(table, i(9));
+                    table.notifyListeners(i(), i(9), i());
+                });
+
+            assertTableEquals(tableA, table.where("Key=`A`"));
+            assertTableEquals(tableB, table.where("Key=`B`"));
+            expectLivenessException(() -> byKey.constituentFor("C"));
+
+            // Removed row from an existent state
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    // Removed row from an existent state
+                    TstUtils.removeRows(table, i(8));
+                    table.notifyListeners(i(), i(8), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
@@ -294,80 +314,101 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
-                table.notifyListeners(i(8), i(), i());
-            });
+            UpdateGraph updateGraph7 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph7.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
+                    table.notifyListeners(i(8), i(), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
-                table.notifyListeners(i(9), i(), i());
-            });
+            // Added row, makes new state
+            UpdateGraph updateGraph6 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph6.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
+                    table.notifyListeners(i(9), i(), i());
+                });
 
             final Table tableC = byKey.constituentFor("C");
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
-                                                                                      // from original state to new
-                                                                                      // state
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, wants to move
+            // from original state to new
+            // state
+            UpdateGraph updateGraph5 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph5.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
+                                                                                          // from original state to new
+                                                                                          // state
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new
-                                                                                      // state
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, staying in new
+            // state
+            UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new
+                                                                                          // state
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
-                                                                                      // from new state to original
-                                                                                      // state
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, wants to move
+            // from new state to original
+            // state
+            UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
+                                                                                          // from new state to original
+                                                                                          // state
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
-                                                                                      // original state
-                table.notifyListeners(i(), i(), i(8));
-            });
+            // Modified row, staying in
+            // original state
+            UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
+                                                                                          // original state
+                    table.notifyListeners(i(), i(), i(8));
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.removeRows(table, i(9)); // Removed row from a new state
-                table.notifyListeners(i(), i(9), i());
-            });
+            // Removed row from a new state
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.removeRows(table, i(9)); // Removed row from a new state
+                    table.notifyListeners(i(), i(9), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.removeRows(table, i(8)); // Removed row from an original state
-                table.notifyListeners(i(), i(8), i());
-            });
+            // Removed row from an original state
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.removeRows(table, i(8)); // Removed row from an original state
+                    table.notifyListeners(i(), i(8), i());
+                });
 
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
@@ -417,7 +458,8 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
 
         final MutableLong start = new MutableLong();
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable,
                     i(8),
                     col("Key", "C"),
@@ -430,7 +472,8 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable,
                     i(10, 11, 12),
                     col("Key", "C", "D", "E"),

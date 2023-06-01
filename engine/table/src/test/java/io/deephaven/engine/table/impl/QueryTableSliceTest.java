@@ -8,13 +8,11 @@ import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.QueryTableTestBase;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,6 +20,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
@@ -370,14 +369,15 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             for (int i = 0; i < steps; ++i) {
                 final long ii = i;
                 final long jj = j;
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
-                    upTable.getRowSet().writableCast().insert(added);
-                    TableUpdate update =
-                            new TableUpdateImpl(added, RowSetFactory.empty(),
-                                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-                    upTable.notifyListeners(update);
-                });
+                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            RowSet added1 = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
+                            upTable.getRowSet().writableCast().insert(added1);
+                            TableUpdate update =
+                                    new TableUpdateImpl(added1, RowSetFactory.empty(),
+                                            RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+                            upTable.notifyListeners(update);
+                        });
 
                 TstUtils.validate("", en);
             }
