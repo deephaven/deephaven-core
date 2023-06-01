@@ -21,7 +21,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.TimeZone;
 
 public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
@@ -298,7 +297,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     private Instant makeInstant(String timeStr) {
-        ZonedDateTime zdt = ZonedDateTime.now(TimeZone.getDefault().toZoneId()).truncatedTo(ChronoUnit.DAYS)
+        ZonedDateTime zdt = ZonedDateTime.now(DateTimeUtils.timeZone()).truncatedTo(ChronoUnit.DAYS)
                 .plus(DateTimeUtils.parseDurationNanos(timeStr), ChronoUnit.NANOS);
         return zdt.toInstant();
     }

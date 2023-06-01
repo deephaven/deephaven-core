@@ -33,7 +33,7 @@ public class DateTimeFormatter {
         this.pattern = pattern;
 
         // Do this here so we fail fast if there's a problem with the format string
-        getFormatter(ZoneId.systemDefault());
+        getFormatter(DateTimeUtils.timeZone());
     }
 
     /**
@@ -90,7 +90,7 @@ public class DateTimeFormatter {
      */
     @NotNull
     public String format(@NotNull final Instant instant) {
-        return format(instant, ZoneId.systemDefault());
+        return format(instant, DateTimeUtils.timeZone());
     }
 
     @Override

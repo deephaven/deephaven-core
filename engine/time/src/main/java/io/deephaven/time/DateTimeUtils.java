@@ -462,7 +462,7 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static String today() {
-        return today(ZoneId.systemDefault());
+        return today(DateTimeUtils.timeZone());
     }
 
     // endregion
@@ -481,7 +481,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Gets the sysetm default time zone.
+     * Gets the system default time zone.
      *
      * @return time zone.
      * @see ZoneId#systemDefault()
