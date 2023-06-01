@@ -31,8 +31,8 @@ public abstract class AsOfJoinMatch {
 
     /**
      * Parses the expression {@code x}, expecting it to either be a single column name, or an expression of the form
-     * {@code "lhsColumnName >= lhsColumnName"} or {@code "lhsColumnName > rhsColumnName"}. When it is a single column
-     * name, a {@link AsOfJoinRule#GREATER_THAN_EQUAL} is used.
+     * {@code "lhsColumnName >= rhsColumnName"} or {@code "lhsColumnName > rhsColumnName"}. When it is a single column
+     * name, a join rule {@link AsOfJoinRule#GREATER_THAN_EQUAL} is used.
      *
      * @param x the expression
      * @return the as-of join match
@@ -55,8 +55,8 @@ public abstract class AsOfJoinMatch {
 
     /**
      * Parses the expression {@code x}, expecting it to either be a single column name, or an expression of the form
-     * {@code "lhsColumnName <= lhsColumnName"} or {@code "lhsColumnName < rhsColumnName"}. When it is a single column
-     * name, a {@link AsOfJoinRule#LESS_THAN_EQUAL} is used.
+     * {@code "lhsColumnName <= rhsColumnName"} or {@code "lhsColumnName < rhsColumnName"}. When it is a single column
+     * name, a join rule {@link AsOfJoinRule#LESS_THAN_EQUAL} is used.
      *
      * @param x the expression
      * @return the as-of join match
