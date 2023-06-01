@@ -3123,9 +3123,9 @@ public class DateTimeUtils {
 
                 long sign1 = 0;
 
-                if(sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
+                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
                     sign1 = 1;
-                } else if(sign1Str.equals("-")) {
+                } else if (sign1Str.equals("-")) {
                     sign1 = -1;
                 } else {
                     throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
@@ -3133,36 +3133,36 @@ public class DateTimeUtils {
 
                 long sign2 = 0;
 
-                if(sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
+                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
                     sign2 = 1;
-                } else if(sign2Str.equals("-")) {
+                } else if (sign2Str.equals("-")) {
                     sign2 = -1;
                 } else {
                     throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
                 }
 
-                if(hourStr == null){
+                if (hourStr == null) {
                     throw new RuntimeException("Missing hour value");
                 }
 
                 long rst = Long.parseLong(hourStr) * HOUR;
 
-                if(minuteStr == null) {
+                if (minuteStr == null) {
                     throw new RuntimeException("Missing minute value");
                 }
 
                 rst += Long.parseLong(minuteStr) * MINUTE;
 
-                if(secondStr != null){
+                if (secondStr != null) {
                     rst += Long.parseLong(secondStr.substring(1)) * SECOND;
                 }
 
-                if(nanosStr != null){
+                if (nanosStr != null) {
                     final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
                     rst += Long.parseLong(sn);
                 }
 
-                return sign1*sign2*rst;
+                return sign1 * sign2 * rst;
             }
 
             return parseDuration(s).toNanos();

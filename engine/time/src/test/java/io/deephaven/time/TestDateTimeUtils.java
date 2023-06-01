@@ -759,7 +759,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         TestCase.assertEquals(LocalTime.of(3, 4, 5).toNanoOfDay(), DateTimeUtils.parseDurationNanos("PT3:4:5"));
-        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59*DateTimeUtils.MINUTE + 39 *DateTimeUtils.SECOND, DateTimeUtils.parseDurationNanos("PT530000:59:39"));
+        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND,
+                DateTimeUtils.parseDurationNanos("PT530000:59:39"));
 
         final String[] durations = {
                 "PT1h43s",
@@ -830,7 +831,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         }
 
         TestCase.assertEquals(LocalTime.of(3, 4, 5).toNanoOfDay(), DateTimeUtils.parseDurationNanosQuiet("PT3:4:5"));
-        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59*DateTimeUtils.MINUTE + 39 *DateTimeUtils.SECOND, DateTimeUtils.parseDurationNanosQuiet("PT530000:59:39"));
+        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND,
+                DateTimeUtils.parseDurationNanosQuiet("PT530000:59:39"));
 
         final String[] durations = {
                 "PT1h43s",
