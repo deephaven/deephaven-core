@@ -12,7 +12,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
@@ -911,7 +910,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         filter.getRowSet().writableCast().remove(1);
 
         final PartitionedTable partitioned = input.partitionBy("First");
-        final ExecutionContext executionContext = TestExecutionContext.createForUnitTests();
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
+                .emptyQueryScope()
+                .newQueryLibrary()
+                .captureUpdateGraph()
+                .captureQueryCompiler()
+                .build();
         final PartitionedTable transformed = partitioned.transform(executionContext, tableIn -> {
             final QueryTable tableOut = (QueryTable) tableIn.getSubTable(tableIn.getRowSet());
             tableIn.addUpdateListener(new BaseTable.ListenerImpl("Slow Listener", tableIn, tableOut) {

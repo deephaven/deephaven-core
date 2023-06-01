@@ -67,13 +67,13 @@ class WhereListener extends MergedListener {
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-        if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
+        if (getUpdateGraph().getUpdateThreads() > 1) {
             minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
         } else {
             minimumThreadSize = Long.MAX_VALUE;
         }
         if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
-            segmentCount = ExecutionContext.getContext().getUpdateGraph().getUpdateThreads();
+            segmentCount = getUpdateGraph().getUpdateThreads();
         } else {
             segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
         }
@@ -81,7 +81,7 @@ class WhereListener extends MergedListener {
 
     @Override
     public void process() {
-        initialNotificationStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        initialNotificationStep = getUpdateGraph().clock().currentStep();
 
         if (result.refilterRequested()) {
             final TableUpdate update = recorder != null ? recorder.getUpdate() : null;
@@ -187,7 +187,7 @@ class WhereListener extends MergedListener {
     }
 
     void setFinalExecutionStep() {
-        finalNotificationStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        finalNotificationStep = getUpdateGraph().clock().currentStep();
     }
 
     ListenerFilterExecution makeFilterExecution() {
@@ -243,8 +243,8 @@ class WhereListener extends MergedListener {
         @Override
         void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
-            ExecutionContext.getContext().getUpdateGraph().addNotifications(subFilters);
-            ExecutionContext.getContext().getUpdateGraph().addNotification(combinationNotification);
+            getUpdateGraph().addNotifications(subFilters);
+            getUpdateGraph().addNotification(combinationNotification);
         }
 
         @Override

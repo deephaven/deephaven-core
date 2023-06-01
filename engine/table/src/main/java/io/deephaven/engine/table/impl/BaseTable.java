@@ -10,6 +10,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -120,7 +121,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         super(attributes);
         this.definition = definition;
         this.description = description;
-        updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph = Require.neqNull(ExecutionContext.getContext().getUpdateGraph(), "UpdateGraph");
         lastNotificationStep = updateGraph.clock().currentStep();
 
         // Properly flag this table as systemic or not. Note that we use the initial attributes map, rather than

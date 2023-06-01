@@ -195,7 +195,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             // Update pivot logic.
-            lastPivotPointChange = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            lastPivotPointChange = parent.getUpdateGraph().clock().currentStep();
             prevPivotPoint = pivotPoint;
             pivotPoint += newShift;
         } else {
@@ -244,7 +244,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     private long getPrevPivotPoint() {
         if ((prevPivotPoint != pivotPoint)) {
-            if (ExecutionContext.getContext().getUpdateGraph().clock().currentStep() != lastPivotPointChange) {
+            if (parent.getUpdateGraph().clock().currentStep() != lastPivotPointChange) {
                 prevPivotPoint = pivotPoint;
             }
         }

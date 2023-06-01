@@ -325,8 +325,8 @@ public abstract class UpdateBy {
                     }
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
-                    jobScheduler = new UpdateGraphProcessorJobScheduler();
+                if (source.getUpdateGraph().getUpdateThreads() > 1) {
+                    jobScheduler = new UpdateGraphProcessorJobScheduler(source.getUpdateGraph());
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
@@ -924,7 +924,7 @@ public abstract class UpdateBy {
                         outerNugget.addBaseEntry(accumulated);
                     }
                 } else {
-                    ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
+                    source.getUpdateGraph().addNotification(new TerminalNotification() {
                         @Override
                         public void run() {
                             synchronized (accumulated) {
@@ -1086,8 +1086,8 @@ public abstract class UpdateBy {
             final QueryTable result = result();
             if (result.isFailed()) {
                 Assert.eq(result.getLastNotificationStep(), "result.getLastNotificationStep()",
-                        ExecutionContext.getContext().getUpdateGraph().clock().currentStep(),
-                        "ExecutionContext.getContext().getUpdateGraph().clock().currentStep()");
+                        getUpdateGraph().clock().currentStep(),
+                        "getUpdateGraph().clock().currentStep()");
                 return;
             }
 

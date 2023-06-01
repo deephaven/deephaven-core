@@ -598,10 +598,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+                if (lastIndexClockStep >= parent.getUpdateGraph().clock().currentStep()) {
                     throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
                             + " >= notification on "
-                            + ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
+                            + parent.getUpdateGraph().clock().currentStep());
                 }
 
                 final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
@@ -614,7 +614,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 parentTableSize = parent.size();
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                lastIndexClockStep = parent.getUpdateGraph().clock().currentStep();
                 if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
                         log.debug().append(logPrefix)
@@ -844,10 +844,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (log.isDebugEnabled()) {
-            log.debug().append(logPrefix).append("step=")
-                    .append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())
-                    .append(", upstream=").append(upstream).append(", activeSubscriptions=")
-                    .append(activeSubscriptions.size())
+            log.debug().append(logPrefix)
+                    .append("updateGraph=").append(parent.getUpdateGraph())
+                    .append(", step=").append(parent.getUpdateGraph().clock().currentStep())
+                    .append(", upstream=").append(upstream)
+                    .append(", activeSubscriptions=").append(activeSubscriptions.size())
                     .append(", numFullSubscriptions=").append(numFullSubscriptions)
                     .append(", addsToRecord=").append(addsToRecord)
                     .append(", modsToRecord=").append(modsToRecord)
@@ -924,11 +925,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("update accumulation complete for step=")
-                    .append(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()).endl();
+                    .append(parent.getUpdateGraph().clock().currentStep()).endl();
         }
 
         pendingDeltas
-                .add(new Delta(ExecutionContext.getContext().getUpdateGraph().clock().currentStep(), deltaColumnOffset,
+                .add(new Delta(parent.getUpdateGraph().clock().currentStep(), deltaColumnOffset,
                         upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
     }
 

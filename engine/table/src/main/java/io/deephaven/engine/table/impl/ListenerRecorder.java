@@ -61,7 +61,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
     @Override
     public void onUpdate(final TableUpdate upstream) {
         this.update = upstream.acquire();
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = getUpdateGraph().clock().currentStep();
         Assert.lt(this.notificationStep, "this.notificationStep", currentStep, "currentStep");
         this.notificationStep = currentStep;
 
@@ -75,7 +75,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
 
     @Override
     protected void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
-        this.notificationStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        this.notificationStep = getUpdateGraph().clock().currentStep();
         if (mergedListener == null) {
             throw new IllegalStateException("Merged listener not set");
         }
@@ -94,7 +94,7 @@ public class ListenerRecorder extends InstrumentedTableUpdateListener {
     }
 
     public boolean recordedVariablesAreValid() {
-        return notificationStep == ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        return notificationStep == getUpdateGraph().clock().currentStep();
     }
 
     public void setMergedListener(MergedListener mergedListener) {

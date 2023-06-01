@@ -157,7 +157,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
-        final long currentClockValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+        final long currentClockValue = getUpdateGraph().clock().currentValue();
         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
@@ -459,7 +459,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedStep.remove(0);
         }
         processedData.add(snapshotOrDelta.clone());
-        processedStep.add(ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
+        processedStep.add(getUpdateGraph().clock().currentStep());
     }
 
     protected boolean maybeEnablePrevTracking() {

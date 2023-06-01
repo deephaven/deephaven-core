@@ -94,7 +94,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private void notifyInternal(@Nullable final Throwable upstreamError,
             @Nullable final TableListener.Entry errorSourceEntry) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = getUpdateGraph().clock().currentStep();
 
         synchronized (this) {
             if (notificationStep == currentStep) {
@@ -123,7 +123,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             queuedNotificationStep = currentStep;
         }
 
-        ExecutionContext.getContext().getUpdateGraph().addNotification(new MergedNotification());
+        getUpdateGraph().addNotification(new MergedNotification());
     }
 
     private void propagateError(
@@ -146,7 +146,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected void propagateErrorDownstream(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-        if (fromProcess && result.getLastNotificationStep() == ExecutionContext.getContext().getUpdateGraph().clock()
+        if (fromProcess && result.getLastNotificationStep() == getUpdateGraph().clock()
                 .currentStep()) {
             // If the result managed to send its notification, we should not send our own on this cycle.
             if (!result.isFailed()) {
@@ -170,6 +170,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         private final Throwable error;
         private final TableListener.Entry entry;
         private final Collection<WeakReference<BaseTable>> targetReferences;
+        private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
         private DelayedErrorNotifier(
                 @NotNull final Throwable error,
@@ -178,7 +179,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             this.error = error;
             this.entry = entry;
             this.targetReferences = targets.stream().map(WeakReference::new).collect(Collectors.toList());
-            ExecutionContext.getContext().getUpdateGraph().addSource(this);
+            updateGraph.addSource(this);
         }
 
         @Override
@@ -187,7 +188,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                     .map(WeakReference::get)
                     .filter(Objects::nonNull)
                     .forEach(t -> t.notifyListenersOnError(error, entry));
-            ExecutionContext.getContext().getUpdateGraph().removeSource(this);
+            updateGraph.removeSource(this);
         }
     }
 
@@ -209,7 +210,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     public boolean satisfied(final long step) {
         // Check and see if we've already been completed.
         if (lastCompletedStep == step) {
-            ExecutionContext.getContext().getUpdateGraph().logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Already completed notification for ").append(this).append(", step=").append(step).endl();
             return true;
         }
@@ -217,14 +218,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // This notification could be enqueued during the course of canExecute, but checking if we're enqueued is a very
         // cheap check that may let us avoid recursively checking all the dependencies.
         if (queuedNotificationStep == step) {
-            ExecutionContext.getContext().getUpdateGraph().logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Enqueued notification for ").append(this).append(", step=").append(step).endl();
             return false;
         }
 
         // Recursively check to see if our dependencies have been satisfied.
         if (!canExecute(step)) {
-            ExecutionContext.getContext().getUpdateGraph().logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Dependencies not yet satisfied for ").append(this).append(", step=").append(step).endl();
             return false;
         }
@@ -232,7 +233,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // Let's check again and see if we got lucky and another thread completed us while we were checking our
         // dependencies.
         if (lastCompletedStep == step) {
-            ExecutionContext.getContext().getUpdateGraph().logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Already completed notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
@@ -242,14 +243,14 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         // We check the queued notification step again after the dependency check. It is possible that something
         // enqueued us while we were evaluating the dependencies, and we must not miss that race.
         if (queuedNotificationStep == step) {
-            ExecutionContext.getContext().getUpdateGraph().logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Enqueued notification during dependency check for ").append(this)
                     .append(", step=").append(step)
                     .endl();
             return false;
         }
 
-        ExecutionContext.getContext().getUpdateGraph().logDependencies()
+        getUpdateGraph().logDependencies()
                 .append("Dependencies satisfied for ").append(this)
                 .append(", lastCompleted=").append(lastCompletedStep)
                 .append(", lastQueued=").append(queuedNotificationStep)
@@ -280,7 +281,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
         @Override
         public void run() {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = getUpdateGraph().clock().currentStep();
             try {
                 if (queuedNotificationStep != currentStep) {
                     // noinspection ConstantConditions
@@ -320,7 +321,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                         notificationStep = queuedNotificationStep;
                     }
                     process();
-                    ExecutionContext.getContext().getUpdateGraph().logDependencies()
+                    getUpdateGraph().logDependencies()
                             .append("MergedListener has completed execution ")
                             .append(this).endl();
                 } finally {

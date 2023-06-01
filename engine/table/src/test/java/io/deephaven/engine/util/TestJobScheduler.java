@@ -32,7 +32,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -78,7 +78,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -142,7 +142,7 @@ public final class TestJobScheduler {
 
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -198,7 +198,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -263,7 +263,7 @@ public final class TestJobScheduler {
 
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -317,7 +317,7 @@ public final class TestJobScheduler {
         // nop
         updateGraph.runWithinUnitTestCycle(() -> {
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -356,7 +356,7 @@ public final class TestJobScheduler {
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
         updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -409,7 +409,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -484,7 +484,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -566,7 +566,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -647,7 +647,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -724,7 +724,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,

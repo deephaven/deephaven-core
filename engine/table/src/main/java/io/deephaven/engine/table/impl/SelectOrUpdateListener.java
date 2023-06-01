@@ -56,11 +56,9 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         }
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
-        this.enableParallelUpdate =
-                (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
-                        (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                                && ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1))
-                        && analyzer.allowCrossColumnParallelization();
+        this.enableParallelUpdate = (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
+                (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && getUpdateGraph().getUpdateThreads() > 1))
+                && analyzer.allowCrossColumnParallelization();
         analyzer.setAllNewColumns(allNewColumns);
     }
 
@@ -86,7 +84,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
-            jobScheduler = new UpdateGraphProcessorJobScheduler();
+            jobScheduler = new UpdateGraphProcessorJobScheduler(getUpdateGraph());
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
@@ -131,7 +129,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             // if the entry exists, then we install a terminal notification so that we don't lose the performance from
             // this execution
             if (accumulated != null) {
-                ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
+                getUpdateGraph().addNotification(new TerminalNotification() {
                     @Override
                     public void run() {
                         synchronized (accumulated) {
