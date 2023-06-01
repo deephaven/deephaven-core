@@ -597,14 +597,15 @@ inline bool AsOfJoinTablesRequest_MatchRule_Parse(
     AsOfJoinTablesRequest_MatchRule_descriptor(), name, value);
 }
 enum RangeJoinTablesRequest_RangeStartRule : int {
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN = 0,
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL = 1,
-  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 2,
+  RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED = 0,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN = 1,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL = 2,
+  RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 3,
   RangeJoinTablesRequest_RangeStartRule_RangeJoinTablesRequest_RangeStartRule_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   RangeJoinTablesRequest_RangeStartRule_RangeJoinTablesRequest_RangeStartRule_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool RangeJoinTablesRequest_RangeStartRule_IsValid(int value);
-constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MIN = RangeJoinTablesRequest_RangeStartRule_LESS_THAN;
+constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MIN = RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED;
 constexpr RangeJoinTablesRequest_RangeStartRule RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MAX = RangeJoinTablesRequest_RangeStartRule_LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
 constexpr int RangeJoinTablesRequest_RangeStartRule_RangeStartRule_ARRAYSIZE = RangeJoinTablesRequest_RangeStartRule_RangeStartRule_MAX + 1;
 
@@ -623,14 +624,15 @@ inline bool RangeJoinTablesRequest_RangeStartRule_Parse(
     RangeJoinTablesRequest_RangeStartRule_descriptor(), name, value);
 }
 enum RangeJoinTablesRequest_RangeEndRule : int {
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN = 0,
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL = 1,
-  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 2,
+  RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED = 0,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN = 1,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL = 2,
+  RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 3,
   RangeJoinTablesRequest_RangeEndRule_RangeJoinTablesRequest_RangeEndRule_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   RangeJoinTablesRequest_RangeEndRule_RangeJoinTablesRequest_RangeEndRule_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool RangeJoinTablesRequest_RangeEndRule_IsValid(int value);
-constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MIN = RangeJoinTablesRequest_RangeEndRule_GREATER_THAN;
+constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MIN = RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED;
 constexpr RangeJoinTablesRequest_RangeEndRule RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MAX = RangeJoinTablesRequest_RangeEndRule_GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
 constexpr int RangeJoinTablesRequest_RangeEndRule_RangeEndRule_ARRAYSIZE = RangeJoinTablesRequest_RangeEndRule_RangeEndRule_MAX + 1;
 
@@ -11291,6 +11293,8 @@ class RangeJoinTablesRequest final :
   // nested types ----------------------------------------------------
 
   typedef RangeJoinTablesRequest_RangeStartRule RangeStartRule;
+  static constexpr RangeStartRule START_UNSPECIFIED =
+    RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED;
   static constexpr RangeStartRule LESS_THAN =
     RangeJoinTablesRequest_RangeStartRule_LESS_THAN;
   static constexpr RangeStartRule LESS_THAN_OR_EQUAL =
@@ -11323,6 +11327,8 @@ class RangeJoinTablesRequest final :
   }
 
   typedef RangeJoinTablesRequest_RangeEndRule RangeEndRule;
+  static constexpr RangeEndRule END_UNSPECIFIED =
+    RangeJoinTablesRequest_RangeEndRule_END_UNSPECIFIED;
   static constexpr RangeEndRule GREATER_THAN =
     RangeJoinTablesRequest_RangeEndRule_GREATER_THAN;
   static constexpr RangeEndRule GREATER_THAN_OR_EQUAL =

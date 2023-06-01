@@ -16,8 +16,7 @@ import java.util.stream.Collectors;
  * @see TableOperations#join(Object, Collection, Collection, int)
  * @see TableOperations#naturalJoin(Object, Collection, Collection)
  * @see TableOperations#exactJoin(Object, Collection, Collection)
- * @see TableOperations#aj(Object, Collection, Collection, AsOfJoinRule)
- * @see TableOperations#raj(Object, Collection, Collection, ReverseAsOfJoinRule)
+ * @see TableOperations#asOfJoin(Object, Collection, AsOfJoinMatch, Collection)
  * @see TableOperations#whereIn(Object, Collection)
  * @see TableOperations#whereNotIn(Object, Collection)
  */

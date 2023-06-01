@@ -140,20 +140,15 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 aj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return adapt(delegate.aj(adapt(rightTable), columnsToMatch, columnsToAdd, asOfJoinRule));
+    public final TOPS_1 asOfJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return adapt(delegate.asOfJoin(adapt(rightTable), exactMatches, asOfMatch, columnsToAdd));
     }
 
     @Override
-    public final TOPS_1 raj(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return adapt(
-                delegate.raj(adapt(rightTable), columnsToMatch, columnsToAdd, reverseAsOfJoinRule));
-    }
-
-    @Override
-    public TOPS_1 rangeJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> exactMatches, RangeJoinMatch rangeMatch,
+    public final TOPS_1 rangeJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> exactMatches,
+            RangeJoinMatch rangeMatch,
             Collection<? extends Aggregation> aggregations) {
         return adapt(delegate.rangeJoin(adapt(rightTable), exactMatches, rangeMatch, aggregations));
     }

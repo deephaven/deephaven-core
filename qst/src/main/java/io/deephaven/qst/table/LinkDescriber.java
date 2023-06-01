@@ -70,11 +70,6 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        join(raj);
-    }
-
-    @Override
     public void visit(RangeJoinTable rangeJoinTable) {
         consumer.link(rangeJoinTable.left(), "left");
         consumer.link(rangeJoinTable.right(), "right");
