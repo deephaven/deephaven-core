@@ -526,7 +526,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             Collection<? extends JoinMatch> columnsToMatch,
             AsOfJoinMatch joinMatch, Collection<? extends JoinAddition> columnsToAdd) {
         return complexTransform(rightTable, (ct, ot) -> ct.asOfJoin(ot, columnsToMatch, joinMatch, columnsToAdd),
-                columnsToMatch.stream().limit(columnsToMatch.size() - 1).collect(Collectors.toList()));
+                columnsToMatch);
     }
 
     @Override
