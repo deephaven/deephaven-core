@@ -32,7 +32,8 @@ import io.deephaven.api.literal.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request;
+import io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.AsOfRule;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -50,7 +51,6 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -58,7 +58,6 @@ import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
-import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -373,35 +372,33 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(AsOfJoinTable aj) {
-            // TODO: add new as-of join RPC
-            AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
+            AsOfJoinTables2Request.Builder builder = AsOfJoinTables2Request.newBuilder()
                     .setResultId(ticket)
                     .setLeftId(ref(aj.left()))
-                    .setRightId(ref(aj.right()))
-                    .setAsOfMatchRule(adapt(aj.joinMatch().joinRule()));
+                    .setRightId(ref(aj.right()));
             for (JoinMatch match : aj.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
+                builder.addExactMatchColumns(Strings.of(match));
             }
-            final String lastColumn = aj.joinMatch().leftColumn().name()
-                    + aj.joinMatch().joinRule().operatorString()
-                    + aj.joinMatch().rightColumn().name();
-            builder.addColumnsToMatch(lastColumn);
+            builder
+                    .setLeftColumn(aj.joinMatch().leftColumn().name())
+                    .setRule(adapt(aj.joinMatch().joinRule()))
+                    .setRightColumn(aj.joinMatch().rightColumn().name());
             for (JoinAddition addition : aj.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setAsOfJoin, builder.build());
+            out = op(Builder::setAsOfJoin2, builder.build());
         }
 
-        private static AsOfJoinTablesRequest.MatchRule adapt(AsOfJoinRule rule) {
+        private static AsOfRule adapt(AsOfJoinRule rule) {
             switch (rule) {
                 case LESS_THAN_EQUAL:
-                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL;
+                    return AsOfRule.LEQ;
                 case LESS_THAN:
-                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN;
+                    return AsOfRule.LT;
                 case GREATER_THAN_EQUAL:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL;
+                    return AsOfRule.GEQ;
                 case GREATER_THAN:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN;
+                    return AsOfRule.GT;
                 default:
                     throw new IllegalArgumentException(String.format("Unrecognized AsOfJoinRule %s", rule));
             }

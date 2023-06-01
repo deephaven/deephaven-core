@@ -150,6 +150,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.AsOfJoinTables2 = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.RangeJoinTables = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/RangeJoinTables',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.RangeJoinTablesRequest.SerializeToString,
@@ -437,6 +442,16 @@ class TableServiceServicer(object):
     def AsOfJoinTables(self, request, context):
         """
         Returns the result of an as of join operation.
+
+        Deprecated: Please use AsOfJoinTables2 instead
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AsOfJoinTables2(self, request, context):
+        """
+        Returns the result of an as of join operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -710,6 +725,11 @@ def add_TableServiceServicer_to_server(servicer, server):
             'AsOfJoinTables': grpc.unary_unary_rpc_method_handler(
                     servicer.AsOfJoinTables,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'AsOfJoinTables2': grpc.unary_unary_rpc_method_handler(
+                    servicer.AsOfJoinTables2,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'RangeJoinTables': grpc.unary_unary_rpc_method_handler(
@@ -1247,6 +1267,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables',
             deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AsOfJoinTables2(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2',
+            deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

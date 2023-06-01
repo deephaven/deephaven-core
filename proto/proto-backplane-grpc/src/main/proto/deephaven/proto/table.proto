@@ -145,8 +145,17 @@ service TableService {
 
   /*
    * Returns the result of an as of join operation.
+   *
+   * Deprecated: Please use AsOfJoinTables2 instead
    */
-  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {
+    option deprecated = true;
+  }
+
+  /*
+   * Returns the result of an as of join operation.
+   */
+  rpc AsOfJoinTables2(AsOfJoinTables2Request) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns the result of a range join operation.
@@ -678,7 +687,9 @@ message LeftJoinTablesRequest {
 }
 
 message AsOfJoinTablesRequest {
+  option deprecated = true;
   enum MatchRule {
+    option deprecated = true;
     LESS_THAN_EQUAL = 0;
     LESS_THAN = 1;
     GREATER_THAN_EQUAL = 2;
@@ -692,6 +703,28 @@ message AsOfJoinTablesRequest {
   // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
   // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
   MatchRule as_of_match_rule = 7;
+}
+
+message AsOfJoinTables2Request {
+  enum AsOfRule {
+    UNSPECIFIED = 0;
+    // aj,
+    GEQ = 1;
+    // aj, disallow exact match
+    GT = 2;
+    // raj
+    LEQ = 3;
+    // raj, disallow exact match
+    LT = 4;
+  }
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string exact_match_columns = 4;
+  string left_column = 5;
+  AsOfRule rule = 6;
+  string right_column = 7;
+  repeated string columns_to_add = 8;
 }
 
 message RangeJoinTablesRequest {
@@ -1224,7 +1257,7 @@ message BatchTableRequest {
       NaturalJoinTablesRequest natural_join = 24;
       ExactJoinTablesRequest exact_join = 25;
       LeftJoinTablesRequest left_join = 26;
-      AsOfJoinTablesRequest as_of_join = 27;
+      AsOfJoinTablesRequest as_of_join = 27 [deprecated=true];
       FetchTableRequest fetch_table = 28;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
@@ -1236,6 +1269,7 @@ message BatchTableRequest {
       SnapshotWhenTableRequest snapshot_when = 37;
       MetaTableRequest meta_table = 38;
       RangeJoinTablesRequest range_join = 39;
+      AsOfJoinTables2Request as_of_join_2 = 40;
     }
   }
 }

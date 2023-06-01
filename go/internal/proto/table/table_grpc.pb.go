@@ -76,8 +76,14 @@ type TableServiceClient interface {
 	ExactJoinTables(ctx context.Context, in *ExactJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of a left join operation.
 	LeftJoinTables(ctx context.Context, in *LeftJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an as of join operation.
+	//
+	// Deprecated: Please use AsOfJoinTables2 instead
 	AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
+	// Returns the result of an as of join operation.
+	AsOfJoinTables2(ctx context.Context, in *AsOfJoinTables2Request, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Returns the result of a range join operation.
 	RangeJoinTables(ctx context.Context, in *RangeJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -375,9 +381,19 @@ func (c *tableServiceClient) LeftJoinTables(ctx context.Context, in *LeftJoinTab
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *tableServiceClient) AsOfJoinTables(ctx context.Context, in *AsOfJoinTablesRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
 	out := new(ExportedTableCreationResponse)
 	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tableServiceClient) AsOfJoinTables2(ctx context.Context, in *AsOfJoinTables2Request, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -614,8 +630,14 @@ type TableServiceServer interface {
 	ExactJoinTables(context.Context, *ExactJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Returns the result of a left join operation.
 	LeftJoinTables(context.Context, *LeftJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Deprecated: Do not use.
+	//
 	// Returns the result of an as of join operation.
+	//
+	// Deprecated: Please use AsOfJoinTables2 instead
 	AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error)
+	// Returns the result of an as of join operation.
+	AsOfJoinTables2(context.Context, *AsOfJoinTables2Request) (*ExportedTableCreationResponse, error)
 	// Returns the result of a range join operation.
 	RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error)
 	// Deprecated: Do not use.
@@ -756,6 +778,9 @@ func (UnimplementedTableServiceServer) LeftJoinTables(context.Context, *LeftJoin
 }
 func (UnimplementedTableServiceServer) AsOfJoinTables(context.Context, *AsOfJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AsOfJoinTables not implemented")
+}
+func (UnimplementedTableServiceServer) AsOfJoinTables2(context.Context, *AsOfJoinTables2Request) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AsOfJoinTables2 not implemented")
 }
 func (UnimplementedTableServiceServer) RangeJoinTables(context.Context, *RangeJoinTablesRequest) (*ExportedTableCreationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RangeJoinTables not implemented")
@@ -1298,6 +1323,24 @@ func _TableService_AsOfJoinTables_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_AsOfJoinTables2_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AsOfJoinTables2Request)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).AsOfJoinTables2(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).AsOfJoinTables2(ctx, req.(*AsOfJoinTables2Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TableService_RangeJoinTables_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RangeJoinTablesRequest)
 	if err := dec(in); err != nil {
@@ -1670,6 +1713,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AsOfJoinTables",
 			Handler:    _TableService_AsOfJoinTables_Handler,
+		},
+		{
+			MethodName: "AsOfJoinTables2",
+			Handler:    _TableService_AsOfJoinTables2_Handler,
 		},
 		{
 			MethodName: "RangeJoinTables",
