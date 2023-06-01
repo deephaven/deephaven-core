@@ -14,7 +14,6 @@ import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -53,20 +52,19 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     public void setUp() throws Exception {
         super.setUp();
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
+        // initialize the unit test's execution context
+        executionContext = TestExecutionContextAccess.createForUnitTests().open();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
+        updateGraph.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
 
-        // initialize the unit test's execution context
-        executionContext = TestExecutionContextAccess.createForUnitTests().open();
-
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        oldCheckLtm = ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(false);
+        oldCheckLtm = updateGraph.setCheckTableOperations(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         ChunkPoolReleaseTracking.enableStrict();
     }
@@ -74,7 +72,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     @Override
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
-        ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(oldCheckLtm);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.setCheckTableOperations(oldCheckLtm);
         QueryCompiler.setLogEnabled(oldLogEnabled);
 
         // reset the execution context
@@ -82,9 +81,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
+        updateGraph.resetForUnitTests(true);
 
         super.tearDown();
     }
@@ -152,8 +149,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);
         // The EvalNugget test cases end up generating very big listener DAGs, for at each step we create a brand new
