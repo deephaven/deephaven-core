@@ -65,11 +65,14 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
         Common.validate(request.getLeftId());
         Common.validate(request.getRightId());
 
-        for (String exactMatch : request.getExactMatchColumnsList()) {
-            JoinMatch.parse(exactMatch);
+        try {
+            for (String exactMatch : request.getExactMatchColumnsList()) {
+                JoinMatch.parse(exactMatch);
+            }
+            parseRangeMatch(request);
+        } catch (IllegalArgumentException e) {
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
         }
-
-        parseRangeMatch(request);
 
         for (Aggregation aggregation : request.getAggregationsList()) {
             AggregationAdapter.validate(aggregation);
@@ -99,45 +102,39 @@ public final class RangeJoinGrpcImpl extends GrpcTableOperation<RangeJoinTablesR
     }
 
     private static RangeJoinMatch parseRangeMatch(@NotNull final RangeJoinTablesRequest request) {
-        final RangeStartRule rangeStartRule;
-        switch (request.getRangeStartRule()) {
-            case LESS_THAN:
-                rangeStartRule = RangeStartRule.LESS_THAN;
-                break;
-            case LESS_THAN_OR_EQUAL:
-                rangeStartRule = RangeStartRule.LESS_THAN_OR_EQUAL;
-                break;
-            case LESS_THAN_OR_EQUAL_ALLOW_PRECEDING:
-                rangeStartRule = RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
-                break;
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        String.format("Unrecognized range start rule %s for range join",
-                                request.getRangeStartRule()));
-        }
-
-        final RangeEndRule rangeEndRule;
-        switch (request.getRangeEndRule()) {
-            case GREATER_THAN:
-                rangeEndRule = RangeEndRule.GREATER_THAN;
-                break;
-            case GREATER_THAN_OR_EQUAL:
-                rangeEndRule = RangeEndRule.GREATER_THAN_OR_EQUAL;
-                break;
-            case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
-                rangeEndRule = RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
-                break;
-            default:
-                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        String.format("Unrecognized range end rule %s for range join",
-                                request.getRangeEndRule()));
-        }
-
         return RangeJoinMatch.of(
                 ColumnName.parse(request.getLeftStartColumn()),
-                rangeStartRule,
+                adapt(request.getRangeStartRule()),
                 ColumnName.parse(request.getRightRangeColumn()),
-                rangeEndRule,
+                adapt(request.getRangeEndRule()),
                 ColumnName.parse(request.getLeftEndColumn()));
+    }
+
+    private static RangeStartRule adapt(RangeJoinTablesRequest.RangeStartRule rule) {
+        switch (rule) {
+            case LESS_THAN:
+                return RangeStartRule.LESS_THAN;
+            case LESS_THAN_OR_EQUAL:
+                return RangeStartRule.LESS_THAN_OR_EQUAL;
+            case LESS_THAN_OR_EQUAL_ALLOW_PRECEDING:
+                return RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING;
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("Unrecognized range start rule %s for range join", rule));
+        }
+    }
+
+    private static RangeEndRule adapt(RangeJoinTablesRequest.RangeEndRule rule) {
+        switch (rule) {
+            case GREATER_THAN:
+                return RangeEndRule.GREATER_THAN;
+            case GREATER_THAN_OR_EQUAL:
+                return RangeEndRule.GREATER_THAN_OR_EQUAL;
+            case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                return RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING;
+            default:
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        String.format("Unrecognized range end rule %s for range join", rule));
+        }
     }
 }
