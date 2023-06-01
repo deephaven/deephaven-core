@@ -736,9 +736,12 @@ public interface Table extends
     // Methods for refreshing tables
     // -----------------------------------------------------------------------------------------------------------------
 
+    // TODO (https://github.com/deephaven/deephaven-core/pull/3506): Update this advice for multiple update graphs,
+    // and on the other overloads, as well.
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}.
      * <p>
      * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
      * java.util.concurrent.locks.Condition#await()).
@@ -749,7 +752,8 @@ public interface Table extends
 
     /**
      * <p>
-     * Wait for updates to this Table.
+     * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}.
      * <p>
      * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
      * java.util.concurrent.locks.Condition#await()).

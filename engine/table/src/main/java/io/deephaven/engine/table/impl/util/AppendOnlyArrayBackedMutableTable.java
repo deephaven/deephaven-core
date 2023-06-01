@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.*;
@@ -24,7 +23,7 @@ import java.util.function.Consumer;
 
 /**
  * An in-memory table that allows you to add rows as if it were an InputTable, which can be updated on the UGP.
- *
+ * <p>
  * The table is not keyed, all rows are added to the end of the table. Deletions and edits are not permitted.
  */
 public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTable {
@@ -51,6 +50,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
      */
     public static AppendOnlyArrayBackedMutableTable make(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues) {
+        // noinspection resource
         return make(new QueryTable(definition, RowSetFactory.empty().toTracking(),
                 NullValueColumnSource.createColumnSourceMap(definition)), enumValues);
     }
@@ -86,6 +86,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
 
     private AppendOnlyArrayBackedMutableTable(@NotNull TableDefinition definition,
             final Map<String, Object[]> enumValues, final ProcessPendingUpdater processPendingUpdater) {
+        // noinspection resource
         super(RowSetFactory.empty().toTracking(), makeColumnSourceMap(definition),
                 enumValues, processPendingUpdater);
     }
@@ -96,24 +97,22 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
         try (final RowSet addRowSet = table.getRowSet().copy()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
-            try (final RowSequence destinations = RowSequenceFactory.forRange(firstRow, lastRow)) {
+            try (final RowSequence destinations = RowSequenceFactory.forRange(firstRow, lastRow);
+                    final SharedContext sharedContext = SharedContext.makeSharedContext()) {
                 destinations.forAllRowKeys(rowSetChangeRecorder::addRowKey);
                 nextRow = lastRow + 1;
 
-                final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final int chunkCapacity = table.intSize();
 
                 getColumnSourceMap().forEach((name, cs) -> {
-                    final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
-                    arrayBackedColumnSource.ensureCapacity(nextRow);
-                    final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-                    try (final ChunkSink.FillFromContext ffc =
-                            arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
+                    final WritableColumnSource<?> writableColumnSource = (WritableColumnSource<?>) cs;
+                    writableColumnSource.ensureCapacity(nextRow);
+                    final ColumnSource<?> sourceColumnSource = table.getColumnSource(name, cs.getType());
+                    try (final ChunkSink.FillFromContext ffc = writableColumnSource.makeFillFromContext(chunkCapacity);
                             final ChunkSource.GetContext getContext =
                                     sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                        final Chunk<? extends Values> valuesChunk =
-                                sourceColumnSource.getChunk(getContext, addRowSet);
-                        arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
+                        final Chunk<? extends Values> valuesChunk = sourceColumnSource.getChunk(getContext, addRowSet);
+                        writableColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
                     }
                 });
             }

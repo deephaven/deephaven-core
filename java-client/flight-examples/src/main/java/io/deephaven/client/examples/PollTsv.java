@@ -7,12 +7,12 @@ import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TimeTable;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import picocli.CommandLine.Parameters;
 
 import java.time.Duration;
 
@@ -37,9 +37,7 @@ class PollTsv extends FlightExampleBase {
     @Option(names = {"-c", "--count"}, description = "The number of polls.")
     Long count;
 
-    @Parameters(arity = "1", paramLabel = "QST", description = "QST file to send and get.",
-            converter = TableConverter.class)
-    TableSpec table;
+    TableSpec table = TimeTable.of(Duration.ofSeconds(1));
 
     @Override
     protected void execute(FlightSession flight) throws Exception {

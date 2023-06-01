@@ -108,17 +108,17 @@ class UpdateByOperation(JObjectWrapper):
         return self.j_updateby_op
 
 
-def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
-        time_scale_ticks (float): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -133,26 +133,26 @@ def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMA UpdateByOperation.") from e
 
 
-def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         ema_next = a * ema_last + (1 - a) * value
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
@@ -166,28 +166,28 @@ def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EMA UpdateByOperation.") from e
 
 
-def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def ems_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         ems_next = a * ems_last + value
 
     Args:
-        time_scale_ticks (float): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -202,26 +202,26 @@ def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMS UpdateByOperation.") from e
 
 
-def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         eems_next = a * ems_last + value
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
@@ -235,28 +235,28 @@ def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EMS UpdateByOperation.") from e
 
 
-def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         em_val_next = min(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (float): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -271,26 +271,26 @@ def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Min UpdateByOperation.") from e
 
 
-def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         em_val_next = min(a * em_val_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
@@ -304,28 +304,28 @@ def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Min UpdateByOperation.") from e
 
 
-def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         em_val_next = max(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (float): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -340,27 +340,27 @@ def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Max UpdateByOperation.") from e
 
 
-def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         em_val_next = max(a * em_val_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
 
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
@@ -374,29 +374,29 @@ def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Max UpdateByOperation.") from e
 
-def emstd_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
              op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
     ticks as the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
         ema = a * prevEma + x
         std = sqrt(variance)
 
     Args:
-        time_scale_ticks (float): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -411,15 +411,15 @@ def emstd_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Std UpdateByOperation.") from e
 
 
-def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
              op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
     time as the decay unit.
@@ -432,7 +432,7 @@ def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
@@ -446,13 +446,13 @@ def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.parseDurationNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, ts_col, time_scale, *cols))
+                    j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Std UpdateByOperation.") from e
 

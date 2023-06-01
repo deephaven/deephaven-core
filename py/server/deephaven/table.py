@@ -1460,7 +1460,7 @@ class Table(JObjectWrapper):
 
     def group_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
-        grouped into arrays.
+        grouped into vectors.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None

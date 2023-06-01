@@ -8,7 +8,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 
-import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -17,7 +16,7 @@ import java.util.Objects;
  */
 @Immutable
 @BuildableStyle
-public abstract class FilterComparison extends FilterBase implements Serializable {
+public abstract class FilterComparison extends FilterBase {
 
     public enum Operator {
         /**

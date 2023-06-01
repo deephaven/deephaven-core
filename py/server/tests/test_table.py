@@ -7,7 +7,7 @@ from typing import List, Any
 
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
-    var, formula, partition
+    var, formula, partition, unique, count_distinct, distinct
 from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
@@ -16,6 +16,7 @@ from deephaven.pandas import to_pandas
 from deephaven.table import Table, SearchDisplayMode
 from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
+from tests.testbase import BaseTestCase, table_equals
 
 
 # for scoping dependent table operation tests
@@ -642,7 +643,8 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
+        verify_layout_hint(t,
+                           "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
         verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
@@ -1006,6 +1008,35 @@ class TableTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             time_table("PT00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+
+    def test_agg_with_options(self):
+        test_table = self.test_table.update(["b = a % 10 > 5 ? null : b", "c = c % 10"])
+        aggs = [
+            median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
+            pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
+            count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
+            distinct(cols=["da = a", "db = b"], include_nulls=True),
+            ]
+        rt = test_table.agg_by(aggs=aggs, by=["c"])
+        self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
+
+        aggs_default = [
+            median(cols=["ma = a", "mb = b"]),
+            pct(0.20, cols=["pa = a", "pb = b"]),
+            unique(cols=["ua = a", "ub = b"]),
+            count_distinct(cols=["csa = a", "csb = b"]),
+            distinct(cols=["da = a", "db = b"]),
+        ]
+
+        for agg_option, agg_default in zip(aggs, aggs_default):
+            with self.subTest(agg_option):
+                rt_option = test_table.agg_by(aggs=agg_option, by=["c"])
+                rt_default = test_table.agg_by(aggs=agg_default, by=["c"])
+                self.assertFalse(table_equals(rt_option, rt_default))
+
+        with self.assertRaises(DHError):
+            agg = unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=None)
 
 
 if __name__ == "__main__":

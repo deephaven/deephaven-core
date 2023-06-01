@@ -290,6 +290,21 @@ class PandasTestCase(BaseTestCase):
         for c in dh_t.columns:
             self.assertEqual(c.data_type, dtypes.Instant)
 
+    def test_pandas_category_type(self):
+        df = pd.DataFrame({
+                              'zipcode': {17384: 98125, 2680: 98107, 722: 98005, 18754: 98109, 14554: 98155},
+                              'bathrooms': {17384: 1.5, 2680: 0.75, 722: 3.25, 18754: 1.0, 14554: 2.5},
+                              'sqft_lot': {17384: 1650, 2680: 3700, 722: 51836, 18754: 2640, 14554: 9603},
+                              'bedrooms': {17384: 2, 2680: 2, 722: 4, 18754: 2, 14554: 4},
+                              'sqft_living': {17384: 1430, 2680: 1440, 722: 4670, 18754: 1130, 14554: 3180},
+                              'floors': {17384: 3.0, 2680: 1.0, 722: 2.0, 18754: 1.0, 14554: 2.0}
+                          })
+        df['zipcode'] = df.zipcode.astype('category')
+        df['bathrooms'] = df.bathrooms.astype('category')
+        t = to_table(df)
+        self.assertEqual(t.columns[0].data_type, dtypes.int64)
+        self.assertEqual(t.columns[1].data_type, dtypes.double)
+
 
 if __name__ == '__main__':
     unittest.main()
