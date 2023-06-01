@@ -12,6 +12,7 @@ import io.deephaven.chunk.ObjectChunk;
 
 import io.deephaven.chunk.WritableObjectChunk;
 
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.chunk.*;
@@ -24,7 +25,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -47,7 +47,7 @@ public abstract class AbstractBooleanColumnSourceTest {
 
     @Before
     public void setUp() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 

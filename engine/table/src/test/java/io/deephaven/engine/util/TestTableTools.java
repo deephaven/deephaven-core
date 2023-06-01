@@ -29,6 +29,7 @@ import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.ExceptionDetails;
@@ -76,7 +77,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         oldCheckUgp = ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(false);
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
 
@@ -478,7 +479,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     }
 
     public void testMergeIterative2() {
-        LogicalClock clock = ExecutionContext.getContext().getUpdateGraph().clock();
+        LogicalClockImpl clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
         Random random = new Random(0);
 
         ColumnInfo<?, ?>[] info1;

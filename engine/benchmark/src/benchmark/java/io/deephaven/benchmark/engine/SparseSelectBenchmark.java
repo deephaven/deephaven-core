@@ -12,6 +12,7 @@ import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
@@ -43,7 +44,7 @@ public class SparseSelectBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);
 

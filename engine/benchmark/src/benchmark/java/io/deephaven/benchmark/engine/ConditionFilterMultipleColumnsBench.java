@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
@@ -51,7 +52,7 @@ public class ConditionFilterMultipleColumnsBench {
         if (nFilterCols < 1 || nAdditionalCols < 0) {
             throw new IllegalArgumentException();
         }
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
         final BenchmarkTableBuilder builder;

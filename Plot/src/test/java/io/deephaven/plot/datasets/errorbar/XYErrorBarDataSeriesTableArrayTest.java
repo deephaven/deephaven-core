@@ -7,6 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
@@ -23,7 +24,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 

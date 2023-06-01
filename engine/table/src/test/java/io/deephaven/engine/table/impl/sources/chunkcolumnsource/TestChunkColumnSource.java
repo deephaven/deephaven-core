@@ -7,6 +7,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.chunk.util.hashing.IntChunkEquals;
@@ -26,7 +27,7 @@ import org.junit.Test;
 public class TestChunkColumnSource {
     @Before
     public void setUp() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
     }
 

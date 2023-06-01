@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -28,7 +29,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
     @Override
     public void setUp() {
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),

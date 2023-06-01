@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
@@ -52,7 +53,7 @@ public class NaturalJoinMultipleColumnsBench {
                             + t1NumberOfAdditionalColumns + ") have to be >= 1.");
         }
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         final BenchmarkTableBuilder builder1;
         final String t1PartCol = "T1PartCol";
         builder1 = BenchmarkTools.persistentTableBuilder("T1", tableSize);

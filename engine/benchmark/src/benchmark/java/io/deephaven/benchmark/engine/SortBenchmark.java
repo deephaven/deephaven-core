@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -78,7 +79,7 @@ public class SortBenchmark {
         Assert.eqTrue(workingSize % sizePerStep == 0, "Cannot evenly divide working size by step size.");
         workingSizeInSteps = workingSize / sizePerStep;
 
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final int nVals = (int) (enumSize < 1 ? enumSize * tableSize : enumSize);
         System.out.println("String Values: " + nVals);
@@ -153,7 +154,7 @@ public class SortBenchmark {
         rollingInputTable.setRefreshing(true);
         rollingOutputTable = rollingInputTable.sort(sortCol);
 
-        ExecutionContext.getContext().getUpdateGraph().enableUnitTestMode();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
     }
 
     private long currStep = 0;

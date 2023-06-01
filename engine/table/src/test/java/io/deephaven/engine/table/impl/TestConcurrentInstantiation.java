@@ -1497,7 +1497,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("y", "a", "b", "c", "d"));
 
 
-        final Future<String[]> future = pool.submit(() -> table.getUpdateGraph().apply(() -> {
+        final Future<String[]> future = pool.submit(() -> {
             final MutableObject<String[]> result = new MutableObject<>();
             ConstructSnapshot.callDataSnapshotFunction("testConstructSnapshotException",
                     ConstructSnapshot.makeSnapshotControl(false, table.isRefreshing(), table), (usePrev, clock) -> {
@@ -1525,7 +1525,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         return true;
                     });
             return result.getValue();
-        }));
+        });
 
         // wait until we've had the future start, but before it's actually gotten completed, so we know that it is
         // going to be kicked off in the idle cycle
