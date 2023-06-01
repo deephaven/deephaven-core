@@ -35,10 +35,10 @@ class UpdateByTestCase(BaseTestCase):
                                    on_nan=BadDataBehavior.RESET,
                                    big_value_context=MathContext.UNLIMITED)
 
-        ops = [ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"]),
-               ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"], op_control=op_ctrl),
-               ema_time_decay(ts_col="Timestamp", time_scale=10, cols=["ema_a = a"]),
-               ema_time_decay(ts_col="Timestamp", time_scale=1000000, cols=["ema_c = c"],
+        ops = [ema_tick_decay(decay_ticks=100, cols=["ema_a = a"]),
+               ema_tick_decay(decay_ticks=100, cols=["ema_a = a"], op_control=op_ctrl),
+               ema_time_decay(ts_col="Timestamp", decay_time=10, cols=["ema_a = a"]),
+               ema_time_decay(ts_col="Timestamp", decay_time=1000000, cols=["ema_c = c"],
                               op_control=op_ctrl),
                ]
 

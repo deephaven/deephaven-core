@@ -6,18 +6,18 @@
 #include <iostream>
 #include <sstream>
 #include "deephaven/client/client.h"
-#include "deephaven/client/chunk/chunk.h"
-#include "deephaven/client/column/column_source.h"
-#include "deephaven/client/utility/utility.h"
+#include "deephaven/dhcore/chunk/chunk.h"
+#include "deephaven/dhcore/column/column_source.h"
+#include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
-using deephaven::client::chunk::Int64Chunk;
-using deephaven::client::column::Int64ColumnSource;
-using deephaven::client::container::RowSequence;
-using deephaven::client::table::Table;
-using deephaven::client::utility::verboseCast;
+using deephaven::dhcore::chunk::Int64Chunk;
+using deephaven::dhcore::column::Int64ColumnSource;
+using deephaven::dhcore::container::RowSequence;
+using deephaven::dhcore::table::Table;
+using deephaven::dhcore::utility::verboseCast;
 
 namespace {
 void mainMenu(const TableHandleManager &manager);
@@ -112,9 +112,9 @@ void mainMenu(const TableHandleManager &manager) {
   }
 }
 
-class CallbackPrintFull final : public deephaven::client::TickingCallback {
+class CallbackPrintFull final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     std::cout << "=== The Full Table ===\n"
       << update.current()->stream(true, true)
       << '\n';
@@ -139,9 +139,9 @@ void printDynamicTableFull(const TableHandleManager &manager) {
   table.unsubscribe(std::move(cookie));
 }
 
-class CallbackPrintDiff final : public deephaven::client::TickingCallback {
+class CallbackPrintDiff final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     if (update.beforeRemoves() != update.afterRemoves()) {
       std::cout << "=== REMOVES ===\n"
                 << update.beforeRemoves()->stream(true, true, update.removedRows())
@@ -181,9 +181,9 @@ void printDiffs(const TableHandleManager &manager) {
   table.unsubscribe(std::move(cookie));
 }
 
-class CallbackSumFull final : public deephaven::client::TickingCallback {
+class CallbackSumFull final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     const auto &current = update.current();
     auto int64ColGeneric = current->getColumn("IntValue", true);
 
@@ -233,9 +233,9 @@ void sumColumnsFull(const TableHandleManager &manager) {
   table.unsubscribe(std::move(cookie));
 }
 
-class CallbackSumDiff final : public deephaven::client::TickingCallback {
+class CallbackSumDiff final : public deephaven::dhcore::ticking::TickingCallback {
 public:
-  void onTick(deephaven::client::TickingUpdate update) final {
+  void onTick(deephaven::dhcore::ticking::TickingUpdate update) final {
     processDeltas(*update.beforeRemoves(), update.removedRows(), -1);
     processDeltas(*update.afterAdds(), update.addedRows(), 1);
     std::cout << "int64Sum is " << int64Sum_ << ", cumulative number of ops is " << numOps_ << '\n';

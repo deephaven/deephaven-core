@@ -30,29 +30,16 @@ void printTableData(std::ostream &stream, const Table &table,
     bool wantHeaders, bool wantRowNumbers, bool highlightCells);
 }  // namespace
 
-size_t Table::getColumnIndex(std::string_view name, bool strict) const {
-  // TODO(kosak): improve linear search.
-  const auto &cols = schema()->columns();
-  for (size_t i = 0; i < cols.size(); ++i) {
-    if (cols[i].first == name) {
-      return i;
-    }
-  }
-
-  // Not found: check strictness flag.
-  if (strict) {
-    auto message = stringf("Column name '%o' not found", name);
-    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
-  }
-  return (size_t)-1;
+std::optional<size_t> Table::getColumnIndex(std::string_view name, bool strict) const {
+  return schema()->getColumnIndex(name, strict);
 }
 
 std::shared_ptr<ColumnSource> Table::getColumn(std::string_view name, bool strict) const {
   auto index = getColumnIndex(name, strict);
-  if (index == (size_t)-1) {
+  if (!index.has_value()) {
     return {};
   }
-  return getColumn(index);
+  return getColumn(*index);
 }
 
 internal::TableStreamAdaptor Table::stream(bool wantHeaders, bool wantRowNumbers) const {
@@ -205,7 +192,7 @@ void printTableData(std::ostream &stream, const Table &table,
       separator = "\t";
     }
     for (auto colIndex : whichCols) {
-      stream << separator << table.schema()->columns()[colIndex].first;
+      stream << separator << table.schema()->names()[colIndex];
       separator = "\t";
     }
     stream << std::endl;

@@ -15,11 +15,11 @@ import java.util.Optional;
 public abstract class EmStdSpec extends UpdateBySpecBase {
 
     public static EmStdSpec of(OperationControl control, WindowScale windowScale) {
-        return ImmutableEmStdSpec.builder().control(control).timeScale(windowScale).build();
+        return ImmutableEmStdSpec.builder().control(control).windowScale(windowScale).build();
     }
 
     public static EmStdSpec of(WindowScale windowScale) {
-        return ImmutableEmStdSpec.builder().timeScale(windowScale).build();
+        return ImmutableEmStdSpec.builder().windowScale(windowScale).build();
     }
 
     public static EmStdSpec ofTime(final OperationControl control,
@@ -52,7 +52,7 @@ public abstract class EmStdSpec extends UpdateBySpecBase {
 
     public abstract Optional<OperationControl> control();
 
-    public abstract WindowScale timeScale();
+    public abstract WindowScale windowScale();
 
     public final OperationControl controlOrDefault() {
         return control().orElseGet(OperationControl::defaultInstance);

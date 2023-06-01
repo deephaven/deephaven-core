@@ -130,7 +130,7 @@ public abstract class UpdateGraphLock {
         private FinalUpdateGraphLock(@NotNull final LogicalClock logicalClock) {
             super(logicalClock);
             final ReadWriteLockAccessor lockAccessor = new ReentrantReadWriteLockAccessor();
-            this.sharedLock = new SharedLock(lockAccessor);
+            this.sharedLock = new SharedLock(logicalClock, lockAccessor);
             this.exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
         }
 
@@ -179,7 +179,7 @@ public abstract class UpdateGraphLock {
 
         private synchronized void initialize() {
             lockAccessor = new RecordedReadWriteLockAccessor();
-            sharedLock = new SharedLock(lockAccessor);
+            sharedLock = new SharedLock(logicalClock, lockAccessor);
             exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
         }
 
@@ -267,6 +267,11 @@ public abstract class UpdateGraphLock {
     private static class SharedLock implements AwareFunctionalLock {
 
         /**
+         * Logical clock used for correctness checks.
+         */
+        private final LogicalClock logicalClock;
+
+        /**
          * Accessor for the underlying lock implementation.
          */
         private final ReadWriteLockAccessor lockAccessor;
@@ -276,7 +281,10 @@ public abstract class UpdateGraphLock {
          */
         private final Lock readLock;
 
-        private SharedLock(ReadWriteLockAccessor lockAccessor) {
+        private SharedLock(
+                @NotNull final LogicalClock logicalClock,
+                @NotNull final ReadWriteLockAccessor lockAccessor) {
+            this.logicalClock = logicalClock;
             this.lockAccessor = lockAccessor;
             this.readLock = lockAccessor.readLock();
         }
@@ -288,6 +296,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lock() {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordAction("Acquire UpdateGraphProcessor readLock", () -> {
@@ -307,6 +316,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lockInterruptibly() throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
                 instrumentation.recordActionInterruptibly("Acquire UpdateGraphProcessor readLock interruptibly",
@@ -327,6 +337,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock() {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             if (readLock.tryLock()) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -336,6 +347,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             if (readLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -366,6 +378,7 @@ public abstract class UpdateGraphLock {
          * Logical clock used for correctness checks.
          */
         private final LogicalClock logicalClock;
+
         /**
          * Accessor for the underlying lock implementation.
          */
@@ -391,6 +404,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lock() {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
@@ -412,6 +426,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lockInterruptibly() throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
@@ -434,6 +449,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock() {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             checkForUpgradeAttempt();
             if (writeLock.tryLock()) {
                 maybeLogStackTrace("locked (exclusive)");
@@ -444,6 +460,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(logicalClock);
             checkForUpgradeAttempt();
             if (writeLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (exclusive)");
@@ -473,6 +490,47 @@ public abstract class UpdateGraphLock {
     }
 
     // endregion Exclusive Lock Implementation
+
+    // region Lock Safety Validation Helper
+
+    // TODO (https://github.com/deephaven/deephaven-core/pull/3506): Update this for multiple update graphs
+    /**
+     * Check for inappropriate locking from a refresh thread during the updating phase.
+     * <p>
+     * Under normal conditions we expect only the primary (or singular, in single-threaded update graph processors)
+     * refresh thread to acquire either lock, and that that thread always acquires the exclusive lock during the idle
+     * phase in order to begin the updating phase.
+     * <p>
+     * Were a worker refresh thread to attempt to acquire either lock without a timeout during the updating phase, it
+     * would block forever or until interrupted. Trying to lock with a timeout wouldn't block forever, but would
+     * negatively impact the responsiveness of the update graph processor. This behavior would &quot;work&quot; for
+     * misbehaving notifications under a single-threaded update graph processor with the current implementation, but
+     * would immediately become broken upon adding additional update threads. We prefer to proactively prevent
+     * notifications from attempting to do this, rather than leave it for users to debug.
+     * <p>
+     * Note that the worker refresh threads (if there are any) are never active during the idle phase unless processing
+     * terminal notifications that don't require the exclusive lock. Other terminal notifications are processed by the
+     * primary refresh thread under the exclusive lock.
+     * <p>
+     * Two rules follow from this:
+     * <ol>
+     * <li>It is always safe for a refresh thread to acquire either lock during the idle phase, as long as other rules
+     * are respected (no inversions, no upgrades, and no attempts to wait for the update graph to do work).</li>
+     * <li>It is never safe for a refresh thread to acquire either lock during the updating phase.</li>
+     * </ol>
+     *
+     * @param logicalClock The logical clock to check for {@link LogicalClock#currentState() current state}
+     */
+    private static void checkForIllegalLockFromRefreshThread(@NotNull final LogicalClock logicalClock) {
+        if (logicalClock.currentState() == LogicalClock.State.Updating
+                && UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            // This exception message assumes the misbehavior is from a notification (e.g. for a user listener), rather
+            // than an internal programming error.
+            throw new UnsupportedOperationException("Non-terminal notifications must not lock the update graph");
+        }
+    }
+
+    // endregion Lock Safety Validation Helper
 
     // region ReadWriteLockAccessor implementations
 

@@ -8,11 +8,10 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.io.Serializable;
 
 @Immutable
 @SimpleStyle
-abstract class PairImpl implements Pair, Serializable {
+abstract class PairImpl implements Pair {
     public static PairImpl of(ColumnName input, ColumnName output) {
         return ImmutablePairImpl.of(input, output);
     }

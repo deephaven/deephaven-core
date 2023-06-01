@@ -16,11 +16,11 @@ import java.util.Optional;
 public abstract class EmMinMaxSpec extends UpdateBySpecBase {
 
     public static EmMinMaxSpec of(OperationControl control, boolean isMax, WindowScale windowScale) {
-        return ImmutableEmMinMaxSpec.builder().control(control).isMax(isMax).timeScale(windowScale).build();
+        return ImmutableEmMinMaxSpec.builder().control(control).isMax(isMax).windowScale(windowScale).build();
     }
 
     public static EmMinMaxSpec of(boolean isMax, WindowScale windowScale) {
-        return ImmutableEmMinMaxSpec.builder().isMax(isMax).timeScale(windowScale).build();
+        return ImmutableEmMinMaxSpec.builder().isMax(isMax).windowScale(windowScale).build();
     }
 
     public static EmMinMaxSpec ofTime(OperationControl control,
@@ -59,7 +59,7 @@ public abstract class EmMinMaxSpec extends UpdateBySpecBase {
     public abstract Optional<OperationControl> control();
 
     @Value.Parameter
-    public abstract WindowScale timeScale();
+    public abstract WindowScale windowScale();
 
     public final OperationControl controlOrDefault() {
         return control().orElseGet(OperationControl::defaultInstance);

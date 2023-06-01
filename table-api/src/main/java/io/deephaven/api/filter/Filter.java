@@ -11,7 +11,6 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralFilter;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * @see LiteralFilter
  * @see RawString
  */
-public interface Filter extends Expression, Serializable {
+public interface Filter extends Expression {
 
     static Collection<? extends Filter> from(String... expressions) {
         return from(Arrays.asList(expressions));

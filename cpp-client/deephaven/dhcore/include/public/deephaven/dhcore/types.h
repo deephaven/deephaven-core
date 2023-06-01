@@ -10,17 +10,20 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::dhcore {
-enum class ElementTypeId : int {
-  CHAR,
-  INT8, INT16, INT32, INT64,
-  FLOAT, DOUBLE,
-  BOOL, STRING, TIMESTAMP
+struct ElementTypeId {
+  // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
+  enum Enum {
+    CHAR,
+    INT8, INT16, INT32, INT64,
+    FLOAT, DOUBLE,
+    BOOL, STRING, TIMESTAMP
+  };
 };
 
 class DateTime;
 
 template<typename T>
-void visitElementTypeId(ElementTypeId typeId, T *visitor) {
+void visitElementTypeId(ElementTypeId::Enum typeId, T *visitor) {
   switch (typeId) {
     case ElementTypeId::CHAR: {
       visitor->template operator()<char16_t>();

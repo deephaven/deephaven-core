@@ -207,7 +207,7 @@ public:
   const Ticket &ticket() const { return ticket_; }
 
 private:
-  void lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId> validTypes);
+  void lookupHelper(const std::string &columnName, std::initializer_list<ElementTypeId::Enum> validTypes);
 
   std::shared_ptr<TableHandleImpl> defaultAggregateByDescriptor(
       ComboAggregateRequest::Aggregate descriptor, std::vector<std::string> groupByColumns);
