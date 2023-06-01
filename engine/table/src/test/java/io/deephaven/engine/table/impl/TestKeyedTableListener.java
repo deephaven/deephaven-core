@@ -9,6 +9,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.tuple.ArrayTuple;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -30,7 +31,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     @Override
     public void setUp() {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),
                 col("Key1", "A", "B", "C"),
@@ -48,7 +51,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
     }
 
     public void testGetRow() {
@@ -79,8 +84,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(
-                () -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
 
         keyedTableListener.unsubscribe(aKey, mockListener);
         keyedTableListener.unsubscribe(bKey, mockListener);
@@ -97,7 +103,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         });
         keyedTableListener.subscribe(newKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newAdd = TstUtils.i(3);
             TstUtils.addToTable(table, newAdd, col("Key1", "D"), col("Key2", 4), col("Data", 4.0));
             table.notifyListeners(newAdd, noRemoved.copy(), noModified.copy());
@@ -119,7 +127,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         });
         keyedTableListener.subscribe(cKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newRemove = TstUtils.i(2);
             TstUtils.removeRows(table, newRemove);
             table.notifyListeners(noAdded.copy(), newRemove, noModified.copy());
@@ -145,7 +154,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         assertEquals(3.0, vals[2]);
 
         keyedTableListener.subscribe(cKey, mockListener);
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(2);
             TstUtils.addToTable(table, newModified, col("Key1", "C"), col("Key2", 3),
                     col("Data", 6.0));
@@ -174,7 +184,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // Add to table on an existing row key is a modify
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(2);
             // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, col("Key1", "C"), col("Key2", 4),
@@ -215,7 +227,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // Add to table on an existing row key is a modify
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(1, 2);
             // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, col("Key1", "C", "D"), col("Key2", 3, 4),
@@ -256,7 +270,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(1, 2);
             TstUtils.addToTable(table, newModified, col("Key1", "C", "B"), col("Key2", 3, 2),
                     col("Data", 3.0, 2.0));
@@ -296,7 +311,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
 
@@ -348,14 +364,16 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         // Two cycles -- first remove
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
             table.notifyListeners(noAdded.copy(), newRemoved, noModified.copy());
         });
 
         // Now add
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet newAdded = TstUtils.i(2);
             TstUtils.addToTable(table, newAdded, col("Key1", "D"), col("Key2", 4),
                     col("Data", 4.0));

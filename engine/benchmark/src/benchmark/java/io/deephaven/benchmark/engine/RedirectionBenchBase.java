@@ -16,6 +16,7 @@ import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Setup;
@@ -74,8 +75,9 @@ public abstract class RedirectionBenchBase {
 
         final QueryData queryData = getQuery();
         for (int step = 0; step < queryData.steps; ++step) {
-            ExecutionContext.getContext().getUpdateGraph()
-                    .runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
         }
         inputTable = queryData.live;
         nFillCols = queryData.fillCols.length;

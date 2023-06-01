@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -169,7 +170,8 @@ public class SortBenchmark {
         }
         currStep = (currStep + 1) % numSteps;
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
         return incrementalTable;
     }
@@ -177,7 +179,8 @@ public class SortBenchmark {
     @Benchmark
     public Table rollingSort() {
         Assert.eq(rollingSortTable.size(), "result.size()", workingSize, "inputTable.size()");
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(rollingReleaseFilter::run);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(rollingReleaseFilter::run);
         return rollingSortTable;
     }
 
@@ -201,7 +204,8 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added(), update.removed());
             rollingInputTable.notifyListeners(update);
         });
@@ -227,7 +231,8 @@ public class SortBenchmark {
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             rollingInputRowSet.update(update.added(), update.removed());
             rollingInputTable.notifyListeners(update);
         });

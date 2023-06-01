@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
@@ -53,7 +54,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         super.setUp();
 
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
@@ -79,7 +82,9 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
 
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
 
         super.tearDown();
     }
@@ -147,7 +152,8 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     protected static void simulateShiftAwareStep(final GenerateTableUpdates.SimulationProfile simulationProfile,
             final String ctxt, int targetUpdateSize, Random random, QueryTable table, ColumnInfo[] columnInfo,
             EvalNuggetInterface[] en) {
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> GenerateTableUpdates
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates
                 .generateShiftAwareTableUpdates(simulationProfile, targetUpdateSize, random, table, columnInfo));
         TstUtils.validate(ctxt, en);
         // The EvalNugget test cases end up generating very big listener DAGs, for at each step we create a brand new

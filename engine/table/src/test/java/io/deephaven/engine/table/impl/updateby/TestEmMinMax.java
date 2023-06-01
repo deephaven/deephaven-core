@@ -18,10 +18,12 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.em.BaseBigNumberEMOperator;
 import io.deephaven.engine.table.impl.updateby.em.BasePrimitiveEMOperator;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -798,10 +800,11 @@ public class TestEmMinMax extends BaseUpdateByTest {
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             try {
                 if (appendOnly) {
-                    ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
-                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
-                    });
+                    UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                                    generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
+                                    generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
+                                });
                     validate("Table", nuggets);
                     validate("Table", timeNuggets);
                 } else {

@@ -659,7 +659,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         if (!ALLOW_UNIT_TEST_MODE) {
             // if we are in unit test mode we never want to start the UGP
             sources.add(updateSource);
-            start();
+            this.<ControlledUpdateGraph>cast().start();
         }
     }
 
@@ -936,11 +936,11 @@ public class UpdateGraphProcessor implements UpdateGraph {
     @TestUseOnly
     public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
             throws T {
-        startCycleForUnitTests();
+        this.<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             runnable.run();
         } finally {
-            completeCycleForUnitTests();
+            this.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 

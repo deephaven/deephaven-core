@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
@@ -25,13 +26,17 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
     public void setUp() throws Exception {
         super.setUp();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
     }
 
     public void testXYErrorBarDataSeriesTableArray() {
@@ -96,7 +101,9 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
         assertEquals(series.getX(4), Double.NaN);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(refreshingTable, i(7, 9), col("x", 4, 5), col("y", 4, 5), col("yLow", 3, 4), col("yHigh", 5, 6));
             refreshingTable.notifyListeners(i(7, 9), i(), i());
         });

@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
@@ -80,7 +81,9 @@ public class TestParquetTools {
     @Before
     public void setUp() throws IOException {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
 
         testRootFile = Files.createTempDirectory(TestParquetTools.class.getName()).toFile();
         testRoot = testRootFile.toString();

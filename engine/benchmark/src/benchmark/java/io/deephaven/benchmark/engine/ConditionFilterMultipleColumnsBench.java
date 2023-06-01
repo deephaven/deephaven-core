@@ -11,6 +11,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
@@ -116,11 +117,14 @@ public class ConditionFilterMultipleColumnsBench {
         final Table result = inputReleased.where(filter);
         // Compute the first pass of live iterations outside of the bench measurement,
         // to avoid including the time to setup the filter itself.
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         final long fullyReleasedSize = inputTable.size();
         bench = () -> {
             while (inputReleased.size() < fullyReleasedSize) {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             }
             return result;
         };

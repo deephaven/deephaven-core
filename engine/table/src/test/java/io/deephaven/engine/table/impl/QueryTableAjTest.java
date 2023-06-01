@@ -9,12 +9,10 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.expression.AsOfJoinMatchFactory;
@@ -439,16 +437,17 @@ public class QueryTableAjTest {
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
             result1.addUpdateListener(listener);
 
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                addToTable(right, i(4, 5, 6),
-                        stringCol("SingleKey", "Key", "Key", "Key"),
-                        byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
-                        longCol("LongCol", 4, 6, 5),
-                        doubleCol("DoubleCol", 4, 6, 5),
-                        stringCol("StringCol", "A", "D", "C"),
-                        col("BoolCol", null, true, false));
-                right.notifyListeners(i(4, 5, 6), i(), i());
-            });
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    addToTable(right, i(4, 5, 6),
+                            stringCol("SingleKey", "Key", "Key", "Key"),
+                            byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),
+                            longCol("LongCol", 4, 6, 5),
+                            doubleCol("DoubleCol", 4, 6, 5),
+                            stringCol("StringCol", "A", "D", "C"),
+                            col("BoolCol", null, true, false));
+                    right.notifyListeners(i(4, 5, 6), i(), i());
+                });
 
             assertNotNull(listener.originalException());
             assertEquals(

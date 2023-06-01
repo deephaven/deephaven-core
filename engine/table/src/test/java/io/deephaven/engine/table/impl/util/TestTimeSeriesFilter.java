@@ -6,8 +6,10 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -44,7 +46,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph3 = updateGraph12.<ControlledUpdateGraph>cast();
+        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -52,7 +56,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -60,7 +66,9 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(2000);
             timeSeriesFilter.run();
         });
@@ -105,21 +113,23 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             if (ii % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
-                    final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
-                    for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
-                        final UnitTestTimeSeriesFilter refreshFilter = ref.get();
-                        if (refreshFilter == null) {
-                            collectedRefs.add(ref);
-                        } else {
-                            refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
-                            refreshFilter.run();
-                        }
-                    }
-                    filtersToRefresh.removeAll(collectedRefs);
-                });
+                            final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();
+                            for (WeakReference<UnitTestTimeSeriesFilter> ref : filtersToRefresh) {
+                                final UnitTestTimeSeriesFilter refreshFilter = ref.get();
+                                if (refreshFilter == null) {
+                                    collectedRefs.add(ref);
+                                } else {
+                                    refreshFilter.setNow(unitTestTimeSeriesFilter.getNowLong());
+                                    refreshFilter.run();
+                                }
+                            }
+                            filtersToRefresh.removeAll(collectedRefs);
+                        });
                 TstUtils.validate("time update " + ii, en);
             }
         }

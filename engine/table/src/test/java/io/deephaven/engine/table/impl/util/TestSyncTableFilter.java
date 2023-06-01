@@ -6,8 +6,10 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.test.types.OutOfBandTest;
@@ -56,7 +58,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex1a);
         assertTableEquals(fb, ex1b);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
             a.notifyListeners(i(10, 11), i(), i());
         });
@@ -67,7 +71,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
         final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
             b.notifyListeners(i(10, 11), i(), i());
         });
@@ -105,7 +111,9 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex1a);
         assertTableEquals(fb, ex1b);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph3 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
             a.notifyListeners(i(10, 11), i(), i());
         });
@@ -117,7 +125,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
                 col("Key", "b", "b", "c", "c"));
         final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
             b.notifyListeners(i(10, 11), i(), i());
             TstUtils.addToTable(a, i(12, 13), longCol("ID", 5, 5), intCol("Sentinel", 109, 110), col("Key", "c", "c"));
@@ -133,7 +142,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex3b =
                 newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 207, 208, 209), col("Key", "a", "a", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(12, 13), longCol("ID", 5, 6), intCol("Sentinel", 209, 210), col("Key", "a", "a"));
             b.notifyListeners(i(12, 13), i(), i());
         });
@@ -144,7 +154,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex2a);
         assertTableEquals(fb, ex3b);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(14, 15), longCol("ID", 5, 6), intCol("Sentinel", 111, 112), col("Key", "a", "a"));
             a.notifyListeners(i(14, 15), i(), i());
         });
@@ -186,7 +197,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, empty);
         assertTableEquals(fb, empty);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
             TstUtils.addToTable(a, i(2, 3), longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
             a.notifyListeners(i(10, 11), i(), i(2, 3));
@@ -201,7 +213,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
         final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
             b.notifyListeners(i(10, 11), i(), i());
         });
@@ -249,7 +262,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex1a);
         assertTableEquals(fb, ex1b);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("Ego", 5, 5), intCol("Sentinel", 207, 208),
                     col("Klyuch", "b", "c"));
             b.notifyListeners(i(10, 11), i(), i());
@@ -263,7 +277,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(fa, ex2a);
         assertTableEquals(fb, ex2b);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(20, 21), longCol("ID", 5, 5), intCol("Sentinel", 111, 112), col("Key", "c", "c"));
             a.notifyListeners(i(20, 21), i(), i());
         });
@@ -283,7 +298,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         System.out.println("A before modfications.");
         showWithRowSet(a, 30);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(20, 21), longCol("ID", 5, 5), intCol("Sentinel", 113, 114), col("Key", "c", "c"));
             a.notifyListeners(i(), i(), i(20, 21));
         });
@@ -315,11 +331,11 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final ErrorListener la = new ErrorListener("fa", fa);
         final ErrorListener lb = new ErrorListener("fb", fb);
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         allowingError(() -> {
             a.getRowSet().writableCast().remove(1);
             a.notifyListeners(i(), i(1), i());
-            ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }, throwables -> {
             TestCase.assertEquals(1, getUpdateErrors().size());
             final Throwable throwable = throwables.get(0);
@@ -363,11 +379,11 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         showWithRowSet(sentSum);
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         assertTrue(sentSum.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         addToTable(a, i(1), longCol("ID", 1), intCol("Sentinel", 102), col("Key", "b"));
         a.notifyListeners(i(1), i(), i());
         assertFalse(fa.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
@@ -375,15 +391,15 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertFalse(sentSum.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
         while (!fa.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep())) {
-            ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
         }
         assertTrue(fa.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
-        ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
         assertTrue(fb.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
         assertFalse(joined.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         showWithRowSet(sentSum);
         int[] actual = (int[]) sentSum.getColumn("SS").getDirect();

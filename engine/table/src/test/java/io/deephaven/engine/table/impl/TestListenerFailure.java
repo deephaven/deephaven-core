@@ -5,8 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.rowset.RowSet;
@@ -26,7 +28,9 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         TableTools.showWithRowSet(updated);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -34,10 +38,12 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertFalse(updated.isFailed());
 
         allowingError(() -> {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
-                source.notifyListeners(i(4, 5), i(), i());
-            });
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
+                    source.notifyListeners(i(4, 5), i(), i());
+                });
             return null;
         }, TestListenerFailure::isNpe);
 
@@ -84,7 +90,9 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         TableTools.showWithRowSet(filtered);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -95,17 +103,21 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
-                source.notifyListeners(i(4, 5), i(), i());
-            });
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
+                    source.notifyListeners(i(4, 5), i(), i());
+                });
             return null;
         }, TestListenerFailure::isFilterNpe);
 
         assertTrue(filtered.isFailed());
         assertTrue(filteredAgain.isFailed());
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(5));
             source.notifyListeners(i(), i(5), i());
         });

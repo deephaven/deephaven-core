@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.table.impl.util.ShiftObliviousUpdateCoalescer;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -118,12 +119,13 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 ColumnInfo<?, ?>[] leftColumnInfo, ColumnInfo<?, ?>[] rightColumnInfo, EvalNuggetInterface[] en,
                 Random random) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
-                        random, leftTable, leftColumnInfo);
-                GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
-                        random, rightTable, rightColumnInfo);
-            });
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
+                            random, leftTable, leftColumnInfo);
+                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
+                            random, rightTable, rightColumnInfo);
+                });
         }
 
         @Override

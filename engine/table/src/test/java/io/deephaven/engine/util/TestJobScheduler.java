@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -27,6 +28,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the set for the first 50
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
@@ -72,6 +74,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the set for the first 50
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
@@ -121,6 +124,9 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // verify true for the first 50
+        // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -187,6 +193,8 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify true for the first 50
+        // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
@@ -237,6 +245,9 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // verify true for the first 50
+        // verify false for the next 50
         updateGraph.runWithinUnitTestCycle(() -> {
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -303,6 +314,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // nop
         updateGraph.runWithinUnitTestCycle(() -> {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
@@ -340,7 +352,9 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        // nop
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
@@ -378,6 +392,9 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // throw before "doing work" to make verification easy
+        // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[50];
 
@@ -449,6 +466,10 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // throw after this is set to make verification easy
+        // if this is called, we failed the test
+        // assert that the job was terminated before all tasks were executed (one is still false)
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
@@ -528,6 +549,9 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // throw before "doing work" to make verification easy
+        // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 
@@ -607,6 +631,8 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
+        // if this is called, we failed the test
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 
@@ -683,6 +709,7 @@ public final class TestJobScheduler {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.resetForUnitTests(false, true, 0, 4, 10, 5);
+        // verify the type is correct
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 

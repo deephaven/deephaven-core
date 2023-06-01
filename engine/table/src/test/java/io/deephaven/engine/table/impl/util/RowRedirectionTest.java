@@ -4,7 +4,9 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 
@@ -26,20 +28,24 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         }
         rowRedirection.startTrackingPrevValues();
         rowRedirection1.startTrackingPrevValues();
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            for (int i = 0; i < 3; i++) {
-                rowRedirection1.put(i * 2, i * 3);
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            for (int i1 = 0; i1 < 3; i1++) {
+                rowRedirection1.put(i1 * 2, i1 * 3);
             }
-            for (int i = 0; i < 3; i++) {
-                assertEquals(i * 2, rowRedirection.get(i));
-                assertEquals(i * 2, rowRedirection.getPrev(i));
+            for (int i1 = 0; i1 < 3; i1++) {
+                assertEquals(i1 * 2, rowRedirection.get(i1));
+                assertEquals(i1 * 2, rowRedirection.getPrev(i1));
 
-                assertEquals(i * 3, rowRedirection1.get(i * 2));
-                assertEquals(rowRedirection1.getPrev(i * 2), i * 4);
+                assertEquals(i1 * 3, rowRedirection1.get(i1 * 2));
+                assertEquals(rowRedirection1.getPrev(i1 * 2), i1 * 4);
             }
         });
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             for (int i = 0; i < 3; i++) {
                 rowRedirection.put((i + 1) % 3, i * 2);
             }
@@ -65,25 +71,29 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
         // As of startTrackingPrevValues, get() and getPrev() should both be returning 100 + ii * 2
         rowRedirection.startTrackingPrevValues();
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, rowRedirection.get(ii));
+        // Now set current values to 200 + ii * 3
+        // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii * 2
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            for (int ii1 = 0; ii1 < 100; ++ii1) {
+                assertEquals(100 + ii1 * 2, rowRedirection.get(ii1));
             }
-            for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, rowRedirection.getPrev(ii));
+            for (int ii1 = 0; ii1 < 100; ++ii1) {
+                assertEquals(100 + ii1 * 2, rowRedirection.getPrev(ii1));
             }
 
             // Now set current values to 200 + ii * 3
-            for (int ii = 0; ii < 100; ++ii) {
-                rowRedirection.put(ii, 200 + ii * 3);
+            for (int ii1 = 0; ii1 < 100; ++ii1) {
+                rowRedirection.put(ii1, 200 + ii1 * 3);
             }
 
             // Confirm that get() returns 200 + ii * 3; meanwhile getPrev() still returns 100 + ii * 2
-            for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(200 + ii * 3, rowRedirection.get(ii));
+            for (int ii1 = 0; ii1 < 100; ++ii1) {
+                assertEquals(200 + ii1 * 3, rowRedirection.get(ii1));
             }
-            for (int ii = 0; ii < 100; ++ii) {
-                assertEquals(100 + ii * 2, rowRedirection.getPrev(ii));
+            for (int ii1 = 0; ii1 < 100; ++ii1) {
+                assertEquals(100 + ii1 * 2, rowRedirection.getPrev(ii1));
             }
         });
 

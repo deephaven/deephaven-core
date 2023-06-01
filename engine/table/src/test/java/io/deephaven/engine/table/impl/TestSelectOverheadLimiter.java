@@ -6,13 +6,11 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -39,34 +37,42 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet added = RowSetFactory.fromRange(10000, 11000);
-            queryTable.getRowSet().writableCast().insert(added);
-            queryTable.notifyListeners(added, i(), i());
+        UpdateGraph updateGraph13 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph4 = updateGraph13.<ControlledUpdateGraph>cast();
+        updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet added3 = RowSetFactory.fromRange(10000, 11000);
+            queryTable.getRowSet().writableCast().insert(added3);
+            queryTable.notifyListeners(added3, i(), i());
         });
 
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet added = RowSetFactory.fromRange(11001, 11100);
-            queryTable.getRowSet().writableCast().insert(added);
-            queryTable.notifyListeners(added, i(), i());
+        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph3 = updateGraph12.<ControlledUpdateGraph>cast();
+        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet added2 = RowSetFactory.fromRange(11001, 11100);
+            queryTable.getRowSet().writableCast().insert(added2);
+            queryTable.notifyListeners(added2, i(), i());
         });
 
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet added = RowSetFactory.fromRange(20000, 20100);
-            queryTable.getRowSet().writableCast().insert(added);
-            queryTable.notifyListeners(added, i(), i());
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet added1 = RowSetFactory.fromRange(20000, 20100);
+            queryTable.getRowSet().writableCast().insert(added1);
+            queryTable.notifyListeners(added1, i(), i());
         });
 
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(30000, 30100);
             queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
@@ -85,10 +91,12 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(densified.getRowSet(), sentinelTable.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet removed = RowSetFactory.fromRange(0, 100);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet removed1 = RowSetFactory.fromRange(0, 100);
             final RowSet added = RowSetFactory.fromRange(10000, 10100);
-            queryTable.getRowSet().writableCast().update(added, removed);
+            queryTable.getRowSet().writableCast().update(added, removed1);
             final TableUpdateImpl update = new TableUpdateImpl();
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 1000, 10000);
@@ -103,7 +111,8 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(10000, 10100);
             queryTable.getRowSet().writableCast().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
@@ -214,16 +223,18 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(scopeCloseable::close);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet added = RowSetFactory.fromRange(10000, 11000);
-            queryTable.getRowSet().writableCast().insert(added);
-            queryTable.notifyListeners(added, i(), i());
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet added1 = RowSetFactory.fromRange(10000, 11000);
+            queryTable.getRowSet().writableCast().insert(added1);
+            queryTable.notifyListeners(added1, i(), i());
         });
 
         assertEquals(sentinelTable.getRowSet(), densified.getRowSet());
         assertTableEquals(sentinelTable, densified);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
             queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());

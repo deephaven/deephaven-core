@@ -13,6 +13,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -187,7 +188,8 @@ public class SparseSelectTest {
         assertTableEquals(selected, table);
         assertTableEquals(TstUtils.prevTable(selected), TstUtils.prevTable(table));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), TableTools.longCol("Value", 3));
             table.notifyListeners(i(2), i(), i());
         });
@@ -198,7 +200,8 @@ public class SparseSelectTest {
         TableTools.show(table);
         TableTools.show(selected);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(table, i(1L << 20 + 2), TableTools.longCol("Value", 4));
             table.notifyListeners(i(1L << 20 + 2), i(), i());
         });

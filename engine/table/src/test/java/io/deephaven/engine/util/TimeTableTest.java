@@ -14,10 +14,12 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -67,7 +69,9 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
     private void tick(long tm) {
         clock.now = tm;
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(updateSourceCombiner::run);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateSourceCombiner::run);
         validator.validate();
     }
 

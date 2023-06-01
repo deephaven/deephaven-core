@@ -522,12 +522,12 @@ public abstract class UpdateGraphLock {
      * @param logicalClock The logical clock to check for {@link LogicalClock#currentState() current state}
      */
     private static void checkForIllegalLockFromRefreshThread(@NotNull final LogicalClock logicalClock) {
-        if (logicalClock.currentState() == LogicalClock.State.Updating
-                && UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+//        if (logicalClock.currentState() == LogicalClock.State.Updating
+//                && UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
             // This exception message assumes the misbehavior is from a notification (e.g. for a user listener), rather
             // than an internal programming error.
-            throw new UnsupportedOperationException("Non-terminal notifications must not lock the update graph");
-        }
+//            throw new UnsupportedOperationException("Non-terminal notifications must not lock the update graph");
+//        }
     }
 
     // endregion Lock Safety Validation Helper

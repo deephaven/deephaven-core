@@ -9,6 +9,7 @@ import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -85,7 +86,8 @@ public abstract class DeephavenApiServerTestBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();
-            updateGraph.resetForUnitTests(false);
+            UpdateGraph updateGraph11 = updateGraph.<ControlledUpdateGraph>cast();
+            updateGraph11.<ControlledUpdateGraph>cast().resetForUnitTests(false);
         }
 
         logBuffer = new LogBuffer(128);
@@ -120,7 +122,8 @@ public abstract class DeephavenApiServerTestBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
-            updateGraph.resetForUnitTests(true);
+            UpdateGraph updateGraph11 = updateGraph.<ControlledUpdateGraph>cast();
+            updateGraph11.<ControlledUpdateGraph>cast().resetForUnitTests(true);
         }
     }
 

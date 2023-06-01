@@ -13,14 +13,12 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
@@ -106,14 +104,18 @@ public class TestWindowCheck {
             final boolean combined = combinedRandom.nextBoolean();
 
             if (combined) {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                    advanceTime(clock, en);
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
-                            random, table, columnInfo);
-                });
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                            advanceTime(clock, en);
+                            GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
+                                    random, table, columnInfo);
+                        });
                 TstUtils.validate("Step " + step, en);
             } else {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> advanceTime(clock, en));
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> advanceTime(clock, en));
                 if (RefreshingTableTestCase.printTableUpdates) {
                     TstUtils.validate("Step = " + step + " time = " + new DateTime(clock.now), en);
                 }
@@ -158,7 +160,8 @@ public class TestWindowCheck {
 
         TableTools.showWithRowSet(windowed.first);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(windowed.second::run);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(windowed.second::run);
 
     }
 
@@ -182,7 +185,8 @@ public class TestWindowCheck {
 
         TableTools.showWithRowSet(windowed.first);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(windowed.second::run);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(windowed.second::run);
 
         assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
 
@@ -196,14 +200,14 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < ExecutionContext.getContext().getUpdateGraph()
                 .clock().currentStep()) {
-            ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
@@ -215,7 +219,7 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test
@@ -240,7 +244,8 @@ public class TestWindowCheck {
 
         TableTools.showWithRowSet(windowed.first);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(windowed.second::run);
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(windowed.second::run);
 
         assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
 
@@ -254,14 +259,14 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
 
         timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < ExecutionContext.getContext().getUpdateGraph()
                 .clock().currentStep()) {
-            ExecutionContext.getContext().getUpdateGraph().flushOneNotificationForUnitTests();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
@@ -273,7 +278,7 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test

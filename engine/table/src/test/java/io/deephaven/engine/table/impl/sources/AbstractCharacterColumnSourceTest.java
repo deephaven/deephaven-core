@@ -16,6 +16,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -38,12 +39,16 @@ public abstract class AbstractCharacterColumnSourceTest {
     @Before
     public void setUp() throws Exception {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(false);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        ExecutionContext.getContext().getUpdateGraph().resetForUnitTests(true);
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
     }
 
     @Test
@@ -307,14 +312,14 @@ public abstract class AbstractCharacterColumnSourceTest {
     public void testFilllEmptyChunkWithPrev() {
         final CharacterSparseArraySource src = new CharacterSparseArraySource();
         src.startTrackingPrevValues();
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in CharacterSparseArraySource.commitUpdates()
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test

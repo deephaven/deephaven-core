@@ -8,12 +8,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
@@ -69,7 +67,9 @@ public class TestTableAssertions {
         assertTableEquals(test, testPlant);
         assertTableEquals(test, testInt);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             removeRows(test, i(11));
             addToTable(test, i(11), stringCol("Plant", "Berry"), intCol("Int", 6));
             test.notifyListeners(i(11), i(11), i());
@@ -78,7 +78,9 @@ public class TestTableAssertions {
         assertTableEquals(test, testInt);
         assertTableEquals(test, testPlant);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
             TableTools.showWithRowSet(test);
@@ -136,9 +138,9 @@ public class TestTableAssertions {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            ExecutionContext.getContext().getUpdateGraph()
-                    .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                            GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                                GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);
         }
         // } finally {

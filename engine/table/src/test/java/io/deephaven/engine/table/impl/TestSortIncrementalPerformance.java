@@ -7,6 +7,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -76,7 +78,9 @@ public class TestSortIncrementalPerformance {
         final R result = function.apply(filtered);
 
         while (filtered.size() < inputTable.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

@@ -1,19 +1,12 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.io.log.LogEntry;
-import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.concurrent.locks.Condition;
 
 public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, NotificationQueue.Dependency {
-    /**
-     * Start the update graph.
-     */
-    void start();
 
     /**
      * Retrieve the number of update threads.
@@ -125,34 +118,6 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     void requestRefresh();
 
     void requestSignal(Condition updateGraphProcessorCondition);
-
-
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-    /**
-     * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
-     *
-     * @param after Whether this is *after* a unit test completed. If true, held locks should result in an exception and
-     *        the LivenessScopeStack will be cleared.
-     */
-    @TestUseOnly
-    void resetForUnitTests(final boolean after);
-
-    @TestUseOnly
-    <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable) throws T;
-
-    // TODO (deephaven-core#3886): refactor method to TestUpdateGraph
-
-    @TestUseOnly
-    boolean flushOneNotificationForUnitTests();
-
-    @TestUseOnly
-    void refreshUpdateSourceForUnitTests(@NotNull final Runnable updateSource);
-
-    @TestUseOnly
-    void startCycleForUnitTests();
-
-    @TestUseOnly
-    void completeCycleForUnitTests();
 
     // TODO: What does Ryan really want here?
     // hide in impl maybe behind processor:

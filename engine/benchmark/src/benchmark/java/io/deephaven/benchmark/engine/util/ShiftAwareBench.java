@@ -7,6 +7,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -96,7 +97,9 @@ public class ShiftAwareBench {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

@@ -6,14 +6,12 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.StringGenerator;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.UpdateValidatorNugget;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.tuple.ArrayTuple;
 
@@ -61,27 +59,29 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
 
 
         for (int ii = 0; ii < 1000; ++ii) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                final int additions = random.nextInt(4);
-                final int removals = random.nextInt(4);
-                for (int jj = 0; jj < removals; ++jj) {
-                    if (!set.isEmpty()) {
-                        int element = random.nextInt(set.size());
-                        final Iterator<ArrayTuple> it = set.iterator();
-                        do {
-                            if (it.hasNext())
-                                it.next();
-                            element--;
-                        } while (element > 0);
-                        it.remove();
+            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    final int additions = random.nextInt(4);
+                    final int removals = random.nextInt(4);
+                    for (int jj = 0; jj < removals; ++jj) {
+                        if (!set.isEmpty()) {
+                            int element = random.nextInt(set.size());
+                            final Iterator<ArrayTuple> it = set.iterator();
+                            do {
+                                if (it.hasNext())
+                                    it.next();
+                                element--;
+                            } while (element > 0);
+                            it.remove();
+                        }
                     }
-                }
-                for (int jj = 0; jj < additions; ++jj) {
-                    set.add(new ArrayTuple(generator.nextValue(random)));
-                }
+                    for (int jj = 0; jj < additions; ++jj) {
+                        set.add(new ArrayTuple(generator.nextValue(random)));
+                    }
 
-                ((Runnable) result).run();
-            });
+                    ((Runnable) result).run();
+                });
 
             final HashSet<ArrayTuple> tableAsSet = tableToSet(result);
             assertEquals(set, tableAsSet);

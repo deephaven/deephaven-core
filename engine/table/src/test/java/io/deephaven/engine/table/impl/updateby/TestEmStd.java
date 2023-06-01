@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -22,10 +23,10 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

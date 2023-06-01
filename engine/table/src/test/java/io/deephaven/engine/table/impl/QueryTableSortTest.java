@@ -16,6 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
@@ -158,7 +159,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(testTable(col("A", 1, 2, 3), col("B", "a", "b", "c")), sorted);
         assertTrue(SortedColumnsAttribute.isSortedBy(sorted, "A", SortingOrder.Ascending));
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(table, i(20), col("A", 1), col("B", "A"));
             table.notifyListeners(i(), i(), i(20));
         });
@@ -166,7 +168,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         assertTableEquals(testTable(col("A", 1, 2, 3), col("B", "A", "b", "c")), sorted);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(table, i(20), col("A", 1), col("B", "A2"));
             addToTable(table, i(25), col("A", 1), col("B", "A2'"));
             table.notifyListeners(i(25), i(), i(20));
@@ -175,7 +178,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         assertTableEquals(testTable(col("A", 1, 1, 2, 3), col("B", "A2", "A2'", "b", "c")), sorted);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(table, i(20, 25), col("A", 1, 3), col("B", "A3", "C2"));
             table.notifyListeners(i(), i(), i(20, 25));
         });
@@ -471,10 +475,11 @@ public class QueryTableSortTest extends QueryTableTestBase {
 
         for (int ii = 1; ii < values.length; ++ii) {
             final int fii = ii;
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                addToTable(queryTable, i(fii), col("intCol", values[fii]));
-                queryTable.notifyListeners(i(fii), i(), i());
-            });
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    addToTable(queryTable, i(fii), col("intCol", values[fii]));
+                    queryTable.notifyListeners(i(fii), i(), i());
+                });
 
             adds += simpleListener.update.added().size();
             removes += simpleListener.update.removed().size();
@@ -526,19 +531,22 @@ public class QueryTableSortTest extends QueryTableTestBase {
                         "Double Sort")
         };
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             addToTable(queryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11), col("doubleCol", 2.1, 2.2));
             queryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(queryTable, i(9));
             queryTable.notifyListeners(i(), i(9), i());
         });
@@ -590,10 +598,11 @@ public class QueryTableSortTest extends QueryTableTestBase {
         for (int ii = 2; ii < 10000; ++ii) {
             // Use large enough indices that we blow beyond merge's initially reserved 64k key-space.
             final int fii = 8059 * ii;
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-                addToTable(table, i(fii), col("Sentinel", fii));
-                table.notifyListeners(i(fii), i(), i());
-            });
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                    addToTable(table, i(fii), col("Sentinel", fii));
+                    table.notifyListeners(i(fii), i(), i());
+                });
         }
 
         TableTools.show(sorted);
@@ -657,7 +666,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table boolInverseSorted = boolSorted.sortDescending("Timestamp");
 
         while (filtered.size() < merged.size()) {
-            ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(filter::run);
+            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(filter::run);
         }
 
         final TIntList sentinels = new TIntArrayList();
@@ -708,7 +718,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table ss = ms.sortDescending("Symbol", "X");
         TableTools.showWithRowSet(s);
         assertTableEquals(ss, s);
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(y, i(10), col("Symbol", "B"), col("X", "5"), intCol("Y", 109));
             y.notifyListeners(i(10), i(), i());
         });
@@ -758,10 +769,11 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table symbolSorted = refreshing.sort("Symbol");
         showWithRowSet(symbolSorted);
 
-        ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(() -> {
-            final RowSet added = table.getRowSet().subSetByPositionRange(4, 10);
-            rowSet.insert(added);
-            refreshing.notifyListeners(added, i(), i());
+        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            final RowSet added1 = table.getRowSet().subSetByPositionRange(4, 10);
+            rowSet.insert(added1);
+            refreshing.notifyListeners(added1, i(), i());
         });
 
         showWithRowSet(symbolSorted);

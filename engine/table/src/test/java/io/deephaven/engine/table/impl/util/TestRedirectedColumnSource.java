@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.util.BooleanUtils;
@@ -110,7 +111,9 @@ public class TestRedirectedColumnSource {
         final int chunkSz = stepSz - 7;
         try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
             while (live.size() < t.size()) {
-                ExecutionContext.getContext().getUpdateGraph().runWithinUnitTestCycle(incFilter::run);
+                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
+                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
+                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incFilter::run);
                 doFillAndCheck(live, "StringsCol", chunk, chunkSz);
             }
         }
@@ -207,7 +210,7 @@ public class TestRedirectedColumnSource {
         final Table captured = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(c::snapshot);
         showWithRowSet(captured);
 
-        ExecutionContext.getContext().getUpdateGraph().startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
         qt.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.flat(3));
 
@@ -234,6 +237,6 @@ public class TestRedirectedColumnSource {
         });
         assertArrayEquals(expecteds, byteList.toArray());
 
-        ExecutionContext.getContext().getUpdateGraph().completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 }
