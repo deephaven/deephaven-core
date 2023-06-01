@@ -696,14 +696,16 @@ message AsOfJoinTablesRequest {
 
 message RangeJoinTablesRequest {
   enum RangeStartRule {
-    LESS_THAN = 0;
-    LESS_THAN_OR_EQUAL = 1;
-    LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 2;
+    START_UNSPECIFIED = 0;
+    LESS_THAN = 1;
+    LESS_THAN_OR_EQUAL = 2;
+    LESS_THAN_OR_EQUAL_ALLOW_PRECEDING = 3;
   }
   enum RangeEndRule {
-    GREATER_THAN = 0;
-    GREATER_THAN_OR_EQUAL = 1;
-    GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 2;
+    END_UNSPECIFIED = 0;
+    GREATER_THAN = 1;
+    GREATER_THAN_OR_EQUAL = 2;
+    GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING = 3;
   }
   Ticket result_id = 1;
   TableReference left_id = 2;
