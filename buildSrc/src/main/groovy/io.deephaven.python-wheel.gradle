@@ -1,32 +1,11 @@
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
-    id 'license'
 }
 
 import io.deephaven.python.PythonWheelExtension
 
 project.extensions.create('wheel', PythonWheelExtension, project.objects)
-
-license {
-    header rootProject.file('license-header')
-    include '**/*.py'
-    strictCheck true
-    useDefaultMappings true
-    ignoreFailures true
-}
-
-tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck))
-tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat))
-afterEvaluate {
-    tasks.named("licensePy") { task ->
-        task.source = wheel.src()
-    }
-    tasks.named("licenseFormatPy") { task ->
-        task.source = wheel.src()
-    }
-}
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 
 configurations {
     pythonWheel

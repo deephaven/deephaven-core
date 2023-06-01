@@ -4,7 +4,6 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
-    id 'license'
 }
 
 // We use the cpp-clients-fat-base image instead of the cpp-client-base,
@@ -34,14 +33,6 @@ tasks.register('updateProtobuf', Sync) {
     into protoSourceDir
 }
 
-license {
-    header rootProject.file('license-header')
-    include '**/*.h'
-    include '**/*.cc'
-    strictCheck true
-    useDefaultMappings true
-    ignoreFailures true
-}
 tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
     source = ['deephaven']
 })
