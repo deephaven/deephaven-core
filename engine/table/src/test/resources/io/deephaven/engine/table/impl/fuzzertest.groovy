@@ -9,7 +9,7 @@ scale = 1000 as int;
 useRandomNullPoints = true as boolean;
 tableRandom = new Random(tableSeed) as Random;
 
-tt = TableTools.timeTable("00:00:01");
+tt = TableTools.timeTable("PT00:00:01");
 tickingValues = tt.update(
         "MyString=new String(`a`+i)",
         "MyInt=new Integer(i)",

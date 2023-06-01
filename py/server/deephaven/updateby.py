@@ -153,7 +153,7 @@ def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
      Args:
         ts_col (str): the column in the source table to use for timestamps
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -222,7 +222,7 @@ def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
      Args:
         ts_col (str): the column in the source table to use for timestamps
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -291,7 +291,7 @@ def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
      Args:
         ts_col (str): the column in the source table to use for timestamps
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -361,7 +361,7 @@ def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         ts_col (str): the column in the source table to use for timestamps
 
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -433,7 +433,7 @@ def emstd_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
      Args:
         ts_col (str): the column in the source table to use for timestamps
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -642,15 +642,15 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -658,9 +658,9 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -724,15 +724,15 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -740,9 +740,9 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -806,15 +806,15 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -822,9 +822,9 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -888,15 +888,15 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -904,9 +904,9 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -970,15 +970,15 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -986,9 +986,9 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1052,15 +1052,15 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -1068,9 +1068,9 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1134,15 +1134,15 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1150,9 +1150,9 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling count operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1216,15 +1216,15 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1232,9 +1232,9 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1301,15 +1301,15 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1318,9 +1318,9 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         weight_col (str):  the column containing the weight values
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation

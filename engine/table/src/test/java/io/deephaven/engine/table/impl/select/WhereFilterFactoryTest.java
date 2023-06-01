@@ -286,9 +286,9 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 null, 0, null, '0');
         checkResult("FALS3", false, false, false, false, false, false, false, false, false, (byte) 0, (short) 0, 0, 0,
                 null, 0, null, '0');
-        checkDateRange("18:43", makeInstant("18:43"), makeInstant("18:44"));
-        checkDateRange("18:43:40", makeInstant("18:43:40"), makeInstant("18:43:41"));
-        checkDateRange("18:43:40.100", makeInstant("18:43:40.100"), makeInstant("18:43:40.101"));
+        checkDateRange("PT18:43", makeInstant("PT18:43"), makeInstant("PT18:44"));
+        checkDateRange("PT18:43:40", makeInstant("PT18:43:40"), makeInstant("PT18:43:41"));
+        checkDateRange("PT18:43:40.100", makeInstant("PT18:43:40.100"), makeInstant("PT18:43:40.101"));
         checkDateRange("2018-03-25 NY", DateTimeUtils.parseInstant("2018-03-25 NY"),
                 DateTimeUtils.parseInstant("2018-03-26 NY"));
         checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.parseInstant("2018-03-25T18:00 NY"),

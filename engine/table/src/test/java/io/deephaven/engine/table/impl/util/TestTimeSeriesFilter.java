@@ -39,7 +39,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
         TableTools.show(source);
 
-        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "00:00:05");
+        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "PT00:00:05");
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);

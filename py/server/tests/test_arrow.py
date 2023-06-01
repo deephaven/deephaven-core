@@ -188,7 +188,7 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table_1, dh_table)
 
     def test_ticking_table(self):
-        table = time_table("00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
+        table = time_table("PT00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
         self.wait_ticking_table_update(table, row_count=100, timeout=5)
         pa_table = dharrow.to_arrow(table)
         self.assertEqual(len(pa_table.columns), 3)

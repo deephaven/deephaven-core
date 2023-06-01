@@ -498,14 +498,14 @@ ColorMapPlot = ColorMapPlot.plot("S1", x, y2).pointColorByY(rangeMap(colorMap))
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //liveplot1
-t = TableTools.timeTable("00:00:01")
+t = TableTools.timeTable("PT00:00:01")
         .updateView("I=i","J=sin(I*3.14/25)")
 LivePlot = plot("S1",t,"I","J").show()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 //liveplot2
-t = TableTools.timeTable("00:00:01")
+t = TableTools.timeTable("PT00:00:01")
         .updateView("I=i","J=sin(I*3.14/25)","K=sin(I*3.14/25+3.14/4)")
 LivePlot2 = figure().updateInterval(500)
         .plot("S1",t,"I","J")
@@ -543,6 +543,6 @@ businessPlot = figure(2,1)
 
 
 //one click
-t = TableTools.timeTable("00:00:01")
+t = TableTools.timeTable("PT00:00:01")
         .updateView("Cat = i%2 == 0 ? `A` : `B`", "I=i", "J = i % 2 == 0 ? sin(I*3.14/10) : cos(I*3.14/10)")
 LivePlot = plot("S1",oneClick(t, "Cat"),"I","J").show()

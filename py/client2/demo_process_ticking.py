@@ -42,7 +42,7 @@ class CallbackHandler:
 
 # run this on the IDE
 # from deephaven import time_table
-# demo3m = time_table("00:00:00.000001").update(["Int64Value = (long)(Math.random() * 1000)", "Bucket  = (long)(ii % 1_000_000)"]).last_by("Bucket")
+# demo3m = time_table("PT00:00:00.000001").update(["Int64Value = (long)(Math.random() * 1000)", "Bucket  = (long)(ii % 1_000_000)"]).last_by("Bucket")
 # sum3m = demo3m.view(["Int64Value"]).sum_by()
 
 client = dh.Client.connect("localhost:10000")

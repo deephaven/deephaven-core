@@ -1755,8 +1755,8 @@ def upper_bin(dt: Union[Instant, ZonedDateTime], interval: int, offset: int = 0)
 
 # region Format
 
-def format_nanos(nanos: int) -> str:
-    """ Returns a nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
+def format_duration_nanos(nanos: int) -> str:
+    """ Returns a nanosecond duration formatted as a "[-]PThhh:mm:ss.nnnnnnnnn" string.
 
     Args:
         nanos (int): Nanosecond.
@@ -1768,7 +1768,7 @@ def format_nanos(nanos: int) -> str:
         DHError
     """
     try:
-        return _JDateTimeUtils.formatNanos(nanos)
+        return _JDateTimeUtils.formatDurationNanos(nanos)
     except Exception as e:
         raise DHError(e) from e
 
@@ -1852,7 +1852,7 @@ def parse_time_zone(s: str, quiet: bool = False) -> Optional[TimeZone]:
 def parse_duration_nanos(s: str, quiet: bool = False) -> int:
     """ Parses the string argument as a time duration in nanoseconds.
 
-    Time duration strings can be formatted as 'hh:mm:ss[.nnnnnnnnn]' or as a duration string
+    Time duration strings can be formatted as '[-]PT[-]hh:mm:[ss.nnnnnnnnn]' or as a duration string
     formatted as '[-]PnDTnHnMn.nS}'.
 
     Args:

@@ -49,7 +49,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testTimeTable() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("tt = timeTable(\"00:00:01\")");
+        WorkerPythonEnvironment.DEFAULT.eval("tt = timeTable(\"PT00:00:01\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("tt");
         assertTrue(result instanceof Table);
         Table tt = (Table) result;

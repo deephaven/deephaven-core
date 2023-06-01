@@ -3079,7 +3079,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testRegressionIssue544() {
         // The expression that fails in the console is:
-        // x = merge(newTable(byteCol("Q", (byte)0)), timeTable("00:00:01").view("Q=(byte)(i%2)"))
+        // x = merge(newTable(byteCol("Q", (byte)0)), timeTable("PT00:00:01").view("Q=(byte)(i%2)"))
         // .tail(1)
         // .view("Q=Q*i")
         // .sumBy()

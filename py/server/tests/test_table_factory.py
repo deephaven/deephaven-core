@@ -46,11 +46,11 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertIn("no matching Java method overloads found", cm.exception.compact_traceback)
 
     def test_time_table(self):
-        t = time_table("00:00:01")
+        t = time_table("PT00:00:01")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
 
-        t = time_table("00:00:01", start_time="2021-11-06T13:21:00 ET")
+        t = time_table("PT00:00:01", start_time="2021-11-06T13:21:00 ET")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
         self.assertEqual("2021-11-06T13:21:00.000000000 ET", format_datetime(t.j_table.getColumnSource("Timestamp").get(0), time_zone('ET')))
@@ -66,7 +66,7 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
-            t = time_table("00:0a:01")
+            t = time_table("PT00:0a:01")
 
         self.assertIn("DateTimeParseException", cm.exception.root_cause)
 
@@ -77,7 +77,7 @@ class TableFactoryTestCase(BaseTestCase):
         self.assertFalse(mt.is_refreshing)
 
     def test_merge_sorted_error(self):
-        t1 = time_table("00:00:01")
+        t1 = time_table("PT00:00:01")
         t2 = self.test_table.update(formulas=["Timestamp=nowSystem()"])
         with self.assertRaises(DHError) as cm:
             mt = merge_sorted(order_by="a", tables=[t1, t2])

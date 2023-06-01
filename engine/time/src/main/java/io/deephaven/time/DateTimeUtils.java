@@ -24,8 +24,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
-import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+import static java.time.format.DateTimeFormatter.*;
 
 /**
  * Functions for working with time.
@@ -71,13 +70,6 @@ public class DateTimeUtils {
             .toFormatter();
 
     /**
-     * Matches LocalTime literals. Note these must begin with "L" to avoid ambiguity with the older
-     * TIME_AND_DURATION_PATTERN
-     */
-    private static final Pattern LOCAL_TIME_PATTERN =
-            Pattern.compile("^L([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
-
-    /**
      * Matches long values.
      */
     private static final Pattern LONG_PATTERN = Pattern.compile("^-?\\d{1,19}$");
@@ -92,7 +84,7 @@ public class DateTimeUtils {
      * Matches time durations.
      */
     private static final Pattern TIME_DURATION_PATTERN = Pattern.compile(
-            "\\-?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
+            "(?<sign1>[-]?)[pP][tT](?<sign2>[-]?)(?<hour>[0-9]+):(?<minute>[0-9]+)(?<second>:[0-9]+)?(?<nanos>\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
 
     /**
      * Matches date times.
@@ -2911,14 +2903,14 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
+     * Returns a nanosecond duration formatted as a "[-]PThhh:mm:ss.nnnnnnnnn" string.
      *
      * @param nanos nanoseconds, or null if the input is {@link QueryConstants#NULL_LONG}.
-     * @return the nanosecond duration formatted as a "hhh:mm:ss.nnnnnnnnn" string.
+     * @return the nanosecond duration formatted as a "[-]PThhh:mm:ss.nnnnnnnnn" string.
      */
     @ScriptApi
     @Nullable
-    public static String formatNanos(long nanos) {
+    public static String formatDurationNanos(long nanos) {
         if (nanos == NULL_LONG) {
             return null;
         }
@@ -2929,6 +2921,8 @@ public class DateTimeUtils {
             buf.append('-');
             nanos = -nanos;
         }
+
+        buf.append("PT");
 
         int hours = (int) (nanos / 3600000000000L);
 
@@ -3097,38 +3091,10 @@ public class DateTimeUtils {
     }
 
     /**
-     * Converts a String of digits of any length to a nanoseconds long value. Will ignore anything longer than 9 digits,
-     * and will throw a NumberFormatException if any non-numeric character is found. Strings shorter than 9 digits will
-     * be interpreted as sub-second values to the right of the decimal point.
-     *
-     * @param s string to convert.
-     * @return value in nanoseconds.
-     * @throws NumberFormatException if any non-numeric character is found.
-     */
-    @ScriptApi
-    private static long parseNanosInternal(@NotNull final String s) {
-        long result = 0;
-        for (int i = 0; i < 9; i++) {
-            result *= 10;
-            final int digit;
-            if (i >= s.length()) {
-                digit = 0;
-            } else {
-                digit = Character.digit(s.charAt(i), 10);
-                if (digit < 0) {
-                    throw new NumberFormatException("Invalid character for nanoseconds conversion: " + s.charAt(i));
-                }
-            }
-            result += digit;
-        }
-        return result;
-    }
-
-    /**
      * Parses the string argument as a time duration in nanoseconds.
-     * <p>
-     * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as
-     * {@code [-]PnDTnHnMn.nS}.
+     *
+     * Time duration strings can be formatted as {@code [-]PT[-]hh:mm:[ss.nnnnnnnnn]} or as a duration string formatted
+     * as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
@@ -3144,36 +3110,59 @@ public class DateTimeUtils {
         }
 
         try {
-            if (TIME_DURATION_PATTERN.matcher(s).matches()) {
-                long multiplier = 1;
-                long dayNanos = 0;
-                long subsecondNanos = 0;
 
-                if (s.charAt(0) == '-') {
-                    multiplier = -1;
+            final Matcher tdMatcher = TIME_DURATION_PATTERN.matcher(s);
+            if (tdMatcher.matches()) {
 
-                    s = s.substring(1);
+                final String sign1Str = tdMatcher.group("sign1");
+                final String sign2Str = tdMatcher.group("sign2");
+                final String hourStr = tdMatcher.group("hour");
+                final String minuteStr = tdMatcher.group("minute");
+                final String secondStr = tdMatcher.group("second");
+                final String nanosStr = tdMatcher.group("nanos");
+
+                long sign1 = 0;
+
+                if(sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
+                    sign1 = 1;
+                } else if(sign1Str.equals("-")) {
+                    sign1 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign1 + "'");
                 }
 
-                int decimalIndex = s.indexOf('.');
+                long sign2 = 0;
 
-                if (decimalIndex != -1) {
-                    subsecondNanos = parseNanosInternal(s.substring(decimalIndex + 1));
-
-                    s = s.substring(0, decimalIndex);
+                if(sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
+                    sign2 = 1;
+                } else if(sign2Str.equals("-")) {
+                    sign2 = -1;
+                } else {
+                    throw new RuntimeException("Unsupported sign: '" + sign2 + "'");
                 }
 
-                String[] tokens = s.split(":");
-
-                if (tokens.length == 2) { // hh:mm
-                    return multiplier
-                            * (1000000000L * (3600L * Integer.parseInt(tokens[0]) + 60L * Integer.parseInt(tokens[1]))
-                                    + dayNanos + subsecondNanos);
-                } else if (tokens.length == 3) { // hh:mm:ss
-                    return multiplier
-                            * (1000000000L * (3600L * Integer.parseInt(tokens[0]) + 60L * Integer.parseInt(tokens[1])
-                                    + Integer.parseInt(tokens[2])) + dayNanos + subsecondNanos);
+                if(hourStr == null){
+                    throw new RuntimeException("Missing hour value");
                 }
+
+                long rst = Long.parseLong(hourStr) * HOUR;
+
+                if(minuteStr == null) {
+                    throw new RuntimeException("Missing minute value");
+                }
+
+                rst += Long.parseLong(minuteStr) * MINUTE;
+
+                if(secondStr != null){
+                    rst += Long.parseLong(secondStr.substring(1)) * SECOND;
+                }
+
+                if(nanosStr != null){
+                    final String sn = nanosStr.substring(1) + "0".repeat(10 - nanosStr.length());
+                    rst += Long.parseLong(sn);
+                }
+
+                return sign1*sign2*rst;
             }
 
             return parseDuration(s).toNanos();
@@ -3184,9 +3173,9 @@ public class DateTimeUtils {
 
     /**
      * Parses the string argument as a time duration in nanoseconds.
-     * <p>
-     * Time duration strings can be formatted as {@code hh:mm:ss[.nnnnnnnnn]} or as a duration string formatted as
-     * {@code [-]PnDTnHnMn.nS}.
+     *
+     * Time duration strings can be formatted as {@code [-]PT[-]hh:mm:[ss.nnnnnnnnn]} or as a duration string formatted
+     * as {@code [-]PnDTnHnMn.nS}.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string, or {@link QueryConstants#NULL_LONG} if the string
@@ -3695,24 +3684,9 @@ public class DateTimeUtils {
         }
 
         try {
-            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
-            if (matcher.matches()) {
-                final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
-                final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
-                final int second = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
-                final int nanos;
-                if (matcher.group(4) != null) {
-                    final String fractionStr = matcher.group(5); // group 5 excludes the decimal pt
-                    nanos = Integer.parseInt(fractionStr) * (int) Math.pow(10, 9 - fractionStr.length());
-                } else {
-                    nanos = 0;
-                }
-                return LocalTime.of(hour, minute, second, nanos);
-            }
-
-            throw new RuntimeException("Local time does not match expected pattern");
-        } catch (Exception ex) {
-            throw new DateTimeParseException("Cannot parse local time: " + s, ex);
+            return LocalTime.parse(s, FORMATTER_ISO_LOCAL_TIME);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new DateTimeParseException("Cannot parse local date: " + s, e);
         }
     }
 

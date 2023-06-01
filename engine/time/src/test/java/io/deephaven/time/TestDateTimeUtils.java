@@ -78,40 +78,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testParseLocalTime() {
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59),
-                DateTimeUtils.parseLocalTime("L12:59:59"));
+                DateTimeUtils.parseLocalTime("12:59:59"));
         TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0),
-                DateTimeUtils.parseLocalTime("L00:00:00"));
+                DateTimeUtils.parseLocalTime("00:00:00"));
         TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59),
-                DateTimeUtils.parseLocalTime("L23:59:59"));
+                DateTimeUtils.parseLocalTime("23:59:59"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59),
-                DateTimeUtils.parseLocalTime("L125959"));
-        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0),
-                DateTimeUtils.parseLocalTime("L000000"));
-        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59),
-                DateTimeUtils.parseLocalTime("L235959"));
-
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0),
-                DateTimeUtils.parseLocalTime("L12"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0),
-                DateTimeUtils.parseLocalTime("L12:59"));
+                DateTimeUtils.parseLocalTime("12:59"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.parseLocalTime("L12:59:59.123"));
+                DateTimeUtils.parseLocalTime("12:59:59.123"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.parseLocalTime("L12:59:59.123456"));
+                DateTimeUtils.parseLocalTime("12:59:59.123456"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.parseLocalTime("L12:59:59.123456789"));
+                DateTimeUtils.parseLocalTime("12:59:59.123456789"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0),
-                DateTimeUtils.parseLocalTime("L12"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0),
-                DateTimeUtils.parseLocalTime("L1259"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.parseLocalTime("L125959.123"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.parseLocalTime("L125959.123456"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.parseLocalTime("L125959.123456789"));
+        TestCase.assertEquals(java.time.LocalTime.of(3, 4, 5),
+                DateTimeUtils.parseLocalTime("3:4:5"));
 
         try {
             DateTimeUtils.parseLocalTime("JUNK");
@@ -131,40 +114,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testParseLocalTimeQuiet() {
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59),
-                DateTimeUtils.parseLocalTimeQuiet("L12:59:59"));
+                DateTimeUtils.parseLocalTimeQuiet("12:59:59"));
         TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L00:00:00"));
+                DateTimeUtils.parseLocalTimeQuiet("00:00:00"));
         TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59),
-                DateTimeUtils.parseLocalTimeQuiet("L23:59:59"));
+                DateTimeUtils.parseLocalTimeQuiet("23:59:59"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59),
-                DateTimeUtils.parseLocalTimeQuiet("L125959"));
-        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L000000"));
-        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59),
-                DateTimeUtils.parseLocalTimeQuiet("L235959"));
-
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L12"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L12:59"));
+                DateTimeUtils.parseLocalTimeQuiet("12:59"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123"));
+                DateTimeUtils.parseLocalTimeQuiet("12:59:59.123"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123456"));
+                DateTimeUtils.parseLocalTimeQuiet("12:59:59.123456"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123456789"));
+                DateTimeUtils.parseLocalTimeQuiet("12:59:59.123456789"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L12"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0),
-                DateTimeUtils.parseLocalTimeQuiet("L1259"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.parseLocalTimeQuiet("L125959.123"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.parseLocalTimeQuiet("L125959.123456"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.parseLocalTimeQuiet("L125959.123456789"));
+        TestCase.assertEquals(java.time.LocalTime.of(3, 4, 5),
+                DateTimeUtils.parseLocalTimeQuiet("3:4:5"));
 
         TestCase.assertNull(DateTimeUtils.parseLocalTimeQuiet("JUNK"));
         TestCase.assertNull(DateTimeUtils.parseLocalTimeQuiet(null));
@@ -773,24 +739,27 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "15:25:49.064106107",
         };
 
-        for (boolean isNeg : new boolean[] {false, true}) {
-            for (String t : times) {
-                long offset = 0;
-                String lts = t;
+        for (boolean isNegOuter : new boolean[] {false, true}) {
+            for (boolean isNegInner : new boolean[] {false, true}) {
+                for (String t : times) {
+                    long offset = 0;
+                    String lts = t;
 
-                if (lts.indexOf(":") == 1) {
-                    lts = "0" + lts;
+                    if (lts.indexOf(":") == 1) {
+                        lts = "0" + lts;
+                    }
+
+                    t = (isNegOuter ? "-" : "") + "PT" + (isNegInner ? "-" : "") + t;
+
+                    final long sign = (isNegOuter ? -1 : 1) * (isNegInner ? -1 : 1);
+                    TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
+                            DateTimeUtils.parseDurationNanos(t));
                 }
-
-                if (isNeg) {
-                    t = "-" + t;
-                }
-
-                final long sign = isNeg ? -1 : 1;
-                TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
-                        DateTimeUtils.parseDurationNanos(t));
             }
         }
+
+        TestCase.assertEquals(LocalTime.of(3, 4, 5).toNanoOfDay(), DateTimeUtils.parseDurationNanos("PT3:4:5"));
+        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59*DateTimeUtils.MINUTE + 39 *DateTimeUtils.SECOND, DateTimeUtils.parseDurationNanos("PT530000:59:39"));
 
         final String[] durations = {
                 "PT1h43s",
@@ -825,7 +794,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     }
 
-    public void testParseNanosQuiet() {
+    public void testParseDurationNanosQuiet() {
         final String[] times = {
                 "12:00",
                 "12:00:00",
@@ -841,24 +810,27 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 "15:25:49.064106107",
         };
 
-        for (boolean isNeg : new boolean[] {false, true}) {
-            for (String t : times) {
-                long offset = 0;
-                String lts = t;
+        for (boolean isNegOuter : new boolean[] {false, true}) {
+            for (boolean isNegInner : new boolean[] {false, true}) {
+                for (String t : times) {
+                    long offset = 0;
+                    String lts = t;
 
-                if (lts.indexOf(":") == 1) {
-                    lts = "0" + lts;
+                    if (lts.indexOf(":") == 1) {
+                        lts = "0" + lts;
+                    }
+
+                    t = (isNegOuter ? "-" : "") + "PT" + (isNegInner ? "-" : "") + t;
+
+                    final long sign = (isNegOuter ? -1 : 1) * (isNegInner ? -1 : 1);
+                    TestCase.assertEquals(sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
+                            DateTimeUtils.parseDurationNanosQuiet(t));
                 }
-
-                if (isNeg) {
-                    t = "-" + t;
-                }
-
-                final long sign = isNeg ? -1 : 1;
-                TestCase.assertEquals(t, sign * (LocalTime.parse(lts).toNanoOfDay() + offset),
-                        DateTimeUtils.parseDurationNanosQuiet(t));
             }
         }
+
+        TestCase.assertEquals(LocalTime.of(3, 4, 5).toNanoOfDay(), DateTimeUtils.parseDurationNanosQuiet("PT3:4:5"));
+        TestCase.assertEquals(530000 * DateTimeUtils.HOUR + 59*DateTimeUtils.MINUTE + 39 *DateTimeUtils.SECOND, DateTimeUtils.parseDurationNanosQuiet("PT530000:59:39"));
 
         final String[] durations = {
                 "PT1h43s",
@@ -1101,29 +1073,29 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.formatDateTime(null));
     }
 
-    public void testFormatNanos() {
+    public void testFormatDurationNanos() {
 
-        TestCase.assertEquals("2:00:00", DateTimeUtils.formatNanos(2 * DateTimeUtils.HOUR));
-        TestCase.assertEquals("0:02:00", DateTimeUtils.formatNanos(2 * DateTimeUtils.MINUTE));
-        TestCase.assertEquals("0:00:02", DateTimeUtils.formatNanos(2 * DateTimeUtils.SECOND));
-        TestCase.assertEquals("0:00:00.002000000", DateTimeUtils.formatNanos(2 * DateTimeUtils.MILLI));
-        TestCase.assertEquals("0:00:00.000000002", DateTimeUtils.formatNanos(2));
-        TestCase.assertEquals("23:45:39.123456789", DateTimeUtils.formatNanos(
+        TestCase.assertEquals("PT2:00:00", DateTimeUtils.formatDurationNanos(2 * DateTimeUtils.HOUR));
+        TestCase.assertEquals("PT0:02:00", DateTimeUtils.formatDurationNanos(2 * DateTimeUtils.MINUTE));
+        TestCase.assertEquals("PT0:00:02", DateTimeUtils.formatDurationNanos(2 * DateTimeUtils.SECOND));
+        TestCase.assertEquals("PT0:00:00.002000000", DateTimeUtils.formatDurationNanos(2 * DateTimeUtils.MILLI));
+        TestCase.assertEquals("PT0:00:00.000000002", DateTimeUtils.formatDurationNanos(2));
+        TestCase.assertEquals("PT23:45:39.123456789", DateTimeUtils.formatDurationNanos(
                 23 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
-        TestCase.assertEquals("123:45:39.123456789", DateTimeUtils.formatNanos(
+        TestCase.assertEquals("PT123:45:39.123456789", DateTimeUtils.formatDurationNanos(
                 123 * DateTimeUtils.HOUR + 45 * DateTimeUtils.MINUTE + 39 * DateTimeUtils.SECOND + 123456789));
 
-        TestCase.assertEquals("-2:00:00", DateTimeUtils.formatNanos(-2 * DateTimeUtils.HOUR));
-        TestCase.assertEquals("-0:02:00", DateTimeUtils.formatNanos(-2 * DateTimeUtils.MINUTE));
-        TestCase.assertEquals("-0:00:02", DateTimeUtils.formatNanos(-2 * DateTimeUtils.SECOND));
-        TestCase.assertEquals("-0:00:00.002000000", DateTimeUtils.formatNanos(-2 * DateTimeUtils.MILLI));
-        TestCase.assertEquals("-0:00:00.000000002", DateTimeUtils.formatNanos(-2));
-        TestCase.assertEquals("-23:45:39.123456789", DateTimeUtils.formatNanos(
+        TestCase.assertEquals("-PT2:00:00", DateTimeUtils.formatDurationNanos(-2 * DateTimeUtils.HOUR));
+        TestCase.assertEquals("-PT0:02:00", DateTimeUtils.formatDurationNanos(-2 * DateTimeUtils.MINUTE));
+        TestCase.assertEquals("-PT0:00:02", DateTimeUtils.formatDurationNanos(-2 * DateTimeUtils.SECOND));
+        TestCase.assertEquals("-PT0:00:00.002000000", DateTimeUtils.formatDurationNanos(-2 * DateTimeUtils.MILLI));
+        TestCase.assertEquals("-PT0:00:00.000000002", DateTimeUtils.formatDurationNanos(-2));
+        TestCase.assertEquals("-PT23:45:39.123456789", DateTimeUtils.formatDurationNanos(
                 -23 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
-        TestCase.assertEquals("-123:45:39.123456789", DateTimeUtils.formatNanos(
+        TestCase.assertEquals("-PT123:45:39.123456789", DateTimeUtils.formatDurationNanos(
                 -123 * DateTimeUtils.HOUR - 45 * DateTimeUtils.MINUTE - 39 * DateTimeUtils.SECOND - 123456789));
 
-        TestCase.assertNull(DateTimeUtils.formatNanos(NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.formatDurationNanos(NULL_LONG));
     }
 
     public void testMicrosToMillis() {

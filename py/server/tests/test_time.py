@@ -169,7 +169,7 @@ class TimeTestCase(BaseTestCase):
     def test_make_instant(self):
         dt = parse_instant("2021-12-10T14:21:17.123456789 ET")
         ld = parse_local_date("2021-12-10")
-        lt = parse_local_time("L14:21:17.123456789")
+        lt = parse_local_time("14:21:17.123456789")
         tz = time_zone("ET")
 
         self.assertEqual(dt, make_instant(ld, lt, tz))
@@ -180,7 +180,7 @@ class TimeTestCase(BaseTestCase):
     def test_make_zdt(self):
         dt = parse_zdt("2021-12-10T14:21:17.123456789 ET")
         ld = parse_local_date("2021-12-10")
-        lt = parse_local_time("L14:21:17.123456789")
+        lt = parse_local_time("14:21:17.123456789")
         tz = time_zone("ET")
 
         self.assertEqual(dt, make_zdt(ld, lt, tz))
@@ -204,7 +204,7 @@ class TimeTestCase(BaseTestCase):
         dt1 = parse_instant("2021-12-10T14:21:17.123456789 ET")
         dt2 = parse_zdt("2021-12-10T14:21:17.123456789 ET")
         tz = time_zone("ET")
-        lt = parse_local_time("L14:21:17.123456789")
+        lt = parse_local_time("14:21:17.123456789")
 
         self.assertEqual(lt, to_local_time(dt1, tz))
         self.assertEqual(lt, to_local_time(dt2, tz))
@@ -681,10 +681,10 @@ class TimeTestCase(BaseTestCase):
     
     # region: Format
 
-    def test_format_nanos(self):
+    def test_format_duration_nanos(self):
         nanos = 123456789
-        ns_str = format_nanos(nanos)
-        self.assertEqual("0:00:00.123456789", ns_str)
+        ns_str = format_duration_nanos(nanos)
+        self.assertEqual("PT0:00:00.123456789", ns_str)
 
     def test_format_datetime(self):
         datetime_str = "2021-12-10T14:21:17.123456789"
@@ -730,23 +730,28 @@ class TimeTestCase(BaseTestCase):
         self.assertEqual(None, tz)
 
     def test_parse_duration_nanos(self):
-        time_str = "530000:59:39.123456789"
+        time_str = "PT530000:59:39.123456789"
         in_nanos = parse_duration_nanos(time_str)
         self.assertEqual(str(in_nanos), "1908003579123456789")
 
         with self.assertRaises(DHError) as cm:
-            time_str = "530000:59:39.X"
+            time_str = "PT530000:59:39.X"
             in_nanos = parse_duration_nanos(time_str)
         self.assertIn("DateTimeParseException", str(cm.exception))
 
-        time_str = "00:59:39.X"
+        time_str = "PT00:59:39.X"
         in_nanos = parse_duration_nanos(time_str, quiet=True)
         self.assertEqual(in_nanos, NULL_LONG)
 
-        time_str = "1:02:03"
+        time_str = "PT1:02:03"
         in_nanos = parse_duration_nanos(time_str)
-        time_str2 = format_nanos(in_nanos)
+        time_str2 = format_duration_nanos(in_nanos)
         self.assertEqual(time_str2, time_str)
+
+        time_str = "PT1h"
+        in_nanos = parse_duration_nanos(time_str)
+        time_str2 = format_duration_nanos(in_nanos)
+        self.assertEqual(time_str2, "PT1:00:00")
 
     def test_parse_period(self):
         period_str = "P1W"
@@ -870,16 +875,16 @@ class TimeTestCase(BaseTestCase):
         self.assertEquals(None,dt)
 
     def test_parse_local_time(self):
-        time_str = "L23:59:59"
+        time_str = "23:59:59"
         dt = parse_local_time(time_str)
         self.assertTrue(str(dt), time_str)
 
         with self.assertRaises(DHError) as cm:
-            time_str = "L23:59x:59"
+            time_str = "23:59x:59"
             dt = parse_local_time(time_str)
         self.assertIn("DateTimeParseException", str(cm.exception))
 
-        time_str = "L23:59x:59"
+        time_str = "23:59x:59"
         dt = parse_local_time(time_str, quiet=True)
         self.assertEquals(None,dt)
 

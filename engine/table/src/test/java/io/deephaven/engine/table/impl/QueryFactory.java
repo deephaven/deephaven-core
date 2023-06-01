@@ -825,7 +825,7 @@ public class QueryFactory {
                 "\tSystem.out.println(\"column: \"+colNum+\"[Seed] \" + seed);\n" +
                 "\tcolumnRandoms[colNum] = new Random(seed);\n" +
                 "}\n\n" +
-                "tt = timeTable(\"00:00:00.1\");" +
+                "tt = timeTable(\"PT00:00:00.1\");" +
                 "tickingValues = tt.update(\n" +
                 "\"MyString=new String(`a`+i)\",\n" +
                 "\"MyInt=new Integer(i)\",\n" +
