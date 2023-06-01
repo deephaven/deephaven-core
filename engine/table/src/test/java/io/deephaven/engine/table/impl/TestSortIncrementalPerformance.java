@@ -77,10 +77,9 @@ public class TestSortIncrementalPerformance {
 
         final R result = function.apply(filtered);
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (filtered.size() < inputTable.size()) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;

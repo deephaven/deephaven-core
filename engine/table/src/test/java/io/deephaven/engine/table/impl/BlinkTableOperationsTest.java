@@ -16,7 +16,6 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
@@ -115,11 +114,11 @@ public class BlinkTableOperationsTest {
                             ? RowSetFactory.empty()
                             : RowSetFactory.fromRange(0, refreshSize - 1);
 
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.startCycleForUnitTests();
             try {
                 final RowSet finalNormalLastInserted = normalLastInserted;
-                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph1.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
+                updateGraph.refreshUpdateSourceForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
                         normal.getRowSet().writableCast().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new TableUpdateImpl(normalStepInserted.copy(), finalNormalLastInserted,
@@ -127,8 +126,7 @@ public class BlinkTableOperationsTest {
                     }
                 });
                 final RowSet finalBlinkLastInserted = blinkLastInserted;
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().refreshUpdateSourceForUnitTests(() -> {
+                updateGraph.refreshUpdateSourceForUnitTests(() -> {
                     if (blinkStepInserted.isNonempty() || finalBlinkLastInserted.isNonempty()) {
                         if (blinkInternalRowSet != null) {
                             blinkInternalRowSet.clear();
@@ -141,8 +139,7 @@ public class BlinkTableOperationsTest {
                     }
                 });
             } finally {
-                ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
-                        .completeCycleForUnitTests();
+                updateGraph.completeCycleForUnitTests();
             }
             try {
                 TstUtils.assertTableEquals(expected, blinkExpected);

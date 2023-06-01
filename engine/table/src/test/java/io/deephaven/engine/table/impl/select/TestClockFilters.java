@@ -48,17 +48,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput1.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -73,17 +70,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput1.where(filter);
         assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -98,17 +92,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput2.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -123,16 +114,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput2.where(filter);
         assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -147,15 +136,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput3.sort("Timestamp").where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
@@ -170,15 +158,14 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final Table result = testInput3.where(filter);
         assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });

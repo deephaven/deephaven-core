@@ -4,7 +4,6 @@
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.color.Color;

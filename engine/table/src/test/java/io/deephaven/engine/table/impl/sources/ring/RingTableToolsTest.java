@@ -97,10 +97,9 @@ public class RingTableToolsTest {
         final Table tail = BlinkTableTools.blinkToAppendOnly(streamHelper.blinkTable).tail(capacity);
         final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int i = 0; i < times; ++i) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 streamHelper.addAndNotify(appendSize, holders);
                 checkEquals(tail, ring);
             });

@@ -26,7 +26,6 @@ import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
@@ -96,8 +95,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 () -> (QueryTable) treed.getSource().apply(new TreeTableFilter.Operator((TreeTableImpl) treed,
                         WhereFilterFactory.getExpressions("Sentinel in 4, 6, 9, 11, 12, 13, 14, 15")));
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
-                .startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
@@ -474,8 +472,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableUpdate, reverse2);
         TstUtils.assertTableEquals(tableUpdate, reverse3);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10000), col("x", 5), col("y", "e"));
             table.notifyListeners(i(10000), i(), i());
         });
@@ -486,8 +484,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         assertTableEquals(tableUpdate2, reverse2);
         assertTableEquals(tableUpdate2, reverse3);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10001), col("x", 6), col("y", "f"));
             table.notifyListeners(i(10001), i(), i());
         });
@@ -504,7 +501,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 col("x", 1, 2, 3), col("y", "a", "a", "a"));
         final PartitionedTable pt = table.partitionBy("y");
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
 
         TstUtils.addToTable(table, i(3), col("x", 4), col("y", "d"));
 
@@ -512,8 +510,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         // We need to flush two notifications: one for the source table and one for the "withView" table in the
         // aggregation helper.
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushOneNotificationForUnitTests();
+        updateGraph.flushOneNotificationForUnitTests();
+        updateGraph.flushOneNotificationForUnitTests();
 
         final Table tableA = pt.constituentFor("a");
         final Table tableD = pt.constituentFor("d");
@@ -529,7 +527,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.assertTableEquals(tableD, sortD);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        updateGraph.completeCycleForUnitTests();
     }
 
     public void testChain() throws ExecutionException, InterruptedException, TimeoutException {
@@ -543,7 +541,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Callable<Table> callable = () -> table.updateView("u=x*4").where("z").sortDescending("x");
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests();
 
         final Table chain1 = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -565,7 +564,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         TstUtils.assertTableEquals(tableStart, prevTable(chain1));
         TstUtils.assertTableEquals(tableStart, prevTable(chain2));
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+        updateGraph.completeCycleForUnitTests();
 
         TstUtils.assertTableEquals(tableUpdate, chain1);
         TstUtils.assertTableEquals(tableUpdate, chain2);
@@ -1600,8 +1599,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         TstUtils.assertTableEquals(snap, base);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdate downstream1 = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(base, downstream1.added(), col("x", 2));
@@ -1609,8 +1608,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         });
         TstUtils.assertTableEquals(snap, prevTable(base));
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdate downstream = new TableUpdateImpl(i(1), i(), i(),
                     RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
             TstUtils.addToTable(trigger, downstream.added());

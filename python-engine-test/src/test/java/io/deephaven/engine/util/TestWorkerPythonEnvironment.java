@@ -7,6 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -25,9 +26,8 @@ import org.junit.Ignore;
  * Test various Jpy related overloading methods.
  */
 @Ignore // TODO (deephaven-core#734)
-public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
+public class TestWorkerPythonEnvironment extends RefreshingTableTestCase {
 
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -36,18 +36,6 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
                     TestWorkerPythonEnvironment.class.getCanonicalName(),
                     new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(true);
     }
 
     public void testNumpyImport() {

@@ -123,8 +123,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same row key; we would not notice the mdoification
-        UpdateGraph updateGraph5 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph5.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update5 = new TableUpdateImpl();
             update5.added = RowSetFactory.fromKeys(0);
             update5.removed = RowSetFactory.empty();
@@ -149,8 +149,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
         // i'm concerned that if we really modify a row, but we don't detect it in the shift, so here we are just
         // shifting without modifications
-        UpdateGraph updateGraph4 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph4.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update4 = new TableUpdateImpl();
             update4.added = RowSetFactory.fromKeys(0);
             update4.removed = RowSetFactory.empty();
@@ -176,8 +175,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(1, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
-        UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update3 = new TableUpdateImpl();
             update3.added = RowSetFactory.fromKeys(0);
             update3.removed = RowSetFactory.empty();
@@ -204,8 +202,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
-        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update2 = new TableUpdateImpl();
             update2.added = RowSetFactory.fromKeys(0);
             update2.removed = RowSetFactory.empty();
@@ -232,8 +229,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update1 = new TableUpdateImpl();
             update1.added = RowSetFactory.fromKeys(0);
             update1.removed = RowSetFactory.empty();
@@ -260,8 +256,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);
             update.removed = RowSetFactory.empty();

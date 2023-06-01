@@ -19,10 +19,9 @@ public class TestSimulationClock extends RefreshingTableTestCase {
         final DateTime start = DateTime.now();
         final SimulationClock clock = new SimulationClock(start, DateTimeUtils.plus(start, 1), 1);
         clock.start();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ci = 0; ci < 2; ++ci) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(clock::advance);
+            updateGraph.runWithinUnitTestCycle(clock::advance);
         }
         clock.awaitDoneUninterruptibly();
     }

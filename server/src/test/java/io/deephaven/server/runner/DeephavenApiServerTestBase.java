@@ -86,8 +86,7 @@ public abstract class DeephavenApiServerTestBase {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();
-            UpdateGraph updateGraph11 = updateGraph.<ControlledUpdateGraph>cast();
-            updateGraph11.<ControlledUpdateGraph>cast().resetForUnitTests(false);
+            updateGraph.resetForUnitTests(false);
         }
 
         logBuffer = new LogBuffer(128);
@@ -122,8 +121,7 @@ public abstract class DeephavenApiServerTestBase {
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
-            UpdateGraph updateGraph11 = updateGraph.<ControlledUpdateGraph>cast();
-            updateGraph11.<ControlledUpdateGraph>cast().resetForUnitTests(true);
+            updateGraph.resetForUnitTests(true);
         }
     }
 

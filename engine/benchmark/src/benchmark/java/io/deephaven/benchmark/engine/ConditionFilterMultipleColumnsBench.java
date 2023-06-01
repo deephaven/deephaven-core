@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
@@ -53,6 +53,7 @@ public class ConditionFilterMultipleColumnsBench {
         if (nFilterCols < 1 || nAdditionalCols < 0) {
             throw new IllegalArgumentException();
         }
+        TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
@@ -117,14 +118,12 @@ public class ConditionFilterMultipleColumnsBench {
         final Table result = inputReleased.where(filter);
         // Compute the first pass of live iterations outside of the bench measurement,
         // to avoid including the time to setup the filter itself.
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph11 = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph11.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         final long fullyReleasedSize = inputTable.size();
         bench = () -> {
             while (inputReleased.size() < fullyReleasedSize) {
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+                updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
             }
             return result;
         };

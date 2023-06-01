@@ -4,10 +4,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.parquet.table.ParquetTools;
@@ -21,6 +21,8 @@ import java.text.DecimalFormat;
  */
 public class BenchmarkPlaypen {
     public static void main(String[] args) throws InterruptedException {
+        TestExecutionContext.createForUnitTests().open();
+
         if (args.length != 4) {
             usage();
         }
@@ -147,8 +149,8 @@ public class BenchmarkPlaypen {
             while (viewed.size() > input.size()) {
                 final long initialSize = input.size();
                 System.out.println("Running UpdateGraphProcessor cycle: " + input.size() + " / " + viewed.size());
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(filter::run);
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(filter::run);
                 if (initialSize == input.size()) {
                     throw new RuntimeException("Did not increase size of input table during cycle!");
                 }

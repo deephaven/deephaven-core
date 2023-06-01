@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.util.TableTools;
@@ -117,11 +116,10 @@ public class FuzzerTest {
 
         final int steps = TstUtils.SHORT_TESTS ? 20 : 100;
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < steps; ++step) {
             final int fstep = step;
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 System.out.println("Step = " + fstep);
                 timeTable.run();
             });
@@ -153,11 +151,11 @@ public class FuzzerTest {
             final Map<String, Object> hardReferences = new ConcurrentHashMap<>();
             validateBindingTables(session, hardReferences);
 
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             final TimeTable timeTable = (TimeTable) session.getVariable("tt");
             for (int step = 0; step < fuzzDescriptor.steps; ++step) {
                 final int fstep = step;
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
                     System.out.println("Step = " + fstep);
                     timeTable.run();
                 });
@@ -189,11 +187,11 @@ public class FuzzerTest {
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
         final long seed1 = Clock.system().currentTimeNanos();
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
                 ChunkPoolReleaseTracking.enableStrict();
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().resetForUnitTests(false);
+                updateGraph.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;
@@ -254,10 +252,10 @@ public class FuzzerTest {
         final long loopStart = System.currentTimeMillis();
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
         final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < stepsToRun; ++step) {
             final int fstep = step;
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(timeTable::run);
+            updateGraph.runWithinUnitTestCycle(timeTable::run);
 
             RuntimeMemory.getInstance().read(sample);
             final long totalMemory = sample.totalMemory;

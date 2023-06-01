@@ -67,9 +67,8 @@ public class TestTableAssertions {
         assertTableEquals(test, testPlant);
         assertTableEquals(test, testInt);
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             removeRows(test, i(11));
             addToTable(test, i(11), stringCol("Plant", "Berry"), intCol("Int", 6));
             test.notifyListeners(i(11), i(11), i());
@@ -78,9 +77,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testInt);
         assertTableEquals(test, testPlant);
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
             TableTools.showWithRowSet(test);
@@ -137,11 +134,10 @@ public class TestTableAssertions {
                 },
         };
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < maxSteps; step++) {
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast()
-                    .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
-                            GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
+            updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
+                    GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);
         }
         // } finally {

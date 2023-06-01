@@ -44,7 +44,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
         engine = new EngineCleanup();
         engine.setUp();
         ugp = ExecutionContext.getContext().getUpdateGraph();
-        ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        ugp.<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try {
             this.numCycles = numCycles;
             filter = new IncrementalReleaseFilter(initialSize, cycleSize);
@@ -58,7 +58,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
             listener = new BlackholeListener(blackhole);
             out.addUpdateListener(listener);
         } finally {
-            ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+            ugp.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
         }
     }
 
@@ -76,11 +76,11 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
 
     public void runCycles() throws Throwable {
         for (int i = 0; i < numCycles; ++i) {
-            ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().startCycleForUnitTests();
+            ugp.<ControlledUpdateGraph>cast().startCycleForUnitTests();
             try {
                 filter.run();
             } finally {
-                ugp.<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+                ugp.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
             }
             if (listener.e != null) {
                 throw listener.e;

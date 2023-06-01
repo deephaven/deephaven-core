@@ -175,10 +175,10 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
-                    UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                        generateAppends(stepSize, result.random, result.t, result.infos);
-                    });
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> {
+                                generateAppends(stepSize, result.random, result.t, result.infos);
+                            });
                     validate("Table", nuggets);
                 } else {
                     simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
@@ -209,29 +209,26 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
 
         // Add to "B" bucket
-        UpdateGraph updateGraph3 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
             table.notifyListeners(i(8), i(), i());
         });
 
         // New "C" bucket in isolation
-        UpdateGraph updateGraph2 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
             table.notifyListeners(i(9), i(), i());
         });
 
         // Row from "B" bucket to "C" bucket
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
             table.notifyListeners(i(), i(), i(8));
         });
 
         // New "D" bucket
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
             table.notifyListeners(i(10, 11), i(), i());
         });

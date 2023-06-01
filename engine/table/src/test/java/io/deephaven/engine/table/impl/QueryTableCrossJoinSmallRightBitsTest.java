@@ -127,8 +127,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), col("A", 1, 3, 4));
 
             final TableUpdateImpl lUpdate = new TableUpdateImpl();
@@ -187,8 +187,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(lTable, i(1, 2, 3), col("A", 1, 3, 4));
 
             final TableUpdateImpl lUpdate = new TableUpdateImpl();
@@ -244,8 +244,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), col("A", 0, 1, 3, 4, 5));
 
@@ -307,8 +307,8 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(lTable, i(0));
             TstUtils.addToTable(lTable, i(1, 2, 3, 4, 5), col("A", 0, 1, 3, 4, 5));
 

@@ -1,7 +1,6 @@
 package io.deephaven.server.table.ops;
 
 import com.google.protobuf.Message;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;

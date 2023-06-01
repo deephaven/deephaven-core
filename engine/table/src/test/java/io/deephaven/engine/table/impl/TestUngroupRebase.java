@@ -31,19 +31,19 @@ public class TestUngroupRebase extends RefreshingTableTestCase {
             };
 
             // don't remove or add anything, let's just do one step
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .startCycleForUnitTests();
             RowSet keysToAdd = RowSetFactory.empty();
             RowSet keysToRemove = RowSetFactory.empty();
             RowSet keysToModify = RowSetFactory.empty();
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .completeCycleForUnitTests();
             TableTools.show(table);
             TstUtils.validate("ungroupRebase base", en);
 
             // Now let's modify the first row, but not cause a rebase
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .startCycleForUnitTests();
             keysToAdd = RowSetFactory.empty();
             keysToRemove = RowSetFactory.empty();
@@ -52,14 +52,14 @@ public class TestUngroupRebase extends RefreshingTableTestCase {
             ColumnHolder<?> valueModifications = col("Y", new int[] {10, 20, 30});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .completeCycleForUnitTests();
             TableTools.show(table);
             TstUtils.validate("ungroupRebase add no rebase", en);
 
 
             // Now let's modify the first row such that we will cause a rebasing operation
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .startCycleForUnitTests();
             keysToAdd = RowSetFactory.empty();
             keysToRemove = RowSetFactory.empty();
@@ -67,7 +67,7 @@ public class TestUngroupRebase extends RefreshingTableTestCase {
             valueModifications = col("Y", new int[] {10, 20, 30, 40, 50, 60});
             TstUtils.addToTable(table, keysToModify, keyModifications, valueModifications);
             table.notifyListeners(keysToAdd, keysToRemove, keysToModify);
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .completeCycleForUnitTests();
             TableTools.show(table);
             TstUtils.validate("ungroupRebase rebase", en);
@@ -86,7 +86,7 @@ public class TestUngroupRebase extends RefreshingTableTestCase {
             };
 
             // let's remove the second row, so that we can add something to it on the next step
-            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                     .startCycleForUnitTests();
             keysToAdd = RowSetFactory.fromKeys();
             keysToRemove = RowSetFactory.fromKeys(1);

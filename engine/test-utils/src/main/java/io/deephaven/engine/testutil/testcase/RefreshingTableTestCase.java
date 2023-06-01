@@ -8,7 +8,9 @@ import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.engine.context.TestExecutionContextAccess;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -53,7 +55,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         super.setUp();
 
         // initialize the unit test's execution context
-        executionContext = TestExecutionContextAccess.createForUnitTests().open();
+        executionContext = TestExecutionContext.createForUnitTests().open();
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
@@ -62,6 +64,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
+        livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
         oldCheckLtm = updateGraph.setCheckTableOperations(false);
@@ -79,6 +82,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         // reset the execution context
         executionContext.close();
 
+        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         updateGraph.resetForUnitTests(true);

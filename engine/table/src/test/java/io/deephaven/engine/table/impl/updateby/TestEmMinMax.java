@@ -800,11 +800,11 @@ public class TestEmMinMax extends BaseUpdateByTest {
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             try {
                 if (appendOnly) {
-                    UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                    updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
-                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
-                        generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
-                    });
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> {
+                                generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
+                                generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
+                            });
                     validate("Table", nuggets);
                     validate("Table", timeNuggets);
                 } else {

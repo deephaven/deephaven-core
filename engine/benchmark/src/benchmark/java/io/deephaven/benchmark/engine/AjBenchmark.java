@@ -4,6 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
@@ -61,6 +62,7 @@ public class AjBenchmark {
     public void setupEnv(BenchmarkParams params) {
         System.out.println("Setup started: " + new Date());
 
+        TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;

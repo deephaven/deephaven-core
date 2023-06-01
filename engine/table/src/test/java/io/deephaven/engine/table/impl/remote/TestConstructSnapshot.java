@@ -36,21 +36,21 @@ public class TestConstructSnapshot extends RefreshingTableTestCase {
 
         changed.setValue(0);
         final Thread t = new Thread(snapshot_test);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                 .startCycleForUnitTests();
         t.start();
         t.join();
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                 .completeCycleForUnitTests();
         assertEquals(0, changed.longValue());
 
         changed.setValue(0);
         final Thread t2 = new Thread(snapshot_test);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                 .startCycleForUnitTests();
         t2.start();
         SleepUtil.sleep(100);
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().<ControlledUpdateGraph>cast()
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast()
                 .completeCycleForUnitTests();
         t2.join();
         assertEquals(1, changed.longValue());

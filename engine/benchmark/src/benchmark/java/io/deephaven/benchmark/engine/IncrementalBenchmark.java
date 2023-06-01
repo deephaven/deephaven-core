@@ -11,7 +11,6 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateGraph;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -25,12 +24,11 @@ class IncrementalBenchmark {
 
         final R result = function.apply(filtered);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         while (filtered.size() < inputTable.size()) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -43,12 +41,11 @@ class IncrementalBenchmark {
 
         final R result = function.apply(filtered);
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         for (int currentStep = 0; currentStep <= steps; currentStep++) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter::run);
         }
 
         return result;
@@ -103,13 +100,12 @@ class IncrementalBenchmark {
             failureListener = null;
         }
 
-        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.enableUnitTestMode();
 
         while (filtered1.size() < inputTable1.size() || filtered2.size() < inputTable2.size()) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter1::run);
-            UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(incrementalReleaseFilter2::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter1::run);
+            updateGraph.runWithinUnitTestCycle(incrementalReleaseFilter2::run);
         }
 
         if (failureListener != null) {

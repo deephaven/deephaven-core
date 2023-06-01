@@ -46,9 +46,8 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateGraph updateGraph12 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph3 = updateGraph12.<ControlledUpdateGraph>cast();
-        updateGraph3.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -56,9 +55,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateGraph updateGraph11 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph2 = updateGraph11.<ControlledUpdateGraph>cast();
-        updateGraph2.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -66,9 +63,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
-        UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-        UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(2000);
             timeSeriesFilter.run();
         });
@@ -94,17 +89,16 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
         final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = new EvalNugget[] {
-                new EvalNugget() {
-                    public Table e() {
-                        UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
-                                new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
-                        filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                                () -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
-                                        .where(unitTestTimeSeriesFilter1));
-                    }
-                },
+                EvalNugget.from(() -> {
+                    UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
+                            new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
+                    filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
+                    return updateGraph.exclusiveLock().computeLocked(
+                            () -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
+                                    .where(unitTestTimeSeriesFilter1));
+                }),
         };
 
 
@@ -113,9 +107,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             if (ii % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
-                UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-                UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
                     unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
                     final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();

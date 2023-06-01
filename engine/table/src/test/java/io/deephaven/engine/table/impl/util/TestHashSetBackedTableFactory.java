@@ -50,18 +50,15 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
         final Random random = new Random();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.from(() -> {
-                    return ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
-                            () -> result.update("Arg0=Arg.substring(0, 1)"));
-                }),
+                EvalNugget.from(() -> ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                        () -> result.update("Arg0=Arg.substring(0, 1)"))),
                 new UpdateValidatorNugget(result),
         };
 
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ii = 0; ii < 1000; ++ii) {
-            UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
-            UpdateGraph updateGraph = updateGraph1.<ControlledUpdateGraph>cast();
-            updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 final int additions = random.nextInt(4);
                 final int removals = random.nextInt(4);
                 for (int jj = 0; jj < removals; ++jj) {

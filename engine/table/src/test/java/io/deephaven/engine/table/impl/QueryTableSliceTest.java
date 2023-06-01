@@ -369,8 +369,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             for (int i = 0; i < steps; ++i) {
                 final long ii = i;
                 final long jj = j;
-                UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-                updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(() -> {
                     RowSet added1 = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().writableCast().insert(added1);
                     TableUpdate update =

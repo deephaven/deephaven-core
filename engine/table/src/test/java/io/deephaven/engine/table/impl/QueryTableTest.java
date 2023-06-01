@@ -3068,7 +3068,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // from its parent, which have valid prev values, but the prev values must not be used during the first
         // cycle.
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newRows = i(2, 4, 18, 20);
             addToTable(lTable, newRows, col("X", "e", "f", "g", "h"));
             final TableUpdateImpl update = new TableUpdateImpl();
