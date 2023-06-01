@@ -23,7 +23,7 @@ def _scope(globals: Mapping[str, Any], locals: Mapping[str, Any]):
         j_py_script_session.popScope()
 
 
-def eval(
+def evaluate(
     sql: str,
     dry_run: bool = False,
 ) -> Union[Table, jpy.JType]:
