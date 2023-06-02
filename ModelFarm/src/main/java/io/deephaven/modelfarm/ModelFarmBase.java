@@ -67,17 +67,17 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      */
     public enum GetDataLockType {
         /**
-         * The UGP lock is already held.
+         * The UpdateGraph lock is already held.
          */
-        UGP_LOCK_ALREADY_HELD,
+        UPDATE_GRAPH_LOCK_ALREADY_HELD,
         /**
-         * Acquire the UGP lock.
+         * Acquire the UpdateGraph's exclusive lock.
          */
-        UGP_LOCK,
+        UPDATE_GRAPH_EXCLUSIVE_LOCK,
         /**
-         * Acquire an UGP read lock.
+         * Acquire the UpdateGraph's shared lock.
          */
-        UGP_READ_LOCK,
+        UPDATE_GRAPH_SHARED_LOCK,
         /**
          * Use the (usually) lock-free snapshotting mechanism.
          */
@@ -210,14 +210,14 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     protected static ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> getDoLockedConsumer(
             final GetDataLockType lockType) {
         switch (lockType) {
-            case UGP_LOCK_ALREADY_HELD:
+            case UPDATE_GRAPH_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, source) -> queryDataRetrievalOperation.retrieveData(false);
-            case UGP_LOCK:
+            case UPDATE_GRAPH_EXCLUSIVE_LOCK:
                 return (queryDataRetrievalOperation, source) -> {
                     ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(
                             () -> queryDataRetrievalOperation.retrieveData(false));
                 };
-            case UGP_READ_LOCK:
+            case UPDATE_GRAPH_SHARED_LOCK:
                 return (queryDataRetrievalOperation, source) -> {
                     ExecutionContext.getContext().getUpdateGraph().sharedLock().doLocked(
                             () -> queryDataRetrievalOperation.retrieveData(false));

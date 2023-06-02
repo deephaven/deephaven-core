@@ -33,7 +33,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
     private static final Logger log = LoggerFactory.getLogger(ModelFarmOnDemand.class);
     private static final ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> DO_LOCKED_FUNCTION =
-            getDoLockedConsumer(GetDataLockType.UGP_READ_LOCK);
+            getDoLockedConsumer(GetDataLockType.UPDATE_GRAPH_SHARED_LOCK);
 
     private static class QueueAndCallback<DATATYPE> {
         private final Queue<DATATYPE> queue;
