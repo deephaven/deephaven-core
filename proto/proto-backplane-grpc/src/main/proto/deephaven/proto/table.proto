@@ -715,6 +715,11 @@ message AjRajTablesRequest {
   TableReference left_id = 2;
   TableReference right_id = 3;
   repeated string exact_match_columns = 4;
+  // This is a comparison expression for the inexact as-of join match. In the case of an as-of join (aj), the comparison
+  // operator can be either ">=" or ">"; for example, "Foo>=Bar" or "Foo>Bar". In the case of a reverse-as-of join (raj),
+  // the comparison operator can be either "<=" or "<"; for example, "Foo<=Bar" or "Foo<Bar". In the case where the
+  // column name exists in both tables, the single column name can be used and it will inherit the default comparison
+  // operator: in the aj case, "Foo" is equivalent to "Foo>=Foo"; in the raj case, "Foo" is equivalent to "Foo<=Foo".
   string as_of_column = 5;
   repeated string columns_to_add = 6;
 }

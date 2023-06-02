@@ -2655,8 +2655,13 @@ type AjRajTablesRequest struct {
 	LeftId            *TableReference `protobuf:"bytes,2,opt,name=left_id,json=leftId,proto3" json:"left_id,omitempty"`
 	RightId           *TableReference `protobuf:"bytes,3,opt,name=right_id,json=rightId,proto3" json:"right_id,omitempty"`
 	ExactMatchColumns []string        `protobuf:"bytes,4,rep,name=exact_match_columns,json=exactMatchColumns,proto3" json:"exact_match_columns,omitempty"`
-	AsOfColumn        string          `protobuf:"bytes,5,opt,name=as_of_column,json=asOfColumn,proto3" json:"as_of_column,omitempty"`
-	ColumnsToAdd      []string        `protobuf:"bytes,6,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
+	// This is a comparison expression for the inexact as-of join match. In the case of an as-of join (aj), the comparison
+	// operator can be either ">=" or ">"; for example, "Foo>=Bar" or "Foo>Bar". In the case of a reverse-as-of join (raj),
+	// the comparison operator can be either "<=" or "<"; for example, "Foo<=Bar" or "Foo<Bar". In the case where the
+	// column name exists in both tables, the single column name can be used and it will inherit the default comparison
+	// operator: in the aj case, "Foo" is equivalent to "Foo>=Foo"; in the raj case, "Foo" is equivalent to "Foo<=Foo".
+	AsOfColumn   string   `protobuf:"bytes,5,opt,name=as_of_column,json=asOfColumn,proto3" json:"as_of_column,omitempty"`
+	ColumnsToAdd []string `protobuf:"bytes,6,rep,name=columns_to_add,json=columnsToAdd,proto3" json:"columns_to_add,omitempty"`
 }
 
 func (x *AjRajTablesRequest) Reset() {
