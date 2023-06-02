@@ -14,8 +14,8 @@ from typing import List, Union
 from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
-    AggregateAllOp, AggregateOp, MatchRule, SortDirection
+    ExactJoinOp, CrossJoinOp, AjOp, RajOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
+    AggregateAllOp, AggregateOp, SortDirection
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.dherror import DHError
@@ -278,8 +278,7 @@ class TableInterface(ABC):
         table_op = CrossJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), reserve_bits=reserve_bits)
         return self.table_op_handler(table_op)
 
-    def aj(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL) -> Union[Table, Query]:
+    def aj(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[Table, Query]:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table, 
         plus additional columns containing data from the right table. For columns appended to the left table (joins), 
         row values equal the row values from the right table where the keys from the left table most closely match 
@@ -288,12 +287,13 @@ class TableInterface(ABC):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None,, which means all the columns
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
-            match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
             a Table or Query object
@@ -301,12 +301,10 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        match_rule = MatchRule.LESS_THAN if match_rule == MatchRule.LESS_THAN else MatchRule.LESS_THAN_EQUAL
-        table_op = AsOfJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), match_rule=match_rule)
+        table_op = AjOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
-    def raj(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL) -> Union[Table, Query]:
+    def raj(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[Table, Query]:
         """The raj (reverse as-of join) method creates a new table containing all the rows and columns of the left 
         table, plus additional columns containing data from the right table. For columns appended to the left table (
         joins), row values equal the row values from the right table where the keys from the left table most closely 
@@ -315,12 +313,13 @@ class TableInterface(ABC):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
                 from the right table, excluding those specified in 'on'
-            match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
             a Table or Query object
@@ -328,8 +327,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        match_rule = MatchRule.GREATER_THAN if match_rule == MatchRule.GREATER_THAN else MatchRule.GREATER_THAN_EQUAL
-        table_op = AsOfJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), match_rule=match_rule)
+        table_op = RajOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: Union[str, List[str]]) -> Union[Table, Query]:

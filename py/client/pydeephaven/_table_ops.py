@@ -13,20 +13,6 @@ from pydeephaven.proto import table_pb2, table_pb2_grpc
 from pydeephaven.updateby import UpdateByOperation
 
 
-class MatchRule(Enum):
-    """An enum defining the match rules for the as-of and reverse-as-of joins."""
-
-    """"""
-    LESS_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
-    """"""
-    LESS_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN
-    """"""
-    GREATER_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
-    """"""
-    GREATER_THAN = table_pb2.AsOfJoinTablesRequest.MatchRule.GREATER_THAN
-    """"""
-
-
 class SortDirection(Enum):
     """An enum defining the sort ordering."""
 
@@ -432,33 +418,53 @@ class CrossJoinOp(TableOp):
         return table_pb2.BatchTableRequest.Operation(
             cross_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
-
-class AsOfJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = [],
-                 match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
+class AjOp(TableOp):
+    def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
-        self.match_rule = match_rule
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
-        return table_service_stub.AsOfJoinTables
+        return table_service_stub.AjTables
 
     def make_grpc_request(self, result_id, source_id) -> Any:
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.AsOfJoinTablesRequest(result_id=result_id,
+        return table_pb2.AjRajTablesRequest(result_id=result_id,
                                                left_id=left_id,
                                                right_id=right_id,
-                                               columns_to_match=self.keys,
-                                               columns_to_add=self.columns_to_add,
-                                               as_of_match_rule=self.match_rule.value)
+                                               exact_match_columns=self.keys[:-1],
+                                               as_of_column=self.keys[-1],
+                                               columns_to_add=self.columns_to_add)
 
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
-            as_of_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            aj=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
+class RajOp(TableOp):
+    def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = []):
+        self.table = table
+        self.keys = keys
+        self.columns_to_add = columns_to_add
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
+        return table_service_stub.RajTables
+
+    def make_grpc_request(self, result_id, source_id) -> Any:
+        left_id = source_id
+        right_id = table_pb2.TableReference(ticket=self.table.ticket)
+        return table_pb2.AjRajTablesRequest(result_id=result_id,
+                                            left_id=left_id,
+                                            right_id=right_id,
+                                            exact_match_columns=self.keys[:-1],
+                                            as_of_column=self.keys[-1],
+                                            columns_to_add=self.columns_to_add)
+
+    def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
+        return table_pb2.BatchTableRequest.Operation(
+            raj=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
 class FlattenOp(TableOp):
     @classmethod
