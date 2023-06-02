@@ -21,7 +21,6 @@ import io.deephaven.sql.Scope;
 import io.deephaven.sql.ScopeStaticImpl;
 import io.deephaven.sql.SqlAdapter;
 import io.deephaven.sql.TableInformation;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.HashMap;
@@ -106,9 +105,6 @@ public final class Sql {
 
     private static ColumnHeader<?> adapt(ColumnDefinition<?> columnDef) {
         if (columnDef.getComponentType() == null) {
-            if (DateTime.class.equals(columnDef.getDataType())) {
-                return ColumnHeader.ofInstant(columnDef.getName());
-            }
             return ColumnHeader.of(columnDef.getName(), columnDef.getDataType());
         }
         // SQLTODO(array-type)
