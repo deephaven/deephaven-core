@@ -633,21 +633,8 @@ public class ConstructSnapshot {
         if (tables.length == 0) {
             return Collections.emptyList();
         }
-
-        int refOffset = -1;
-        for (int ii = 0; ii < tables.length; ++ii) {
-            if (tables[ii].isRefreshing()) {
-                refOffset = ii;
-                break;
-            }
-        }
-        try (final SafeCloseable ignored = refOffset == -1 ? null
-                : ExecutionContext.getContext().withUpdateGraph(tables[refOffset].getUpdateGraph()).open()) {
-            // it's fine that we will check this first table twice
-            if (refOffset != -1) {
-                tables[refOffset].getUpdateGraph(tables);
-            }
-
+        final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(null, tables);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final List<InitialSnapshot> snapshots = new ArrayList<>();
 
             final NotificationObliviousMultipleSourceSnapshotControl snapshotControl =

@@ -11,10 +11,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.chunk.LongChunk;
@@ -105,8 +106,10 @@ public class SyncTableFilter {
             throw new IllegalArgumentException("No tables specified!");
         }
 
+        final Table[] engineTables = tables.stream().map(t -> t.table).toArray(Table[]::new);
+        final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(null, engineTables);
         if (tables.stream().anyMatch(t -> t.table.isRefreshing())) {
-            ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
+            updateGraph.checkInitiateSerialTableOperation();
         }
 
         // through the builder only
@@ -182,7 +185,7 @@ public class SyncTableFilter {
 
         @Override
         protected void process() {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = getUpdateGraph().clock().currentStep();
 
             for (int rr = 0; rr < recorders.size(); ++rr) {
                 final ListenerRecorder recorder = recorders.get(rr);
@@ -260,7 +263,7 @@ public class SyncTableFilter {
         protected void propagateErrorDownstream(
                 final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
             if (fromProcess) {
-                final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                final long currentStep = getUpdateGraph().clock().currentStep();
                 final Collection<BaseTable> resultsNeedingDelayedNotification = new ArrayList<>();
                 for (final QueryTable result : results) {
                     if (result.getLastNotificationStep() == currentStep) {

@@ -41,6 +41,9 @@ public class HashSetBackedTableFactory {
     private final int refreshIntervalMs;
     private long nextRefresh;
     private final Map<String, ColumnSource<?>> columns;
+
+    private final UpdateGraph updateGraph;
+
     private final TObjectLongMap<ArrayTuple> valueToIndexMap = new TObjectLongHashMap<>();
     private final TLongObjectMap<ArrayTuple> indexToValueMap = new TLongObjectHashMap<>();
 
@@ -61,6 +64,8 @@ public class HashSetBackedTableFactory {
         for (int ii = 0; ii < colNames.length; ++ii) {
             columns.put(colNames[ii], new ArrayTupleWrapperColumnSource(ii));
         }
+
+        updateGraph = ExecutionContext.getContext().getUpdateGraph();
     }
 
     /**
@@ -120,7 +125,7 @@ public class HashSetBackedTableFactory {
         indexToPreviousMap.put(index, vtiIt.key());
         vtiIt.remove();
 
-        indexToPreviousClock.put(index, ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
+        indexToPreviousClock.put(index, updateGraph.clock().currentStep());
 
         indexToValueMap.remove(index);
         removedBuilder.addKey(index);
@@ -139,9 +144,8 @@ public class HashSetBackedTableFactory {
         valueToIndexMap.put(value, newIndex);
         indexToValueMap.put(newIndex, value);
 
-        if (indexToPreviousClock.get(newIndex) != ExecutionContext.getContext().getUpdateGraph().clock()
-                .currentStep()) {
-            indexToPreviousClock.put(newIndex, ExecutionContext.getContext().getUpdateGraph().clock().currentStep());
+        if (indexToPreviousClock.get(newIndex) != updateGraph.clock().currentStep()) {
+            indexToPreviousClock.put(newIndex, updateGraph.clock().currentStep());
             indexToPreviousMap.put(newIndex, null);
         }
     }
@@ -215,8 +219,7 @@ public class HashSetBackedTableFactory {
         @Override
         public String getPrev(long rowKey) {
             synchronized (HashSetBackedTableFactory.this) {
-                if (indexToPreviousClock.get(rowKey) == ExecutionContext.getContext().getUpdateGraph().clock()
-                        .currentStep()) {
+                if (indexToPreviousClock.get(rowKey) == updateGraph.clock().currentStep()) {
                     ArrayTuple row = indexToPreviousMap.get(rowKey);
                     if (row == null)
                         return null;
