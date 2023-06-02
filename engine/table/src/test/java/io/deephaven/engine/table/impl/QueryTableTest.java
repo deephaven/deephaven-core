@@ -1726,7 +1726,7 @@ public class QueryTableTest extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         assertEquals(1, whereIn.size());
-        assertEquals(new Object[] {"B", 2}, whereIn.getRecord(0));
+        assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
 
         assertTrue(whereIn.tryRetainReference());
         whereIn.dropReference();
@@ -1740,8 +1740,8 @@ public class QueryTableTest extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         assertEquals(2, whereIn.size());
-        assertEquals(new Object[] {"B", 2}, whereIn.getRecord(0));
-        assertEquals(new Object[] {"D", 4}, whereIn.getRecord(1));
+        assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
+        assertEquals(new Object[] {"D", 4}, DataAccessHelpers.getRecord(whereIn, 1));
 
         // Everything is dropped after this, the singletonManager was holding everything.
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(singletonManager::release);

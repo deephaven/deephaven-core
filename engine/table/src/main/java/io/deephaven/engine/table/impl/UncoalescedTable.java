@@ -194,11 +194,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Object[] getRecord(long rowNo, String... columnNames) {
-        return coalesce().getRecord(rowNo, columnNames);
-    }
-
-    @Override
     @ConcurrentMethod
     public Table where(Filter filter) {
         return coalesce().where(filter);
