@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -86,7 +87,7 @@ public class JdbcToTableAdapter {
         private String replacement = "_";
         private int maxRows = -1;
         private boolean strict = true;
-        private TimeZone sourceTimeZone = TimeZone.getDefault();
+        private TimeZone sourceTimeZone = TimeZone.getTimeZone(DateTimeUtils.timeZone());
         private String arrayDelimiter = ",";
         private final Map<String, Class<?>> targetTypeMap = new HashMap<>();
 

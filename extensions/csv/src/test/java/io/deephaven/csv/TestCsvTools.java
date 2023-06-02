@@ -9,10 +9,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -27,8 +25,8 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.time.Instant;
+import java.util.List;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -59,7 +57,7 @@ public class TestCsvTools {
                 " Z, Dividend, 0.18, 500";
         Table tableDividends = CsvTools.readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
         Assert.assertEquals(3, tableDividends.size());
-        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(4, tableDividends.meta().size());
         Assert.assertEquals(0.15, tableDividends.getColumn(2).getDouble(1), 0.000001);
         Assert.assertEquals(300, tableDividends.getColumn(3).getInt(1));
         Assert.assertEquals("Z", tableDividends.getColumn(0).get(2));
@@ -74,7 +72,7 @@ public class TestCsvTools {
         Table tableDividends = CsvTools
                 .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
         Assert.assertEquals(3, tableDividends.size());
-        Assert.assertEquals(4, tableDividends.getMeta().size());
+        Assert.assertEquals(4, tableDividends.meta().size());
         Assert.assertEquals(0.15, tableDividends.getColumn(2).get(1));
         Assert.assertEquals(300, tableDividends.getColumn(3).get(1));
         Assert.assertEquals(" Z", tableDividends.getColumn(0).get(2));
@@ -201,56 +199,48 @@ public class TestCsvTools {
 
     @Test
     public void testWriteCsv() throws Exception {
-        File csvFile = new File(tmpDir, "tmp.csv");
-        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
-        long numCols = colNames.length;
-        Table tableToTest = new InMemoryTable(
+        final File csvFile = new File(tmpDir, "tmp.csv");
+        final String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
+        final long numCols = colNames.length;
+        final Table tableToTest = new InMemoryTable(
                 colNames,
                 new Object[] {
-                        new String[] {"key11", "key11", "key21", "key21", "key22"},
-                        new int[] {1, 2, 2, NULL_INT, 3},
-                        new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new DateTime[] {new DateTime(100), new DateTime(10000), null,
-                                new DateTime(100000), new DateTime(1000000)}
-                });;
-        long numRows = tableToTest.size();
+                        new String[] {
+                                "key11", "key11", "key21", "key21", "key22", null, "ABCDEFGHIJK", "\"", "123",
+                                "456", "789", ",", "8"
+                        },
+                        new int[] {
+                                1, 2, 2, NULL_INT, 3, -99, -100, Integer.MIN_VALUE + 1, Integer.MAX_VALUE,
+                                5, 6, 7, 8
+                        },
+                        new double[] {
+                                2.342, 0.0932, 10000000, NULL_DOUBLE, 3, Double.MIN_VALUE, Double.MAX_VALUE,
+                                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, -1.00, 0.0, -0.001, Double.NaN
+                        },
+                        new Instant[] {
+                                DateTimeUtils.epochNanosToInstant(100),
+                                DateTimeUtils.epochNanosToInstant(10000),
+                                null,
+                                DateTimeUtils.epochNanosToInstant(100000),
+                                DateTimeUtils.epochNanosToInstant(1000000),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-05:00")
+                        }
+                });
 
-        String allSeparators = ",|\tzZ- €9@";
-        for (char separator : allSeparators.toCharArray()) {
-            String separatorStr = String.valueOf(separator);
-
-            // Ignore separators in double quotes using this regex
-            String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
-
-            CsvTools.writeCsv(tableToTest, csvFile.getPath(), false, TimeZone.TZ_DEFAULT, false, separator, colNames);
-            Scanner csvReader = new Scanner(csvFile);
-
-            // Check header
-            String header = csvReader.nextLine();
-            String[] headerLine = header.split(splitterPattern);
-            Assert.assertArrayEquals(colNames, headerLine);
-
-            // Check rest of values
-            for (int i = 0; i < numRows; i++) {
-                Assert.assertTrue(csvReader.hasNextLine());
-                String rawLine = csvReader.nextLine();
-                String[] csvLine = rawLine.split(splitterPattern);
-                Assert.assertEquals(numCols, csvLine.length);
-
-                // Use separatorCsvEscape and compare the values
-                for (int j = 0; j < numCols; j++) {
-                    String valFromTable = tableToTest.getColumn(colNames[j]).get(i) == null
-                            ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
-                            : CsvTools.separatorCsvEscape(tableToTest.getColumn(colNames[j]).get(i).toString(),
-                                    separatorStr);
-
-                    Assert.assertEquals(valFromTable, csvLine[j]);
-                }
-
-            }
-
-            // Check we exhausted the file
-            Assert.assertFalse(csvReader.hasNextLine());
+        final String allSeparators = ",|\tzZ- 9@";
+        for (final char separator : allSeparators.toCharArray()) {
+            CsvTools.writeCsv(
+                    tableToTest, csvFile.getPath(), false, DateTimeUtils.timeZone(), false, separator, colNames);
+            final Table result = CsvTools.readCsv(csvFile.getPath(),
+                    CsvSpecs.builder().delimiter(separator).nullValueLiterals(List.of("(null)")).build());
+            TstUtils.assertTableEquals(tableToTest, result);
         }
     }
 }

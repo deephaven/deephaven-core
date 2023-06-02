@@ -10,11 +10,12 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -116,7 +117,7 @@ public class BarragePerformanceLog {
     }
 
     public static class SnapshotMetricsHelper implements WriteMetricsConsumer {
-        private final DateTime requestTm = DateTime.now();
+        private final Instant requestTm = DateTimeUtils.now();
         public String tableId;
         public String tableKey;
         public long queueNanos;

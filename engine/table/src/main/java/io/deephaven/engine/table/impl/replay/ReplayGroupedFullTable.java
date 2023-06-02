@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.time.DateTimeUtils;
 
 import java.util.Map;
 
@@ -34,7 +35,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         }
         RowSetBuilderRandom rowSetBuilder = RowSetFactory.builderRandom();
         while (!allIterators.isEmpty()
-                && allIterators.peek().lastTime.getNanos() < replayer.clock().currentTimeNanos()) {
+                && DateTimeUtils.epochNanos(allIterators.peek().lastTime) < replayer.clock().currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             final long key = redirIndexSize++;
             rowRedirection.put(key, currentIt.lastIndex);

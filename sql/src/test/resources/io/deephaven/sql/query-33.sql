@@ -1,0 +1,1 @@
+SELECT * FROM books LIMIT 42

@@ -21,13 +21,14 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.jdbc.util.ArrayParser;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.sql.Date;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
@@ -115,8 +116,8 @@ public class JdbcTypeMapper {
      *
      * <p>
      * Note that more than one type mapping is possible for each SQL type - a DATE might be converted to either a
-     * LocalDate or a DateTime for example. And the same is true for the target type - a DateTime might be sourced from
-     * a SQL DATE or TIMESTAMP value.
+     * LocalDate oran Instant for example. And the same is true for the target type -an Instant might be sourced from a
+     * SQL DATE or TIMESTAMP value.
      * </p>
      *
      * <p>
@@ -128,17 +129,16 @@ public class JdbcTypeMapper {
      * </p>
      *
      * <p>
-     * DateTime values have a different problem - SQL and Deephaven DateTime values are conceptually different.
-     * TIMESTAMP columns in SQL databases typically do not store timezone information. They are equivalent to a java
-     * LocalDateTime in this respect. However, Deephaven usually stores timestamps in DateTime columns, internally
-     * represented as nanos-since-the-epoch. This means JDBC timestamps usually require the "context" of a timezone in
-     * order to be converted to a DateTime properly. Writing a DateTime to a JDBC datasource (via the bind mechanism)
-     * has the same issue. Unfortunately this time-zone context issue applies even when mapping JDBC DATETIME values
-     * "directly" to LocalDate, because most JDBC drivers require all Date related values to pass through a
-     * java.sql.Date object, which is also epoch-based, not "local". The latest JDBC standard deals with this problem
-     * but doesn't seem to be widely implemented. Here we handle this problem by passing a "Context" object every time a
-     * conversion occurs, which contains the timezone to be used when extracting or binding JDBC date or timestamp
-     * values.
+     * Instant values have a different problem - SQL and Deephaven Instant values are conceptually different. TIMESTAMP
+     * columns in SQL databases typically do not store timezone information. They are equivalent to a java LocalDateTime
+     * in this respect. However, Deephaven usually stores timestamps in Instant columns, internally represented as
+     * nanos-since-the-epoch. This means JDBC timestamps usually require the "context" of a timezone in order to be
+     * converted toan Instant properly. Writingan Instant to a JDBC datasource (via the bind mechanism) has the same
+     * issue. Unfortunately this time-zone context issue applies even when mapping JDBC DATETIME values "directly" to
+     * LocalDate, because most JDBC drivers require all Date related values to pass through a java.sql.Date object,
+     * which is also epoch-based, not "local". The latest JDBC standard deals with this problem but doesn't seem to be
+     * widely implemented. Here we handle this problem by passing a "Context" object every time a conversion occurs,
+     * which contains the timezone to be used when extracting or binding JDBC date or timestamp values.
      * </p>
      *
      * @param <T> the Deephaven column type this mapping handles
@@ -713,59 +713,63 @@ public class JdbcTypeMapper {
         }
     }
 
-    public static class DateDateTimeDataTypeMapping extends DataTypeMapping<DateTime> {
-        DateDateTimeDataTypeMapping() {
-            super(Types.DATE, DateTime.class, java.sql.Date.class);
+    public static class DateInstantDataTypeMapping extends DataTypeMapping<Instant> {
+        DateInstantDataTypeMapping() {
+            super(Types.DATE, Instant.class, java.sql.Date.class);
         }
 
         @Override
         public void bindToChunk(
                 WritableChunk<Values> destChunk, int destOffset,
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException {
-            final WritableObjectChunk<DateTime, Values> objectChunk = destChunk.asWritableObjectChunk();
+            final WritableObjectChunk<Instant, Values> objectChunk = destChunk.asWritableObjectChunk();
             final java.sql.Date date = resultSet.getDate(columnIndex, context.getSourceCalendar());
-            objectChunk.set(destOffset, date == null ? null : new DateTime(date.getTime() * MILLIS_TO_NANOS));
+            objectChunk.set(destOffset, date == null
+                    ? null
+                    : DateTimeUtils.epochMillisToInstant(date.getTime()));
         }
 
         @Override
         public void bindFromChunk(Chunk<Values> srcChunk, int srcOffset, PreparedStatement stmt, int parameterIndex,
                 Context context) throws SQLException {
-            final ObjectChunk<DateTime, Values> objectChunk = srcChunk.asObjectChunk();
-            final DateTime value = objectChunk.get(srcOffset);
+            final ObjectChunk<Instant, Values> objectChunk = srcChunk.asObjectChunk();
+            final Instant value = objectChunk.get(srcOffset);
             if (value == null) {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
-                stmt.setDate(parameterIndex, new Date(value.getMillis()), context.getSourceCalendar());
+                stmt.setDate(parameterIndex, new Date(value.toEpochMilli()), context.getSourceCalendar());
             }
         }
     }
 
-    public static class TimestampDateTimeDataTypeMapping extends DataTypeMapping<DateTime> {
-        TimestampDateTimeDataTypeMapping(int sqlType) {
-            super(sqlType, DateTime.class, java.sql.Timestamp.class);
+    public static class TimestampInstantDataTypeMapping extends DataTypeMapping<Instant> {
+        TimestampInstantDataTypeMapping(int sqlType) {
+            super(sqlType, Instant.class, java.sql.Timestamp.class);
         }
 
         @Override
         public void bindToChunk(
                 WritableChunk<Values> destChunk, int destOffset,
                 ResultSet resultSet, int columnIndex, Context context) throws SQLException {
-            final WritableObjectChunk<DateTime, Values> objectChunk = destChunk.asWritableObjectChunk();
+            final WritableObjectChunk<Instant, Values> objectChunk = destChunk.asWritableObjectChunk();
             final java.sql.Timestamp timestamp = resultSet.getTimestamp(columnIndex, context.getSourceCalendar());
-            objectChunk.set(destOffset, timestamp == null ? null
-                    : new DateTime(timestamp.getTime() * MILLIS_TO_NANOS + timestamp.getNanos() % 1_000_000));
+            objectChunk.set(destOffset, timestamp == null
+                    ? null
+                    : DateTimeUtils.epochNanosToInstant(
+                            timestamp.getTime() * MILLIS_TO_NANOS + timestamp.getNanos() % 1_000_000));
         }
 
         @Override
         public void bindFromChunk(
                 Chunk<Values> srcChunk, int srcOffset,
                 PreparedStatement stmt, int parameterIndex, Context context) throws SQLException {
-            final ObjectChunk<DateTime, Values> objectChunk = srcChunk.asObjectChunk();
-            final DateTime value = objectChunk.get(srcOffset);
+            final ObjectChunk<Instant, Values> objectChunk = srcChunk.asObjectChunk();
+            final Instant value = objectChunk.get(srcOffset);
             if (value == null) {
                 stmt.setNull(parameterIndex, sqlType);
             } else {
-                final Timestamp ts = new Timestamp(value.getMillis());
-                ts.setNanos((int) (value.getNanos() % 1_000_000_000L));
+                final Timestamp ts = new Timestamp(value.toEpochMilli());
+                ts.setNanos((int) (DateTimeUtils.epochNanos(value) % 1_000_000_000L));
                 stmt.setTimestamp(parameterIndex, ts, context.getSourceCalendar());
             }
         }
@@ -1002,21 +1006,21 @@ public class JdbcTypeMapper {
                 Map.entry(Types.BLOB, new MappingCollection(byte[].class, new ByteArrayDataTypeMapping(Types.BLOB))),
                 Map.entry(Types.DATE, MappingCollection.builder(LocalDate.class)
                         .mapping(LocalDate.class, new DateLocalDateDataTypeMapping())
-                        .mapping(DateTime.class, new DateDateTimeDataTypeMapping())
+                        .mapping(Instant.class, new DateInstantDataTypeMapping())
                         // provides the option to treat a DATE column as a String
                         .mapping(String.class, new StringDataTypeMapping(Types.DATE))
                         .build()),
 
                 // TODO: map to LocalDateTime?
-                Map.entry(Types.TIMESTAMP, MappingCollection.builder(DateTime.class)
-                        .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP))
+                Map.entry(Types.TIMESTAMP, MappingCollection.builder(Instant.class)
+                        .mapping(Instant.class, new TimestampInstantDataTypeMapping(Types.TIMESTAMP))
                         // provides the option to treat a TIMESTAMP column as a String
                         .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP))
                         .build()),
 
                 // TODO: map to OffsetDateTime?
-                Map.entry(Types.TIMESTAMP_WITH_TIMEZONE, MappingCollection.builder(DateTime.class)
-                        .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
+                Map.entry(Types.TIMESTAMP_WITH_TIMEZONE, MappingCollection.builder(Instant.class)
+                        .mapping(Instant.class, new TimestampInstantDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
                         // provides the option to treat a TIMESTAMP_WITH_TIMEZONE column as a String
                         .mapping(String.class, new StringDataTypeMapping(Types.TIMESTAMP_WITH_TIMEZONE))
                         .build()),
@@ -1051,8 +1055,8 @@ public class JdbcTypeMapper {
         try {
             // special DATETIMEOFFSET type for SQL Server
             final Map<Integer, MappingCollection> sqlServerMap = new HashMap<>();
-            sqlServerMap.put(SqlServerTypes.DATETIMEOFFSET, MappingCollection.builder(DateTime.class)
-                    .mapping(DateTime.class, new TimestampDateTimeDataTypeMapping(SqlServerTypes.DATETIMEOFFSET))
+            sqlServerMap.put(SqlServerTypes.DATETIMEOFFSET, MappingCollection.builder(Instant.class)
+                    .mapping(Instant.class, new TimestampInstantDataTypeMapping(SqlServerTypes.DATETIMEOFFSET))
                     .build());
 
             driverSpecificDataTypeMappings.put(

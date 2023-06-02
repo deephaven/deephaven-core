@@ -1,0 +1,11 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':engine-api')
+    implementation project(':engine-table')
+    implementation project(':sql')
+    implementation project(':log-factory')
+}

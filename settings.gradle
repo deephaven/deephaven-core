@@ -213,6 +213,9 @@ project(':engine-test-utils').projectDir = file('engine/test-utils')
 include(':engine-query-constants')
 project(':engine-query-constants').projectDir = file('engine/query-constants')
 
+include(':engine-sql')
+project(':engine-sql').projectDir = file('engine/sql')
+
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
 
@@ -373,6 +376,8 @@ include(':authentication:example-providers:oidc')
 
 include ':clock'
 include ':clock-impl'
+
+include ':sql'
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

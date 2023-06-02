@@ -23,6 +23,11 @@ public abstract class BooleanType extends PrimitiveTypeBase<Boolean> {
     }
 
     @Override
+    public final Class<Boolean> boxedClass() {
+        return Boolean.class;
+    }
+
+    @Override
     public final NativeArrayType<boolean[], Boolean> arrayType() {
         return NativeArrayType.of(boolean[].class, this);
     }

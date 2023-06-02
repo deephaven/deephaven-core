@@ -9,7 +9,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.sources.immutable.Immutable2DCharArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -37,7 +36,7 @@ public interface InMemoryColumnSource {
 
     /**
      * Create an immutable in-memory column source that is capable of holding longSize elements.
-     *
+     * <p>
      * Note, that the backing array may not be allocated after this call; you still must call
      * {@link WritableColumnSource#ensureCapacity(long)}.
      *
@@ -75,8 +74,6 @@ public interface InMemoryColumnSource {
             result = new ImmutableLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
             result = new ImmutableShortArraySource();
-        } else if (dataType == DateTime.class) {
-            result = new ImmutableDateTimeArraySource();
         } else if (dataType == Instant.class) {
             result = new ImmutableInstantArraySource();
         } else {
@@ -106,8 +103,6 @@ public interface InMemoryColumnSource {
             result = new Immutable2DLongArraySource();
         } else if (dataType == short.class || dataType == Short.class) {
             result = new Immutable2DShortArraySource();
-        } else if (dataType == DateTime.class) {
-            result = new Immutable2DDateTimeArraySource();
         } else if (dataType == Instant.class) {
             result = new Immutable2DInstantArraySource();
         } else {
@@ -140,10 +135,8 @@ public interface InMemoryColumnSource {
             result = new ImmutableConstantLongSource(TypeUtils.unbox((Long) value));
         } else if (dataType == short.class || dataType == Short.class) {
             result = new ImmutableConstantShortSource(TypeUtils.unbox((Short) value));
-        } else if (dataType == DateTime.class) {
-            result = new ImmutableConstantDateTimeSource(DateTimeUtils.nanos((DateTime) value));
         } else if (dataType == Instant.class) {
-            result = new ImmutableConstantInstantSource(DateTimeUtils.nanos((DateTime) value));
+            result = new ImmutableConstantInstantSource(DateTimeUtils.epochNanos((Instant) value));
         } else {
             result = new ImmutableConstantObjectSource<>(dataType, componentType, value);
         }
@@ -170,7 +163,7 @@ public interface InMemoryColumnSource {
     /**
      * Wrap the input array in an immutable {@link ColumnSource}. This method will unbox any boxed values, and directly
      * use the result array. This version allows the user to specify the column data type. It will automatically map
-     * column type Boolean/boolean with input array types byte[] and columnType DateTime / array type long[].
+     * column type Boolean/boolean with input array types byte[] and columnType Instant / array type long[].
      *
      * @param dataArray The array to turn into a ColumnSource
      * @param dataType the data type of the resultant column source
@@ -221,8 +214,6 @@ public interface InMemoryColumnSource {
             result = new ImmutableLongArraySource(ArrayTypeUtils.getUnboxedArray((Long[]) dataArray));
         } else if (dataType == Short.class) {
             result = new ImmutableShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
-        } else if (dataType == DateTime.class && dataArray instanceof long[]) {
-            result = new ImmutableDateTimeArraySource((long[]) dataArray);
         } else if (dataType == Instant.class && dataArray instanceof long[]) {
             result = new ImmutableInstantArraySource((long[]) dataArray);
         } else {

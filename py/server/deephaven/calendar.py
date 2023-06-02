@@ -10,7 +10,7 @@ from typing import List
 import jpy
 
 from deephaven._wrapper import JObjectWrapper
-from deephaven.time import TimeZone, DateTime
+from deephaven.time import TimeZone, Instant
 
 from deephaven import DHError
 
@@ -83,12 +83,12 @@ class BusinessPeriod(JObjectWrapper):
         return self.j_business_period
 
     @property
-    def start_time(self) -> DateTime:
+    def start_time(self) -> Instant:
         """ The start of the period. """
         return self.j_business_period.getStartTime()
 
     @property
-    def end_time(self) -> DateTime:
+    def end_time(self) -> Instant:
         """ The end of the period. """
         return self.j_business_period.getEndTime()
 
@@ -123,12 +123,12 @@ class BusinessSchedule(JObjectWrapper):
         return periods
 
     @property
-    def start_of_day(self) -> DateTime:
+    def start_of_day(self) -> Instant:
         """ The start of the business day. """
         return self.j_business_schedule.getStartOfBusinessDay()
 
     @property
-    def end_of_day(self) -> DateTime:
+    def end_of_day(self) -> Instant:
         """ The end of the business day. """
         return self.j_business_schedule.getEndOfBusinessDay()
 
@@ -140,23 +140,23 @@ class BusinessSchedule(JObjectWrapper):
         """
         return self.j_business_schedule.isBusinessDay()
 
-    def is_business_time(self, time: DateTime) -> bool:
+    def is_business_time(self, time: Instant) -> bool:
         """ Whether the specified time is a business time for the day.
 
         Args:
-             time (DateTime): the time during the day
+             time (Instant): the time during the day
 
         Return:
             bool
         """
         return self.j_business_schedule.isBusinessTime(time)
 
-    def business_time_elapsed(self, time: DateTime) -> int:
+    def business_time_elapsed(self, time: Instant) -> int:
         """ Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified
         time.
 
         Args:
-            time (DateTime): the time during the day
+            time (Instant): the time during the day
 
         Returns:
             int
@@ -179,7 +179,7 @@ class Calendar(JObjectWrapper):
     @property
     def time_zone(self) -> TimeZone:
         """ Returns the timezone of the calendar. """
-        return TimeZone(self.j_calendar.timeZone())
+        return self.j_calendar.timeZone()
 
     def previous_day(self, date: str) -> str:
         """ Gets the day prior to the given date.

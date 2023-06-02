@@ -1,5 +1,6 @@
 package io.deephaven.clientsupport.gotorow;
 
+import java.time.Instant;
 import java.util.function.Function;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -12,7 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 
 import java.util.Random;
 
@@ -112,10 +113,10 @@ public class SeekRow implements Function<Table, Long> {
                 log.info().append("Using numerical distance (").appendDouble(dl).append(", ").appendDouble(du)
                         .append(")").endl();
                 return index.find(du < dl ? closestUpperRowYet : closestLowerRowYet);
-            } else if (DateTime.class.isAssignableFrom(columnType)) {
-                long nu = ((DateTime) closestUpperValueYet).getNanos();
-                long nl = ((DateTime) closestLowerValueYet).getNanos();
-                long ns = ((DateTime) seekValue).getNanos();
+            } else if (Instant.class.isAssignableFrom(columnType)) {
+                long nu = DateTimeUtils.epochNanos(((Instant) closestUpperValueYet));
+                long nl = DateTimeUtils.epochNanos(((Instant) closestLowerValueYet));
+                long ns = DateTimeUtils.epochNanos(((Instant) seekValue));
                 long du = Math.abs(nu - ns);
                 long dl = Math.abs(nl - ns);
                 log.info().append("Using nano distance (").append(dl).append(", ").append(du).append(")").endl();

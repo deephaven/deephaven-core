@@ -1,0 +1,13 @@
+digraph {
+"op_0" ["label"="newTable(5, TableHeader{headers={olympiad=io.deephaven.qst.type.IntType, host_city=io.deephaven.qst.type.StringType}})"]
+"op_1" ["label"="newTable(3, TableHeader{headers={host_city=io.deephaven.qst.type.StringType, country_name=io.deephaven.qst.type.StringType}})"]
+"op_2" ["label"="view(__p_0_0=olympiad,__p_0_1=host_city)"]
+"op_3" ["label"="view(__p_0_2=host_city,__p_0_3=country_name)"]
+"op_4" ["label"="join([__p_0_1==__p_0_2],[])"]
+"op_5" ["label"="view(olympiad=__p_0_0,host_city=__p_0_1,country_name=__p_0_3)"]
+"op_2" -> "op_0"
+"op_3" -> "op_1"
+"op_4" -> "op_2" ["label"="left"]
+"op_4" -> "op_3" ["label"="right"]
+"op_5" -> "op_4"
+}

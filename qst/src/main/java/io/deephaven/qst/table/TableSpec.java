@@ -113,8 +113,6 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
 
         void visit(AsOfJoinTable aj);
 
-        void visit(ReverseAsOfJoinTable raj);
-
         void visit(RangeJoinTable rangeJoinTable);
 
         void visit(ViewTable viewTable);

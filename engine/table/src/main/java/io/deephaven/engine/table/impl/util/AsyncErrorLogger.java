@@ -6,19 +6,19 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
-import io.deephaven.time.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.RowSetter;
 
 import java.io.IOException;
+import java.time.Instant;
 
 @SuppressWarnings("unchecked")
 public class AsyncErrorLogger {
 
     private static final DynamicTableWriter tableWriter = new DynamicTableWriter(
             TableHeader.of(
-                    ColumnHeader.of("Time", DateTime.class),
+                    ColumnHeader.of("Time", Instant.class),
                     ColumnHeader.ofInt("EvaluationNumber"),
                     ColumnHeader.ofInt("OperationNumber"),
                     ColumnHeader.ofString("Description"),
@@ -28,7 +28,7 @@ public class AsyncErrorLogger {
                     ColumnHeader.of("Cause", Exception.class),
                     ColumnHeader.ofString("WorkerName"),
                     ColumnHeader.ofString("HostName")));
-    private static final RowSetter<DateTime> timeSetter = tableWriter.getSetter("Time");
+    private static final RowSetter<Instant> timeSetter = tableWriter.getSetter("Time");
     private static final RowSetter<Integer> evaluationNumberSetter = tableWriter.getSetter("EvaluationNumber");
     private static final RowSetter<Integer> operationNumberSetter = tableWriter.getSetter("OperationNumber");
     private static final RowSetter<String> descriptionSetter = tableWriter.getSetter("Description");
@@ -45,7 +45,7 @@ public class AsyncErrorLogger {
         return tableWriter.getTable();
     }
 
-    public static void log(DateTime time, TableListener.Entry entry,
+    public static void log(Instant time, TableListener.Entry entry,
             TableListener.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
         if (entry instanceof PerformanceEntry) {

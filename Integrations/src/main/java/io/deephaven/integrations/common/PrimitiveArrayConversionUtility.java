@@ -3,9 +3,10 @@
  */
 package io.deephaven.integrations.common;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
+
+import java.time.Instant;
 
 /**
  * General purpose helper methods for array conversion methods from specific object types to/from primitive types. This
@@ -44,31 +45,31 @@ public class PrimitiveArrayConversionUtility {
     }
 
     /**
-     * Translates a DateTime array to a long array. The mapping will be performed according to
-     * {@link DateTimeUtils#nanos(DateTime)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
+     * Translates an Instant array to a long array. The mapping will be performed according to
+     * {@link DateTimeUtils#epochNanos(Instant)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
      *
-     * @param array - the DateTime array
+     * @param array - the Instant array
      * @return the corresponding long array
      */
-    public static long[] translateArrayDateTimeToLong(final DateTime[] array) {
+    public static long[] translateArrayInstantToLong(final Instant[] array) {
         final long[] out = new long[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtils.nanos(array[ai]);
+            out[ai] = DateTimeUtils.epochNanos(array[ai]);
         }
         return out;
     }
 
     /**
-     * Translates a long array to a DateTime array. The mapping will be performed according to
-     * {@link DateTimeUtils#nanosToTime(long)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
+     * Translates a long array to an Instant array. The mapping will be performed according to
+     * {@link DateTimeUtils#epochNanosToInstant(long)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
      *
      * @param array - the long array
      * @return the corresponding DateTime array
      */
-    public static DateTime[] translateArrayLongToDateTime(final long[] array) {
-        final DateTime[] out = new DateTime[array.length];
+    public static Instant[] translateArrayLongToInstant(final long[] array) {
+        final Instant[] out = new Instant[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtils.nanosToTime(array[ai]);
+            out[ai] = DateTimeUtils.epochNanosToInstant(array[ai]);
         }
         return out;
     }

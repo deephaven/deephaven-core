@@ -9,7 +9,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
@@ -28,7 +28,7 @@ public class FormulaAnalyzer {
 
     public static Result analyze(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            final DateTimeUtils.Result timeConversionResult,
+            final TimeLiteralReplacedExpression timeConversionResult,
             final QueryLanguageParser.Result queryLanguageResult) throws Exception {
         final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
@@ -74,7 +74,7 @@ public class FormulaAnalyzer {
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-            DateTimeUtils.Result timeConversionResult) throws Exception {
+            TimeLiteralReplacedExpression timeConversionResult) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);

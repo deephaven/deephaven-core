@@ -14,6 +14,7 @@ from deephaven import empty_table, dtypes, new_table
 from deephaven.column import InputColumn
 from deephaven.parquet import write, batch_write, read, delete, ColumnInstruction
 from deephaven.table import Table
+from deephaven.time import epoch_nanos_to_instant
 
 from tests.testbase import BaseTestCase
 
@@ -165,7 +166,7 @@ class ParquetTestCase(BaseTestCase):
             "someByteColumn = (byte)i",
             "someCharColumn = (char)i",
             # TODO(deephaven-core#3151) pyarrow indicates this value is out of the allowed range
-            # "someTime = DateTime.now() + i",
+            # "someTime = DateTimeUtils.now() + i",
             "someKey = `` + (int)(i /100)",
             "nullKey = i < -1?`123`:null",
             "nullIntColumn = (int)null",
@@ -176,7 +177,7 @@ class ParquetTestCase(BaseTestCase):
             "nullShortColumn = (short)null",
             "nullByteColumn = (byte)null",
             "nullCharColumn = (char)null",
-            "nullTime = (DateTime)null",
+            "nullTime = (Instant)null",
             "nullString = (String)null",
             # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
             # "nullBigDecColumn = (java.math.BigDecimal)null",

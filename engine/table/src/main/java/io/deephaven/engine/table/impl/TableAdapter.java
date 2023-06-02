@@ -1,11 +1,10 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.AsOfJoinRule;
+import io.deephaven.api.AsOfJoinMatch;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
-import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
@@ -229,11 +228,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table slice(long firstPositionInclusive, long lastPositionExclusive) {
         return throwUnsupported();
     }
@@ -255,14 +249,8 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+    default Table asOfJoin(Table rightTable, Collection<? extends JoinMatch> exactMatches, AsOfJoinMatch asOfMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 

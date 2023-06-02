@@ -51,7 +51,7 @@ t = tt.newTable(tt.col("USym", ["A", "B", "A", "B", "A", "B"]),
                 tt.doubleCol("Open", doubles), tt.doubleCol("High", doubles),
                 tt.doubleCol("Low", doubles), tt.doubleCol("Close", doubles))
 
-t = t.updateView("Time = new DateTime(time + (MINUTE * i))")
+t = t.updateView("Time = DateTimeUtils.epochNanosToInstant(time + (MINUTE * i))")
 
 ohlc = plt.ohlcPlot("Test1", t, "Time", "Open", "High", "Low", "Close")
 

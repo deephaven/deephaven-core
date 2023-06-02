@@ -49,7 +49,7 @@ class CalendarTestCase(BaseTestCase):
         self.assertIsNotNone(default_calendar.previous_day(current_date))
         self.assertIsNotNone(default_calendar.next_day(current_date))
         self.assertIsNotNone(default_calendar.day_of_week(current_date).name)
-        self.assertEqual(default_calendar.time_zone, get_server_timezone())
+        self.assertEqual(default_calendar.time_zone, time.time_zone("America/New_York"))
 
         self.assertEqual(self.test_calendar.previous_day(self.b_day), self.prev_b_day)
         self.assertEqual(self.test_calendar.next_day(self.b_day), self.next_b_day)
@@ -66,10 +66,10 @@ class CalendarTestCase(BaseTestCase):
         b_periods = self.test_calendar.business_schedule(self.b_day1).business_periods
         self.assertEqual(len(b_periods), 1)
         p = b_periods[0]
-        s = time.format_datetime(p.start_time, time.TimeZone.NY)
-        self.assertEqual(p.start_time, time.to_datetime(s))
-        s = time.format_datetime(p.end_time, time.TimeZone.NY)
-        self.assertEqual(p.end_time, time.to_datetime(s))
+        s = time.format_datetime(p.start_time, time.time_zone('America/New_York'))
+        self.assertEqual(p.start_time, time.parse_instant(s))
+        s = time.format_datetime(p.end_time, time.time_zone('America/New_York'))
+        self.assertEqual(p.end_time, time.parse_instant(s))
         self.assertEqual(p.length, 6.5 * 60 * 60 * 10 ** 9)
 
     def test_business_schedule_business_day(self):
@@ -85,14 +85,14 @@ class CalendarTestCase(BaseTestCase):
 
         self.assertTrue(b_schedule.is_business_time(b_period.start_time))
         self.assertTrue(b_schedule.is_business_time(b_period.end_time))
-        non_b_time = time.minus_nanos(b_schedule.start_of_day, 1)
+        non_b_time = time.minus_period(b_schedule.start_of_day, 1)
         self.assertFalse(b_schedule.is_business_time(non_b_time))
-        non_b_time = time.plus_nanos(b_schedule.end_of_day, 1)
+        non_b_time = time.plus_period(b_schedule.end_of_day, 1)
         self.assertFalse(b_schedule.is_business_time(non_b_time))
 
-        b_time = time.plus_nanos(b_schedule.start_of_day, 10 * 10 ** 9)
+        b_time = time.plus_period(b_schedule.start_of_day, 10 * 10 ** 9)
         self.assertEqual(10 * 10 ** 9, b_schedule.business_time_elapsed(b_time))
-        b_time = time.plus_nanos(b_schedule.end_of_day, 10 * 10 ** 9)
+        b_time = time.plus_period(b_schedule.end_of_day, 10 * 10 ** 9)
         self.assertEqual(b_period.length, b_schedule.business_time_elapsed(b_time))
 
     def test_business_calendar(self):

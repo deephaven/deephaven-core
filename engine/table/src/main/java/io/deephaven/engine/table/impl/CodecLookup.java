@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;
@@ -18,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Externalizable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 
 /**
  * Utility class to concentrate {@link ObjectCodec} lookups.
@@ -71,7 +71,7 @@ public class CodecLookup {
 
     private static boolean noCodecRequired(@NotNull final Class<?> dataType) {
         return dataType == Boolean.class ||
-                dataType == DateTime.class ||
+                dataType == Instant.class ||
                 dataType == String.class ||
                 // A BigDecimal column maps to a logical type of decimal, with
                 // appropriate precision and scale calculated from column data,

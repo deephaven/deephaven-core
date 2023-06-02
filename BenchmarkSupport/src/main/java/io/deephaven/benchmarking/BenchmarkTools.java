@@ -3,13 +3,11 @@
  */
 package io.deephaven.benchmarking;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.benchmarking.generator.*;
 import io.deephaven.benchmarking.impl.PersistentBenchmarkTableBuilder;
@@ -18,6 +16,7 @@ import io.deephaven.benchmarking.impl.TableBackedBenchmarkTableBuilder;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -147,24 +146,24 @@ public class BenchmarkTools {
 
     /**
      * @param name The name of the column
-     * @return a {@link ColumnGenerator< DateTime >} for use with
+     * @return a {@link ColumnGenerator< Instant >} for use with
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<DateTime> dateCol(String name) {
-        return new DateColumnGenerator(name);
+    public static ColumnGenerator<Instant> instantCol(String name) {
+        return new InstantColumnGenerator(name);
     }
 
     /**
      * @param name The name of the column
      * @param min the minimum value
      * @param max the maximum value
-     * @return a {@link ColumnGenerator< DateTime >} for use with
+     * @return a {@link ColumnGenerator< Instant >} for use with
      *         {@link BenchmarkTableBuilder#addColumn(ColumnGenerator)}
      */
     @ScriptApi
-    public static ColumnGenerator<DateTime> dateCol(String name, DateTime min, DateTime max) {
-        return new DateColumnGenerator(name, min, max);
+    public static ColumnGenerator<Instant> instantCol(String name, Instant min, Instant max) {
+        return new InstantColumnGenerator(name, min, max);
     }
 
     /**

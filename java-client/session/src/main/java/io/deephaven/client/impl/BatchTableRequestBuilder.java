@@ -9,7 +9,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RawString;
-import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
@@ -27,13 +26,13 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.literal.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -51,7 +50,6 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -59,7 +57,6 @@ import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
-import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -94,7 +91,6 @@ import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
@@ -374,39 +370,19 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(AsOfJoinTable aj) {
-            AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
+        public void visit(AsOfJoinTable asOfJoin) {
+            AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                     .setResultId(ticket)
-                    .setLeftId(ref(aj.left()))
-                    .setRightId(ref(aj.right()))
-                    .setAsOfMatchRule(aj.rule() == AsOfJoinRule.LESS_THAN_EQUAL
-                            ? AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
-                            : AsOfJoinTablesRequest.MatchRule.LESS_THAN);
-            for (JoinMatch match : aj.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
+                    .setLeftId(ref(asOfJoin.left()))
+                    .setRightId(ref(asOfJoin.right()));
+            for (JoinMatch match : asOfJoin.matches()) {
+                builder.addExactMatchColumns(Strings.of(match));
             }
-            for (JoinAddition addition : aj.additions()) {
+            builder.setAsOfColumn(asOfJoin.joinMatch().toRpcString());
+            for (JoinAddition addition : asOfJoin.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setAsOfJoin, builder.build());
-        }
-
-        @Override
-        public void visit(ReverseAsOfJoinTable raj) {
-            AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
-                    .setResultId(ticket)
-                    .setLeftId(ref(raj.left()))
-                    .setRightId(ref(raj.right()))
-                    .setAsOfMatchRule(raj.rule() == ReverseAsOfJoinRule.GREATER_THAN_EQUAL
-                            ? AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL
-                            : AsOfJoinTablesRequest.MatchRule.GREATER_THAN);
-            for (JoinMatch match : raj.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
-            }
-            for (JoinAddition addition : raj.additions()) {
-                builder.addColumnsToAdd(Strings.of(addition));
-            }
-            out = op(Builder::setAsOfJoin, builder.build());
+            out = op(asOfJoin.isAj() ? Builder::setAj : Builder::setRaj, builder.build());
         }
 
         @Override

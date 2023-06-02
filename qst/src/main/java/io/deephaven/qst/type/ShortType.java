@@ -23,6 +23,11 @@ public abstract class ShortType extends PrimitiveTypeBase<Short> {
     }
 
     @Override
+    public final Class<Short> boxedClass() {
+        return Short.class;
+    }
+
+    @Override
     public final NativeArrayType<short[], Short> arrayType() {
         return NativeArrayType.of(short[].class, this);
     }

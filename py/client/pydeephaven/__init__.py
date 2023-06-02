@@ -25,8 +25,8 @@ Examples:
 
 from .session import Session
 from .dherror import DHError
-from ._table_interface import SortDirection, MatchRule
+from ._table_interface import SortDirection
 from .query import Query
 
-__all__ = ["Session", "DHError", "SortDirection", "MatchRule"]
+__all__ = ["Session", "DHError", "SortDirection"]
 __version__ = "0.25.0"

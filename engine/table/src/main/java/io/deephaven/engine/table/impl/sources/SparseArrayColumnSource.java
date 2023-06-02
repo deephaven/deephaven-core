@@ -9,7 +9,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
@@ -272,8 +271,8 @@ public abstract class SparseArrayColumnSource<T>
         return result;
     }
 
-    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(long[] data) {
-        final WritableColumnSource<DateTime> result = new DateTimeSparseArraySource();
+    public static WritableColumnSource<Instant> getInstantMemoryColumnSource(long[] data) {
+        final WritableColumnSource<Instant> result = new InstantSparseArraySource();
         result.ensureCapacity(data.length);
         long i = 0;
         for (long o : data) {
@@ -323,8 +322,6 @@ public abstract class SparseArrayColumnSource<T>
             result = new ShortSparseArraySource();
         } else if (type == boolean.class || type == Boolean.class) {
             result = new BooleanSparseArraySource();
-        } else if (type == DateTime.class) {
-            result = new DateTimeSparseArraySource();
         } else if (type == Instant.class) {
             result = new InstantSparseArraySource();
         } else {

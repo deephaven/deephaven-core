@@ -3,25 +3,25 @@
  */
 package io.deephaven.plot.axisformatters;
 
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
+import io.deephaven.time.DateTimeUtils;
 
 import java.io.Serializable;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
 import java.text.ParsePosition;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
  * A formatter for converting nanoseconds into formatted strings.
- *
+ * <p>
  * For details on the supported patterns see the javadoc for
  * <a href="https://docs.oracle.com/javase/8/docs/api/java/time/format/DateTimeFormatter.html">DateTimeFormatter</a>
  */
 public class NanosAxisFormat implements AxisFormat, Serializable {
 
     private static final long serialVersionUID = -2096650974534906333L;
-    private TimeZone tz;
+    private ZoneId tz;
     private String pattern;
     private NanosFormat instance = null;
 
@@ -30,7 +30,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      *
      * @param tz timezone
      */
-    public NanosAxisFormat(TimeZone tz) {
+    public NanosAxisFormat(ZoneId tz) {
         this.tz = tz;
     }
 
@@ -38,7 +38,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
      * Creates a new NanosAxisFormat with the default timezone.
      */
     public NanosAxisFormat() {
-        this(TimeZone.TZ_DEFAULT);
+        this(DateTimeUtils.timeZone());
     }
 
     @Override
@@ -63,7 +63,7 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
     }
 
     /**
-     * Formatter for DateTime values.
+     * Formatter for date time values.
      */
     public class NanosFormat extends NumberFormat {
         private static final long serialVersionUID = 6037426284760469353L;
@@ -73,17 +73,17 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
             updateFormatter(pattern);
         }
 
-        public void updateTimeZone(final TimeZone tz) {
+        public void updateTimeZone(final ZoneId tz) {
             NanosAxisFormat.this.tz = tz;
 
             if (formatter != null) {
-                formatter = formatter.withZone(tz.getTimeZone().toTimeZone().toZoneId());
+                formatter = formatter.withZone(tz);
             }
         }
 
         private void updateFormatter(String format) {
             format = format == null ? "yyyy-MM-dd" : format;
-            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz.getTimeZone().toTimeZone().toZoneId());
+            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz);
         }
 
         @Override
@@ -93,7 +93,8 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
 
         @Override
         public StringBuffer format(final long number, final StringBuffer toAppendTo, final FieldPosition pos) {
-            return toAppendTo.append(formatter.format(new DateTime(number).getInstant()));
+            // noinspection DataFlowIssue
+            return toAppendTo.append(formatter.format(DateTimeUtils.epochNanosToInstant(number)));
         }
 
         @Override
