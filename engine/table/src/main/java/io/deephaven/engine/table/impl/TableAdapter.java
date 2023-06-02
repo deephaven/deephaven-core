@@ -198,11 +198,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Object[] getRecord(long rowNo, String... columnNames) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table wouldMatch(WouldMatchPair... matchers) {
         return throwUnsupported();
     }

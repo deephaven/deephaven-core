@@ -526,13 +526,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Object[] getRecord(long rowNo, String... columnNames) {
-        final long key = rowSet.get(rowNo);
-        return (columnNames.length > 0 ? Arrays.stream(columnNames).map(this::getColumnSource)
-                : columns.values().stream()).map(cs -> cs.get(key)).toArray(Object[]::new);
-    }
-
-    @Override
     public PartitionedTable partitionBy(final boolean dropKeys, final String... keyColumnNames) {
         if (isBlink()) {
             throw unsupportedForBlinkTables("partitionBy");
