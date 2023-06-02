@@ -116,6 +116,12 @@ class SoleKey implements RowSequence {
         return larc.accept(key, key);
     }
 
+    @Override
+    public void close() {
+        keyIndicesChunk.close();
+        keyRangesChunk.close();
+    }
+
     static class SoleKeyIterator implements Iterator {
         private final long key;
         private boolean hasMore;
