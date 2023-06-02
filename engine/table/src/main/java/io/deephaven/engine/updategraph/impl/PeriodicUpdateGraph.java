@@ -58,20 +58,20 @@ import java.util.function.LongConsumer;
  * not defined)</li>
  * </ul>
  */
-public class UpdateGraphProcessor implements UpdateGraph {
+public class PeriodicUpdateGraph implements UpdateGraph {
 
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
     public static final int NUM_THREADS_DEFAULT_UPDATE_GRAPH =
-            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", -1);
+            Configuration.getInstance().getIntegerWithDefault("PeriodicUpdateGraph.updateThreads", -1);
 
     public static Builder newBuilder(final String name) {
         return new Builder(name);
     }
 
-    private final Logger log = LoggerFactory.getLogger(UpdateGraphProcessor.class);
+    private final Logger log = LoggerFactory.getLogger(PeriodicUpdateGraph.class);
 
     /**
-     * Update sources that are part of this UpdateGraphProcessor.
+     * Update sources that are part of this PeriodicUpdateGraph.
      */
     private final SimpleReferenceManager<Runnable, UpdateSourceRefreshNotification> sources =
             new SimpleReferenceManager<>(UpdateSourceRefreshNotification::new);
@@ -104,7 +104,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     /**
      * If this is set to a positive value, then we will call the {@link #watchDogTimeoutProcedure} if any single run
      * loop takes longer than this value. The intention is to use this for strategies, or other queries, where a
-     * UpdateGraphProcessor loop that is "stuck" is the equivalent of an error. Set the value with
+     * PeriodicUpdateGraph loop that is "stuck" is the equivalent of an error. Set the value with
      * {@link #setWatchDogMillis(int)}.
      */
     private int watchDogMillis = 0;
@@ -115,7 +115,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      */
     private LongConsumer watchDogTimeoutProcedure = null;
 
-    public static final String ALLOW_UNIT_TEST_MODE_PROP = "UpdateGraphProcessor.allowUnitTestMode";
+    public static final String ALLOW_UNIT_TEST_MODE_PROP = "PeriodicUpdateGraph.allowUnitTestMode";
     private final boolean ALLOW_UNIT_TEST_MODE;
     private int notificationAdditionDelay = 0;
     private Random notificationRandomizer = new Random(0);
@@ -123,9 +123,9 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private ExecutorService unitTestRefreshThreadPool;
 
     public static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
-            "UpdateGraphProcessor.targetCycleDurationMillis";
+            "PeriodicUpdateGraph.targetCycleDurationMillis";
     public static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
-            "UpdateGraphProcessor.minimumCycleDurationToLogMillis";
+            "PeriodicUpdateGraph.minimumCycleDurationToLogMillis";
     private final long DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
     private volatile long targetCycleDurationMillis;
     private final long minimumCycleDurationToLogNanos;
@@ -231,7 +231,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     /**
      * The number of threads in our executor service for dispatching notifications. If 1, then we don't actually use the
-     * executor service; but instead dispatch all the notifications on the UpdateGraphProcessor run thread.
+     * executor service; but instead dispatch all the notifications on the PeriodicUpdateGraph run thread.
      */
     private final int updateThreads;
 
@@ -244,9 +244,9 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private final ThreadLocal<Boolean> serialTableOperationsSafe = ThreadLocal.withInitial(() -> false);
 
     private final long minimumInterCycleSleep =
-            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.minimumInterCycleSleep", 0);
+            Configuration.getInstance().getIntegerWithDefault("PeriodicUpdateGraph.minimumInterCycleSleep", 0);
     private final boolean interCycleYield =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.interCycleYield", false);
+            Configuration.getInstance().getBooleanWithDefault("PeriodicUpdateGraph.interCycleYield", false);
 
     private final LogicalClockImpl logicalClock = new LogicalClockImpl();
 
@@ -256,16 +256,16 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private final UpdateGraphLock lock;
 
     /**
-     * When UpdateGraphProcessor.printDependencyInformation is set to true, the UpdateGraphProcessor will print debug
+     * When PeriodicUpdateGraph.printDependencyInformation is set to true, the PeriodicUpdateGraph will print debug
      * information for each notification that has dependency information; as well as which notifications have been
      * completed and are outstanding.
      */
     private final boolean printDependencyInformation =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.printDependencyInformation", false);
+            Configuration.getInstance().getBooleanWithDefault("PeriodicUpdateGraph.printDependencyInformation", false);
 
     private final String name;
 
-    public UpdateGraphProcessor(
+    public PeriodicUpdateGraph(
             final String name,
             final boolean allowUnitTestMode,
             final long targetCycleDurationMillis,
@@ -287,7 +287,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
                 Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
                 refreshTablesAndFlushNotifications();
             }
-        }), "UpdateGraphProcessor." + name + ".refreshThread");
+        }), "PeriodicUpdateGraph." + name + ".refreshThread");
         refreshThread.setDaemon(true);
 
         if (numUpdateThreads <= 0) {
@@ -307,7 +307,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
-        return logOutput.append("UpdateGraphProcessor-").append(name);
+        return logOutput.append("PeriodicUpdateGraph-").append(name);
     }
 
     @Override
@@ -324,7 +324,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private NotificationProcessor makeNotificationProcessor() {
         if (updateThreads > 1) {
             final ThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
-                    new ThreadGroup("UpdateGraphProcessor-updateExecutors"), "updateExecutor");
+                    new ThreadGroup("PeriodicUpdateGraph-updateExecutors"), "updateExecutor");
             return new ConcurrentNotificationProcessor(threadFactory, updateThreads);
         } else {
             return new QueueNotificationProcessor();
@@ -335,7 +335,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private NotificationProcessor makeRandomizedNotificationProcessor(final Random random, final int nThreads,
             final int notificationStartDelay) {
         final UpdateGraphProcessorThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
-                new ThreadGroup("UpdateGraphProcessor-randomizedUpdatedExecutors"), "randomizedUpdateExecutor");
+                new ThreadGroup("PeriodicUpdateGraph-randomizedUpdatedExecutors"), "randomizedUpdateExecutor");
         return new ConcurrentNotificationProcessor(threadFactory, nThreads) {
 
             private Notification addRandomDelay(@NotNull final Notification notification) {
@@ -378,7 +378,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * Retrieve the number of update threads.
      *
      * <p>
-     * The UpdateGraphProcessor has a configurable number of update processing threads. The number of threads is exposed
+     * The PeriodicUpdateGraph has a configurable number of update processing threads. The number of threads is exposed
      * in your method to enable you to partition a query based on the number of threads.
      * </p>
      *
@@ -399,7 +399,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     /**
      * <p>
-     * Get the shared lock for this {@link UpdateGraphProcessor}.
+     * Get the shared lock for this {@link PeriodicUpdateGraph}.
      * <p>
      * Using this lock will prevent run processing from proceeding concurrently, but will allow other read-only
      * processing to proceed.
@@ -409,7 +409,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * This lock does <em>not</em> support {@link java.util.concurrent.locks.Lock#newCondition()}. Use the exclusive
      * lock if you need to wait on events that are driven by run processing.
      *
-     * @return The shared lock for this {@link UpdateGraphProcessor}
+     * @return The shared lock for this {@link PeriodicUpdateGraph}
      */
     public AwareFunctionalLock sharedLock() {
         return lock.sharedLock();
@@ -417,7 +417,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     /**
      * <p>
-     * Get the exclusive lock for this {@link UpdateGraphProcessor}.
+     * Get the exclusive lock for this {@link PeriodicUpdateGraph}.
      * <p>
      * Using this lock will prevent run or read-only processing from proceeding concurrently.
      * <p>
@@ -428,7 +428,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * <p>
      * This lock does support {@link java.util.concurrent.locks.Lock#newCondition()}.
      *
-     * @return The exclusive lock for this {@link UpdateGraphProcessor}
+     * @return The exclusive lock for this {@link PeriodicUpdateGraph}
      */
     public AwareFunctionalLock exclusiveLock() {
         return lock.exclusiveLock();
@@ -508,10 +508,10 @@ public class UpdateGraphProcessor implements UpdateGraph {
             return;
         }
         if (!ALLOW_UNIT_TEST_MODE) {
-            throw new IllegalStateException("UpdateGraphProcessor.allowUnitTestMode=false");
+            throw new IllegalStateException("PeriodicUpdateGraph.allowUnitTestMode=false");
         }
         if (refreshThread.isAlive()) {
-            throw new IllegalStateException("UpdateGraphProcessor.refreshThread is executing!");
+            throw new IllegalStateException("PeriodicUpdateGraph.refreshThread is executing!");
         }
         lock.reset();
         unitTestMode = true;
@@ -574,7 +574,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
         synchronized (refreshThread) {
             if (!refreshThread.isAlive()) {
-                log.info().append("UpdateGraphProcessor starting with ").append(updateThreads)
+                log.info().append("PeriodicUpdateGraph starting with ").append(updateThreads)
                         .append(" notification processing threads").endl();
                 refreshThread.start();
             }
@@ -601,7 +601,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     @Override
     public void addSource(@NotNull final Runnable updateSource) {
         if (!running) {
-            throw new IllegalStateException("UpdateGraphProcessor is no longer running");
+            throw new IllegalStateException("PeriodicUpdateGraph is no longer running");
         }
 
         if (updateSource instanceof DynamicNode) {
@@ -1226,10 +1226,10 @@ public class UpdateGraphProcessor implements UpdateGraph {
                     .endl();
         } catch (final Exception e) {
             log.error().append(Thread.currentThread().getName())
-                    .append(": Exception while executing UpdateGraphProcessor notification: ").append(notification)
+                    .append(": Exception while executing PeriodicUpdateGraph notification: ").append(notification)
                     .append(": ").append(e).endl();
             ProcessEnvironment.getGlobalFatalErrorReporter()
-                    .report("Exception while processing UpdateGraphProcessor notification", e);
+                    .report("Exception while processing PeriodicUpdateGraph notification", e);
         }
     }
 
@@ -1676,7 +1676,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
             Assert.eqNull(refreshScope, "refreshScope");
             refreshScope = new LivenessScope();
             final long updatingCycleValue = logicalClock.startUpdateCycle();
-            logDependencies().append("Beginning UpdateGraphProcessor cycle step=")
+            logDependencies().append("Beginning PeriodicUpdateGraph cycle step=")
                     .append(logicalClock.currentStep()).endl();
             try (final SafeCloseable ignored = LivenessScopeStack.open(refreshScope, true)) {
                 refreshFunction.run();
@@ -1685,7 +1685,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
                 logicalClock.ensureUpdateCycleCompleted(updatingCycleValue);
                 refreshScope = null;
             }
-            logDependencies().append("Completed UpdateGraphProcessor cycle step=")
+            logDependencies().append("Completed PeriodicUpdateGraph cycle step=")
                     .append(logicalClock.currentStep()).endl();
         });
     }
@@ -1745,7 +1745,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
 
     private class UpdateGraphProcessorThreadFactory extends NamingThreadFactory {
         private UpdateGraphProcessorThreadFactory(@NotNull final ThreadGroup threadGroup, @NotNull final String name) {
-            super(threadGroup, UpdateGraphProcessor.class, name, true);
+            super(threadGroup, PeriodicUpdateGraph.class, name, true);
         }
 
         @Override
@@ -1785,7 +1785,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
 
         private UnitTestRefreshThreadFactory() {
-            super(UpdateGraphProcessor.class, "unitTestRefresh");
+            super(PeriodicUpdateGraph.class, "unitTestRefresh");
         }
 
         @Override
@@ -1894,12 +1894,12 @@ public class UpdateGraphProcessor implements UpdateGraph {
         }
 
         /**
-         * Creates an UpdateGraphProcessor, starts it, and returns the UpdateContext associated with it.
+         * Creates an PeriodicUpdateGraph, starts it, and returns the UpdateContext associated with it.
          *
          * @return an update context wrapping the newly constructed update graph processor
          */
-        public UpdateGraphProcessor build() {
-            return new UpdateGraphProcessor(
+        public PeriodicUpdateGraph build() {
+            return new PeriodicUpdateGraph(
                     name,
                     allowUnitTestMode,
                     targetCycleDurationMillis,

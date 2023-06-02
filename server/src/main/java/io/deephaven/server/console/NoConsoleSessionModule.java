@@ -8,7 +8,7 @@ import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.console.groovy.InitScriptsModule;
@@ -26,7 +26,7 @@ public class NoConsoleSessionModule {
 
     @Provides
     NoLanguageDeephavenSession bindNoLanguageSession(
-            @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph) {
+            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph) {
         return new NoLanguageDeephavenSession(updateGraph);
     }
 }

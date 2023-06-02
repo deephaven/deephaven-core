@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
@@ -199,7 +199,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
         } else {
             final long cycleDurationNanos = cycleEndNanos - lastRefreshNanos;
             final long targetCycleNanos =
-                    updateGraph.<UpdateGraphProcessor>cast().getTargetCycleDurationMillis() * 1000 * 1000;
+                    updateGraph.<PeriodicUpdateGraph>cast().getTargetCycleDurationMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDurationNanos;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycleNanos * targetFactor), 1L);
             if (verbose) {

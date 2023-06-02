@@ -143,7 +143,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         if (prevFlusher == null) {
             return false;
         }
-        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
         prevFlusher.maybeActivate();
 
         final int block = (int) (key >> LOG_BLOCK_SIZE);

@@ -46,7 +46,6 @@ public class BlinkTableTools {
     }
 
     private static Table internalBlinkToAppendOnly(final Table blinkTable) {
-        blinkTable.getUpdateGraph();
         return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {
                 throw new IllegalArgumentException("Input is not a blink table!");

@@ -9,7 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -200,10 +200,10 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
-     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the
+     * {@link PeriodicUpdateGraph} lock based on the specified {@code lockType}, then executes the
      * {@code FitDataPopulator} with the appropriate value for usePrev.
      *
-     * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
+     * @param lockType The way of acquiring the {@code PeriodicUpdateGraph} lock.
      * @return A function that runs a {@link }
      */
     @SuppressWarnings("WeakerAccess")

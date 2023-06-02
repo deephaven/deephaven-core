@@ -135,7 +135,7 @@ public final class DynamicTableWriter implements TableWriter {
     /**
      * Gets the table created by this DynamicTableWriter.
      * <p>
-     * The returned table is registered with the UpdateGraphProcessor, and new rows become visible within the run loop.
+     * The returned table is registered with the PeriodicUpdateGraph, and new rows become visible within the run loop.
      *
      * @return a live table with the output of this log
      */
@@ -192,7 +192,7 @@ public final class DynamicTableWriter implements TableWriter {
     /**
      * Writes the current row created with the {@code getSetter} call, and advances the current row by one.
      * <p>
-     * The row will be made visible in the table after the UpdateGraphProcessor run cycle completes.
+     * The row will be made visible in the table after the PeriodicUpdateGraph run cycle completes.
      */
     @Override
     public void writeRow() {

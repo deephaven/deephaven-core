@@ -29,7 +29,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -309,16 +309,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final BinaryOperator<Table> transformer,
             final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
-        if (table.isRefreshing()) {
-            table.getUpdateGraph().checkInitiateSerialTableOperation();
-        }
-        if (other.table().isRefreshing()) {
-            other.table().getUpdateGraph().checkInitiateSerialTableOperation();
-        }
-        if (table.isRefreshing() && other.table().isRefreshing()
-                && table.getUpdateGraph() != other.table().getUpdateGraph()) {
-            throw new IllegalStateException(
-                    "Cannot perform a partitioned transform on two tables with different update contexts");
+        final UpdateGraph updateGraph = table.getUpdateGraph(other.table());
+        if (table.isRefreshing() || other.table().isRefreshing()) {
+            updateGraph.checkInitiateSerialTableOperation();
         }
 
         // Validate join compatibility

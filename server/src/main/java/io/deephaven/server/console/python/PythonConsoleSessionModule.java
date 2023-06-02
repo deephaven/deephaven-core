@@ -8,7 +8,7 @@ import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
@@ -29,7 +29,7 @@ public class PythonConsoleSessionModule {
 
     @Provides
     PythonDeephavenSession bindPythonSession(
-            @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
+            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
             final PythonEvaluatorJpy pythonEvaluator) {

@@ -34,7 +34,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     private transient volatile long releaseAllNanos = QueryConstants.NULL_LONG;
 
     /**
-     * Should we release entries during the UpdateGraphProcessor cycle?
+     * Should we release entries during the PeriodicUpdateGraph cycle?
      */
     private transient volatile boolean started;
     private transient volatile boolean initialized = false;
@@ -118,7 +118,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     public void waitForCompletion() throws InterruptedException {
         if (updateGraph.currentThreadProcessesUpdates()) {
             throw new IllegalStateException(
-                    "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+                    "Can not wait for completion while on PeriodicUpdateGraph refresh thread, updates would block.");
         }
         if (releaseAllNanos != QueryConstants.NULL_LONG) {
             return;
@@ -139,7 +139,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
         if (updateGraph.currentThreadProcessesUpdates()) {
             throw new IllegalStateException(
-                    "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+                    "Can not wait for completion while on PeriodicUpdateGraph refresh thread, updates would block.");
         }
         if (releaseAllNanos != QueryConstants.NULL_LONG) {
             return;

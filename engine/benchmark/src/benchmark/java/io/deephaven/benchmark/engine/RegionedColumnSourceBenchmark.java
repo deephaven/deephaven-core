@@ -8,7 +8,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -97,7 +97,7 @@ public class RegionedColumnSourceBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        Configuration.getInstance().setProperty(UpdateGraphProcessor.ALLOW_UNIT_TEST_MODE_PROP, "true");
+        Configuration.getInstance().setProperty(PeriodicUpdateGraph.ALLOW_UNIT_TEST_MODE_PROP, "true");
 
         TestExecutionContext.createForUnitTests().open();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();

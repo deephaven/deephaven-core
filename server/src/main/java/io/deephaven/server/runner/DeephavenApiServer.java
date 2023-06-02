@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
@@ -58,7 +58,7 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final GrpcServer server,
-            @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
+            @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
             final LogInit logInit,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
@@ -131,7 +131,7 @@ public class DeephavenApiServer {
         pluginRegistration.registerAll();
 
         log.info().append("Starting UpdateGraph...").endl();
-        ug.<UpdateGraphProcessor>cast().start();
+        ug.<PeriodicUpdateGraph>cast().start();
 
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
             EngineMetrics.maybeStartStatsCollection();

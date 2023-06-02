@@ -29,7 +29,7 @@ public class TestColumnIterators {
     private Table input;
 
     @Before
-    public void setUpOnce() {
+    public void setUp() {
         input = TstUtils.getTable(false, 100_000, new Random(0), new ColumnInfo[] {
                 new ColumnInfo<>(new CharGenerator('A', 'z', 0.1), "CharCol"),
                 new ColumnInfo<>(new ByteGenerator((byte) -100, (byte) 100, 0.1), "ByteCol"),
@@ -44,7 +44,7 @@ public class TestColumnIterators {
     }
 
     @After
-    public void tearDownOnce() {
+    public void tearDown() {
         input = null;
     }
 

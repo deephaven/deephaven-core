@@ -6,7 +6,7 @@ package io.deephaven.modelfarm;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -18,7 +18,7 @@ import java.util.Set;
 
 /**
  * A ModelFarm implementation for evaluating a model upon request, retrieving a snapshot of data for all keys under a
- * single {@link UpdateGraphProcessor} lock.
+ * single {@link PeriodicUpdateGraph} lock.
  *
  * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
  * @param <DATATYPE> The type of the data (e.g.
@@ -67,7 +67,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     /**
      * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
-     * UpdateGraphProcessor lock -- the decision of whether/how to acquire a lock is left to the
+     * PeriodicUpdateGraph lock -- the decision of whether/how to acquire a lock is left to the
      * {@link #DO_LOCKED_FUNCTION}. All keys represented by the data in the {@code dataManager} will be processed.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
@@ -81,7 +81,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     /**
      * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
-     * UpdateGraphProcessor lock -- the decision of whether/how to acquire a lock is left to the
+     * PeriodicUpdateGraph lock -- the decision of whether/how to acquire a lock is left to the
      * {@link #DO_LOCKED_FUNCTION}.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.

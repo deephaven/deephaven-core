@@ -148,7 +148,7 @@ public class BenchmarkPlaypen {
             filter.start();
             while (viewed.size() > input.size()) {
                 final long initialSize = input.size();
-                System.out.println("Running UpdateGraphProcessor cycle: " + input.size() + " / " + viewed.size());
+                System.out.println("Running PeriodicUpdateGraph cycle: " + input.size() + " / " + viewed.size());
                 final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                 updateGraph.runWithinUnitTestCycle(filter::run);
                 if (initialSize == input.size()) {

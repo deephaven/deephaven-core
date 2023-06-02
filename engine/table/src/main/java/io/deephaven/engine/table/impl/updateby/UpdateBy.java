@@ -29,7 +29,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
@@ -1030,7 +1030,7 @@ public abstract class UpdateBy {
     }
 
     /**
-     * Disconnect result from the {@link UpdateGraphProcessor}, deliver downstream failure notifications, and cleanup if
+     * Disconnect result from the {@link PeriodicUpdateGraph}, deliver downstream failure notifications, and cleanup if
      * needed.
      *
      * @param error The {@link Throwable} to deliver, either from upstream or update processing

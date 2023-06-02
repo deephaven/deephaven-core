@@ -561,7 +561,7 @@ public class SyncTableFilter {
         /**
          * Instantiate the map of synchronized tables.
          *
-         * This must be called under the UpdateGraphProcessor lock.
+         * This must be called under the PeriodicUpdateGraph lock.
          *
          * @return a map with one entry for each input table
          */

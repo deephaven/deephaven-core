@@ -30,7 +30,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
 import io.deephaven.engine.updategraph.*;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -1331,7 +1331,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
-                    UpdateGraphProcessor updateGraph = parent.getUpdateGraph().cast();
+                    PeriodicUpdateGraph updateGraph = parent.getUpdateGraph().cast();
                     long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
                             * updateGraph.getTargetCycleDurationMillis()
                             * 1000000);

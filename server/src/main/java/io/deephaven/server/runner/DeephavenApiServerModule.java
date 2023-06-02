@@ -10,7 +10,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
@@ -147,10 +147,10 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME)
+    @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
     public static UpdateGraph provideUpdateGraph() {
-        return UpdateGraphProcessor.newBuilder(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME)
-                .numUpdateThreads(UpdateGraphProcessor.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+        return PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
+                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
                 .build();
     }
 

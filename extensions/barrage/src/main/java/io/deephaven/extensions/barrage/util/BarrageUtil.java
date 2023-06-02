@@ -22,7 +22,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -672,7 +672,7 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
-                        UpdateGraphProcessor updateGraph = table.getUpdateGraph().cast();
+                        PeriodicUpdateGraph updateGraph = table.getUpdateGraph().cast();
                         long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
                                 * updateGraph.getTargetCycleDurationMillis()
                                 * 1000000);

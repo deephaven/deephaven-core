@@ -393,7 +393,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float>
         if (!shouldTrackPrevious()) {
             return null;
         }
-        // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
+        // If we want to track previous values, we make sure we are registered with the PeriodicUpdateGraph.
         prevFlusher.maybeActivate();
 
         final int block0 = (int) (key >> BLOCK0_SHIFT) & BLOCK0_MASK;

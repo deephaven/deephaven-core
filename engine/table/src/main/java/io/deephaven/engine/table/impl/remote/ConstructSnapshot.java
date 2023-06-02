@@ -16,7 +16,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -65,14 +65,14 @@ public class ConstructSnapshot {
     private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ConstructSnapshot.class);
 
     /**
-     * The maximum number of allowed attempts to construct a snapshot concurrently with {@link UpdateGraphProcessor} run
+     * The maximum number of allowed attempts to construct a snapshot concurrently with {@link PeriodicUpdateGraph} run
      * processing. After this many attempts, we fall back and wait until we can block refreshes.
      */
     private static final int MAX_CONCURRENT_ATTEMPTS =
             Configuration.getInstance().getIntegerWithDefault("ConstructSnapshot.maxConcurrentAttempts", 2);
 
     /**
-     * The maximum duration of an attempt to construct a snapshot concurrently with {@link UpdateGraphProcessor} run
+     * The maximum duration of an attempt to construct a snapshot concurrently with {@link PeriodicUpdateGraph} run
      * processing. If an unsuccessful attempt takes longer than this timeout, we will fall back and wait until we can
      * block refreshes.
      */

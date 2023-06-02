@@ -24,8 +24,8 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -80,7 +80,7 @@ public class WindowCheck {
      * See {@link WindowCheck#addTimeWindow(QueryTable, String, long, String)} for a description, the internal version
      * gives you access to the TimeWindowListener for unit testing purposes.
      *
-     * @param addToMonitor should we add this to the UpdateGraphProcessor
+     * @param addToMonitor should we add this to the PeriodicUpdateGraph
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
@@ -117,7 +117,7 @@ public class WindowCheck {
      * The TimeWindowListener maintains a priority queue of rows that are within a configured window, when they pass out
      * of the window, the InWindow column is set to false and a modification tick happens.
      *
-     * It implements {@link Runnable}, so that we can be inserted into the {@link UpdateGraphProcessor}.
+     * It implements {@link Runnable}, so that we can be inserted into the {@link PeriodicUpdateGraph}.
      */
     static class TimeWindowListener extends MergedListener implements Runnable {
         private final InWindowColumnSource inWindowColumnSource;

@@ -178,15 +178,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         if (other instanceof Table) {
             final Table otherTable = (Table) other;
             final boolean refreshingResults = target.table().isRefreshing() || otherTable.isRefreshing();
-            if (refreshingResults && joinMatches != null) {
-                if (target.table().isRefreshing()) {
-                    target.table().getUpdateGraph().checkInitiateSerialTableOperation();
-                }
-                if (otherTable.isRefreshing()) {
-                    otherTable.getUpdateGraph().checkInitiateSerialTableOperation();
-                }
-            }
             final UpdateGraph updateGraph = target.table().getUpdateGraph(otherTable);
+            if (refreshingResults && joinMatches != null) {
+                updateGraph.checkInitiateSerialTableOperation();
+            }
             try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
                 return new PartitionedTableProxyImpl(
                         target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
@@ -198,14 +193,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
             final PartitionedTable otherTarget = otherProxy.target();
             final boolean refreshingResults = target.table().isRefreshing() || otherTarget.table().isRefreshing();
-
-            if (target.table().isRefreshing()) {
-                target.table().getUpdateGraph().checkInitiateSerialTableOperation();
-            }
-            if (otherTarget.table().isRefreshing()) {
-                otherTarget.table().getUpdateGraph().checkInitiateSerialTableOperation();
-            }
             final UpdateGraph updateGraph = target.table().getUpdateGraph(otherTarget.table());
+            if (refreshingResults) {
+                updateGraph.checkInitiateSerialTableOperation();
+            }
             try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
 
                 final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);

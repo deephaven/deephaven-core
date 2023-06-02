@@ -39,7 +39,7 @@ public class Replayer implements ReplayerInterface, Runnable {
 
     private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
 
-    // Condition variable for use with UpdateGraphProcessor lock - the object monitor is no longer used
+    // Condition variable for use with PeriodicUpdateGraph lock - the object monitor is no longer used
     private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
 
     /**
