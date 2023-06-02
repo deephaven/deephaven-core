@@ -138,7 +138,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private long suppressedCyclesTotalSafePointTimeMillis = 0;
 
     /**
-     * Accumulated UGP exclusive lock waits for the current cycle (or previous, if idle).
+     * Accumulated UpdateGraph exclusive lock waits for the current cycle (or previous, if idle).
      */
     private long currentCycleLockWaitTotalNanos = 0;
     /**
@@ -609,7 +609,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
 
         if (!ALLOW_UNIT_TEST_MODE) {
-            // if we are in unit test mode we never want to start the UGP
+            // if we are in unit test mode we never want to start the UpdateGraph
             sources.add(updateSource);
             start();
         }
@@ -790,13 +790,13 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         ensureUnlocked("unit test reset thread", errors);
 
         if (refreshThread.isAlive()) {
-            errors.add("UGP refreshThread isAlive");
+            errors.add("UpdateGraph refreshThread isAlive");
         }
 
         try {
             unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test run pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
-            errors.add("Failed to ensure UGP unlocked from unit test run thread pool: " + e);
+            errors.add("Failed to ensure UpdateGraph unlocked from unit test run thread pool: " + e);
         }
         unitTestRefreshThreadPool.shutdownNow();
         try {
@@ -809,7 +809,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         unitTestRefreshThreadPool = makeUnitTestRefreshExecutor();
 
         if (!errors.isEmpty()) {
-            final String message = "UGP reset for unit tests reported errors:\n\t" + String.join("\n\t", errors);
+            final String message =
+                    "UpdateGraph reset for unit tests reported errors:\n\t" + String.join("\n\t", errors);
             System.err.println(message);
             if (after) {
                 throw new IllegalStateException(message);
@@ -821,7 +822,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
     /**
      * Begin the next {@link LogicalClockImpl#startUpdateCycle() update cycle} while in {@link #enableUnitTestMode()
-     * unit-test} mode. Note that this happens on a simulated UGP run thread, rather than this thread.
+     * unit-test} mode. Note that this happens on a simulated UpdateGraph run thread, rather than this thread.
      */
     @TestUseOnly
     public void startCycleForUnitTests() {
@@ -850,7 +851,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     /**
      * Do the second half of the update cycle, including flushing notifications, and completing the
      * {@link LogicalClockImpl#completeUpdateCycle() LogicalClock} update cycle. Note that this happens on a simulated
-     * UGP run thread, rather than this thread.
+     * UpdateGraph run thread, rather than this thread.
      */
     @TestUseOnly
     public void completeCycleForUnitTests() {
@@ -896,7 +897,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Refresh an update source on a simulated UGP run thread, rather than this thread.
+     * Refresh an update source on a simulated UpdateGraph run thread, rather than this thread.
      *
      * @param updateSource The update source to run
      */
@@ -911,8 +912,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Flush a single notification from the UGP queue. Note that this happens on a simulated UGP run thread, rather than
-     * this thread.
+     * Flush a single notification from the UpdateGraph queue. Note that this happens on a simulated UpdateGraph run
+     * thread, rather than this thread.
      *
      * @return whether a notification was found in the queue
      */
@@ -969,8 +970,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Flush all the normal notifications from the UGP queue. Note that the flushing happens on a simulated UGP run
-     * thread, rather than this thread.
+     * Flush all the normal notifications from the UpdateGraph queue. Note that the flushing happens on a simulated
+     * UpdateGraph run thread, rather than this thread.
      */
     @TestUseOnly
     public void flushAllNormalNotificationsForUnitTests() {
@@ -978,8 +979,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Flush all the normal notifications from the UGP queue, continuing until {@code done} returns {@code true}. Note
-     * that the flushing happens on a simulated UGP run thread, rather than this thread.
+     * Flush all the normal notifications from the UpdateGraph queue, continuing until {@code done} returns
+     * {@code true}. Note that the flushing happens on a simulated UpdateGraph run thread, rather than this thread.
      *
      * @param done Function to determine when we can stop waiting for new notifications
      * @return A Runnable that may be used to wait for the concurrent flush job to complete
@@ -1038,7 +1039,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         // satisfaction are delivered first to the pendingNormalNotifications queue, and hence will not be processed
         // until we advance to the flush* methods.
         // TODO: If and when we properly integrate update sources into the dependency tracking system, we can
-        // discontinue this distinct phase, along with the requirement to treat the UGP itself as a Dependency.
+        // discontinue this distinct phase, along with the requirement to treat the UpdateGraph itself as a Dependency.
         // Until then, we must delay the beginning of "normal" notification processing until all update sources are
         // done. See IDS-8039.
         notificationProcessor.doAllWork();
@@ -1650,8 +1651,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Refresh all the update sources within an {@link LogicalClock update cycle} after the UGP has been locked. At the
-     * end of the updates all {@link Notification notifications} will be flushed.
+     * Refresh all the update sources within an {@link LogicalClock update cycle} after the UpdateGraph has been locked.
+     * At the end of the updates all {@link Notification notifications} will be flushed.
      */
     private void refreshAllTables() {
         refreshRequested.set(false);
@@ -1761,7 +1762,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     private void ensureUnlocked(@NotNull final String callerDescription, @Nullable final List<String> errors) {
         if (exclusiveLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add(callerDescription + ": UGP exclusive lock is still held");
+                errors.add(callerDescription + ": UpdateGraph exclusive lock is still held");
             }
             while (exclusiveLock().isHeldByCurrentThread()) {
                 exclusiveLock().unlock();
@@ -1769,7 +1770,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
         if (sharedLock().isHeldByCurrentThread()) {
             if (errors != null) {
-                errors.add(callerDescription + ": UGP shared lock is still held");
+                errors.add(callerDescription + ": UpdateGraph shared lock is still held");
             }
             while (sharedLock().isHeldByCurrentThread()) {
                 sharedLock().unlock();
@@ -1798,7 +1799,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
-     * Configure the primary UGP thread or one of the auxiliary notification processing threads.
+     * Configure the primary UpdateGraph thread or one of the auxiliary notification processing threads.
      */
     private void configureRefreshThread() {
         SystemicObjectTracker.markThreadSystemic();
@@ -1825,8 +1826,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 
-    public void takeAccumulatedCycleStats(AccumulatedCycleStats ugpAccumCycleStats) {
-        accumulatedCycleStats.take(ugpAccumCycleStats);
+    public void takeAccumulatedCycleStats(AccumulatedCycleStats updateGraphAccumCycleStats) {
+        accumulatedCycleStats.take(updateGraphAccumCycleStats);
     }
 
     public static final class Builder {
@@ -1894,9 +1895,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
 
         /**
-         * Creates an PeriodicUpdateGraph, starts it, and returns the UpdateContext associated with it.
+         * Constructs and returns a PeriodicUpdateGraph.
          *
-         * @return an update context wrapping the newly constructed update graph processor
+         * @return the new PeriodicUpdateGraph
          */
         public PeriodicUpdateGraph build() {
             return new PeriodicUpdateGraph(

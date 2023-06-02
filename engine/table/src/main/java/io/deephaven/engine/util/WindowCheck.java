@@ -12,7 +12,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -42,6 +41,7 @@ import java.util.*;
  * Adds a Boolean column that is true if a Timestamp is within the specified window.
  */
 public class WindowCheck {
+
     private WindowCheck() {}
 
     /**
@@ -85,7 +85,9 @@ public class WindowCheck {
      */
     static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
-        ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
+        if (table.isRefreshing()) {
+            table.getUpdateGraph().checkInitiateSerialTableOperation();
+        }
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
@@ -108,7 +110,7 @@ public class WindowCheck {
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
-            ExecutionContext.getContext().getUpdateGraph().addSource(timeWindowListener);
+            result.getUpdateGraph().addSource(timeWindowListener);
         }
         return new Pair<>(result, timeWindowListener);
     }
@@ -421,14 +423,17 @@ public class WindowCheck {
         private final long windowNanos;
         private final ColumnSource<Long> timeStampSource;
 
-        private long prevTime = 0;
-        private long currentTime = 0;
-        private long clockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
-        private final long initialStep = clockStep;
+        private long prevTime;
+        private long currentTime;
+        private long clockStep;
+        private final long initialStep;
 
         InWindowColumnSource(Table table, String timestampColumn, long windowNanos) {
             super(Boolean.class);
             this.windowNanos = windowNanos;
+
+            clockStep = updateGraph.clock().currentStep();
+            initialStep = clockStep;
 
             final ColumnSource<Instant> timeStampSource = table.getColumnSource(timestampColumn);
             if (!Instant.class.isAssignableFrom(timeStampSource.getType())) {
@@ -483,7 +488,7 @@ public class WindowCheck {
         private void captureTime() {
             prevTime = currentTime;
             currentTime = getTimeNanos();
-            clockStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            clockStep = updateGraph.clock().currentStep();
         }
 
         @Override
@@ -539,7 +544,7 @@ public class WindowCheck {
         }
 
         private long timeStampForPrev() {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
         }
     }

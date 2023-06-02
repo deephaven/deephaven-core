@@ -434,15 +434,15 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public final void addParentReference(@NotNull final Object parent) {
+        if (parent instanceof NotificationQueue.Dependency) {
+            // Ensure that we are in the same update graph
+            getUpdateGraph((NotificationQueue.Dependency) parent);
+        }
         if (DynamicNode.notDynamicOrIsRefreshing(parent)) {
             setRefreshing(true);
             ensureParents().add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
-            }
-            if (parent instanceof NotificationQueue.Dependency) {
-                // ensure that we are in the same update graph
-                getUpdateGraph((NotificationQueue.Dependency) parent);
             }
         }
     }

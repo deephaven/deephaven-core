@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -98,7 +97,7 @@ public class SelectOverheadLimiter {
             return input.flatten();
         }
 
-        ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();
