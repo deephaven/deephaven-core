@@ -381,28 +381,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table mergeBefore(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.add(this);
-        tables.addAll(List.of(others));
-        return TableTools.merge(tables);
-    }
-
-    @Override
-    @FinalDefault
-    default Table mergeAfter(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.addAll(List.of(others));
-        tables.add(this);
-        return TableTools.merge(tables);
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Resource Management
     // -----------------------------------------------------------------------------------------------------------------
 
