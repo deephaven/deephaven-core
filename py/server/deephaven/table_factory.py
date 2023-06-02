@@ -14,7 +14,7 @@ from deephaven.column import InputColumn, Column
 from deephaven.dtypes import DType
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")

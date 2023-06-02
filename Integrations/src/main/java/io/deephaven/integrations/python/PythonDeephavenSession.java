@@ -112,8 +112,9 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(PythonScope<?> scope) {
-        super(ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null);
+    public PythonDeephavenSession(
+            final UpdateGraph updateGraph, final PythonScope<?> scope) {
+        super(updateGraph, NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
         try (final SafeCloseable ignored = executionContext.open()) {
             this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
