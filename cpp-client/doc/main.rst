@@ -28,3 +28,6 @@ Declarations
 
 .. doxygenclass:: deephaven::client::Client
    :members:
+
+.. doxygenclass:: deephaven::client::ClientOptions
+   :members:

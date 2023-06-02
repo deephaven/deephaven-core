@@ -19,7 +19,6 @@ import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.RangeJoinTable;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SelectableTable;
@@ -35,7 +34,9 @@ import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereTable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class LabelBuilder extends TableVisitorGeneric {
@@ -100,12 +101,13 @@ public class LabelBuilder extends TableVisitorGeneric {
 
     @Override
     public void visit(AsOfJoinTable aj) {
-        join("aj", aj);
-    }
-
-    @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        join("raj", raj);
+        sb.append("asOfJoin([");
+        append(Strings::of, aj.matches(), sb);
+        sb.append("],");
+        sb.append(Strings.of(aj.joinMatch()));
+        sb.append(",");
+        append(Strings::of, aj.additions(), sb);
+        sb.append("])");
     }
 
     @Override

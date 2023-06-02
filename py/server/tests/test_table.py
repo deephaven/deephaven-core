@@ -334,7 +334,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a < a", joins="e")
+            result_table = left_table.aj(right_table, on="a > a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -342,7 +342,7 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a > a", joins="e")
+            result_table = left_table.raj(right_table, on="a < a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 

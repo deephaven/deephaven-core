@@ -52,6 +52,8 @@ ClientOptions::ClientOptions() {
   setSessionType("python");
 }
 
+ClientOptions::ClientOptions(ClientOptions &&other) noexcept = default;
+ClientOptions &ClientOptions::operator=(ClientOptions &&other) noexcept = default;
 ClientOptions::~ClientOptions() = default;
 
 ClientOptions &ClientOptions::setDefaultAuthentication() {
