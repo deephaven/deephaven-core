@@ -153,32 +153,30 @@ public:
     */
     TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, std::string new_table_name) {
 
-        // this is all essentially preamble to enable us to write to the server
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
-        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor();
-        std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
-        std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
         arrow::flight::FlightCallOptions options;
         wrapper.addAuthHeaders(&options);
 
-        // here we extract the RecordBatchReader from the struct pointed to by the passed tream_ptr
+        // extract RecordBatchReader from the struct pointed to by the passed tream_ptr
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::ImportRecordBatchReader(stream_ptr.get()).ValueOrDie();
         auto schema = record_batch_reader.get()->schema();
 
         // write RecordBatchReader data to table on server with DoPut
-        DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)); // need to add okOrThrow
+        std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
+        std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
+        auto [new_tbl_hdl, fd] = internal_tbl_hdl_mngr.newTableHandleAndFlightDescriptor();
+        DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)); // TODO: need to add okOrThrow
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
-            DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)); // need to add ok or throw
+            DEEPHAVEN_EXPR_MSG(record_batch_reader->ReadNext(&this_batch)); // TODO: need to add ok or throw
             if (this_batch == nullptr) {
                 break;
             }
-            DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)); // need to add okOrThrow
+            DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*this_batch)); // TODO: need to add okOrThrow
         }
-        DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()); // need to add okOrThrow
-        DEEPHAVEN_EXPR_MSG(fsw->Close()); // need to add okOrThrow
+        DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()); // TODO: need to add okOrThrow
+        DEEPHAVEN_EXPR_MSG(fsw->Close()); // TODO: need to add okOrThrow
 
-        // assign name to new table and return
         new_tbl_hdl.bindToVariable(new_table_name);
         return new TableHandleWrapper(new_tbl_hdl);
     };
@@ -215,10 +213,8 @@ ClientWrapper* newClientWrapper(const std::string &target, const std::string &se
     if (authType == "default") {
         client_options.setDefaultAuthentication();
     } else if (authType == "basic") {
-        std::cout << "basic auth!\n";
         client_options.setBasicAuthentication(key, value);
     } else if (authType == "custom") {
-        std::cout << "custom auth!\n";
         client_options.setCustomAuthentication(key, value);
     } else {
         std::cout << "complain about invalid authType\n";

@@ -1,3 +1,5 @@
+# TODO: delete this before shipping
+
 Rcpp::compileAttributes()
 roxygen2::roxygenise()
 install.packages("/home/user/rdeephaven", repos=NULL, type="source")
@@ -10,7 +12,7 @@ library(rdeephaven)
 client <- new(Client, target="192.168.1.241:10000", session_type="python",
                       auth_type="default", key="", value="")
 
-
+# check to see that table we're going to create does not already exist
 client$check_for_table("static_table2")
 
 # open DH table and convert to R dataframe
@@ -26,6 +28,6 @@ data_frame1
 new_static_table <- df_to_dh_table(client, data_frame1, "static_table2")
 new_static_table
 
+# remove table we created from the server and verify that its been removed
+client$delete_table("static_table2")
 client$check_for_table("static_table2")
-
-##############################

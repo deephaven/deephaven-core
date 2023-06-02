@@ -8,6 +8,10 @@
 #' @returns An Arrow RecordBatchStreamReader.
 dh_to_rbs_reader <- function(table_handle) {
 
+    if (class(table_handle)[[1]] != "Rcpp_TableHandle") {
+        stop("Error: 'table_handle' must be a Deephaven TableHandle object. Check ?TableHandle for more information.")
+    }
+
     ptr <- table_handle$.get_arrowArrayStream_ptr()
 
     # create R RecordBatchStreamReader from C++ ArrowArrayStream pointed to by ptr
@@ -22,6 +26,10 @@ dh_to_rbs_reader <- function(table_handle) {
 #' @param table_handle A Deephaven TableHandle.
 #' @returns An Arrow Table.
 dh_to_arrow_table <- function(table_handle) {
+
+    if (class(table_handle)[[1]] != "Rcpp_TableHandle") {
+        stop("Error: 'table_handle' must be a Deephaven TableHandle object. Check ?TableHandle for more information.")
+    }
 
     # create R RecordBatchStreamReader
     rbsr <- dh_to_rbs_reader(table_handle)
@@ -38,8 +46,12 @@ dh_to_arrow_table <- function(table_handle) {
 #' @returns An R Data Frame.
 dh_to_data_frame <- function(table_handle) {
 
+    if (class(table_handle)[[1]] != "Rcpp_TableHandle") {
+        stop("Error: 'table_handle' must be a Deephaven TableHandle object. Check ?TableHandle for more information.")
+    }
+
     arrow_table <- dh_to_arrow_table(table_handle)
-    return(as.data.frame(arrow_table))
+    return(as.data.frame(as.data.frame(arrow_table))) # need as.data.frame twice because first only gives tibble?
 }
 
 ################ FUNCTIONS TO GET FROM R TO DH
@@ -108,7 +120,7 @@ df_to_dh_table <- function(client, data_frame, name) {
     if (class(client)[[1]] != "Rcpp_Client") {
         stop("Error: 'client' must be a Deephaven Client object. Check ?Client for more information.")
     }
-    if (class(data_frame)[[1]] != "tbl_df") {
+    if (class(data_frame)[[1]] != "data.frame") {
         stop("Error: 'data_frame' must be an R Data Frame.")
     }
     if (class(name)[[1]] != "character") {
