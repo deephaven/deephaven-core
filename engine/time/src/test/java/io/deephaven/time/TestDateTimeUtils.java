@@ -457,6 +457,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstant(iso8601));
 
+        final String isoOffset = "2022-04-26T00:30:31.087360+01:00";
+        assertEquals(ZonedDateTime.parse(isoOffset).toInstant(), DateTimeUtils.parseInstant(isoOffset));
+
+        final String isoOffset2 = "2022-11-06T02:59:49.999999999-04:00";
+        assertEquals(ZonedDateTime.parse(isoOffset2).toInstant(), DateTimeUtils.parseInstant(isoOffset2));
+
         final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
         final long nanos = DateTimeUtils.epochNanos(dt1);
         final long micros = DateTimeUtils.epochMicros(dt1);
@@ -542,6 +548,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(Instant.parse(iso8601), DateTimeUtils.parseInstantQuiet(iso8601));
+
+        final String isoOffset = "2022-04-26T00:30:31.087360+01:00";
+        assertEquals(ZonedDateTime.parse(isoOffset).toInstant(), DateTimeUtils.parseInstantQuiet(isoOffset));
+
+        final String isoOffset2 = "2022-11-06T02:59:49.999999999-04:00";
+        assertEquals(ZonedDateTime.parse(isoOffset2).toInstant(), DateTimeUtils.parseInstantQuiet(isoOffset2));
 
         final Instant dt1 = DateTimeUtils.parseInstant("2023-02-02T12:13:14.1345 NY");
         final long nanos = DateTimeUtils.epochNanos(dt1);
@@ -650,6 +662,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(ZonedDateTime.parse(iso8601), DateTimeUtils.parseZonedDateTime(iso8601));
+
+        final String isoOffset = "2022-04-26T00:30:31.087360+01:00";
+        assertEquals(ZonedDateTime.parse(isoOffset), DateTimeUtils.parseZonedDateTime(isoOffset));
+
+        final String isoOffset2 = "2022-11-06T02:59:49.999999999-04:00";
+        assertEquals(ZonedDateTime.parse(isoOffset2), DateTimeUtils.parseZonedDateTime(isoOffset2));
     }
 
     public void testParseZonedDateTimeQuiet() {
@@ -721,6 +739,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(ZonedDateTime.parse(iso8601), DateTimeUtils.parseZonedDateTimeQuiet(iso8601));
+
+        final String isoOffset = "2022-04-26T00:30:31.087360+01:00";
+        assertEquals(ZonedDateTime.parse(isoOffset), DateTimeUtils.parseZonedDateTimeQuiet(isoOffset));
+
+        final String isoOffset2 = "2022-11-06T02:59:49.999999999-04:00";
+        assertEquals(ZonedDateTime.parse(isoOffset2), DateTimeUtils.parseZonedDateTimeQuiet(isoOffset2));
     }
 
     public void testParseDurationNanos() {
