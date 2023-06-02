@@ -1496,10 +1496,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final QueryTable resultTable;
                     final LivenessScope liveResultCapture = isRefreshing() ? new LivenessScope() : null;
-                    final UpdateGraph ourUpdateGraph = ExecutionContext.getContext().getUpdateGraph();
                     try (final SafeCloseable ignored1 = liveResultCapture != null ? liveResultCapture::release : null;
                             final SafeCloseable ignored2 =
-                                    ExecutionContext.getDefaultContext().withUpdateGraph(ourUpdateGraph).open()) {
+                                    ExecutionContext.getDefaultContext().withUpdateGraph(getUpdateGraph()).open()) {
                         // we open the default context here to ensure that the update processing happens in the default
                         // context whether it is processed in parallel or not
                         try (final RowSet emptyRowSet = RowSetFactory.empty();

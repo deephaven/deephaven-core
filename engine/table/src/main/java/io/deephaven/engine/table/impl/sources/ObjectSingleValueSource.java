@@ -46,7 +46,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     @Override
     public final void set(T value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -81,7 +81,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

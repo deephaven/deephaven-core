@@ -277,7 +277,9 @@ public class DoubleChunkedCountDistinctOperator implements IterativeChunkedAggre
             }
 
             ssms.startTrackingPrevValues();
-            prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), DoubleChunkedCountDistinctOperator::flushPrevious);
+            prevFlusher = new UpdateCommitter<>(this,
+                    ExecutionContext.getContext().getUpdateGraph(),
+                    DoubleChunkedCountDistinctOperator::flushPrevious);
             touchedStates = RowSetFactory.empty();
         }
     }

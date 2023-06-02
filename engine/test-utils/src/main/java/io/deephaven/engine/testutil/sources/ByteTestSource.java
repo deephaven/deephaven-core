@@ -39,12 +39,13 @@ import java.util.function.LongConsumer;
  */
 public class ByteTestSource extends AbstractColumnSource<Byte>
         implements MutableColumnSourceGetDefaults.ForByte, TestColumnSource<Byte> {
-    private long lastAdditionTime = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+
+    private long lastAdditionTime;
     protected final Long2ByteOpenHashMap data = new Long2ByteOpenHashMap();
     protected Long2ByteOpenHashMap prevData;
 
     private final UpdateCommitter<ByteTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), ByteTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, ByteTestSource::flushPrevious);
 
     // region empty constructor
     public ByteTestSource() {
@@ -55,6 +56,7 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     // region chunk constructor
     public ByteTestSource(RowSet rowSet, Chunk<Values> data) {
         super(byte.class);
+        lastAdditionTime = updateGraph.clock().currentStep();
         add(rowSet, data);
         setDefaultReturnValue(this.data);
         this.prevData = this.data;
@@ -113,7 +115,7 @@ public class ByteTestSource extends AbstractColumnSource<Byte>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

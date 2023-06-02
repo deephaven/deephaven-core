@@ -36,8 +36,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     public SwitchColumnSource(@NotNull final ColumnSource<T> currentSource,
             @Nullable final Consumer<ColumnSource<T>> onPreviousCommitted) {
         super(currentSource.getType(), currentSource.getComponentType());
-        this.updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                SwitchColumnSource::clearPrevious);
+        this.updateCommitter = new UpdateCommitter<>(this, updateGraph, SwitchColumnSource::clearPrevious);
         this.onPreviousCommitted = onPreviousCommitted;
         this.currentSource = currentSource;
     }
@@ -56,7 +55,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
         Assert.eq(newCurrent.getComponentType(), "newCurrent.getComponentType()", getComponentType(),
                 "getComponentType()");
         prevSource = currentSource;
-        prevValidityStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        prevValidityStep = updateGraph.clock().currentStep();
         currentSource = newCurrent;
         updateCommitter.maybeActivate();
     }
@@ -294,10 +293,8 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
         return prevSource.getPrevShort(rowKey);
     }
 
-
     private boolean prevInvalid() {
-        return prevValidityStep == -1
-                || prevValidityStep != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        return prevValidityStep == -1 || prevValidityStep != updateGraph.clock().currentStep();
     }
 
     @Override

@@ -39,12 +39,13 @@ import java.util.function.LongConsumer;
  */
 public class IntTestSource extends AbstractColumnSource<Integer>
         implements MutableColumnSourceGetDefaults.ForInt, TestColumnSource<Integer> {
-    private long lastAdditionTime = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+
+    private long lastAdditionTime;
     protected final Long2IntOpenHashMap data = new Long2IntOpenHashMap();
     protected Long2IntOpenHashMap prevData;
 
     private final UpdateCommitter<IntTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), IntTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, IntTestSource::flushPrevious);
 
     // region empty constructor
     public IntTestSource() {
@@ -55,6 +56,7 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     // region chunk constructor
     public IntTestSource(RowSet rowSet, Chunk<Values> data) {
         super(int.class);
+        lastAdditionTime = updateGraph.clock().currentStep();
         add(rowSet, data);
         setDefaultReturnValue(this.data);
         this.prevData = this.data;
@@ -113,7 +115,7 @@ public class IntTestSource extends AbstractColumnSource<Integer>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

@@ -279,7 +279,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
         // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
         // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != updateGraph.clock().currentStep();
     }
 
     @Override
@@ -288,7 +288,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), LongSparseArraySource::commitUpdates);
+        prevFlusher = new UpdateCommitter<>(this, updateGraph, LongSparseArraySource::commitUpdates);
     }
 
     private void commitUpdates() {
@@ -427,7 +427,7 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
 
     @Override
     public void prepareForParallelPopulation(final RowSequence changedRows) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }

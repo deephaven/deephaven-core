@@ -148,7 +148,8 @@ public class ContiguousWritableRowRedirection implements WritableRowRedirection 
         Assert.eqNull(updateCommitter, "updateCommitter");
         checkpoint =
                 new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
-        updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+        updateCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
                 ContiguousWritableRowRedirection::commitUpdates);
     }
 

@@ -526,7 +526,9 @@ public class ObjectRollupCountDistinctOperator implements IterativeChunkedAggreg
             throw new IllegalStateException("startTrackingPrevValues must only be called once");
         }
 
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), ObjectRollupCountDistinctOperator::flushPrevious);
+        prevFlusher = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                ObjectRollupCountDistinctOperator::flushPrevious);
         touchedStates = RowSetFactory.empty();
         ssms.startTrackingPrevValues();
         resultColumn.startTrackingPrevValues();

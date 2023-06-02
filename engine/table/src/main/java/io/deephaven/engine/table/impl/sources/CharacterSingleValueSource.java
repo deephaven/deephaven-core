@@ -42,7 +42,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(Character value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -55,7 +55,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     @Override
     public final void set(char value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -88,7 +88,7 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

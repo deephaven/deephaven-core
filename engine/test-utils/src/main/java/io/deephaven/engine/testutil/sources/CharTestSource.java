@@ -34,12 +34,13 @@ import java.util.function.LongConsumer;
  */
 public class CharTestSource extends AbstractColumnSource<Character>
         implements MutableColumnSourceGetDefaults.ForChar, TestColumnSource<Character> {
-    private long lastAdditionTime = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+
+    private long lastAdditionTime;
     protected final Long2CharOpenHashMap data = new Long2CharOpenHashMap();
     protected Long2CharOpenHashMap prevData;
 
     private final UpdateCommitter<CharTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(), CharTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, CharTestSource::flushPrevious);
 
     // region empty constructor
     public CharTestSource() {
@@ -50,6 +51,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
     // region chunk constructor
     public CharTestSource(RowSet rowSet, Chunk<Values> data) {
         super(char.class);
+        lastAdditionTime = updateGraph.clock().currentStep();
         add(rowSet, data);
         setDefaultReturnValue(this.data);
         this.prevData = this.data;
@@ -108,7 +110,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

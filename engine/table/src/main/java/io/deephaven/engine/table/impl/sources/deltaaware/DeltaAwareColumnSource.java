@@ -613,7 +613,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          * startTrackingPrevValues().
          */
         chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
-        updateCommitter = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+        updateCommitter = new UpdateCommitter<>(this, updateGraph,
                 DeltaAwareColumnSource::commitValues);
     }
 

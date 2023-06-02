@@ -38,13 +38,13 @@ import java.util.function.LongConsumer;
  */
 public class ObjectTestSource<T> extends AbstractColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T>, TestColumnSource<T> {
-    private long lastAdditionTime = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+
+    private long lastAdditionTime;
     protected final Long2ObjectOpenHashMap<T> data = new Long2ObjectOpenHashMap<T>();
     protected Long2ObjectOpenHashMap<T> prevData;
 
     private final UpdateCommitter<ObjectTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
-                    ObjectTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, ObjectTestSource::flushPrevious);
 
     // region empty constructor
     public ObjectTestSource(Class<T> type) {
@@ -99,7 +99,7 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

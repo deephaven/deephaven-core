@@ -185,7 +185,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
             throw new IllegalStateException("Can't call startTrackingPrevValues() twice: " +
                     this.getClass().getCanonicalName());
         }
-        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+        prevFlusher = new UpdateCommitter<>(this, updateGraph,
                 ArraySourceHelper::commitBlocks);
         prevInUse = new long[numBlocks][];
     }

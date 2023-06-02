@@ -47,7 +47,7 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
     @Override
     public final void set(Boolean value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -82,7 +82,7 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

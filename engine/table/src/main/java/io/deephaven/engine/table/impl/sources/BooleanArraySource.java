@@ -58,7 +58,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedIndices) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -409,7 +409,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -460,7 +460,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -506,7 +506,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         if (keys.size() == 0) {
             return;
         }
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

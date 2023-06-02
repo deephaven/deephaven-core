@@ -11,7 +11,7 @@ import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 
 public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
-    long lastPreviousClockTick = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+    long lastPreviousClockTick = updateGraph.clock().currentStep();
 
     public void initializeBase(long base) {
         this.prevBase = base;
@@ -24,7 +24,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     public void setBase(long base) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (lastPreviousClockTick != currentStep) {
             prevBase = this.base;
             lastPreviousClockTick = currentStep;
@@ -33,7 +33,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     public long getPrevBase() {
-        if (lastPreviousClockTick == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+        if (lastPreviousClockTick == updateGraph.clock().currentStep()) {
             return prevBase;
         } else {
             return base;

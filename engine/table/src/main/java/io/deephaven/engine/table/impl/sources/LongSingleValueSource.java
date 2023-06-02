@@ -47,7 +47,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     @Override
     public final void set(Long value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -60,7 +60,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
     @Override
     public final void set(long value) {
         if (isTrackingPrevValues) {
-            final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+            final long currentStep = updateGraph.clock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -93,7 +93,7 @@ public class LongSingleValueSource extends SingleValueColumnSource<Long> impleme
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        if (!isTrackingPrevValues || changeTime < ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+        if (!isTrackingPrevValues || changeTime < updateGraph.clock().currentStep()) {
             return current;
         }
         return prev;

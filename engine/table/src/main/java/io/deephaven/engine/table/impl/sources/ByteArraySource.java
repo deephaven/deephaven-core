@@ -73,7 +73,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedRows) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -570,7 +570,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -655,7 +655,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -709,7 +709,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         // endregion chunkDecl
 
         final boolean trackPrevious = prevFlusher != null &&
-                ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+                ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

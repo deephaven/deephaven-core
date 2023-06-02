@@ -65,7 +65,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedIndices) {
-        final long currentStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -341,7 +341,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -416,7 +416,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -456,7 +456,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != updateGraph.clock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
