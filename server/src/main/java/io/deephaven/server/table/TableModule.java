@@ -14,7 +14,10 @@ import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.table.ops.AggregateAllGrpcImpl;
 import io.deephaven.server.table.ops.AggregateGrpcImpl;
+import io.deephaven.server.table.ops.AjRajGrpcImpl.AjGrpcImpl;
+import io.deephaven.server.table.ops.AjRajGrpcImpl.RajGrpcImpl;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
+import io.deephaven.server.table.ops.AjRajGrpcImpl;
 import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
 import io.deephaven.server.table.ops.DropColumnsGrpcImpl;
@@ -204,6 +207,16 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.AS_OF_JOIN)
     GrpcTableOperation<?> bindOperationAsOfJoin(JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AJ)
+    GrpcTableOperation<?> bindOperationAj(AjGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.RAJ)
+    GrpcTableOperation<?> bindOperationRaj(RajGrpcImpl op);
 
     @Binds
     @IntoMap

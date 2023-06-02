@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
@@ -320,6 +321,16 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void asOfJoinTables(AsOfJoinTablesRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AS_OF_JOIN, request, responseObserver);
+    }
+
+    @Override
+    public void ajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AJ, request, responseObserver);
+    }
+
+    @Override
+    public void rajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RAJ, request, responseObserver);
     }
 
     @Override

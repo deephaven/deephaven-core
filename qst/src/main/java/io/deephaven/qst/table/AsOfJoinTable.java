@@ -28,6 +28,14 @@ public abstract class AsOfJoinTable extends JoinBase {
         return visitor;
     }
 
+    public final boolean isAj() {
+        return joinMatch().isAj();
+    }
+
+    public final boolean isRaj() {
+        return joinMatch().isRaj();
+    }
+
     public interface Builder extends Join.Builder<AsOfJoinTable, Builder> {
 
         Builder joinMatch(AsOfJoinMatch joinMatch);

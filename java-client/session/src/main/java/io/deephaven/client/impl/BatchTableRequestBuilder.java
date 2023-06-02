@@ -26,13 +26,13 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.literal.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -50,7 +50,6 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -58,7 +57,6 @@ import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Reference;
-import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -372,39 +370,19 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(AsOfJoinTable aj) {
-            // TODO: add new as-of join RPC
-            AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
+        public void visit(AsOfJoinTable asOfJoin) {
+            AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                     .setResultId(ticket)
-                    .setLeftId(ref(aj.left()))
-                    .setRightId(ref(aj.right()))
-                    .setAsOfMatchRule(adapt(aj.joinMatch().joinRule()));
-            for (JoinMatch match : aj.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
+                    .setLeftId(ref(asOfJoin.left()))
+                    .setRightId(ref(asOfJoin.right()));
+            for (JoinMatch match : asOfJoin.matches()) {
+                builder.addExactMatchColumns(Strings.of(match));
             }
-            final String lastColumn = aj.joinMatch().leftColumn().name()
-                    + aj.joinMatch().joinRule().operatorString()
-                    + aj.joinMatch().rightColumn().name();
-            builder.addColumnsToMatch(lastColumn);
-            for (JoinAddition addition : aj.additions()) {
+            builder.setAsOfColumn(asOfJoin.joinMatch().toRpcString());
+            for (JoinAddition addition : asOfJoin.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setAsOfJoin, builder.build());
-        }
-
-        private static AsOfJoinTablesRequest.MatchRule adapt(AsOfJoinRule rule) {
-            switch (rule) {
-                case LESS_THAN_EQUAL:
-                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN_EQUAL;
-                case LESS_THAN:
-                    return AsOfJoinTablesRequest.MatchRule.GREATER_THAN;
-                case GREATER_THAN_EQUAL:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL;
-                case GREATER_THAN:
-                    return AsOfJoinTablesRequest.MatchRule.LESS_THAN;
-                default:
-                    throw new IllegalArgumentException(String.format("Unrecognized AsOfJoinRule %s", rule));
-            }
+            out = op(asOfJoin.isAj() ? Builder::setAj : Builder::setRaj, builder.build());
         }
 
         @Override
