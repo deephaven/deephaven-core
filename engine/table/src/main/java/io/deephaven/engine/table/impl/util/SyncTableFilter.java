@@ -106,7 +106,7 @@ public class SyncTableFilter {
         }
 
         if (tables.stream().anyMatch(t -> t.table.isRefreshing())) {
-            ExecutionContext.getContext().getUpdateGraph().checkInitiateTableOperation();
+            ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
         }
 
         // through the builder only

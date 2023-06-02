@@ -68,6 +68,6 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return updateGraph.getUpdateThreads();
+        return updateGraph.parallelismFactor();
     }
 }

@@ -20,7 +20,7 @@ import org.junit.Test;
  */
 public class TestLiveness {
 
-    private boolean oldCheckUgp;
+    private boolean oldSerialSafe;
     private LivenessScope scope;
     private SafeCloseable executionContext;
 
@@ -30,7 +30,7 @@ public class TestLiveness {
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
-        oldCheckUgp = updateGraph.setCheckTableOperations(false);
+        oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
     }
@@ -40,7 +40,7 @@ public class TestLiveness {
         LivenessScopeStack.pop(scope);
         scope.release();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.setCheckTableOperations(oldCheckUgp);
+        updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
         updateGraph.resetForUnitTests(true);
         executionContext.close();
     }

@@ -30,14 +30,14 @@ public interface NotificationQueue {
         boolean isTerminal();
 
         /**
-         * If a terminal notification must be executed on the main UGP thread, it must override this method, so that the
-         * notification is not executed on the run pool.
-         *
+         * If a terminal notification must be executed serially (typically under an UpdateGraph's exclusive lock), it
+         * must override this method so that the notification is not executed concurrently with other notifications.
+         * <p>
          * It is an error to return true if this notification is not terminal
          *
-         * @return true if this notification must be executed directly under the protection of the UGP lock
+         * @return true if this notification must be executed serially
          */
-        boolean mustExecuteWithUgpLock();
+        boolean mustExecuteWithUpdateGraphLock();
 
         /**
          * Can this notification be executed? That is, are all of it's dependencies satisfied.

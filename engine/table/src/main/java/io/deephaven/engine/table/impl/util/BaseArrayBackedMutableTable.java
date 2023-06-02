@@ -304,7 +304,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         }
 
         private void checkBlockingEditSafety() {
-            if (updateGraph.isRefreshThread()) {
+            if (updateGraph.currentThreadProcessesUpdates()) {
                 throw new UnsupportedOperationException("Attempted to make a blocking input table edit from a listener "
                         + "or notification. This is unsupported, because it will block the update graph from making "
                         + "progress.");
@@ -313,7 +313,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
         private void checkAsyncEditSafety(@NotNull final Table changeData) {
             if (changeData.isRefreshing()
-                    && updateGraph.isRefreshThread()
+                    && updateGraph.currentThreadProcessesUpdates()
                     && !changeData.satisfied(updateGraph.clock().currentStep())) {
                 throw new UnsupportedOperationException("Attempted to make an asynchronous input table edit from a "
                         + "listener or notification before the change data table is satisfied on the current cycle. "
@@ -355,7 +355,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 InputTableStatusListener listener) {
             Assert.neqNull(defaultValues, "defaultValues");
             if (defaultValues.isRefreshing()) {
-                updateGraph.checkInitiateTableOperation();
+                updateGraph.checkInitiateSerialTableOperation();
             }
 
             final List<ColumnDefinition<?>> columnDefinitions = getTableDefinition().getColumns();

@@ -30,10 +30,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -71,18 +68,18 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
 
 /**
  * The server-side implementation of a Barrage replication source.
- *
+ * <p>
  * When a client subscribes initially, a snapshot of the table is sent. The snapshot is obtained using either get() or
  * getPrev() based on the state of the LogicalClock. On each subsequent update, the client is given the deltas between
  * the last update propagation and the next.
- *
+ * <p>
  * When a client changes its subscription it will be sent a snapshot of only the data that the server believes it needs
  * assuming that the client has been respecting the existing subscription. Practically, this means that the server may
  * omit some data if the client's viewport change overlaps the currently recognized viewport.
- *
+ * <p>
  * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
- *
+ * <p>
  * The client-side counterpart of this is the {@link StreamReader}.
  *
  * @param <MessageView> The sub-view type that the listener expects to receive.
@@ -1334,7 +1331,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
-                    UpdateGraph updateGraph = parent.getUpdateGraph();
+                    UpdateGraphProcessor updateGraph = parent.getUpdateGraph().cast();
                     long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
                             * updateGraph.getTargetCycleDurationMillis()
                             * 1000000);

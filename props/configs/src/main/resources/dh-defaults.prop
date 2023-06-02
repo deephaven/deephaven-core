@@ -4,7 +4,6 @@ UpdatePerformanceTracker.reportIntervalMillis=60000
 measurement.per_thread_cpu=false
 allocation.stats.enabled=false
 statsdriver.enabled=true
-UpdateGraphProcessor.checkTableOperations=true
 
 #
 # NIO driver thread pool

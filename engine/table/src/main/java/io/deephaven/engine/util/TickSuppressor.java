@@ -45,7 +45,7 @@ public class TickSuppressor {
             return input;
         }
 
-        input.getUpdateGraph().checkInitiateTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         final QueryTable resultTable =
                 new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
@@ -93,7 +93,7 @@ public class TickSuppressor {
             return input;
         }
 
-        input.getUpdateGraph().checkInitiateTableOperation();
+        input.getUpdateGraph().checkInitiateSerialTableOperation();
 
         final QueryTable coalesced = (QueryTable) input.coalesce();
 

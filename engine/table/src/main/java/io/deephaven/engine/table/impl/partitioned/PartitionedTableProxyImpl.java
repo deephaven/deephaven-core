@@ -178,10 +178,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final boolean refreshingResults = target.table().isRefreshing() || otherTable.isRefreshing();
             if (refreshingResults && joinMatches != null) {
                 if (target.table().isRefreshing()) {
-                    target.table().getUpdateGraph().checkInitiateTableOperation();
+                    target.table().getUpdateGraph().checkInitiateSerialTableOperation();
                 }
                 if (otherTable.isRefreshing()) {
-                    otherTable.getUpdateGraph().checkInitiateTableOperation();
+                    otherTable.getUpdateGraph().checkInitiateSerialTableOperation();
                 }
             }
             if (target.table().isRefreshing() && otherTable.isRefreshing()
@@ -200,10 +200,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final boolean refreshingResults = target.table().isRefreshing() || otherTarget.table().isRefreshing();
 
             if (target.table().isRefreshing()) {
-                target.table().getUpdateGraph().checkInitiateTableOperation();
+                target.table().getUpdateGraph().checkInitiateSerialTableOperation();
             }
             if (otherTarget.table().isRefreshing()) {
-                otherTarget.table().getUpdateGraph().checkInitiateTableOperation();
+                otherTarget.table().getUpdateGraph().checkInitiateSerialTableOperation();
             }
             if (target.table().isRefreshing() && otherTarget.table().isRefreshing()
                     && target.table().getUpdateGraph() != otherTarget.table().getUpdateGraph()) {
@@ -267,8 +267,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             return parent;
         }
 
-        // NB: All code paths that pass non-null validations for refreshing parents call checkInitiateTableOperation
-        // first, so we can dispense with snapshots and swap listeners.
+        // NB: All code paths that pass non-null validations for refreshing parents call
+        // checkInitiateSerialTableOperation first, so we can dispense with snapshots and swap listeners.
         final QueryTable coalescedParent = (QueryTable) parent.coalesce();
         final QueryTable child = coalescedParent.getSubTable(
                 coalescedParent.getRowSet(),

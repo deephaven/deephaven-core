@@ -7,7 +7,7 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -33,7 +33,7 @@ public class SimulationClock implements Clock {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
-    private final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+    private final UpdateGraphProcessor updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
     private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
 

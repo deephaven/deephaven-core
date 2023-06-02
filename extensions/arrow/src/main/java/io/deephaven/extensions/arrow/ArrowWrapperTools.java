@@ -122,7 +122,7 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  */
 public class ArrowWrapperTools {
     private static final int MAX_POOL_SIZE = Math.max(
-            ExecutionContext.getContext().getUpdateGraph().getUpdateThreads(),
+            ExecutionContext.getContext().getUpdateGraph().parallelismFactor(),
             Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
 
     private static final BufferAllocator rootAllocator = new RootAllocator();

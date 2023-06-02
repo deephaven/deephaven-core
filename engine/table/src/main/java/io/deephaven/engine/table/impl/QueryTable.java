@@ -3608,13 +3608,13 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     public static void checkInitiateOperation(@NotNull final Table table) {
         if (table.isRefreshing()) {
-            table.getUpdateGraph().checkInitiateTableOperation();
+            table.getUpdateGraph().checkInitiateSerialTableOperation();
         }
     }
 
     public static void checkInitiateBinaryOperation(@NotNull final Table first, @NotNull final Table second) {
         if (first.isRefreshing() || second.isRefreshing()) {
-            first.getUpdateGraph(second).checkInitiateTableOperation();
+            first.getUpdateGraph(second).checkInitiateSerialTableOperation();
         }
     }
 

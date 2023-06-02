@@ -98,7 +98,7 @@ public class SelectOverheadLimiter {
             return input.flatten();
         }
 
-        ExecutionContext.getContext().getUpdateGraph().checkInitiateTableOperation();
+        ExecutionContext.getContext().getUpdateGraph().checkInitiateSerialTableOperation();
 
         // now we know we are refreshing, so should update our overhead structure
         final OverheadTracker overheadTracker = new OverheadTracker();

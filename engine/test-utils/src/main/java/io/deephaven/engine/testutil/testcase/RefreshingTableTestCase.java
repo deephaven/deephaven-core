@@ -41,7 +41,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     private boolean expectError = false;
     private SafeCloseable livenessScopeCloseable;
     private boolean oldLogEnabled;
-    private boolean oldCheckLtm;
+    private boolean oldSerialSafe;
     private SafeCloseable executionContext;
 
     List<Throwable> errors;
@@ -67,7 +67,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
         livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
 
         oldLogEnabled = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
-        oldCheckLtm = updateGraph.setCheckTableOperations(false);
+        oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
         UpdatePerformanceTracker.getInstance().enableUnitTestMode();
         ChunkPoolReleaseTracking.enableStrict();
     }
@@ -76,7 +76,7 @@ abstract public class RefreshingTableTestCase extends BaseArrayTestCase implemen
     public void tearDown() throws Exception {
         ChunkPoolReleaseTracking.checkAndDisable();
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.setCheckTableOperations(oldCheckLtm);
+        updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
         QueryCompiler.setLogEnabled(oldLogEnabled);
 
         // reset the execution context
