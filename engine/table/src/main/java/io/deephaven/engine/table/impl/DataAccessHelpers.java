@@ -22,6 +22,6 @@ public class DataAccessHelpers {
     }
 
     public static <T> DataColumn<T> getColumn(Table table, @NotNull final String columnName) {
-        return new IndexedDataColumn<>(columnName, table);
+        return new IndexedDataColumn<>(columnName, table.coalesce());
     }
 }
