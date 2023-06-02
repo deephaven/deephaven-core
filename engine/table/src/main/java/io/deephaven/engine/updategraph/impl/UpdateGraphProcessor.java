@@ -1785,25 +1785,39 @@ public class UpdateGraphProcessor implements UpdateGraph {
         }
 
         @Override
-        public Thread newThread(@NotNull final Runnable runnable) {
-            final Thread thread = super.newThread(runnable);
-            final Thread.UncaughtExceptionHandler existing = thread.getUncaughtExceptionHandler();
-            thread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
-                ensureUnlocked("unit test run pool thread exception handler", null);
-                existing.uncaughtException(errorThread, throwable);
+        public Thread newThread(@NotNull final Runnable r) {
+            return super.newThread(() -> {
+                configureUnitTestRefreshThread();
+                r.run();
             });
-            return thread;
         }
     }
 
     /**
-     * Configure the primary UGP thread or one of the auxiliary run threads.
+     * Configure the primary UGP thread or one of the auxiliary notification processing threads.
      */
     private void configureRefreshThread() {
         SystemicObjectTracker.markThreadSystemic();
         MultiChunkPool.enableDedicatedPoolForThisThread();
         isUpdateThread.set(true);
-        // the execution context for refresh threads point toward this update graph
+        // Install this UpdateGraph via ExecutionContext for refresh threads
+        //noinspection resource
+        ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
+    }
+
+    /**
+     * Configure threads to be used for unit test processing.
+     */
+    private void configureUnitTestRefreshThread() {
+        final Thread currentThread = Thread.currentThread();
+        final Thread.UncaughtExceptionHandler existing = currentThread.getUncaughtExceptionHandler();
+        currentThread.setUncaughtExceptionHandler((final Thread errorThread, final Throwable throwable) -> {
+            ensureUnlocked("unit test run pool thread exception handler", null);
+            existing.uncaughtException(errorThread, throwable);
+        });
+        isUpdateThread.set(true);
+        // Install this UpdateGraph via ExecutionContext for refresh threads
+        //noinspection resource
         ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 

@@ -19,7 +19,7 @@ public class PoisonedUpdateGraph implements UpdateGraph {
     private PoisonedUpdateGraph() {}
 
     private <T> T fail() {
-        logger.error().append("No ExecutionContext provided, cannot use QueryLibrary. If this is being run in a ")
+        logger.error().append("No ExecutionContext provided, cannot use UpdateGraph. If this is being run in a ")
                 .append("thread, did you specify an ExecutionContext for the thread? Please refer to the ")
                 .append("documentation on ExecutionContext for details.").endl();
         throw new NoExecutionContextRegisteredException();
