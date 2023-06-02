@@ -614,9 +614,10 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
          * twice during the lifetime of a given DeltaAwareColumnSource: once at construction and once at the time of
          * startTrackingPrevValues().
          */
-        chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
-        updateCommitter = new UpdateCommitter<>(this, updateGraph,
-                DeltaAwareColumnSource::commitValues);
+        try (final SafeCloseable ignored = chunkAdapter.get()) {
+            chunkAdapter = ThreadLocal.withInitial(() -> ChunkAdapter.create(getType(), baseline, delta));
+        }
+        updateCommitter = new UpdateCommitter<>(this, updateGraph, DeltaAwareColumnSource::commitValues);
     }
 
     @Override
@@ -627,6 +628,14 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     @Override
     public boolean isImmutable() {
         return false;
+    }
+
+    @Override
+    public void releaseCachedResources() {
+        super.releaseCachedResources();
+        try (final SafeCloseable ignored = chunkAdapter.get()) {
+            chunkAdapter.remove();
+        }
     }
 
     /**

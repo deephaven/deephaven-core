@@ -16,7 +16,7 @@ import java.util.*;
  */
 public interface ReleaseTracker<RESOURCE_TYPE> {
     boolean CAPTURE_STACK_TRACES = Configuration.getInstance().getBooleanForClassWithDefault(ReleaseTracker.class,
-            "captureStackTraces", false);
+            "captureStackTraces", true);
 
     void reportAcquire(@NotNull final RESOURCE_TYPE resource);
 

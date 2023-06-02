@@ -19,6 +19,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,6 +37,19 @@ public class TestLongDeltaAwareColumnSource {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    DeltaAwareColumnSource<Long> source;
+
+    @Before
+    public void setUp() {
+         source = new DeltaAwareColumnSource<>(long.class);
+    }
+
+    @After
+    public void tearDown() {
+        source.releaseCachedResources();
+        source = null;
+    }
+
     @Test
     public void simple1() {
         final Random rng = new Random(832952914);
@@ -42,7 +58,6 @@ public class TestLongDeltaAwareColumnSource {
         final long expected1 = ArrayGenerator.randomLongs(rng, 1)[0];
 
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Long> source = new DeltaAwareColumnSource<>(long.class);
         source.ensureCapacity(10);
 
         source.set(key1, expected1);
@@ -63,7 +78,6 @@ public class TestLongDeltaAwareColumnSource {
         final long expected0_1 = values[1];
         final long expected1 = values[2];
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Long> source = new DeltaAwareColumnSource<>(long.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
@@ -108,7 +122,6 @@ public class TestLongDeltaAwareColumnSource {
         final HashMap<Long, Long> expectedPrev = new HashMap<>();
         final HashMap<Long, Long> expectedCurrent = new HashMap<>();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Long> source = new DeltaAwareColumnSource<>(long.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
             final long value = valuesPhase1[(int)ii];

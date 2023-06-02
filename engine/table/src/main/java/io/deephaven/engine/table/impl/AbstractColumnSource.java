@@ -16,7 +16,6 @@ import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.*;

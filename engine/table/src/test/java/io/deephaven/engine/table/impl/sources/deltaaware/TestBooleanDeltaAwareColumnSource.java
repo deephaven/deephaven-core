@@ -23,6 +23,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,6 +41,19 @@ public class TestBooleanDeltaAwareColumnSource {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    DeltaAwareColumnSource<Boolean> source;
+
+    @Before
+    public void setUp() {
+         source = new DeltaAwareColumnSource<>(boolean.class);
+    }
+
+    @After
+    public void tearDown() {
+        source.releaseCachedResources();
+        source = null;
+    }
+
     @Test
     public void simple1() {
         final Random rng = new Random(832952914);
@@ -46,7 +62,6 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected1 = ArrayGenerator.randomBooleans(rng, 1)[0];
 
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(10);
 
         source.set(key1, expected1);
@@ -67,7 +82,6 @@ public class TestBooleanDeltaAwareColumnSource {
         final byte expected0_1 = values[1];
         final byte expected1 = values[2];
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(10);
         source.set(key0, expected0_0);
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
@@ -112,7 +126,6 @@ public class TestBooleanDeltaAwareColumnSource {
         final HashMap<Long, Byte> expectedPrev = new HashMap<>();
         final HashMap<Long, Byte> expectedCurrent = new HashMap<>();
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
-        final DeltaAwareColumnSource<Boolean> source = new DeltaAwareColumnSource<>(boolean.class);
         source.ensureCapacity(length);
         for (long ii = 0; ii < length; ++ii) {
             final byte value = valuesPhase1[(int)ii];
