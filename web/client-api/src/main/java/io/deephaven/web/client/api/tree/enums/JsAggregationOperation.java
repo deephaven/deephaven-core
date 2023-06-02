@@ -84,6 +84,7 @@ public class JsAggregationOperation {
         }
         return columnType.equals("boolean") || columnType.equals("java.lang.Boolean");
     }
+
     private static boolean isComparable(String columnType) {
         if (isNumericOrBoolean(columnType)) {
             return true;

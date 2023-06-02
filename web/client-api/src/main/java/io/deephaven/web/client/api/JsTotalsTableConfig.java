@@ -204,7 +204,8 @@ public class JsTotalsTableConfig {
         request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupBy));
         JsArray<Aggregation> aggregations = new JsArray<>();
         request.setAggregationsList(aggregations);
-        Map<String, String> columnTypes = Arrays.stream(Js.<Column[]>uncheckedCast(allColumns)).collect(Collectors.toMap(Column::getName, Column::getType));
+        Map<String, String> columnTypes = Arrays.stream(Js.<Column[]>uncheckedCast(allColumns))
+                .collect(Collectors.toMap(Column::getName, Column::getType));
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
@@ -227,7 +228,10 @@ public class JsTotalsTableConfig {
         Set<String> unusedColumns = new HashSet<>(columnTypes.keySet());
         unusedColumns.removeAll(seenColNames);
         // no unused column can collide, add to the default operation list
-        aggs.computeIfAbsent(defaultOperation, ignore -> new LinkedHashSet<>()).addAll(unusedColumns.stream().filter(colName -> JsAggregationOperation.canAggregateType(defaultOperation, columnTypes.get(colName))).collect(Collectors.toList()));
+        aggs.computeIfAbsent(defaultOperation, ignore -> new LinkedHashSet<>())
+                .addAll(unusedColumns.stream().filter(
+                        colName -> JsAggregationOperation.canAggregateType(defaultOperation, columnTypes.get(colName)))
+                        .collect(Collectors.toList()));
 
         aggs.forEach((aggregationType, cols) -> {
             Aggregation agg = new Aggregation();
