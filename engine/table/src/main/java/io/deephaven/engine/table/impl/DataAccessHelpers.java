@@ -13,7 +13,10 @@ public class DataAccessHelpers {
     // -----------------------------------------------------------------------------------------------------------------
 
     public static DataColumn<?>[] getColumns(Table table) {
-        return table.getDefinition().getColumnStream().map(c -> getColumn(table, c.getName()))
+        final Table t = table.coalesce();
+        return t.getDefinition()
+                .getColumnStream()
+                .map(c -> getColumn(t, c.getName()))
                 .toArray(DataColumn[]::new);
     }
 
