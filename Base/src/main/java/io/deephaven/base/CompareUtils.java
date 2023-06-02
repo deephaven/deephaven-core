@@ -120,7 +120,7 @@ public class CompareUtils {
     }
 
     /**
-     * Since logical comparison of double values considerig error is effectively a three-value logic, you can't really
+     * Since logical comparison of double values considering error is effectively a three-value logic, you can't really
      * do !equals when you mean notEquals.
      * 
      * @param x
