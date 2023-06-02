@@ -66,16 +66,16 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                 "floatCol", "byteCol", "shortCol")), resultColumns.keySet());
 
-        assertEquals((long) Numeric.sum((int[]) queryTable.getColumn("intCol").getDirect()),
-                totals.getColumn("intCol").get(0));
-        assertEquals(Numeric.sum((double[]) queryTable.getColumn("doubleCol").getDirect()),
-                totals.getColumn("doubleCol").get(0));
-        assertEquals(Numeric.sum((double[]) queryTable.getColumn("doubleNullCol").getDirect()),
-                totals.getColumn("doubleNullCol").get(0));
-        assertEquals("floatCol", Numeric.sum((float[]) queryTable.getColumn("floatCol").getDirect()),
-                (float) totals.getColumn("floatCol").get(0), 0.02);
-        assertEquals(shortSum((short[]) queryTable.getColumn("shortCol").getDirect()),
-                totals.getColumn("shortCol").get(0));
+        assertEquals((long) Numeric.sum((int[]) TableImpl.getColumn(queryTable, "intCol").getDirect()),
+                TableImpl.getColumn(totals, "intCol").get(0));
+        assertEquals(Numeric.sum((double[]) TableImpl.getColumn(queryTable, "doubleCol").getDirect()),
+                TableImpl.getColumn(totals, "doubleCol").get(0));
+        assertEquals(Numeric.sum((double[]) TableImpl.getColumn(queryTable, "doubleNullCol").getDirect()),
+                TableImpl.getColumn(totals, "doubleNullCol").get(0));
+        assertEquals("floatCol", Numeric.sum((float[]) TableImpl.getColumn(queryTable, "floatCol").getDirect()),
+                (float) TableImpl.getColumn(totals, "floatCol").get(0), 0.02);
+        assertEquals(shortSum((short[]) TableImpl.getColumn(queryTable, "shortCol").getDirect()),
+                TableImpl.getColumn(totals, "shortCol").get(0));
 
         builder.setDefaultOperation("skip");
         builder.setOperation("byteCol", "min");
@@ -86,10 +86,10 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
                 totals2.getColumnSourceMap().keySet());
-        assertEquals(Numeric.min((byte[]) queryTable.getColumn("byteCol").getDirect()),
-                totals2.getColumn("byteCol").get(0));
-        assertEquals(queryTable.getColumn("Sym").get(0), totals2.getColumn("Sym").get(0));
-        assertEquals(queryTable.getColumn("intCol2").get(queryTable.size() - 1), totals2.getColumn("intCol2").get(0));
+        assertEquals(Numeric.min((byte[]) TableImpl.getColumn(queryTable, "byteCol").getDirect()),
+                TableImpl.getColumn(totals2, "byteCol").get(0));
+        assertEquals(TableImpl.getColumn(queryTable, "Sym").get(0), TableImpl.getColumn(totals2, "Sym").get(0));
+        assertEquals(TableImpl.getColumn(queryTable, "intCol2").get(queryTable.size() - 1), TableImpl.getColumn(totals2, "intCol2").get(0));
 
         builder.setOperation("byteCol", "max");
         builder.setOperation("doubleCol", "var");
@@ -107,22 +107,22 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
                     totals3.getColumnSourceMap().keySet());
             assertEquals(
-                    Numeric.max((byte[]) queryTable.getColumn("byteCol").getDirect()),
-                    totals3.getColumn("byteCol").getByte(0));
+                    Numeric.max((byte[]) TableImpl.getColumn(queryTable, "byteCol").getDirect()),
+                    TableImpl.getColumn(totals3, "byteCol").getByte(0));
             assertEquals(
-                    Numeric.var(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol").getDirect())),
-                    totals3.getColumn("doubleCol").getDouble(0),
+                    Numeric.var(new DoubleVectorDirect((double[]) TableImpl.getColumn(queryTable, "doubleCol").getDirect())),
+                    TableImpl.getColumn(totals3, "doubleCol").getDouble(0),
                     EPSILON);
             assertEquals(
-                    Numeric.std(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleNullCol").getDirect())),
-                    totals3.getColumn("doubleNullCol__Std").getDouble(0),
+                    Numeric.std(new DoubleVectorDirect((double[]) TableImpl.getColumn(queryTable, "doubleNullCol").getDirect())),
+                    TableImpl.getColumn(totals3, "doubleNullCol__Std").getDouble(0),
                     EPSILON);
-            assertEquals(queryTable.size(), totals3.getColumn("doubleNullCol__Count").getLong(0));
+            assertEquals(queryTable.size(), TableImpl.getColumn(totals3, "doubleNullCol__Count").getLong(0));
             assertEquals(
-                    Numeric.avg(new DoubleVectorDirect((double[]) queryTable.getColumn("doubleCol2").getDirect())),
-                    totals3.getColumn("doubleCol2").getDouble(0),
+                    Numeric.avg(new DoubleVectorDirect((double[]) TableImpl.getColumn(queryTable, "doubleCol2").getDirect())),
+                    TableImpl.getColumn(totals3, "doubleCol2").getDouble(0),
                     EPSILON);
-            assertEquals(queryTable.size(), (long) totals3.getColumn("shortCol").get(0));
+            assertEquals(queryTable.size(), (long) TableImpl.getColumn(totals3, "shortCol").get(0));
 
             final Table totals4 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));

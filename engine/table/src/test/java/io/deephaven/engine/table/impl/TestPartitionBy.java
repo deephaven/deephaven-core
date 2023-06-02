@@ -475,7 +475,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
         final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(col("USym", "SPY")), "USym");
         final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
-        final String[] keys = (String[]) pt.table().getColumn(keyColumnName).getDirect();
+        final String[] keys = (String[]) TableImpl.getColumn(pt.table(), keyColumnName).getDirect();
         System.out.println(Arrays.toString(keys));
         assertEquals(keys, new String[] {"SPY", "AAPL"});
         assertEquals(pt.table().isRefreshing(), refreshing);

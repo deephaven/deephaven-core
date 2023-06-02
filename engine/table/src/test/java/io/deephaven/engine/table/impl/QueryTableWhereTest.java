@@ -395,9 +395,9 @@ public abstract class QueryTableWhereTest {
                         .computeLocked(() -> filteredTable.whereNotIn(setTable, "X"));
         show(result);
         assertEquals(3, result.size());
-        assertEquals(asList("A", "B", "C"), asList((String[]) result.getColumn("X").getDirect()));
+        assertEquals(asList("A", "B", "C"), asList((String[]) TableImpl.getColumn(result, "X").getDirect()));
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
+        assertEquals(asList("D", "E"), asList((String[]) TableImpl.getColumn(resultInverse, "X").getDirect()));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(filteredTable, i(6), col("X", "A"));
@@ -405,9 +405,9 @@ public abstract class QueryTableWhereTest {
         });
         show(result);
         assertEquals(4, result.size());
-        assertEquals(asList("A", "B", "C", "A"), asList((String[]) result.getColumn("X").getDirect()));
+        assertEquals(asList("A", "B", "C", "A"), asList((String[]) TableImpl.getColumn(result, "X").getDirect()));
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
+        assertEquals(asList("D", "E"), asList((String[]) TableImpl.getColumn(resultInverse, "X").getDirect()));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(7), col("X", "D"));
@@ -415,9 +415,9 @@ public abstract class QueryTableWhereTest {
         });
         showWithRowSet(result);
         assertEquals(5, result.size());
-        assertEquals(asList("A", "B", "C", "D", "A"), asList((String[]) result.getColumn("X").getDirect()));
+        assertEquals(asList("A", "B", "C", "D", "A"), asList((String[]) TableImpl.getColumn(result, "X").getDirect()));
         assertEquals(1, resultInverse.size());
-        assertEquals(asList("E"), asList((String[]) resultInverse.getColumn("X").getDirect()));
+        assertEquals(asList("E"), asList((String[]) TableImpl.getColumn(resultInverse, "X").getDirect()));
     }
 
     @Test
@@ -1154,8 +1154,8 @@ public abstract class QueryTableWhereTest {
         }
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, result.getColumn("A").getLong(0));
-        assertEquals(6_999_999L, result.getColumn("A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, TableImpl.getColumn(result, "A").getLong(0));
+        assertEquals(6_999_999L, TableImpl.getColumn(result, "A").getLong(result.size() - 1));
     }
 
     @Test
@@ -1166,7 +1166,7 @@ public abstract class QueryTableWhereTest {
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, result.getColumn("A").getLong(0));
-        assertEquals(6_999_999L, result.getColumn("A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, TableImpl.getColumn(result, "A").getLong(0));
+        assertEquals(6_999_999L, TableImpl.getColumn(result, "A").getLong(result.size() - 1));
     }
 }

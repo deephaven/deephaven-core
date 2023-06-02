@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
@@ -66,7 +67,7 @@ public class CumulativeUtilTest extends BaseArrayTestCase {
     }
 
     private void assertColumnEquals(final Table t, final String column, final double[] values) {
-        final double[] colValues = t.getColumn(column).getDoubles(0, t.size());
+        final double[] colValues = TableImpl.getColumn(t, column).getDoubles(0, t.size());
         assertEquals(values, colValues);
     }
 }

@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -23,7 +24,6 @@ import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -113,7 +113,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) TableImpl.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
@@ -125,10 +125,10 @@ public class TestEmMinMax extends BaseUpdateByTest {
         Table actualReset = t.updateBy(UpdateByOperation.EmMin(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmTicks(skipControl, 100, t.getColumn(col).getDirect(), actualSkip.getColumn(col).getDirect(),
+            final Class colType = TableImpl.getColumn(t, col).getType();
+            assertWithEmTicks(skipControl, 100, TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(actualSkip, col).getDirect(),
                     colType, doubleMinFunction, bdMinFunction);
-            assertWithEmTicks(resetControl, 100, t.getColumn(col).getDirect(), actualReset.getColumn(col).getDirect(),
+            assertWithEmTicks(resetControl, 100, TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(actualReset, col).getDirect(),
                     colType, doubleMinFunction, bdMinFunction);
         }
 
@@ -136,12 +136,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         Table actualResetTime = t.updateBy(UpdateByOperation.EmMin(resetControl, "ts", 10 * MINUTE, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualSkipTime.getColumn(col).getDirect(),
+            final Class colType = TableImpl.getColumn(t, col).getType();
+            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, TableImpl.getColumn(t, col).getDirect(),
+                    TableImpl.getColumn(actualSkipTime, col).getDirect(),
                     colType, doubleMinFunction, bdMinFunction);
-            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualResetTime.getColumn(col).getDirect(),
+            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, TableImpl.getColumn(t, col).getDirect(),
+                    TableImpl.getColumn(actualResetTime, col).getDirect(),
                     colType, doubleMinFunction, bdMinFunction);
         }
 
@@ -151,10 +151,10 @@ public class TestEmMinMax extends BaseUpdateByTest {
         actualReset = t.updateBy(UpdateByOperation.EmMax(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmTicks(skipControl, 100, t.getColumn(col).getDirect(), actualSkip.getColumn(col).getDirect(),
+            final Class colType = TableImpl.getColumn(t, col).getType();
+            assertWithEmTicks(skipControl, 100, TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(actualSkip, col).getDirect(),
                     colType, doubleMaxFunction, bdMaxFunction);
-            assertWithEmTicks(resetControl, 100, t.getColumn(col).getDirect(), actualReset.getColumn(col).getDirect(),
+            assertWithEmTicks(resetControl, 100, TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(actualReset, col).getDirect(),
                     colType, doubleMaxFunction, bdMaxFunction);
         }
 
@@ -162,12 +162,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         actualResetTime = t.updateBy(UpdateByOperation.EmMax(resetControl, "ts", 10 * MINUTE, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualSkipTime.getColumn(col).getDirect(),
+            final Class colType = TableImpl.getColumn(t, col).getType();
+            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, TableImpl.getColumn(t, col).getDirect(),
+                    TableImpl.getColumn(actualSkipTime, col).getDirect(),
                     colType, doubleMaxFunction, bdMaxFunction);
-            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualResetTime.getColumn(col).getDirect(),
+            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, TableImpl.getColumn(t, col).getDirect(),
+                    TableImpl.getColumn(actualResetTime, col).getDirect(),
                     colType, doubleMaxFunction, bdMaxFunction);
         }
     }
@@ -211,9 +211,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTicks(skipControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTicks(skipControl, 100, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -221,9 +221,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTicks(resetControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTicks(resetControl, 100, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -238,15 +238,15 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) TableImpl.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTime(skipControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTime(skipControl, 10 * MINUTE, timestamps, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -254,15 +254,15 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) TableImpl.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTime(resetControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTime(resetControl, 10 * MINUTE, timestamps, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -279,9 +279,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTicks(skipControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTicks(skipControl, 100, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -289,9 +289,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTicks(resetControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTicks(resetControl, 100, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -306,15 +306,15 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) TableImpl.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTime(skipControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTime(skipControl, 10 * MINUTE, timestamps, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -322,15 +322,15 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) TableImpl.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmTime(resetControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = TableImpl.getColumn(source, col).getType();
+                assertWithEmTime(resetControl, 10 * MINUTE, timestamps, TableImpl.getColumn(source, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getDirect(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -836,7 +836,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) TableImpl.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);

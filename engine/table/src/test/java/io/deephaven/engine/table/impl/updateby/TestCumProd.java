@@ -4,6 +4,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -42,8 +43,8 @@ public class TestCumProd extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumProd(t.getColumn(col).getDirect(), result.getColumn(col).getDirect(),
-                    result.getColumn(col).getType());
+            assertWithCumProd(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(result, col).getDirect(),
+                    TableImpl.getColumn(result, col).getType());
         }
     }
 
@@ -99,8 +100,8 @@ public class TestCumProd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumProd(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
-                        actual.getColumn(col).getType());
+                assertWithCumProd(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getType());
             });
             return source;
         });

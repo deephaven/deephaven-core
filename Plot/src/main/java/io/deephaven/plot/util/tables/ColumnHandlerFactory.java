@@ -3,6 +3,7 @@
  */
 package io.deephaven.plot.util.tables;
 
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
@@ -117,7 +118,7 @@ public class ColumnHandlerFactory implements Serializable {
 
         protected DataColumn getDataColumn() {
             if (dataColumn == null) {
-                dataColumn = table.getColumn(columnName);
+                dataColumn = TableImpl.getColumn(table, columnName);
             }
 
             return dataColumn;
@@ -168,7 +169,7 @@ public class ColumnHandlerFactory implements Serializable {
 
         protected DataColumn getDataColumn() {
             if (dataColumn == null) {
-                dataColumn = tableHandle.getTable().getColumn(columnName);
+                dataColumn = TableImpl.getColumn(tableHandle.getTable(), columnName);
             }
 
             return dataColumn;

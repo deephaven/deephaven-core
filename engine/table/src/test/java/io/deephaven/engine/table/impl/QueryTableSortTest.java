@@ -35,6 +35,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -47,19 +48,19 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table result0 = newTable(col("Unsorted", 3.0, null, 2.0), col("DataToSort", "c", "a", "b"));
         show(result0.sort("Unsorted"));
         assertEquals(Arrays.asList(null, 2.0, 3.0),
-                Arrays.asList(result0.sort("Unsorted").getColumn("Unsorted").get(0, 3)));
+                Arrays.asList(TableImpl.getColumn(result0.sort("Unsorted"), "Unsorted").get(0, 3)));
         show(result0.sortDescending("Unsorted"));
         assertEquals(Arrays.asList(3.0, 2.0, null),
-                Arrays.asList(result0.sortDescending("Unsorted").getColumn("Unsorted").get(0, 3)));
+                Arrays.asList(TableImpl.getColumn(result0.sortDescending("Unsorted"), "Unsorted").get(0, 3)));
 
         Table result1 = newTable(col("Unsorted", 4.0, 3.0, 1.1, Double.NaN, 2.0, 1.0, 5.0),
                 col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
         final Table nanSorted = result1.sort("Unsorted");
         show(nanSorted);
         assertEquals(Arrays.asList(1.0, 1.1, 2.0, 3.0, 4.0, 5.0, Double.NaN),
-                Arrays.asList(nanSorted.getColumn("Unsorted").get(0, 7)));
+                Arrays.asList(TableImpl.getColumn(nanSorted, "Unsorted").get(0, 7)));
         assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g"),
-                Arrays.asList(nanSorted.getColumn("DataToSort").get(0, 7)));
+                Arrays.asList(TableImpl.getColumn(nanSorted, "DataToSort").get(0, 7)));
 
         result1 = newTable(col("Unsorted", 4.1f, 3.1f, 1.2f, Float.NaN, 2.1f, 1.1f, 5.1f),
                 col("DataToSort", "e", "d", "b", "g", "c", "a", "f"));
@@ -69,43 +70,43 @@ public class QueryTableSortTest extends QueryTableTestBase {
         System.out.println("nanFloatedSorted");
         show(nanFloatSorted);
         assertEquals(Arrays.asList(1.1f, 1.2f, 2.1f, 3.1f, 4.1f, 5.1f, Float.NaN),
-                Arrays.asList(nanFloatSorted.getColumn("Unsorted").get(0, 7)));
+                Arrays.asList(TableImpl.getColumn(nanFloatSorted, "Unsorted").get(0, 7)));
         assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g"),
-                Arrays.asList(nanFloatSorted.getColumn("DataToSort").get(0, 7)));
+                Arrays.asList(TableImpl.getColumn(nanFloatSorted, "DataToSort").get(0, 7)));
 
 
         Table result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sort("DataToSort");
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
         result = newTable(col("Unsorted", 3, 1, 2), col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
-        assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
 
         result = newTable(col("Unsorted", '3', '1', '2'), col("DataToSort", "c", "a", "b")).sort("Unsorted");
-        assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
         result = newTable(col("Unsorted", '3', '1', '2'), col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
-        assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
 
         final ColumnHolder<?> c1 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
         final Table table = newTable(c1, col("DataToSort", "c", "a", "b"));
         result = table.sort("DataToSort");
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
         final ColumnHolder<?> c11 = TstUtils.colGrouped("Unsorted", 3, 1, 2);
         result = newTable(c11, col("DataToSort", "c", "a", "b")).sortDescending("DataToSort");
-        assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList(3, 2, 1), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
 
         final ColumnHolder<?> c2 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
         result = newTable(c2, col("DataToSort", "c", "a", "b")).sort("Unsorted");
-        assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList('1', '2', '3'), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
         final ColumnHolder<?> c22 = TstUtils.colGrouped("Unsorted", '3', '1', '2');
         result = newTable(c22, col("DataToSort", "c", "a", "b")).sortDescending("Unsorted");
-        assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(result.getColumn("Unsorted").get(0, 3)));
-        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(result.getColumn("DataToSort").get(0, 3)));
+        assertEquals(Arrays.asList('3', '2', '1'), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 3)));
+        assertEquals(Arrays.asList("c", "b", "a"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 3)));
 
         final Table input =
                 newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"));
@@ -114,39 +115,39 @@ public class QueryTableSortTest extends QueryTableTestBase {
         result = input.sort("C1", "C2");
         System.out.println("Result:");
         showWithRowSet(result);
-        assertEquals(Arrays.asList(2, 2, 4, 4), Arrays.asList(result.getColumn("C1").get(0, 4)));
-        assertEquals(Arrays.asList('1', '2', '1', '2'), Arrays.asList(result.getColumn("C2").get(0, 4)));
-        assertEquals(Arrays.asList("a", "c", "b", "d"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
+        assertEquals(Arrays.asList(2, 2, 4, 4), Arrays.asList(TableImpl.getColumn(result, "C1").get(0, 4)));
+        assertEquals(Arrays.asList('1', '2', '1', '2'), Arrays.asList(TableImpl.getColumn(result, "C2").get(0, 4)));
+        assertEquals(Arrays.asList("a", "c", "b", "d"), Arrays.asList(TableImpl.getColumn(result, "Witness").get(0, 4)));
 
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
                 .sort("C2",
                         "C1");
-        assertEquals(Arrays.asList(2, 4, 2, 4), Arrays.asList(result.getColumn("C1").get(0, 4)));
-        assertEquals(Arrays.asList('1', '1', '2', '2'), Arrays.asList(result.getColumn("C2").get(0, 4)));
-        assertEquals(Arrays.asList("c", "d", "a", "b"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
+        assertEquals(Arrays.asList(2, 4, 2, 4), Arrays.asList(TableImpl.getColumn(result, "C1").get(0, 4)));
+        assertEquals(Arrays.asList('1', '1', '2', '2'), Arrays.asList(TableImpl.getColumn(result, "C2").get(0, 4)));
+        assertEquals(Arrays.asList("c", "d", "a", "b"), Arrays.asList(TableImpl.getColumn(result, "Witness").get(0, 4)));
 
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '1', '1', '2', '2'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C1", "C2");
-        assertEquals(Arrays.asList(4, 4, 2, 2), Arrays.asList(result.getColumn("C1").get(0, 4)));
-        assertEquals(Arrays.asList('2', '1', '2', '1'), Arrays.asList(result.getColumn("C2").get(0, 4)));
-        assertEquals(Arrays.asList("d", "b", "c", "a"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
+        assertEquals(Arrays.asList(4, 4, 2, 2), Arrays.asList(TableImpl.getColumn(result, "C1").get(0, 4)));
+        assertEquals(Arrays.asList('2', '1', '2', '1'), Arrays.asList(TableImpl.getColumn(result, "C2").get(0, 4)));
+        assertEquals(Arrays.asList("d", "b", "c", "a"), Arrays.asList(TableImpl.getColumn(result, "Witness").get(0, 4)));
 
         result = newTable(col("C1", 2, 4, 2, 4), col("C2", '2', '2', '1', '1'), col("Witness", "a", "b", "c", "d"))
                 .sortDescending("C2", "C1");
-        assertEquals(Arrays.asList(4, 2, 4, 2), Arrays.asList(result.getColumn("C1").get(0, 4)));
-        assertEquals(Arrays.asList('2', '2', '1', '1'), Arrays.asList(result.getColumn("C2").get(0, 4)));
-        assertEquals(Arrays.asList("b", "a", "d", "c"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
+        assertEquals(Arrays.asList(4, 2, 4, 2), Arrays.asList(TableImpl.getColumn(result, "C1").get(0, 4)));
+        assertEquals(Arrays.asList('2', '2', '1', '1'), Arrays.asList(TableImpl.getColumn(result, "C2").get(0, 4)));
+        assertEquals(Arrays.asList("b", "a", "d", "c"), Arrays.asList(TableImpl.getColumn(result, "Witness").get(0, 4)));
 
 
         final ColumnHolder<?> c3 = TstUtils.colGrouped("Unsorted", '3', '1', '2', null);
         result = newTable(c3, col("DataToSort", "c", "a", "b", "d")).sort("Unsorted");
         show(result);
-        assertEquals(Arrays.asList(null, '1', '2', '3'), Arrays.asList(result.getColumn("Unsorted").get(0, 4)));
-        assertEquals(Arrays.asList("d", "a", "b", "c"), Arrays.asList(result.getColumn("DataToSort").get(0, 4)));
+        assertEquals(Arrays.asList(null, '1', '2', '3'), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 4)));
+        assertEquals(Arrays.asList("d", "a", "b", "c"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 4)));
         final ColumnHolder<?> c4 = TstUtils.colGrouped("Unsorted", '3', '1', null, '2');
         result = newTable(c4, col("DataToSort", "c", "a", "d", "b")).sortDescending("Unsorted");
-        assertEquals(Arrays.asList('3', '2', '1', null), Arrays.asList(result.getColumn("Unsorted").get(0, 4)));
-        assertEquals(Arrays.asList("c", "b", "a", "d"), Arrays.asList(result.getColumn("DataToSort").get(0, 4)));
+        assertEquals(Arrays.asList('3', '2', '1', null), Arrays.asList(TableImpl.getColumn(result, "Unsorted").get(0, 4)));
+        assertEquals(Arrays.asList("c", "b", "a", "d"), Arrays.asList(TableImpl.getColumn(result, "DataToSort").get(0, 4)));
     }
 
     public void testSort2() {

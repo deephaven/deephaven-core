@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
@@ -44,7 +45,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithForwardFill(t.getColumn(col).getDirect(), filled.getColumn(col).getDirect());
+            assertWithForwardFill(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(filled, col).getDirect());
         }
     }
 
@@ -62,7 +63,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(TableImpl.getColumn(src, ii).getDirect(), TableImpl.getColumn(result, ii).getDirect());
         }
 
         updateAndValidate(src, result, () -> {
@@ -120,7 +121,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(TableImpl.getColumn(src, ii).getDirect(), TableImpl.getColumn(result, ii).getDirect());
         }
 
         updateAndValidate(src, result, () -> {
@@ -172,7 +173,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
-            assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+            assertWithForwardFill(TableImpl.getColumn(src, ii).getDirect(), TableImpl.getColumn(result, ii).getDirect());
         }
 
         // Add a key at the beginning and end, but null the end so it should fill as an L
@@ -294,7 +295,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         try {
             for (int ii = 0; ii < 2; ii++) {
-                assertWithForwardFill(src.getColumn(ii).getDirect(), result.getColumn(ii).getDirect());
+                assertWithForwardFill(TableImpl.getColumn(src, ii).getDirect(), TableImpl.getColumn(result, ii).getDirect());
             }
         } catch (Throwable ex) {
             System.out.println("ERROR: Source table:");
@@ -343,7 +344,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
+                assertWithForwardFill(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect());
             });
             return source;
         });
@@ -364,7 +365,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithForwardFill(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect());
+                assertWithForwardFill(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect());
             });
             return source;
         });

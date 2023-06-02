@@ -150,12 +150,12 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     public DataColumn[] getColumns() {
-        return coalesce().getColumns();
+        return TableImpl.getColumns(coalesce());
     }
 
     @Override
     public DataColumn getColumn(String columnName) {
-        return coalesce().getColumn(columnName);
+        return TableImpl.getColumn(coalesce(), columnName);
     }
 
     @Override

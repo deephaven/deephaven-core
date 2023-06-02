@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -145,8 +146,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
-                    summed.getColumn(col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(summed, col).getDirect(),
+                    TableImpl.getColumn(summed, col).getType(), prevTicks, postTicks);
         }
     }
 
@@ -160,15 +161,15 @@ public class TestRollingGroup extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns));
 
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) TableImpl.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTime(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(), timestamps,
-                    summed.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingGroupTime(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(summed, col).getDirect(), timestamps,
+                    TableImpl.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -279,8 +280,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTicks(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
-                        actual.getColumn(col).getType(), prevTicks, postTicks);
+                assertWithRollingGroupTicks(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getType(), prevTicks, postTicks);
             });
             return source;
         });
@@ -302,15 +303,15 @@ public class TestRollingGroup extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            Instant[] ts = (Instant[]) TableImpl.getColumn(source, "ts").getDirect();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
+                assertWithRollingGroupTime(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect(),
                         timestamps,
-                        actual.getColumn(col).getType(), prevTime.toNanos(), postTime.toNanos());
+                        TableImpl.getColumn(actual, col).getType(), prevTime.toNanos(), postTime.toNanos());
             });
             return source;
         });
@@ -1032,39 +1033,39 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         // Test mod 2.
         Table filteredTable = ungrouped.where("mod2==0");
-        int[] filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        int[] filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
         filteredTable = ungrouped.where("mod2==1");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
 
         // Test mod 5
         filteredTable = ungrouped.where("mod5==0");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==1");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==2");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(2, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==3");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(3, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==4");
-        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        filteredArray = (int[]) TableImpl.getColumn(filteredTable, "idx").getDirect();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(4, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
@@ -1090,8 +1091,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Table summed = t.updateBy(ops);
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
-                    summed.getColumn(col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(summed, col).getDirect(),
+                    TableImpl.getColumn(summed, col).getType(), prevTicks, postTicks);
         }
     }
 

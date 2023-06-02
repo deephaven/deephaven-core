@@ -4,6 +4,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -42,8 +43,8 @@ public class TestCumSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.CumSum());
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithCumSum(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
-                    summed.getColumn(col).getType());
+            assertWithCumSum(TableImpl.getColumn(t, col).getDirect(), TableImpl.getColumn(summed, col).getDirect(),
+                    TableImpl.getColumn(summed, col).getType());
         }
     }
 
@@ -99,8 +100,8 @@ public class TestCumSum extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumSum(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
-                        actual.getColumn(col).getType());
+                assertWithCumSum(TableImpl.getColumn(source, col).getDirect(), TableImpl.getColumn(actual, col).getDirect(),
+                        TableImpl.getColumn(actual, col).getType());
             });
             return source;
         });

@@ -68,10 +68,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                 "A");
         show(minMax);
         assertEquals(2, minMax.size());
-        DataColumn<?> dc = minMax.getColumn("Min");
+        DataColumn<?> dc = TableImpl.getColumn(minMax, "Min");
         assertEquals(1, dc.get(0));
         assertEquals(3, dc.get(1));
-        dc = minMax.getColumn("Max");
+        dc = TableImpl.getColumn(minMax, "Max");
         assertEquals(10, dc.get(0));
         assertEquals(8, dc.get(1));
 
@@ -79,10 +79,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
-        dc = doubleCounted.getColumn("Count1");
+        dc = TableImpl.getColumn(doubleCounted, "Count1");
         assertEquals(6L, dc.get(0));
         assertEquals(4L, dc.get(1));
-        dc = doubleCounted.getColumn("Count2");
+        dc = TableImpl.getColumn(doubleCounted, "Count2");
         assertEquals(6L, dc.get(0));
         assertEquals(4L, dc.get(1));
 

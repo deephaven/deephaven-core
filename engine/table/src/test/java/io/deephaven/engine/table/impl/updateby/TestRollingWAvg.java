@@ -6,6 +6,7 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -390,8 +391,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                             .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -401,8 +402,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -447,8 +448,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                             .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -458,8 +459,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {

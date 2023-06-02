@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.TstUtils;
@@ -25,6 +26,7 @@ import junit.framework.TestCase;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedLast;
@@ -120,8 +122,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         tuvbuck.getResultTable().addUpdateListener(failureListenerBuck);
 
         showWithRowSet(sfb);
-        TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));
-        TestCase.assertEquals(2, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(2, TableImpl.getColumn(sfb, "Sentinel").get(0));
+        TestCase.assertEquals(2, TableImpl.getColumn(bucketed, "Sentinel").get(0));
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same row key; we would not notice the mdoification
@@ -171,9 +173,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(1, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(1, TableImpl.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(1, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(1, TableImpl.getColumn(bucketed, "Sentinel").get(0));
 
         // here we are shifting, but not modifying the SFB column (but are modifying sentinel)
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -198,9 +200,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, TableImpl.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, TableImpl.getColumn(bucketed, "Sentinel").get(0));
 
         // we are shifting, and claiming to modify SFB but not actually doing it
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -225,9 +227,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, TableImpl.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(9, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(9, TableImpl.getColumn(bucketed, "Sentinel").get(0));
 
         // here we are shifting, and modifying SFB but not actually doing it
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -252,9 +254,9 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(6, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(6, TableImpl.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(6, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(6, TableImpl.getColumn(bucketed, "Sentinel").get(0));
 
         // claim to modify sfb, but don't really. Actually modify sentinel.
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -279,8 +281,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         System.out.println("Shifted and Really Really Modified SFB");
         showWithRowSet(sfb);
         tuvsfb.deepValidation();
-        TestCase.assertEquals(13, sfb.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(13, TableImpl.getColumn(sfb, "Sentinel").get(0));
         tuvbuck.deepValidation();
-        TestCase.assertEquals(13, bucketed.getColumn("Sentinel").get(0));
+        TestCase.assertEquals(13, TableImpl.getColumn(bucketed, "Sentinel").get(0));
     }
 }

@@ -28,6 +28,7 @@ import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
@@ -1252,4 +1253,18 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         childListenerReferences.clear();
         parents.clear();
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public DataColumn[] getColumns() {
+        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
+    }
+
+    public DataColumn getColumn(final int columnIndex) {
+        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
+    }
+
+    public abstract DataColumn getColumn(String columnName);
 }

@@ -9,6 +9,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableImpl;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -150,10 +151,10 @@ public class TestParquetTools {
         Table test2 = ParquetTools.readTable(path);
         Assert.assertEquals(10, test2.size());
         Assert.assertEquals(2, test2.numColumns());
-        Assert.assertEquals(Arrays.asList(toString((Enum[]) test.getColumn("enumC").get(0, 10))),
-                Arrays.asList(toString((Enum[]) test2.getColumn("enumC").get(0, 10))));
-        StringSet[] objects = (StringSet[]) test.getColumn("enumSet").get(0, 10);
-        StringSet[] objects1 = (StringSet[]) test2.getColumn("enumSet").get(0, 10);
+        Assert.assertEquals(Arrays.asList(toString((Enum[]) TableImpl.getColumn(test, "enumC").get(0, 10))),
+                Arrays.asList(toString((Enum[]) TableImpl.getColumn(test2, "enumC").get(0, 10))));
+        StringSet[] objects = (StringSet[]) TableImpl.getColumn(test, "enumSet").get(0, 10);
+        StringSet[] objects1 = (StringSet[]) TableImpl.getColumn(test2, "enumSet").get(0, 10);
         for (int i = 0; i < objects1.length; i++) {
             Assert.assertEquals(new HashSet<>(Arrays.asList(objects[i].values())),
                     new HashSet<>(Arrays.asList(objects1[i].values())));
@@ -167,10 +168,10 @@ public class TestParquetTools {
         test2 = ParquetTools.readTable(path);
         Assert.assertEquals(10, test2.size());
         Assert.assertEquals(2, test2.numColumns());
-        Assert.assertEquals(Arrays.asList(test.getColumn("enumC").get(0, 10)),
-                Arrays.asList(test2.getColumn("enumC").get(0, 10)));
-        Assert.assertEquals(Arrays.asList(test.getColumn("enumSet").get(0, 10)),
-                Arrays.asList(test2.getColumn("enumSet").get(0, 10)));
+        Assert.assertEquals(Arrays.asList(TableImpl.getColumn(test, "enumC").get(0, 10)),
+                Arrays.asList(TableImpl.getColumn(test2, "enumC").get(0, 10)));
+        Assert.assertEquals(Arrays.asList(TableImpl.getColumn(test, "enumSet").get(0, 10)),
+                Arrays.asList(TableImpl.getColumn(test2, "enumSet").get(0, 10)));
         test2.close();
 
         test = TableTools.newTable(TableDefinition.of(
