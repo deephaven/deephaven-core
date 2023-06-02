@@ -475,6 +475,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .captureQueryScopeVars("pauseHelper2")
                 .captureQueryLibrary()
                 .captureQueryCompiler()
+                .captureUpdateGraph()
                 .build();
         final PartitionedTable result2 =
                 sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2").transform(
@@ -565,6 +566,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .captureQueryScopeVars("pauseHelper")
                 .captureQueryLibrary()
                 .captureQueryCompiler()
+                .captureUpdateGraph()
                 .build();
         final PartitionedTable result2 = sourceTable2.partitionBy("USym2").transform(executionContext,
                 t -> t.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, "true"))
@@ -850,9 +852,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             protected Table e() {
                 // note we cannot reuse the execution context and remove the values as the table is built each iteration
                 try (final SafeCloseable ignored = ExecutionContext.newBuilder()
+                        .newQueryScope()
                         .captureQueryCompiler()
                         .captureQueryLibrary()
-                        .newQueryScope()
+                        .captureUpdateGraph()
                         .build().open()) {
 
                     ExecutionContext.getContext().getQueryScope().putParam("queryScopeVar", "queryScopeValue");
