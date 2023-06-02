@@ -614,36 +614,6 @@ public interface Table extends
     TreeTable tree(String idColumn, String parentColumn);
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear before all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeBefore(Table... others);
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear after all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeAfter(Table... others);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations
     // -----------------------------------------------------------------------------------------------------------------
 
