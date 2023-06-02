@@ -11,7 +11,9 @@ import elemental2.dom.CustomEvent;
 import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -28,7 +30,7 @@ import jsinterop.base.Js;
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
-public class JsTotalsTable {
+public class JsTotalsTable implements JoinableTable {
     private final JsTable wrappedTable;
     private final String directive;
     private final JsArray<JsString> groupBy;
@@ -55,6 +57,12 @@ public class JsTotalsTable {
         if (firstRow != null && lastRow != null) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs);
         }
+    }
+
+    @JsIgnore
+    @Override
+    public ClientTableState state() {
+        return wrappedTable.state();
     }
 
     @JsProperty
@@ -163,6 +171,52 @@ public class JsTotalsTable {
         return wrappedTable.getCustomColumns();
     }
 
+    @Override
+    @JsMethod
+    public Promise<JsTable> freeze() {
+        return wrappedTable.freeze();
+    }
 
+    @Override
+    @JsMethod
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
+            @JsOptional String[] stampColumns) {
+        return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
+    }
 
+    @Override
+    @Deprecated
+    @JsMethod
+    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+        return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+        return wrappedTable.asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
+        return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserve_bits);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd) {
+        return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd) {
+        return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);
+    }
 }
