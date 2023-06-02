@@ -17,14 +17,13 @@ import java.util.function.Function;
 
 public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements TrackingWritableRowSet {
 
+    private final LogicalClock clock;
+    private final WritableRowSetImpl prev;
+
     private transient OrderedLongSet prevInnerSet;
 
-    private final LogicalClock clock;
-    private final WritableRowSetImpl prev = new UnmodifiableRowSetImpl();
-
     /**
-     * Protects prevImpl. Only updated in checkPrev() and initializePreviousValue() (this later supposed to be used only
-     * right after the constructor, in special cases).
+     * Protects {@link #prevInnerSet}. Only updated in checkAndGetPrev() and initializePreviousValue().
      */
     private transient volatile long changeTimeStep;
 
@@ -36,8 +35,9 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
 
     public TrackingWritableRowSetImpl(final OrderedLongSet innerSet) {
         super(innerSet);
-        this.clock = ExecutionContext.getContext().getUpdateGraph().clock();
-        this.prevInnerSet = OrderedLongSet.EMPTY;
+        clock = ExecutionContext.getContext().getUpdateGraph().clock();
+        prev = new UnmodifiableRowSetImpl();
+        prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
     }
 
