@@ -81,13 +81,13 @@ void TableHandleManagerImpl::runScriptAsync(std::string code, std::shared_ptr<SF
 }
 
 std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor>
-TableHandleManagerImpl::newTicket() const {
+TableHandleManagerImpl::newTicket(int64_t numRows, bool isStatic) const {
   auto[ticket, fd] = server_->newTicketAndFlightDescriptor();
 
-  CBPromise<Ticket> ticketPromise;
-  ticketPromise.setValue(ticket);
-  auto ls = std::make_shared<internal::LazyState>(server_, flightExecutor_,
-      ticketPromise.makeFuture());
+  CBPromise<internal::LazyStateInfo> infoPromise;
+  internal::LazyStateInfo info(ticket, numRows, isStatic);
+  infoPromise.setValue(std::move(info));
+  auto ls = std::make_shared<internal::LazyState>(server_, flightExecutor_, infoPromise.makeFuture());
   auto th = TableHandleImpl::create(self_.lock(), std::move(ticket), std::move(ls));
   return std::make_tuple(std::move(th), std::move(fd));
 }

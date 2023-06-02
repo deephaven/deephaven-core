@@ -37,7 +37,7 @@ TEST_CASE("New Table", "[newtable]") {
   maker.addColumn("FloatValue", floatData);
   maker.addColumn("DoubleValue", doubleData);
   maker.addColumn("StringValue", stringData);
-  auto temp = maker.makeTable(tm.client().getManager());
+  auto temp = maker.makeTable(tm.client().getManager(), (int64_t)byteData.size(), true);
   std::cout << temp.stream(true) << '\n';
 }
 }  // namespace deephaven::client::tests
