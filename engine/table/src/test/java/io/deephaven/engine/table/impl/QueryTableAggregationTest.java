@@ -1819,7 +1819,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.avgBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double avg = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avg);
@@ -1897,7 +1897,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.varBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double var = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, var);
@@ -2864,7 +2864,7 @@ public class QueryTableAggregationTest {
                         "MyBigDecimal=java.math.BigDecimal.TEN.add(java.math.BigDecimal.valueOf(i))",
                         "MyBigInteger=java.math.BigInteger.ZERO.add(java.math.BigInteger.valueOf(i))");
 
-        TableTools.showWithRowSet(table.getMeta());
+        TableTools.showWithRowSet(table.meta());
         TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();

@@ -49,7 +49,7 @@ public interface Table extends
      * @return A Table of metadata about this Table's columns.
      */
     @ConcurrentMethod
-    Table getMeta();
+    Table meta();
 
     @ConcurrentMethod
     String getDescription();

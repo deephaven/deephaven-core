@@ -332,7 +332,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
 
         // make sure both columns are in fact DateTime columns
-        final Table meta = table.getMeta();
+        final Table meta = table.meta();
         Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(0));
         Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(1));
 
