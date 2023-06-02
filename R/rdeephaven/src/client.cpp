@@ -75,28 +75,63 @@ class ClientWrapper {
 public:
 
     /**
-     * The following methods that are not marked as internal call directly into the C++ client.
-     * Please see the corresponding methods in deephaven/client/client.h for C++ level documentation.
+     * Fetches a reference to a table named tableName on the server if it exists.
+     * @param tableName Name of the table to search for.
+     * @return TableHandle reference to the fetched table. 
     */
-
-    TableHandleWrapper* emptyTable(int64_t size) {
-        return new TableHandleWrapper(internal_tbl_hdl_mngr.emptyTable(size));
-    };
-
     TableHandleWrapper* openTable(std::string tableName) {
-
-        // we have to instantiate first and try a method, as .fetchTable does not complain if the table does not exist
-        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.fetchTable(tableName);
-        try {
-            std::shared_ptr<arrow::flight::FlightStreamReader> fsr = table_handle.getFlightStreamReader();
-        } catch(...) {
+        if (!checkForTable(tableName)) {
             std::cout << "Error: The table you've requested does not exist on the server.\n";
             return NULL;
         }
-        return new TableHandleWrapper(table_handle);
+        return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     };
 
+    /**
+     * Deletes a table named tableName from the server if it exists. THIS IS ONLY VALID if tableName has NO children on the sever. DELTE THEM FIRST.
+     * @param tableName Name of the table to delete.
+    */
+    void deleteTable(std::string tableName) {
+        if (!checkForTable(tableName)) {
+            std::cout << "Error: The table you're trying to delete does not exist on the server.\n";
+        }
+        if (session_type == "python") {
+            std::string delete_script = "del(" + tableName + ")";
+            runScript(delete_script);
+        }
+        else if (session_type == "groovy") {
+            std::string delete_script = tableName + " = null";
+            runScript(delete_script);
+        }
+        else {
+            std::cout << "Error: Cannot delete table without an active console.";
+        }
+    };
+
+    /**
+     * Checks for the existence of a table named tableName on the server.
+     * @param tableName Name of the table to search for.
+     * @return Boolean indicating whether tableName exists on the server or not.
+    */
+    bool checkForTable(std::string tableName) {
+        // we have to first fetchTable to check existence, fetchTable does not fail on its own, but .observe() will fail if table doesn't exist
+        deephaven::client::TableHandle table_handle = internal_tbl_hdl_mngr.fetchTable(tableName);
+        try {
+            table_handle.observe();
+        } catch(...) {
+            return false;
+        }
+        return true;
+    };
+
+    /**
+     * Runs a script on the server in the console language if a console was created.
+     * @param code String of the code to be executed on the server.
+    */
     void runScript(std::string code) {
+        if (!(session_type == "python" || session_type == "groovy")) {
+            std::cout << "Error: Cannot run a script without an active console.";
+        }
         internal_tbl_hdl_mngr.runScript(code);
     };
 
@@ -149,8 +184,11 @@ public:
     };
 
 private:
-    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
-    deephaven::client::Client internal_client;
+    ClientWrapper(deephaven::client::Client ref, const std::string &sessionType) : session_type(sessionType),
+                                                                                   internal_client(std::move(ref)) {};
+
+    const std::string session_type;
+    const deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
 
     friend ClientWrapper* newClientWrapper(const std::string &target, const std::string &sessionType,
@@ -193,7 +231,7 @@ ClientWrapper* newClientWrapper(const std::string &target, const std::string &se
         std::cout << "complain about invalid sessionType\n";
     }
 
-    return new ClientWrapper(deephaven::client::Client::connect(target, client_options));
+    return new ClientWrapper(deephaven::client::Client::connect(target, client_options), sessionType);
 };
 
 
@@ -216,8 +254,9 @@ RCPP_MODULE(ClientModule) {
 
     class_<ClientWrapper>("Client")
     .factory<const std::string&, const std::string&, const std::string&, const std::string&, const std::string&>(newClientWrapper)
-    .method("empty_table", &ClientWrapper::emptyTable)
     .method("open_table", &ClientWrapper::openTable)
+    .method("delete_table", &ClientWrapper::deleteTable)
+    .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)
     .method(".new_arrowArrayStream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
     .method(".new_table_from_arrowArrayStream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)

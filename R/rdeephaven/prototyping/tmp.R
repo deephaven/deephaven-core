@@ -1,4 +1,5 @@
 Rcpp::compileAttributes()
+roxygen2::roxygenise()
 install.packages("/home/user/rdeephaven", repos=NULL, type="source")
 
 # load deephaven library
@@ -8,6 +9,9 @@ library(rdeephaven)
 # I hate this api more than Rcpp hates default arguments
 client <- new(Client, target="192.168.1.241:10000", session_type="python",
                       auth_type="default", key="", value="")
+
+
+client$check_for_table("static_table2")
 
 # open DH table and convert to R dataframe
 static_table <- client$open_table("static_table1")
@@ -22,9 +26,6 @@ data_frame1
 new_static_table <- df_to_dh_table(client, data_frame1, "static_table2")
 new_static_table
 
-test <- generate_dataframes()
-client <- setup_client(client_args=c("192.168.1.241:10000", "python", "default", "", ""), dataframes=test)
+client$check_for_table("static_table2")
 
-for (i in 1:4) {
-    client$run_script(paste0('del(table', i, ')'))
-}
+##############################
