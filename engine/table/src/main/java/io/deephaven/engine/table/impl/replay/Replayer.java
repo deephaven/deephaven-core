@@ -110,7 +110,7 @@ public class Replayer implements ReplayerInterface, Runnable {
 
     private void shutdownInternal() {
         Assert.assertion(updateGraph.exclusiveLock().isHeldByCurrentThread(),
-                "updateGraphProcessor.exclusiveLock().isHeldByCurrentThread()");
+                "updateGraph.exclusiveLock().isHeldByCurrentThread()");
         done = true;
         ugpCondition.signalAll();
     }

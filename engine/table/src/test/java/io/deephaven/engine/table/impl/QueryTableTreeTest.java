@@ -130,7 +130,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final String hierarchicalColumnName = getHierarchicalColumnName(expect);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     //
     // final Table treed1 = pool.submit(doTree::get).get();
     //
@@ -190,7 +190,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed3, 0, 4, hierarchicalColumnName,
     // CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
     // CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -210,7 +210,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table eleven1a = map1.get(11);
     // assertNull(eleven1a);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     //
     // final Table backwards1 =
     // pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
@@ -241,7 +241,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // source.notifyListeners(i(12), i(), i());
     //
     // final Table treed6 = pool.submit(doTree::get).get();
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().flushAllNormalNotificationsForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushAllNormalNotificationsForUnitTests();
     //
     // final Table backwardsTree1c = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
     // final Table backwardsTree2b = pool.submit(() -> backwards2.tree("Sentinel", "Parent")).get();
@@ -257,7 +257,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertTableEquals(root2a, rootExpected3);
     // assertTableEquals(root3a, rootExpected3);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // final Table eleven1c = map1.get(11);
     // assertNotNull(eleven1c);
@@ -325,7 +325,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table sorted0Original = doSort.apply(makeStatic(source));
     // final Table sorted2 = doSort.apply(makeStatic(source2));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     //
     // final Table treed1 = pool.submit(() -> doSortAndTree.apply(source)).get();
     // final Table sorted1 = pool.submit(() -> doSort.apply(source)).get();
@@ -352,7 +352,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // source.notifyListeners(i(11, 12), i(0), i(1));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().flushAllNormalNotificationsForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().flushAllNormalNotificationsForUnitTests();
     //
     // // everything should have current values now
     // doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect2, false, false, 0, 4,
@@ -399,7 +399,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertTableEquals(sorted2, sorted0);
     // assertTableEquals(sorted2, sorted1);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // doCompareWithChildrenForTrees("testConcurrentInstantiation", expect2, treed1, 0, 4, hierarchicalColumnName,
     // CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
@@ -481,61 +481,61 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // assertNull(getChildTable(filtered, child2, hierarchicalColumnName, 0));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(10), col("Sentinel", 11), col("Parent", 2));
     // source.notifyListeners(i(10), i(), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // System.out.println("Modified.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(2, filtered.size());
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(10), col("Sentinel", 12), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(10));
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // System.out.println("Modified.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(1, filtered.size());
     //
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(10, 11), col("Sentinel", 12, 11), col("Parent", 2, 12));
     // source.notifyListeners(i(11), i(), i(10));
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // System.out.println("Grand parent.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(2, filtered.size());
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(11), col("Sentinel", 13), col("Parent", 12));
     // source.notifyListeners(i(), i(), i(11));
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // System.out.println("Grand parent disappear.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(1, filtered.size());
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(12), col("Sentinel", 14), col("Parent", 13));
     // source.notifyListeners(i(12), i(), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(source, 15);
     // System.out.println("Great grand parent appear.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(2, filtered.size());
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // removeRows(source, i(1));
     // source.notifyListeners(i(), i(1), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(source, 15);
     // System.out.println("2 removed.");
     // TableTools.showWithRowSet(filtered);
     // assertEquals(1, filtered.size());
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(1), col("Sentinel", 2), col("Parent", NULL_INT));
     // source.notifyListeners(i(1), i(), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(source, 15);
     // System.out.println("2 resurrected.");
     // TableTools.showWithRowSet(filtered);
@@ -552,26 +552,26 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertEquals(3, treed.size());
     //
     // // add a parent, which will make something not an orphan
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(5), col("Sentinel", 5), col("Parent", 1));
     // source.notifyListeners(i(5), i(), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(treed);
     // assertEquals(2, treed.size());
     //
     // // swap two things
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(source, i(0, 1), col("Sentinel", 2, 1), col("Parent", NULL_INT, NULL_INT));
     // source.notifyListeners(i(), i(), i(0, 1));
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(treed);
     // assertEquals(2, treed.size());
     //
     // // now remove a parent
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // removeRows(source, i(0, 1));
     // source.notifyListeners(i(), i(0, 1), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     // TableTools.showWithRowSet(treed);
     // assertEquals(2, treed.size());
     // }
@@ -614,35 +614,35 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // Assert.assertEquals(0, en[0].originalValue.size());
     //
     // // modify child to have parent
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(source, i(0), col("Sentinel", 0), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(), i(0));
     // });
     // Assert.assertEquals(i(0, 1), en[0].originalValue.getRowSet());
     //
     // // modify parent to have grandparent
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
     //
     // // modify parent's id to orphan child
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(source, i(1), col("Sentinel", -1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0), en[0].originalValue.getRowSet());
     //
     // // revert parent's id and adopt child
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
     //
     // // remove child, resurrect parent
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // removeRows(source, i(0));
     // addToTable(source, i(3), col("Sentinel", 3), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(0), i(3));
@@ -1401,7 +1401,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // assertTableEquals(table, treed);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // final long key = table.getRowSet().firstRowKey();
     // table.getRowSet().writableCast().remove(key);
     // removeRows(table, i(key));
@@ -1442,11 +1442,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // rollup.dropReference();
     // rootMap.dropReference();
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // addToTable(table, i(0, 1), col("USym", "AAPL", "TSLA"), col("Group", "Terran", "Vulcan"),
     // intCol("IntCol", 1, 2), doubleCol("DoubleCol", .1, .2));
     // table.notifyListeners(i(0, 1), i(), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // final SafeCloseable getScope = LivenessScopeStack.open();
     // final Table nextLevel = rootMap.get(SmartKey.EMPTY);
@@ -1549,10 +1549,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // assertEquals("", diff);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // removeRows(table, i(2));
     // table.notifyListeners(i(), i(2), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // System.out.println("Removed Row 2, Rollup:");
     // dumpRollup(rollup, "G1", "G2");
@@ -1562,10 +1562,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final String diff2 = TableTools.diff(fullBy, rollupClean, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
     // assertEquals("", diff2);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     // removeRows(table, i(0, 1));
     // table.notifyListeners(i(), i(0, 1), i());
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // dumpRollup(rollup, "G1", "G2");
     //
@@ -1737,7 +1737,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // for (int step = 0; step < 100; ++step) {
     // System.out.println("step = " + step);
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().startCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
     //
     // final int numChanges = random.nextInt(100);
     // final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -1816,7 +1816,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // // TableTools.showWithRowSet(source.getSubTable(newRowSet));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().completeCycleForUnitTests();
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     //
     // final String hierarchicalColumnName = getHierarchicalColumnName(ordersFiltered);
     // doCompareWithChildrenForTrees("step = " + step, ordersFiltered,
@@ -1839,7 +1839,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertNull(rollup.getColumn("BigI").get(0));
     // assertNull(rollup.getColumn("BigD").get(0));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(table, i(2, 3), col("Sym", "A", "A"), col("BigI", BigInteger.ZERO, BigInteger.ZERO),
     // col("BigD", BigDecimal.ZERO, BigDecimal.ZERO));
     // table.notifyListeners(i(2, 3), i(), i());
@@ -1870,7 +1870,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertNotNull(aTable);
     //
     // // Start with Nulls and make sure we get NaN
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(dataTable, i(1, 2),
     // stringCol("USym", "A", "A"),
     // doubleCol("Value", NULL_DOUBLE, NULL_DOUBLE),
@@ -1898,7 +1898,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertEquals(Double.NaN, aTable.getColumn("LValue").getDouble(0));
     //
     // // Add a real value 0, which used to be broken because the default value was 0 and resulted in a no change
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(dataTable, i(3),
     // stringCol("USym", "A"),
     // doubleCol("Value", 0.0d),
@@ -1926,7 +1926,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertEquals(0.0d, aTable.getColumn("LValue").getDouble(0));
     //
     // // Delete the real value to make sure we go back to NaN
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // removeRows(dataTable, i(3));
     //
     // dataTable.notifyListeners(i(), i(3), i());
@@ -1947,7 +1947,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertEquals(Double.NaN, aTable.getColumn("LValue").getDouble(0));
     //
     // // Add a couple of real 0's and make sure we get a 0
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(dataTable, i(3, 4, 5),
     // stringCol("USym", "A", "A", "A"),
     // doubleCol("Value", 0.0d, 0.0d, 0.0d),
@@ -1974,7 +1974,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // assertEquals(0.0d, aTable.getColumn("IValue").getDouble(0));
     // assertEquals(0.0d, aTable.getColumn("LValue").getDouble(0));
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(dataTable, i(6),
     // stringCol("USym", "A"),
     // doubleCol("Value", 1.0d),
@@ -2018,7 +2018,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table rollup = source.rollup(List.of(AggVar("Val")), "G1", "G2");
     // checkVar(source, rollup);
     //
-    // ExecutionContext.getContext().getUpdateGraph().updateGraphProcessor().runWithinUnitTestCycle(() -> {
+    // ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
     // addToTable(source, i(9, 11), col("G1", "B", "A"), col("G2", "a", "a"), intCol("Val", 6, 7));
     // final TableUpdate update =
     // new TableUpdateImpl(i(), i(), i(9, 11), RowSetShiftData.EMPTY, source.newModifiedColumnSet("Val"));

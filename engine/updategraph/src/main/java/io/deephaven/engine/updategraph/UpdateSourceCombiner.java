@@ -11,7 +11,7 @@ import java.util.Collections;
 
 /**
  * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
- * {@link UpdateGraph update graph} registered in the update context at the time of construction.
+ * {@link UpdateGraph update graph} provided at construction.
  */
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
@@ -49,8 +49,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
     }
 
     /**
-     * Passes through to the {@link UpdateGraph update graph processor} registered in the update context at
-     * construction.
+     * Passes through to the {@link UpdateGraph update graph} passed at construction.
      */
     @Override
     public void requestRefresh() {

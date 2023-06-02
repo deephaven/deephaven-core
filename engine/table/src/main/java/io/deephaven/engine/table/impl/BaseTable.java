@@ -68,7 +68,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private static final Logger log = LoggerFactory.getLogger(BaseTable.class);
 
     private static final AtomicReferenceFieldUpdater<BaseTable, Condition> CONDITION_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphProcessorCondition");
+            AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Condition.class, "updateGraphCondition");
 
     private static final AtomicReferenceFieldUpdater<BaseTable, Collection> PARENTS_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(BaseTable.class, Collection.class, "parents");
@@ -100,7 +100,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     // Fields for DynamicNode implementation and update propagation support
     private volatile boolean refreshing;
     @SuppressWarnings({"FieldMayBeFinal", "unused"}) // Set via ensureField with CONDITION_UPDATER
-    private volatile Condition updateGraphProcessorCondition;
+    private volatile Condition updateGraphCondition;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with PARENTS_UPDATER
     private volatile Collection<Object> parents = EMPTY_PARENTS;
     @SuppressWarnings("FieldMayBeFinal") // Set via ensureField with CHILD_LISTENER_REFERENCES_UPDATER
@@ -515,7 +515,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     }
 
     private void maybeSignal() {
-        final Condition localCondition = updateGraphProcessorCondition;
+        final Condition localCondition = updateGraphCondition;
         if (localCondition != null) {
             updateGraph.requestSignal(localCondition);
         }
