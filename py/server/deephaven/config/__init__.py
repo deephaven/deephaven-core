@@ -5,20 +5,11 @@
 """ This module provides access to the Deephaven server configuration. """
 import jpy
 
-from deephaven import DHError
-from deephaven.time import TimeZone
+from deephaven.dtypes import TimeZone
 
-_JDHConfig = jpy.get_type("io.deephaven.configuration.Configuration")
-_JDateTimeZone = jpy.get_type("org.joda.time.DateTimeZone")
+_JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
 
 
 def get_server_timezone() -> TimeZone:
     """ Returns the server's time zone. """
-    try:
-        j_timezone = _JDateTimeZone.forTimeZone(_JDHConfig.getInstance().getServerTimezone())
-        for tz in TimeZone:
-            if j_timezone == tz.value.getTimeZone():
-                return tz
-        raise NotImplementedError("can't find the time zone in the TimeZone Enum.")
-    except Exception as e:
-        raise DHError(e, message=f"failed to find a recognized time zone") from e
+    return _JDateTimeUtils.timeZone()

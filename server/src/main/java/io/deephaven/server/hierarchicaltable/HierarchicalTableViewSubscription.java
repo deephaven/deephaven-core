@@ -24,7 +24,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.util.Scheduler;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.StreamObserver;
 import org.HdrHistogram.Histogram;
@@ -32,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -466,7 +466,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
                 return;
             }
 
-            final DateTime now = DateTime.ofMillis(scheduler);
+            final Instant now = scheduler.instantMillis();
             scheduler.runAfterDelay(BarragePerformanceLog.CYCLE_DURATION_MILLIS, this);
 
             final BarrageSubscriptionPerformanceLogger logger =
@@ -486,7 +486,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
 
         private void flush(
-                @NotNull final DateTime now,
+                @NotNull final Instant now,
                 @NotNull final BarrageSubscriptionPerformanceLogger logger,
                 @NotNull final Histogram hist,
                 @NotNull final String statType) throws IOException {

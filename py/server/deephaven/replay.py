@@ -4,9 +4,10 @@
 
 """ This module provides support for replaying historical data. """
 
+from typing import Union
 import jpy
 
-from deephaven import dtypes, DHError
+from deephaven import dtypes, DHError, time
 from deephaven._wrapper import JObjectWrapper
 from deephaven.table import Table
 
@@ -22,7 +23,7 @@ class TableReplayer(JObjectWrapper):
 
     j_object_type = _JReplayer
 
-    def __init__(self, start_time: dtypes.DateTime, end_time: dtypes.DateTime):
+    def __init__(self, start_time: Union[dtypes.Instant,str], end_time: Union[dtypes.Instant,str]):
         """Initializes the replayer.
 
         Args:
@@ -32,6 +33,13 @@ class TableReplayer(JObjectWrapper):
         Raises:
             DHError
         """
+
+        if isinstance(start_time, str):
+            start_time = time.parse_instant(start_time)
+
+        if isinstance(end_time, str):
+            end_time = time.parse_instant(end_time)
+
         self.start_time = start_time
         self.end_time = end_time
         try:

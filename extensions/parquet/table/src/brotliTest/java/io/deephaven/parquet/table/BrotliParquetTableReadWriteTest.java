@@ -60,7 +60,7 @@ public class BrotliParquetTableReadWriteTest {
                         "someShortColumn = (short)i",
                         "someByteColumn = (byte)i",
                         "someCharColumn = (char)i",
-                        "someTime = DateTime.now() + i",
+                        "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
                         "nullKey = i < -1?`123`:null"));
         if (includeSerializable) {

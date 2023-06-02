@@ -19,7 +19,7 @@ public final class SnapshotGrpcTest extends GrpcTableOperationTestBase<SnapshotT
 
     @Test
     public void singleSnapshot() {
-        final TableReference timeTable = ref(TableTools.timeTable("00:00:01"));
+        final TableReference timeTable = ref(TableTools.timeTable("PT00:00:01"));
         final SnapshotTableRequest request = SnapshotTableRequest.newBuilder()
                 .setResultId(ExportTicketHelper.wrapExportIdInTicket(1))
                 .setSourceId(timeTable)
@@ -35,7 +35,7 @@ public final class SnapshotGrpcTest extends GrpcTableOperationTestBase<SnapshotT
 
     @Test
     public void missingResultId() {
-        final TableReference timeTable = ref(TableTools.timeTable("00:00:01"));
+        final TableReference timeTable = ref(TableTools.timeTable("PT00:00:01"));
         final SnapshotTableRequest request = SnapshotTableRequest.newBuilder()
                 .setSourceId(timeTable)
                 .build();

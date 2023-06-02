@@ -5,12 +5,12 @@ package io.deephaven.server.util;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.clock.ClockNanoBase;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.PriorityBlockingQueue;
 
@@ -20,7 +20,7 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
 
     private volatile long currentTimeInNs = 0;
 
-    private final Queue<Pair<DateTime, Runnable>> workQueue =
+    private final Queue<Pair<Instant, Runnable>> workQueue =
             new PriorityBlockingQueue<>(11, Comparator.comparing(Pair::getFirst));
 
     @Override
@@ -32,12 +32,13 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      * Runs the first queued command if there are any.
      */
     public synchronized void runOne() {
-        final Pair<DateTime, Runnable> item = workQueue.poll();
+        final Pair<Instant, Runnable> item = workQueue.poll();
         if (item == null) {
             return;
         }
 
-        currentTimeInNs = Math.max(currentTimeInNs, item.getFirst().getNanos());
+        Instant instant = item.getFirst();
+        currentTimeInNs = Math.max(currentTimeInNs, DateTimeUtils.epochNanos(instant));
         try {
             item.getSecond().run();
         } catch (final Exception exception) {
@@ -52,18 +53,19 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      *
      * @param untilTime time to run until
      */
-    public synchronized void runUntil(final DateTime untilTime) {
-        Pair<DateTime, Runnable> item;
+    public synchronized void runUntil(final Instant untilTime) {
+        Pair<Instant, Runnable> item;
         while ((item = workQueue.peek()) != null) {
-            final long now = Math.max(currentTimeInNs, untilTime.getNanos());
-            if (item.getFirst().getNanos() >= now) {
+            final long now = Math.max(currentTimeInNs, DateTimeUtils.epochNanos(untilTime));
+            Instant instant = item.getFirst();
+            if (DateTimeUtils.epochNanos(instant) >= now) {
                 break;
             }
 
             runOne();
         }
 
-        currentTimeInNs = Math.max(currentTimeInNs, untilTime.getNanos());
+        currentTimeInNs = Math.max(currentTimeInNs, DateTimeUtils.epochNanos(untilTime));
     }
 
     public void runThrough(final long throughTimeMillis) {
@@ -77,10 +79,11 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      * @param throughTimeNanos time to run through
      */
     public synchronized void runThroughNanos(final long throughTimeNanos) {
-        Pair<DateTime, Runnable> item;
+        Pair<Instant, Runnable> item;
         while ((item = workQueue.peek()) != null) {
             final long now = Math.max(currentTimeInNs, throughTimeNanos);
-            if (item.getFirst().getNanos() > now) {
+            Instant instant = item.getFirst();
+            if (DateTimeUtils.epochNanos(instant) > now) {
                 break;
             }
 
@@ -100,13 +103,13 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
     }
 
     /**
-     * Helper to give you a DateTime after a certain time has passed on the simulated clock.
+     * Helper to give you an Instant after a certain time has passed on the simulated clock.
      *
      * @param delayInMs the number of milliseconds to add to current time
-     * @return a DateTime representing {@code now + delayInMs}
+     * @return an Instant representing {@code now + delayInMs}
      */
-    public DateTime timeAfterMs(final long delayInMs) {
-        return DateTimeUtils.nanosToTime(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
+    public Instant timeAfterMs(final long delayInMs) {
+        return DateTimeUtils.epochNanosToInstant(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
     }
 
     @Override
@@ -116,17 +119,17 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
 
     @Override
     public void runAtTime(long epochMillis, @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTimeUtils.millisToTime(epochMillis), command));
+        workQueue.add(new Pair<>(DateTimeUtils.epochMillisToInstant(epochMillis), command));
     }
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command));
+        workQueue.add(new Pair<>(DateTimeUtils.epochNanosToInstant(currentTimeInNs + delayMs * 1_000_000L), command));
     }
 
     @Override
     public void runImmediately(final @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTime.of(this), command));
+        workQueue.add(new Pair<>(instantNanos(), command));
     }
 
     @Override

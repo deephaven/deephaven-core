@@ -19,7 +19,7 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import DateTime, PyObject
+from deephaven.dtypes import Instant, PyObject
 from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven.table import Table

@@ -10,7 +10,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowCharColumnSource;
-import io.deephaven.extensions.arrow.sources.ArrowDateTimeColumnSource;
+import io.deephaven.extensions.arrow.sources.ArrowInstantColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowIntColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowLocalTimeColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowLongColumnSource;
@@ -100,7 +100,7 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigInteger&gt;} - uses {@link UInt8Vector} under the
  * hood, returns BigInteger</li>
  * <li>{@link ArrowLocalTimeColumnSource} - uses {@link TimeMilliVector} under the hood, returns LocalTime</li>
- * <li>{@link ArrowDateTimeColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
+ * <li>{@link ArrowInstantColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
  * <li>{@link ArrowStringColumnSource} - uses {@link VarCharVector} under the hood, returns String</li>
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link FixedSizeBinaryVector} under
  * the hood, returns byte[]</li>
@@ -249,7 +249,7 @@ public class ArrowWrapperTools {
             case TIMESTAMPNANOTZ:
             case TIMESTAMPSEC:
             case TIMESTAMPSECTZ:
-                return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
+                return new ArrowInstantColumnSource(highBit, field, arrowHelper);
             case NULL:
             case STRUCT:
             case DATEDAY:

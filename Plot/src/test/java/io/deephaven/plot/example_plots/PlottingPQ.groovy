@@ -59,7 +59,7 @@ t = newTable(col("USym", ["A", "B", "A", "B", "A", "B"] as String[]),
         doubleCol("Low", doubles),
         doubleCol("Close", doubles))
 
-t = t.updateView("Time = new DateTime(time + (MINUTE * i))")
+t = t.updateView("Time = DateTimeUtils.epochNanosToInstant(time + (MINUTE * i))")
 
 ohlc = ohlcPlot("Test1", t, "Time", "Open", "High", "Low", "Close")
 

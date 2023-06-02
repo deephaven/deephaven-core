@@ -141,7 +141,7 @@ class PartitionedTableTestCase(BaseTestCase):
 
     def test_partition_agg(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         self.wait_ticking_table_update(test_table, row_count=1, timeout=5)
         agg = partition("aggPartition", include_by_columns=True)
         pt = PartitionedTable.from_partitioned_table(test_table.agg_by(agg, ["Y"]))
@@ -158,7 +158,7 @@ class PartitionedTableTestCase(BaseTestCase):
 
     def test_from_partitioned_table(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         pt = test_table.partition_by("Y")
         self.assertTrue(pt.is_refreshing)
@@ -190,10 +190,10 @@ class PartitionedTableTestCase(BaseTestCase):
 
     def test_from_constituent_tables(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-            test_table1 = time_table("00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
-            test_table2 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
-            test_table3 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table1 = time_table("PT00:00:01").update(["X=i", "Y=i%23", "Z=X*Y"])
+            test_table2 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=`foo`"])
+            test_table3 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=(int)(X*Y)"])
 
         pt = PartitionedTable.from_constituent_tables([test_table, test_table1])
         self.assertEqual("__CONSTITUENT__", pt.constituent_column)
@@ -212,7 +212,7 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertEqual(keys_table.size, select_distinct_table.size)
 
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by("Y")
         self.wait_ticking_table_update(test_table, row_count=20, timeout=5)
         keys_table = pt.keys()

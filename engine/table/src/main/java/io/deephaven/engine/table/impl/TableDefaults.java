@@ -259,13 +259,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         return moveColumns(index, false, columnsToMove);
     }
 
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table dateTimeColumnAsNanos(String columnName) {
-        return dateTimeColumnAsNanos(columnName, columnName);
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Join Operations
     // -----------------------------------------------------------------------------------------------------------------

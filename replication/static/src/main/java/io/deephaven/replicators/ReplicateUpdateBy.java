@@ -8,8 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static io.deephaven.replication.ReplicationUtils.*;
 
@@ -409,12 +411,10 @@ public class ReplicateUpdateBy {
     private static void augmentLongWithReinterps(final String longResult) throws IOException {
         final File objectFile = new File(longResult);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;",
-                "import java.util.Map;",
-                "import java.util.Collections;",
-                "import io.deephaven.time.DateTime;",
-                "import java.time.Instant;",
+        lines = addImport(lines,
+                "import io.deephaven.engine.table.ColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.ReinterpretUtils;");
+        lines = addImport(lines, Instant.class, Map.class, Collections.class);
         lines = replaceRegion(lines, "extra-fields",
                 Collections.singletonList("    private final Class<?> type;"));
         lines = replaceRegion(lines, "extra-constructor-args",
@@ -427,8 +427,8 @@ public class ReplicateUpdateBy {
                                 "    @Override\n" +
                                 "    public Map<String, ColumnSource<?>> getOutputColumns() {\n" +
                                 "        final ColumnSource<?> actualOutput;\n" +
-                                "        if(type == DateTime.class) {\n" +
-                                "            actualOutput = ReinterpretUtils.longToDateTimeSource(outputSource);\n" +
+                                "        if(type == Instant.class) {\n" +
+                                "            actualOutput = ReinterpretUtils.longToInstantSource(outputSource);\n" +
                                 "        } else {\n" +
                                 "            actualOutput = outputSource;\n" +
                                 "        }\n" +

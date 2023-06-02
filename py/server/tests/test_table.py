@@ -14,6 +14,8 @@ from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table, SearchDisplayMode
+from deephaven.time import epoch_nanos_to_instant
+from tests.testbase import BaseTestCase
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -519,7 +521,7 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
 
     def test_snapshot_when(self):
-        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
+        t = time_table("PT00:00:01").update_view(["X = i * i", "Y = i + i"])
         with self.subTest("with defaults"):
             snapshot = self.test_table.snapshot_when(t)
             self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
@@ -540,7 +542,7 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
     def test_snapshot_when_with_history(self):
-        t = time_table("00:00:01")
+        t = time_table("PT00:00:01")
         snapshot_hist = self.test_table.snapshot_when(t, history=True)
         self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
@@ -744,7 +746,7 @@ class TableTestCase(BaseTestCase):
             return t.to_string().split()[2]
 
         with make_user_exec_ctx(), ugp.shared_lock():
-            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+            t = time_table("PT00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
 
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
         self.assertIn("100", t.to_string())
@@ -794,7 +796,7 @@ class TableTestCase(BaseTestCase):
         from deephaven import ugp
         x = 1
         with ugp.shared_lock():
-            rt = time_table("00:00:01").update("X = x")
+            rt = time_table("PT00:00:01").update("X = x")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
         self.verify_table_data(rt, [1])
         for i in range(2, 5):
@@ -805,7 +807,7 @@ class TableTestCase(BaseTestCase):
         x = SimpleNamespace()
         x.v = 1
         with ugp.shared_lock():
-            rt = time_table("00:00:01").update("X = x.v").drop_columns("Timestamp")
+            rt = time_table("PT00:00:01").update("X = x.v").drop_columns("Timestamp")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
 
         for i in range(2, 5):
@@ -830,7 +832,7 @@ class TableTestCase(BaseTestCase):
 
     def test_slice(self):
         with ugp.shared_lock():
-            t = time_table("00:00:00.01")
+            t = time_table("PT00:00:00.01")
         rt = t.slice(0, 3)
         self.assert_table_equals(t.head(3), rt)
 
@@ -932,11 +934,11 @@ class TableTestCase(BaseTestCase):
 
     def test_callable_attrs_in_query(self):
         input_cols = [
-            datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
+            datetime_col(name="DTCol", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(10000000)]),
         ]
         test_table = new_table(cols=input_cols)
         from deephaven.time import year, TimeZone
-        rt = test_table.update("Year = (int)year(DTCol, TimeZone.NY)")
+        rt = test_table.update("Year = (int)year(DTCol, timeZone(`ET`))")
         self.assertEqual(rt.size, test_table.size)
 
         class Foo:
@@ -984,7 +986,7 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             empty_table(10).await_update()
 
-        time_t = time_table("00:00:00.001")
+        time_t = time_table("PT00:00:00.001")
         updated = time_t.await_update()
         self.assertTrue(updated)
         updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
@@ -1005,7 +1007,7 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(result_table.columns), len(left_table.columns) + len(aggs))
 
         with self.assertRaises(DHError):
-            time_table("00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
+            time_table("PT00:00:00.001").update("a = i").range_join(right_table, on=["a = a", "a < b < c"], aggs=aggs)
 
     def test_agg_with_options(self):
         test_table = self.test_table.update(["b = a % 10 > 5 ? null : b", "c = c % 10"])

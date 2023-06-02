@@ -3,7 +3,7 @@
  */
 package io.deephaven.tuple.serialization;
 
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.tuple.generated.ObjectObjectObjectTuple;
 import io.deephaven.tuple.generated.ObjectObjectTuple;
@@ -97,7 +97,7 @@ public class TestSerializationUtils {
     public void testAllTypes() throws Exception {
         // noinspection AutoBoxing
         final ArrayTuple fullInput = new ArrayTuple((byte) 1, (short) 2, 3, 4L, 5.0F, 6.0D, true, '7', "08",
-                new DateTime(9), new Date(10),
+                DateTimeUtils.epochNanosToInstant(9), new Date(10),
                 new ObjectObjectTuple("11-A", "11-B"),
                 new ObjectObjectObjectTuple("12-X", "12-Y", "12-Z"),
                 new EE(13), new SE(14));
