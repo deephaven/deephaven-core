@@ -224,15 +224,15 @@ public class JsRollupConfig {
                     columns.setMatchPairsList(aggColumns);
                     break;
                 }
-//                case JsAggregationOperation.UNIQUE: {
-//                    AggSpec spec = new AggSpec();
-//                    spec.setUnique(new AggSpecUnique());
-//                    columns = new AggregationColumns();
-//                    columns.setSpec(spec);
-//                    agg.setColumns(columns);
-//                    columns.setMatchPairsList(aggColumns);
-//                    break;
-//                }
+                case JsAggregationOperation.UNIQUE: {
+                    AggSpec spec = new AggSpec();
+                    spec.setUnique(new AggSpecUnique());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
                 // case JsAggregationOperation.SORTED_FIRST: {
                 // // TODO #3302 support this
                 // }

@@ -403,6 +403,7 @@ public class JsTotalsTableConfig {
     public JsArray<String> getCustomColumns() {
         return customColumns;
     }
+
     @JsIgnore
     public JsArray<String> getDropColumns() {
         return dropColumns;
