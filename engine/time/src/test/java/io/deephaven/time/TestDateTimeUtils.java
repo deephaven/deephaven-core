@@ -1686,7 +1686,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(TimeZoneAliases.zoneId(v[1]), DateTimeUtils.timeZone(v[1]));
         }
 
-        TestCase.assertEquals(DateTimeUtils.timeZone(), DateTimeUtils.timeZone());
+        TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.timeZone());
     }
 
     public void testTimeZoneAliasAddRm() {
