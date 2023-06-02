@@ -1,7 +1,4 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebyrequest.updatebyoperation.updatebycolumn.updatebyspec.updatebyema.updatebyematimescale;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebywindowscale;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -13,13 +10,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime",
+        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByWindowScale.UpdateByWindowTime",
         namespace = JsPackage.GLOBAL)
-public class UpdateByEmaTime {
+public class UpdateByWindowTime {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsOverlay
-        static UpdateByEmaTime.ToObjectReturnType create() {
+        static UpdateByWindowTime.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -39,7 +36,7 @@ public class UpdateByEmaTime {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsOverlay
-        static UpdateByEmaTime.ToObjectReturnType0 create() {
+        static UpdateByWindowTime.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -56,15 +53,15 @@ public class UpdateByEmaTime {
         void setPeriodNanos(String periodNanos);
     }
 
-    public static native UpdateByEmaTime deserializeBinary(Uint8Array bytes);
+    public static native UpdateByWindowTime deserializeBinary(Uint8Array bytes);
 
-    public static native UpdateByEmaTime deserializeBinaryFromReader(
-            UpdateByEmaTime message, Object reader);
+    public static native UpdateByWindowTime deserializeBinaryFromReader(
+            UpdateByWindowTime message, Object reader);
 
-    public static native void serializeBinaryToWriter(UpdateByEmaTime message, Object writer);
+    public static native void serializeBinaryToWriter(UpdateByWindowTime message, Object writer);
 
-    public static native UpdateByEmaTime.ToObjectReturnType toObject(
-            boolean includeInstance, UpdateByEmaTime msg);
+    public static native UpdateByWindowTime.ToObjectReturnType toObject(
+            boolean includeInstance, UpdateByWindowTime msg);
 
     public native String getColumn();
 
@@ -76,7 +73,7 @@ public class UpdateByEmaTime {
 
     public native void setPeriodNanos(String value);
 
-    public native UpdateByEmaTime.ToObjectReturnType0 toObject();
+    public native UpdateByWindowTime.ToObjectReturnType0 toObject();
 
-    public native UpdateByEmaTime.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native UpdateByWindowTime.ToObjectReturnType0 toObject(boolean includeInstance);
 }

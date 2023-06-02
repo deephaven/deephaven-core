@@ -20,6 +20,9 @@ public interface BadDataBehaviorMap {
         return Js.uncheckedCast(JsPropertyMap.of());
     }
 
+    @JsProperty(name = "BAD_DATA_BEHAVIOR_NOT_SPECIFIED")
+    double getBAD_DATA_BEHAVIOR_NOT_SPECIFIED();
+
     @JsProperty(name = "POISON")
     int getPOISON();
 
@@ -31,6 +34,9 @@ public interface BadDataBehaviorMap {
 
     @JsProperty(name = "THROW")
     int getTHROW();
+
+    @JsProperty(name = "BAD_DATA_BEHAVIOR_NOT_SPECIFIED")
+    void setBAD_DATA_BEHAVIOR_NOT_SPECIFIED(double BAD_DATA_BEHAVIOR_NOT_SPECIFIED);
 
     @JsProperty(name = "POISON")
     void setPOISON(int POISON);

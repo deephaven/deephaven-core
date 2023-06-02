@@ -1790,6 +1790,26 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface MetaTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.MetaTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface NaturalJoinFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType create() {
@@ -1835,6 +1855,84 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface RangeJoinFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.RangeJoinFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<Object> getAggregationsList();
+
+                @JsProperty
+                JsArray<String> getExactMatchColumnsList();
+
+                @JsProperty
+                String getLeftEndColumn();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                String getLeftStartColumn();
+
+                @JsProperty
+                double getRangeEndRule();
+
+                @JsProperty
+                double getRangeStartRule();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                String getRightRangeColumn();
+
+                @JsProperty
+                void setAggregationsList(JsArray<Object> aggregationsList);
+
+                @JsOverlay
+                default void setAggregationsList(Object[] aggregationsList) {
+                    setAggregationsList(Js.<JsArray<Object>>uncheckedCast(aggregationsList));
+                }
+
+                @JsProperty
+                void setExactMatchColumnsList(JsArray<String> exactMatchColumnsList);
+
+                @JsOverlay
+                default void setExactMatchColumnsList(String[] exactMatchColumnsList) {
+                    setExactMatchColumnsList(Js.<JsArray<String>>uncheckedCast(exactMatchColumnsList));
+                }
+
+                @JsProperty
+                void setLeftEndColumn(String leftEndColumn);
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setLeftStartColumn(String leftStartColumn);
+
+                @JsProperty
+                void setRangeEndRule(double rangeEndRule);
+
+                @JsProperty
+                void setRangeStartRule(double rangeStartRule);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+
+                @JsProperty
+                void setRightRangeColumn(String rightRangeColumn);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2177,6 +2275,95 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface SpecFieldType {
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface DeltaFieldType {
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface OptionsFieldType {
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    double getNullBehavior();
+
+                                    @JsProperty
+                                    void setNullBehavior(double nullBehavior);
+                                }
+
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType getOptions();
+
+                                @JsProperty
+                                void setOptions(
+                                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType options);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmMaxFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmMinFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmStdFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                             public interface EmaFieldType {
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface OptionsFieldType {
@@ -2223,25 +2410,25 @@ public class BatchTableRequest {
                                 }
 
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                                public interface TimescaleFieldType {
+                                public interface WindowScaleFieldType {
                                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                     public interface TicksFieldType {
                                         @JsOverlay
-                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType create() {
                                             return Js.uncheckedCast(JsPropertyMap.of());
                                         }
 
                                         @JsProperty
-                                        String getTicks();
+                                        double getTicks();
 
                                         @JsProperty
-                                        void setTicks(String ticks);
+                                        void setTicks(double ticks);
                                     }
 
                                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                     public interface TimeFieldType {
                                         @JsOverlay
-                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                        static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType create() {
                                             return Js.uncheckedCast(JsPropertyMap.of());
                                         }
 
@@ -2259,23 +2446,23 @@ public class BatchTableRequest {
                                     }
 
                                     @JsOverlay
-                                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                    static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
                                     @JsProperty
-                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType getTicks();
 
                                     @JsProperty
-                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType getTime();
 
                                     @JsProperty
                                     void setTicks(
-                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType ticks);
 
                                     @JsProperty
                                     void setTime(
-                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType time);
                                 }
 
                                 @JsOverlay
@@ -2287,15 +2474,221 @@ public class BatchTableRequest {
                                 BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
 
                                 @JsProperty
-                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+                                BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType getWindowScale();
 
                                 @JsProperty
                                 void setOptions(
                                         BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
 
                                 @JsProperty
-                                void setTimescale(
-                                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                                void setWindowScale(
+                                        BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmsFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingAvgFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingCountFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingGroupFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingMaxFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingMinFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingProductFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingStdFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingSumFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingWavgFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                String getWeightColumn();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+
+                                @JsProperty
+                                void setWeightColumn(String weightColumn);
                             }
 
                             @JsOverlay
@@ -2304,7 +2697,22 @@ public class BatchTableRequest {
                             }
 
                             @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType getDelta();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType getEmMax();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType getEmMin();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType getEmStd();
+
+                            @JsProperty
                             BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType getEms();
 
                             @JsProperty
                             Object getFill();
@@ -2319,11 +2727,58 @@ public class BatchTableRequest {
                             Object getProduct();
 
                             @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType getRollingAvg();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType getRollingCount();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType getRollingGroup();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType getRollingMax();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType getRollingMin();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType getRollingProduct();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType getRollingStd();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType getRollingSum();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType getRollingWavg();
+
+                            @JsProperty
                             Object getSum();
+
+                            @JsProperty
+                            void setDelta(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType delta);
+
+                            @JsProperty
+                            void setEmMax(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType emMax);
+
+                            @JsProperty
+                            void setEmMin(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType emMin);
+
+                            @JsProperty
+                            void setEmStd(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType emStd);
 
                             @JsProperty
                             void setEma(
                                     BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                            @JsProperty
+                            void setEms(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType ems);
 
                             @JsProperty
                             void setFill(Object fill);
@@ -2336,6 +2791,42 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setProduct(Object product);
+
+                            @JsProperty
+                            void setRollingAvg(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType rollingAvg);
+
+                            @JsProperty
+                            void setRollingCount(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType rollingCount);
+
+                            @JsProperty
+                            void setRollingGroup(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType rollingGroup);
+
+                            @JsProperty
+                            void setRollingMax(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType rollingMax);
+
+                            @JsProperty
+                            void setRollingMin(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType rollingMin);
+
+                            @JsProperty
+                            void setRollingProduct(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType rollingProduct);
+
+                            @JsProperty
+                            void setRollingStd(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType rollingStd);
+
+                            @JsProperty
+                            void setRollingSum(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType rollingSum);
+
+                            @JsProperty
+                            void setRollingWavg(
+                                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType rollingWavg);
 
                             @JsProperty
                             void setSum(Object sum);
@@ -2634,7 +3125,13 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType getMerge();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.MetaTableFieldType getMetaTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType getNaturalJoin();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.RangeJoinFieldType getRangeJoin();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.RunChartDownsampleFieldType getRunChartDownsample();
@@ -2752,8 +3249,16 @@ public class BatchTableRequest {
             void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
 
             @JsProperty
+            void setMetaTable(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.MetaTableFieldType metaTable);
+
+            @JsProperty
             void setNaturalJoin(
                     BatchTableRequest.ToObjectReturnType.OpsListFieldType.NaturalJoinFieldType naturalJoin);
+
+            @JsProperty
+            void setRangeJoin(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.RangeJoinFieldType rangeJoin);
 
             @JsProperty
             void setRunChartDownsample(
@@ -4604,6 +5109,26 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface MetaTableFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MetaTableFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getSourceId();
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setSourceId(Object sourceId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface NaturalJoinFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType create() {
@@ -4649,6 +5174,84 @@ public class BatchTableRequest {
 
                 @JsProperty
                 void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface RangeJoinFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RangeJoinFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<Object> getAggregationsList();
+
+                @JsProperty
+                JsArray<String> getExactMatchColumnsList();
+
+                @JsProperty
+                String getLeftEndColumn();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                String getLeftStartColumn();
+
+                @JsProperty
+                double getRangeEndRule();
+
+                @JsProperty
+                double getRangeStartRule();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                String getRightRangeColumn();
+
+                @JsProperty
+                void setAggregationsList(JsArray<Object> aggregationsList);
+
+                @JsOverlay
+                default void setAggregationsList(Object[] aggregationsList) {
+                    setAggregationsList(Js.<JsArray<Object>>uncheckedCast(aggregationsList));
+                }
+
+                @JsProperty
+                void setExactMatchColumnsList(JsArray<String> exactMatchColumnsList);
+
+                @JsOverlay
+                default void setExactMatchColumnsList(String[] exactMatchColumnsList) {
+                    setExactMatchColumnsList(Js.<JsArray<String>>uncheckedCast(exactMatchColumnsList));
+                }
+
+                @JsProperty
+                void setLeftEndColumn(String leftEndColumn);
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setLeftStartColumn(String leftStartColumn);
+
+                @JsProperty
+                void setRangeEndRule(double rangeEndRule);
+
+                @JsProperty
+                void setRangeStartRule(double rangeStartRule);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+
+                @JsProperty
+                void setRightRangeColumn(String rightRangeColumn);
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -4991,6 +5594,95 @@ public class BatchTableRequest {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface SpecFieldType {
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface DeltaFieldType {
+                                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                                public interface OptionsFieldType {
+                                    @JsOverlay
+                                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType create() {
+                                        return Js.uncheckedCast(JsPropertyMap.of());
+                                    }
+
+                                    @JsProperty
+                                    double getNullBehavior();
+
+                                    @JsProperty
+                                    void setNullBehavior(double nullBehavior);
+                                }
+
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType getOptions();
+
+                                @JsProperty
+                                void setOptions(
+                                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType options);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmMaxFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmMinFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmStdFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                             public interface EmaFieldType {
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface OptionsFieldType {
@@ -5037,25 +5729,25 @@ public class BatchTableRequest {
                                 }
 
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                                public interface TimescaleFieldType {
+                                public interface WindowScaleFieldType {
                                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                     public interface TicksFieldType {
                                         @JsOverlay
-                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType create() {
                                             return Js.uncheckedCast(JsPropertyMap.of());
                                         }
 
                                         @JsProperty
-                                        String getTicks();
+                                        double getTicks();
 
                                         @JsProperty
-                                        void setTicks(String ticks);
+                                        void setTicks(double ticks);
                                     }
 
                                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                     public interface TimeFieldType {
                                         @JsOverlay
-                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                        static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType create() {
                                             return Js.uncheckedCast(JsPropertyMap.of());
                                         }
 
@@ -5073,23 +5765,23 @@ public class BatchTableRequest {
                                     }
 
                                     @JsOverlay
-                                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                    static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
                                     @JsProperty
-                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType getTicks();
 
                                     @JsProperty
-                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType getTime();
 
                                     @JsProperty
                                     void setTicks(
-                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType ticks);
 
                                     @JsProperty
                                     void setTime(
-                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType time);
                                 }
 
                                 @JsOverlay
@@ -5101,15 +5793,221 @@ public class BatchTableRequest {
                                 BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
 
                                 @JsProperty
-                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+                                BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType getWindowScale();
 
                                 @JsProperty
                                 void setOptions(
                                         BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
 
                                 @JsProperty
-                                void setTimescale(
-                                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                                void setWindowScale(
+                                        BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface EmsFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getOptions();
+
+                                @JsProperty
+                                Object getWindowScale();
+
+                                @JsProperty
+                                void setOptions(Object options);
+
+                                @JsProperty
+                                void setWindowScale(Object windowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingAvgFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingCountFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingGroupFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingMaxFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingMinFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingProductFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingStdFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingSumFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+                            }
+
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface RollingWavgFieldType {
+                                @JsOverlay
+                                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                Object getForwardWindowScale();
+
+                                @JsProperty
+                                Object getReverseWindowScale();
+
+                                @JsProperty
+                                String getWeightColumn();
+
+                                @JsProperty
+                                void setForwardWindowScale(Object forwardWindowScale);
+
+                                @JsProperty
+                                void setReverseWindowScale(Object reverseWindowScale);
+
+                                @JsProperty
+                                void setWeightColumn(String weightColumn);
                             }
 
                             @JsOverlay
@@ -5118,7 +6016,22 @@ public class BatchTableRequest {
                             }
 
                             @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType getDelta();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType getEmMax();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType getEmMin();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType getEmStd();
+
+                            @JsProperty
                             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType getEms();
 
                             @JsProperty
                             Object getFill();
@@ -5133,11 +6046,58 @@ public class BatchTableRequest {
                             Object getProduct();
 
                             @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType getRollingAvg();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType getRollingCount();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType getRollingGroup();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType getRollingMax();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType getRollingMin();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType getRollingProduct();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType getRollingStd();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType getRollingSum();
+
+                            @JsProperty
+                            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType getRollingWavg();
+
+                            @JsProperty
                             Object getSum();
+
+                            @JsProperty
+                            void setDelta(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType delta);
+
+                            @JsProperty
+                            void setEmMax(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType emMax);
+
+                            @JsProperty
+                            void setEmMin(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType emMin);
+
+                            @JsProperty
+                            void setEmStd(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType emStd);
 
                             @JsProperty
                             void setEma(
                                     BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                            @JsProperty
+                            void setEms(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType ems);
 
                             @JsProperty
                             void setFill(Object fill);
@@ -5150,6 +6110,42 @@ public class BatchTableRequest {
 
                             @JsProperty
                             void setProduct(Object product);
+
+                            @JsProperty
+                            void setRollingAvg(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType rollingAvg);
+
+                            @JsProperty
+                            void setRollingCount(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType rollingCount);
+
+                            @JsProperty
+                            void setRollingGroup(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType rollingGroup);
+
+                            @JsProperty
+                            void setRollingMax(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType rollingMax);
+
+                            @JsProperty
+                            void setRollingMin(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType rollingMin);
+
+                            @JsProperty
+                            void setRollingProduct(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType rollingProduct);
+
+                            @JsProperty
+                            void setRollingStd(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType rollingStd);
+
+                            @JsProperty
+                            void setRollingSum(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType rollingSum);
+
+                            @JsProperty
+                            void setRollingWavg(
+                                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType rollingWavg);
 
                             @JsProperty
                             void setSum(Object sum);
@@ -5448,7 +6444,13 @@ public class BatchTableRequest {
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType getMerge();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MetaTableFieldType getMetaTable();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType getNaturalJoin();
+
+            @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RangeJoinFieldType getRangeJoin();
 
             @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RunChartDownsampleFieldType getRunChartDownsample();
@@ -5566,8 +6568,16 @@ public class BatchTableRequest {
             void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
 
             @JsProperty
+            void setMetaTable(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MetaTableFieldType metaTable);
+
+            @JsProperty
             void setNaturalJoin(
                     BatchTableRequest.ToObjectReturnType0.OpsListFieldType.NaturalJoinFieldType naturalJoin);
+
+            @JsProperty
+            void setRangeJoin(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.RangeJoinFieldType rangeJoin);
 
             @JsProperty
             void setRunChartDownsample(

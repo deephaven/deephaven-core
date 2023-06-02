@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebyrequest.updatebyoperation.updatebycolumn.updatebyspec;
 
 import elemental2.core.Uint8Array;
@@ -15,9 +12,9 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma",
+        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEms",
         namespace = JsPackage.GLOBAL)
-public class UpdateByEma {
+public class UpdateByEms {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -25,7 +22,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface BigValueContextFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType create() {
+                static UpdateByEms.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -43,12 +40,12 @@ public class UpdateByEma {
             }
 
             @JsOverlay
-            static UpdateByEma.ToObjectReturnType.OptionsFieldType create() {
+            static UpdateByEms.ToObjectReturnType.OptionsFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType getBigValueContext();
+            UpdateByEms.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType getBigValueContext();
 
             @JsProperty
             double getOnNanValue();
@@ -67,7 +64,7 @@ public class UpdateByEma {
 
             @JsProperty
             void setBigValueContext(
-                    UpdateByEma.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType bigValueContext);
+                    UpdateByEms.ToObjectReturnType.OptionsFieldType.BigValueContextFieldType bigValueContext);
 
             @JsProperty
             void setOnNanValue(double onNanValue);
@@ -90,7 +87,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicksFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TicksFieldType create() {
+                static UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TicksFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -104,7 +101,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TimeFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TimeFieldType create() {
+                static UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TimeFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -122,39 +119,39 @@ public class UpdateByEma {
             }
 
             @JsOverlay
-            static UpdateByEma.ToObjectReturnType.WindowScaleFieldType create() {
+            static UpdateByEms.ToObjectReturnType.WindowScaleFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TicksFieldType getTicks();
+            UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TicksFieldType getTicks();
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TimeFieldType getTime();
+            UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TimeFieldType getTime();
 
             @JsProperty
-            void setTicks(UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TicksFieldType ticks);
+            void setTicks(UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TicksFieldType ticks);
 
             @JsProperty
-            void setTime(UpdateByEma.ToObjectReturnType.WindowScaleFieldType.TimeFieldType time);
+            void setTime(UpdateByEms.ToObjectReturnType.WindowScaleFieldType.TimeFieldType time);
         }
 
         @JsOverlay
-        static UpdateByEma.ToObjectReturnType create() {
+        static UpdateByEms.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        UpdateByEma.ToObjectReturnType.OptionsFieldType getOptions();
+        UpdateByEms.ToObjectReturnType.OptionsFieldType getOptions();
 
         @JsProperty
-        UpdateByEma.ToObjectReturnType.WindowScaleFieldType getWindowScale();
+        UpdateByEms.ToObjectReturnType.WindowScaleFieldType getWindowScale();
 
         @JsProperty
-        void setOptions(UpdateByEma.ToObjectReturnType.OptionsFieldType options);
+        void setOptions(UpdateByEms.ToObjectReturnType.OptionsFieldType options);
 
         @JsProperty
-        void setWindowScale(UpdateByEma.ToObjectReturnType.WindowScaleFieldType windowScale);
+        void setWindowScale(UpdateByEms.ToObjectReturnType.WindowScaleFieldType windowScale);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -164,7 +161,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface BigValueContextFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType create() {
+                static UpdateByEms.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -182,12 +179,12 @@ public class UpdateByEma {
             }
 
             @JsOverlay
-            static UpdateByEma.ToObjectReturnType0.OptionsFieldType create() {
+            static UpdateByEms.ToObjectReturnType0.OptionsFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType getBigValueContext();
+            UpdateByEms.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType getBigValueContext();
 
             @JsProperty
             double getOnNanValue();
@@ -206,7 +203,7 @@ public class UpdateByEma {
 
             @JsProperty
             void setBigValueContext(
-                    UpdateByEma.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType bigValueContext);
+                    UpdateByEms.ToObjectReturnType0.OptionsFieldType.BigValueContextFieldType bigValueContext);
 
             @JsProperty
             void setOnNanValue(double onNanValue);
@@ -229,7 +226,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TicksFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType create() {
+                static UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -243,7 +240,7 @@ public class UpdateByEma {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface TimeFieldType {
                 @JsOverlay
-                static UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType create() {
+                static UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -261,49 +258,49 @@ public class UpdateByEma {
             }
 
             @JsOverlay
-            static UpdateByEma.ToObjectReturnType0.WindowScaleFieldType create() {
+            static UpdateByEms.ToObjectReturnType0.WindowScaleFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType getTicks();
+            UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType getTicks();
 
             @JsProperty
-            UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType getTime();
+            UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType getTime();
 
             @JsProperty
-            void setTicks(UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType ticks);
+            void setTicks(UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TicksFieldType ticks);
 
             @JsProperty
-            void setTime(UpdateByEma.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType time);
+            void setTime(UpdateByEms.ToObjectReturnType0.WindowScaleFieldType.TimeFieldType time);
         }
 
         @JsOverlay
-        static UpdateByEma.ToObjectReturnType0 create() {
+        static UpdateByEms.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        UpdateByEma.ToObjectReturnType0.OptionsFieldType getOptions();
+        UpdateByEms.ToObjectReturnType0.OptionsFieldType getOptions();
 
         @JsProperty
-        UpdateByEma.ToObjectReturnType0.WindowScaleFieldType getWindowScale();
+        UpdateByEms.ToObjectReturnType0.WindowScaleFieldType getWindowScale();
 
         @JsProperty
-        void setOptions(UpdateByEma.ToObjectReturnType0.OptionsFieldType options);
+        void setOptions(UpdateByEms.ToObjectReturnType0.OptionsFieldType options);
 
         @JsProperty
-        void setWindowScale(UpdateByEma.ToObjectReturnType0.WindowScaleFieldType windowScale);
+        void setWindowScale(UpdateByEms.ToObjectReturnType0.WindowScaleFieldType windowScale);
     }
 
-    public static native UpdateByEma deserializeBinary(Uint8Array bytes);
+    public static native UpdateByEms deserializeBinary(Uint8Array bytes);
 
-    public static native UpdateByEma deserializeBinaryFromReader(UpdateByEma message, Object reader);
+    public static native UpdateByEms deserializeBinaryFromReader(UpdateByEms message, Object reader);
 
-    public static native void serializeBinaryToWriter(UpdateByEma message, Object writer);
+    public static native void serializeBinaryToWriter(UpdateByEms message, Object writer);
 
-    public static native UpdateByEma.ToObjectReturnType toObject(
-            boolean includeInstance, UpdateByEma msg);
+    public static native UpdateByEms.ToObjectReturnType toObject(
+            boolean includeInstance, UpdateByEms msg);
 
     public native void clearOptions();
 
@@ -327,7 +324,7 @@ public class UpdateByEma {
 
     public native void setWindowScale(UpdateByWindowScale value);
 
-    public native UpdateByEma.ToObjectReturnType0 toObject();
+    public native UpdateByEms.ToObjectReturnType0 toObject();
 
-    public native UpdateByEma.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native UpdateByEms.ToObjectReturnType0 toObject(boolean includeInstance);
 }

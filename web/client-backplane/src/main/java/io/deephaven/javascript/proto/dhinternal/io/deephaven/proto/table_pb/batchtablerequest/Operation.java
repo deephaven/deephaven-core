@@ -22,7 +22,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Head
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MetaTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RangeJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
@@ -1813,6 +1815,26 @@ public class Operation {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MetaTableFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType.MetaTableFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface NaturalJoinFieldType {
             @JsOverlay
             static Operation.ToObjectReturnType.NaturalJoinFieldType create() {
@@ -1858,6 +1880,84 @@ public class Operation {
 
             @JsProperty
             void setRightId(Object rightId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface RangeJoinFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType.RangeJoinFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getAggregationsList();
+
+            @JsProperty
+            JsArray<String> getExactMatchColumnsList();
+
+            @JsProperty
+            String getLeftEndColumn();
+
+            @JsProperty
+            Object getLeftId();
+
+            @JsProperty
+            String getLeftStartColumn();
+
+            @JsProperty
+            double getRangeEndRule();
+
+            @JsProperty
+            double getRangeStartRule();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getRightId();
+
+            @JsProperty
+            String getRightRangeColumn();
+
+            @JsProperty
+            void setAggregationsList(JsArray<Object> aggregationsList);
+
+            @JsOverlay
+            default void setAggregationsList(Object[] aggregationsList) {
+                setAggregationsList(Js.<JsArray<Object>>uncheckedCast(aggregationsList));
+            }
+
+            @JsProperty
+            void setExactMatchColumnsList(JsArray<String> exactMatchColumnsList);
+
+            @JsOverlay
+            default void setExactMatchColumnsList(String[] exactMatchColumnsList) {
+                setExactMatchColumnsList(Js.<JsArray<String>>uncheckedCast(exactMatchColumnsList));
+            }
+
+            @JsProperty
+            void setLeftEndColumn(String leftEndColumn);
+
+            @JsProperty
+            void setLeftId(Object leftId);
+
+            @JsProperty
+            void setLeftStartColumn(String leftStartColumn);
+
+            @JsProperty
+            void setRangeEndRule(double rangeEndRule);
+
+            @JsProperty
+            void setRangeStartRule(double rangeStartRule);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setRightId(Object rightId);
+
+            @JsProperty
+            void setRightRangeColumn(String rightRangeColumn);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -2200,6 +2300,95 @@ public class Operation {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SpecFieldType {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface DeltaFieldType {
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface OptionsFieldType {
+                                @JsOverlay
+                                static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                double getNullBehavior();
+
+                                @JsProperty
+                                void setNullBehavior(double nullBehavior);
+                            }
+
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType getOptions();
+
+                            @JsProperty
+                            void setOptions(
+                                    Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType options);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmMaxFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmMinFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmStdFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface EmaFieldType {
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                             public interface OptionsFieldType {
@@ -2246,25 +2435,25 @@ public class Operation {
                             }
 
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                            public interface TimescaleFieldType {
+                            public interface WindowScaleFieldType {
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface TicksFieldType {
                                     @JsOverlay
-                                    static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                    static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
                                     @JsProperty
-                                    String getTicks();
+                                    double getTicks();
 
                                     @JsProperty
-                                    void setTicks(String ticks);
+                                    void setTicks(double ticks);
                                 }
 
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface TimeFieldType {
                                     @JsOverlay
-                                    static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                    static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
@@ -2282,23 +2471,23 @@ public class Operation {
                                 }
 
                                 @JsOverlay
-                                static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType create() {
                                     return Js.uncheckedCast(JsPropertyMap.of());
                                 }
 
                                 @JsProperty
-                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType getTicks();
 
                                 @JsProperty
-                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType getTime();
 
                                 @JsProperty
                                 void setTicks(
-                                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+                                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType ticks);
 
                                 @JsProperty
                                 void setTime(
-                                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType time);
                             }
 
                             @JsOverlay
@@ -2310,15 +2499,221 @@ public class Operation {
                             Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
 
                             @JsProperty
-                            Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+                            Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType getWindowScale();
 
                             @JsProperty
                             void setOptions(
                                     Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
 
                             @JsProperty
-                            void setTimescale(
-                                    Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                            void setWindowScale(
+                                    Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmsFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingAvgFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingCountFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingGroupFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingMaxFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingMinFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingProductFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingStdFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingSumFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingWavgFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            String getWeightColumn();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+
+                            @JsProperty
+                            void setWeightColumn(String weightColumn);
                         }
 
                         @JsOverlay
@@ -2327,7 +2722,22 @@ public class Operation {
                         }
 
                         @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType getDelta();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType getEmMax();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType getEmMin();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType getEmStd();
+
+                        @JsProperty
                         Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType getEms();
 
                         @JsProperty
                         Object getFill();
@@ -2342,11 +2752,58 @@ public class Operation {
                         Object getProduct();
 
                         @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType getRollingAvg();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType getRollingCount();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType getRollingGroup();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType getRollingMax();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType getRollingMin();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType getRollingProduct();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType getRollingStd();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType getRollingSum();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType getRollingWavg();
+
+                        @JsProperty
                         Object getSum();
+
+                        @JsProperty
+                        void setDelta(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType delta);
+
+                        @JsProperty
+                        void setEmMax(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType emMax);
+
+                        @JsProperty
+                        void setEmMin(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType emMin);
+
+                        @JsProperty
+                        void setEmStd(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType emStd);
 
                         @JsProperty
                         void setEma(
                                 Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                        @JsProperty
+                        void setEms(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType ems);
 
                         @JsProperty
                         void setFill(Object fill);
@@ -2359,6 +2816,42 @@ public class Operation {
 
                         @JsProperty
                         void setProduct(Object product);
+
+                        @JsProperty
+                        void setRollingAvg(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType rollingAvg);
+
+                        @JsProperty
+                        void setRollingCount(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType rollingCount);
+
+                        @JsProperty
+                        void setRollingGroup(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType rollingGroup);
+
+                        @JsProperty
+                        void setRollingMax(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType rollingMax);
+
+                        @JsProperty
+                        void setRollingMin(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType rollingMin);
+
+                        @JsProperty
+                        void setRollingProduct(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType rollingProduct);
+
+                        @JsProperty
+                        void setRollingStd(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType rollingStd);
+
+                        @JsProperty
+                        void setRollingSum(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType rollingSum);
+
+                        @JsProperty
+                        void setRollingWavg(
+                                Operation.ToObjectReturnType.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType rollingWavg);
 
                         @JsProperty
                         void setSum(Object sum);
@@ -2656,7 +3149,13 @@ public class Operation {
         Operation.ToObjectReturnType.MergeFieldType getMerge();
 
         @JsProperty
+        Operation.ToObjectReturnType.MetaTableFieldType getMetaTable();
+
+        @JsProperty
         Operation.ToObjectReturnType.NaturalJoinFieldType getNaturalJoin();
+
+        @JsProperty
+        Operation.ToObjectReturnType.RangeJoinFieldType getRangeJoin();
 
         @JsProperty
         Operation.ToObjectReturnType.RunChartDownsampleFieldType getRunChartDownsample();
@@ -2763,7 +3262,13 @@ public class Operation {
         void setMerge(Operation.ToObjectReturnType.MergeFieldType merge);
 
         @JsProperty
+        void setMetaTable(Operation.ToObjectReturnType.MetaTableFieldType metaTable);
+
+        @JsProperty
         void setNaturalJoin(Operation.ToObjectReturnType.NaturalJoinFieldType naturalJoin);
+
+        @JsProperty
+        void setRangeJoin(Operation.ToObjectReturnType.RangeJoinFieldType rangeJoin);
 
         @JsProperty
         void setRunChartDownsample(
@@ -4584,6 +5089,26 @@ public class Operation {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface MetaTableFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType0.MetaTableFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getSourceId();
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface NaturalJoinFieldType {
             @JsOverlay
             static Operation.ToObjectReturnType0.NaturalJoinFieldType create() {
@@ -4629,6 +5154,84 @@ public class Operation {
 
             @JsProperty
             void setRightId(Object rightId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface RangeJoinFieldType {
+            @JsOverlay
+            static Operation.ToObjectReturnType0.RangeJoinFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getAggregationsList();
+
+            @JsProperty
+            JsArray<String> getExactMatchColumnsList();
+
+            @JsProperty
+            String getLeftEndColumn();
+
+            @JsProperty
+            Object getLeftId();
+
+            @JsProperty
+            String getLeftStartColumn();
+
+            @JsProperty
+            double getRangeEndRule();
+
+            @JsProperty
+            double getRangeStartRule();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Object getRightId();
+
+            @JsProperty
+            String getRightRangeColumn();
+
+            @JsProperty
+            void setAggregationsList(JsArray<Object> aggregationsList);
+
+            @JsOverlay
+            default void setAggregationsList(Object[] aggregationsList) {
+                setAggregationsList(Js.<JsArray<Object>>uncheckedCast(aggregationsList));
+            }
+
+            @JsProperty
+            void setExactMatchColumnsList(JsArray<String> exactMatchColumnsList);
+
+            @JsOverlay
+            default void setExactMatchColumnsList(String[] exactMatchColumnsList) {
+                setExactMatchColumnsList(Js.<JsArray<String>>uncheckedCast(exactMatchColumnsList));
+            }
+
+            @JsProperty
+            void setLeftEndColumn(String leftEndColumn);
+
+            @JsProperty
+            void setLeftId(Object leftId);
+
+            @JsProperty
+            void setLeftStartColumn(String leftStartColumn);
+
+            @JsProperty
+            void setRangeEndRule(double rangeEndRule);
+
+            @JsProperty
+            void setRangeStartRule(double rangeStartRule);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setRightId(Object rightId);
+
+            @JsProperty
+            void setRightRangeColumn(String rightRangeColumn);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -4971,6 +5574,95 @@ public class Operation {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SpecFieldType {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface DeltaFieldType {
+                            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                            public interface OptionsFieldType {
+                                @JsOverlay
+                                static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType create() {
+                                    return Js.uncheckedCast(JsPropertyMap.of());
+                                }
+
+                                @JsProperty
+                                double getNullBehavior();
+
+                                @JsProperty
+                                void setNullBehavior(double nullBehavior);
+                            }
+
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType getOptions();
+
+                            @JsProperty
+                            void setOptions(
+                                    Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType.OptionsFieldType options);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmMaxFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmMinFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmStdFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface EmaFieldType {
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                             public interface OptionsFieldType {
@@ -5017,25 +5709,25 @@ public class Operation {
                             }
 
                             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-                            public interface TimescaleFieldType {
+                            public interface WindowScaleFieldType {
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface TicksFieldType {
                                     @JsOverlay
-                                    static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType create() {
+                                    static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
                                     @JsProperty
-                                    String getTicks();
+                                    double getTicks();
 
                                     @JsProperty
-                                    void setTicks(String ticks);
+                                    void setTicks(double ticks);
                                 }
 
                                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                                 public interface TimeFieldType {
                                     @JsOverlay
-                                    static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType create() {
+                                    static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType create() {
                                         return Js.uncheckedCast(JsPropertyMap.of());
                                     }
 
@@ -5053,23 +5745,23 @@ public class Operation {
                                 }
 
                                 @JsOverlay
-                                static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType create() {
+                                static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType create() {
                                     return Js.uncheckedCast(JsPropertyMap.of());
                                 }
 
                                 @JsProperty
-                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType getTicks();
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType getTicks();
 
                                 @JsProperty
-                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType getTime();
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType getTime();
 
                                 @JsProperty
                                 void setTicks(
-                                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TicksFieldType ticks);
+                                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TicksFieldType ticks);
 
                                 @JsProperty
                                 void setTime(
-                                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType.TimeFieldType time);
+                                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType.TimeFieldType time);
                             }
 
                             @JsOverlay
@@ -5081,15 +5773,221 @@ public class Operation {
                             Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType getOptions();
 
                             @JsProperty
-                            Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType getTimescale();
+                            Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType getWindowScale();
 
                             @JsProperty
                             void setOptions(
                                     Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.OptionsFieldType options);
 
                             @JsProperty
-                            void setTimescale(
-                                    Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.TimescaleFieldType timescale);
+                            void setWindowScale(
+                                    Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType.WindowScaleFieldType windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface EmsFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getOptions();
+
+                            @JsProperty
+                            Object getWindowScale();
+
+                            @JsProperty
+                            void setOptions(Object options);
+
+                            @JsProperty
+                            void setWindowScale(Object windowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingAvgFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingCountFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingGroupFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingMaxFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingMinFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingProductFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingStdFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingSumFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface RollingWavgFieldType {
+                            @JsOverlay
+                            static Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            Object getForwardWindowScale();
+
+                            @JsProperty
+                            Object getReverseWindowScale();
+
+                            @JsProperty
+                            String getWeightColumn();
+
+                            @JsProperty
+                            void setForwardWindowScale(Object forwardWindowScale);
+
+                            @JsProperty
+                            void setReverseWindowScale(Object reverseWindowScale);
+
+                            @JsProperty
+                            void setWeightColumn(String weightColumn);
                         }
 
                         @JsOverlay
@@ -5098,7 +5996,22 @@ public class Operation {
                         }
 
                         @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType getDelta();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType getEmMax();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType getEmMin();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType getEmStd();
+
+                        @JsProperty
                         Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType getEma();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType getEms();
 
                         @JsProperty
                         Object getFill();
@@ -5113,11 +6026,58 @@ public class Operation {
                         Object getProduct();
 
                         @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType getRollingAvg();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType getRollingCount();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType getRollingGroup();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType getRollingMax();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType getRollingMin();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType getRollingProduct();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType getRollingStd();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType getRollingSum();
+
+                        @JsProperty
+                        Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType getRollingWavg();
+
+                        @JsProperty
                         Object getSum();
+
+                        @JsProperty
+                        void setDelta(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.DeltaFieldType delta);
+
+                        @JsProperty
+                        void setEmMax(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMaxFieldType emMax);
+
+                        @JsProperty
+                        void setEmMin(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmMinFieldType emMin);
+
+                        @JsProperty
+                        void setEmStd(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmStdFieldType emStd);
 
                         @JsProperty
                         void setEma(
                                 Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmaFieldType ema);
+
+                        @JsProperty
+                        void setEms(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.EmsFieldType ems);
 
                         @JsProperty
                         void setFill(Object fill);
@@ -5130,6 +6090,42 @@ public class Operation {
 
                         @JsProperty
                         void setProduct(Object product);
+
+                        @JsProperty
+                        void setRollingAvg(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingAvgFieldType rollingAvg);
+
+                        @JsProperty
+                        void setRollingCount(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingCountFieldType rollingCount);
+
+                        @JsProperty
+                        void setRollingGroup(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingGroupFieldType rollingGroup);
+
+                        @JsProperty
+                        void setRollingMax(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMaxFieldType rollingMax);
+
+                        @JsProperty
+                        void setRollingMin(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingMinFieldType rollingMin);
+
+                        @JsProperty
+                        void setRollingProduct(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingProductFieldType rollingProduct);
+
+                        @JsProperty
+                        void setRollingStd(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingStdFieldType rollingStd);
+
+                        @JsProperty
+                        void setRollingSum(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingSumFieldType rollingSum);
+
+                        @JsProperty
+                        void setRollingWavg(
+                                Operation.ToObjectReturnType0.UpdateByFieldType.OperationsListFieldType.ColumnFieldType.SpecFieldType.RollingWavgFieldType rollingWavg);
 
                         @JsProperty
                         void setSum(Object sum);
@@ -5427,7 +6423,13 @@ public class Operation {
         Operation.ToObjectReturnType0.MergeFieldType getMerge();
 
         @JsProperty
+        Operation.ToObjectReturnType0.MetaTableFieldType getMetaTable();
+
+        @JsProperty
         Operation.ToObjectReturnType0.NaturalJoinFieldType getNaturalJoin();
+
+        @JsProperty
+        Operation.ToObjectReturnType0.RangeJoinFieldType getRangeJoin();
 
         @JsProperty
         Operation.ToObjectReturnType0.RunChartDownsampleFieldType getRunChartDownsample();
@@ -5534,7 +6536,13 @@ public class Operation {
         void setMerge(Operation.ToObjectReturnType0.MergeFieldType merge);
 
         @JsProperty
+        void setMetaTable(Operation.ToObjectReturnType0.MetaTableFieldType metaTable);
+
+        @JsProperty
         void setNaturalJoin(Operation.ToObjectReturnType0.NaturalJoinFieldType naturalJoin);
+
+        @JsProperty
+        void setRangeJoin(Operation.ToObjectReturnType0.RangeJoinFieldType rangeJoin);
 
         @JsProperty
         void setRunChartDownsample(
@@ -5632,7 +6640,11 @@ public class Operation {
 
     public native void clearMerge();
 
+    public native void clearMetaTable();
+
     public native void clearNaturalJoin();
+
+    public native void clearRangeJoin();
 
     public native void clearRunChartDownsample();
 
@@ -5702,9 +6714,13 @@ public class Operation {
 
     public native MergeTablesRequest getMerge();
 
+    public native MetaTableRequest getMetaTable();
+
     public native NaturalJoinTablesRequest getNaturalJoin();
 
     public native int getOpCase();
+
+    public native RangeJoinTablesRequest getRangeJoin();
 
     public native RunChartDownsampleRequest getRunChartDownsample();
 
@@ -5774,7 +6790,11 @@ public class Operation {
 
     public native boolean hasMerge();
 
+    public native boolean hasMetaTable();
+
     public native boolean hasNaturalJoin();
+
+    public native boolean hasRangeJoin();
 
     public native boolean hasRunChartDownsample();
 
@@ -5882,9 +6902,17 @@ public class Operation {
 
     public native void setMerge(MergeTablesRequest value);
 
+    public native void setMetaTable();
+
+    public native void setMetaTable(MetaTableRequest value);
+
     public native void setNaturalJoin();
 
     public native void setNaturalJoin(NaturalJoinTablesRequest value);
+
+    public native void setRangeJoin();
+
+    public native void setRangeJoin(RangeJoinTablesRequest value);
 
     public native void setRunChartDownsample();
 

@@ -1,10 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.updatebyrequest.updatebyoperation.updatebycolumn.updatebyspec.updatebyema;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb;
 
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MathContext;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -14,15 +10,15 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions",
+        name = "dhinternal.io.deephaven.proto.table_pb.UpdateByEmOptions",
         namespace = JsPackage.GLOBAL)
-public class UpdateByEmaOptions {
+public class UpdateByEmOptions {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface BigValueContextFieldType {
             @JsOverlay
-            static UpdateByEmaOptions.ToObjectReturnType.BigValueContextFieldType create() {
+            static UpdateByEmOptions.ToObjectReturnType.BigValueContextFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -40,12 +36,12 @@ public class UpdateByEmaOptions {
         }
 
         @JsOverlay
-        static UpdateByEmaOptions.ToObjectReturnType create() {
+        static UpdateByEmOptions.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        UpdateByEmaOptions.ToObjectReturnType.BigValueContextFieldType getBigValueContext();
+        UpdateByEmOptions.ToObjectReturnType.BigValueContextFieldType getBigValueContext();
 
         @JsProperty
         double getOnNanValue();
@@ -64,7 +60,7 @@ public class UpdateByEmaOptions {
 
         @JsProperty
         void setBigValueContext(
-                UpdateByEmaOptions.ToObjectReturnType.BigValueContextFieldType bigValueContext);
+                UpdateByEmOptions.ToObjectReturnType.BigValueContextFieldType bigValueContext);
 
         @JsProperty
         void setOnNanValue(double onNanValue);
@@ -87,7 +83,7 @@ public class UpdateByEmaOptions {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface BigValueContextFieldType {
             @JsOverlay
-            static UpdateByEmaOptions.ToObjectReturnType0.BigValueContextFieldType create() {
+            static UpdateByEmOptions.ToObjectReturnType0.BigValueContextFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -105,12 +101,12 @@ public class UpdateByEmaOptions {
         }
 
         @JsOverlay
-        static UpdateByEmaOptions.ToObjectReturnType0 create() {
+        static UpdateByEmOptions.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
         @JsProperty
-        UpdateByEmaOptions.ToObjectReturnType0.BigValueContextFieldType getBigValueContext();
+        UpdateByEmOptions.ToObjectReturnType0.BigValueContextFieldType getBigValueContext();
 
         @JsProperty
         double getOnNanValue();
@@ -129,7 +125,7 @@ public class UpdateByEmaOptions {
 
         @JsProperty
         void setBigValueContext(
-                UpdateByEmaOptions.ToObjectReturnType0.BigValueContextFieldType bigValueContext);
+                UpdateByEmOptions.ToObjectReturnType0.BigValueContextFieldType bigValueContext);
 
         @JsProperty
         void setOnNanValue(double onNanValue);
@@ -147,51 +143,31 @@ public class UpdateByEmaOptions {
         void setOnZeroDeltaTime(double onZeroDeltaTime);
     }
 
-    public static native UpdateByEmaOptions deserializeBinary(Uint8Array bytes);
+    public static native UpdateByEmOptions deserializeBinary(Uint8Array bytes);
 
-    public static native UpdateByEmaOptions deserializeBinaryFromReader(
-            UpdateByEmaOptions message, Object reader);
+    public static native UpdateByEmOptions deserializeBinaryFromReader(
+            UpdateByEmOptions message, Object reader);
 
-    public static native void serializeBinaryToWriter(UpdateByEmaOptions message, Object writer);
+    public static native void serializeBinaryToWriter(UpdateByEmOptions message, Object writer);
 
-    public static native UpdateByEmaOptions.ToObjectReturnType toObject(
-            boolean includeInstance, UpdateByEmaOptions msg);
+    public static native UpdateByEmOptions.ToObjectReturnType toObject(
+            boolean includeInstance, UpdateByEmOptions msg);
 
     public native void clearBigValueContext();
 
-    public native void clearOnNanValue();
-
-    public native void clearOnNegativeDeltaTime();
-
-    public native void clearOnNullTime();
-
-    public native void clearOnNullValue();
-
-    public native void clearOnZeroDeltaTime();
-
     public native MathContext getBigValueContext();
 
-    public native int getOnNanValue();
+    public native double getOnNanValue();
 
-    public native int getOnNegativeDeltaTime();
+    public native double getOnNegativeDeltaTime();
 
-    public native int getOnNullTime();
+    public native double getOnNullTime();
 
-    public native int getOnNullValue();
+    public native double getOnNullValue();
 
-    public native int getOnZeroDeltaTime();
+    public native double getOnZeroDeltaTime();
 
     public native boolean hasBigValueContext();
-
-    public native boolean hasOnNanValue();
-
-    public native boolean hasOnNegativeDeltaTime();
-
-    public native boolean hasOnNullTime();
-
-    public native boolean hasOnNullValue();
-
-    public native boolean hasOnZeroDeltaTime();
 
     public native Uint8Array serializeBinary();
 
@@ -199,17 +175,17 @@ public class UpdateByEmaOptions {
 
     public native void setBigValueContext(MathContext value);
 
-    public native void setOnNanValue(int value);
+    public native void setOnNanValue(double value);
 
-    public native void setOnNegativeDeltaTime(int value);
+    public native void setOnNegativeDeltaTime(double value);
 
-    public native void setOnNullTime(int value);
+    public native void setOnNullTime(double value);
 
-    public native void setOnNullValue(int value);
+    public native void setOnNullValue(double value);
 
-    public native void setOnZeroDeltaTime(int value);
+    public native void setOnZeroDeltaTime(double value);
 
-    public native UpdateByEmaOptions.ToObjectReturnType0 toObject();
+    public native UpdateByEmOptions.ToObjectReturnType0 toObject();
 
-    public native UpdateByEmaOptions.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native UpdateByEmOptions.ToObjectReturnType0 toObject(boolean includeInstance);
 }

@@ -940,9 +940,97 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface MetaTableType {
+        @JsOverlay
+        static TableService.MetaTableType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface NaturalJoinTablesType {
         @JsOverlay
         static TableService.NaturalJoinTablesType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface RangeJoinTablesType {
+        @JsOverlay
+        static TableService.RangeJoinTablesType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -1752,7 +1840,9 @@ public class TableService {
     public static TableService.LazyUpdateType LazyUpdate;
     public static TableService.LeftJoinTablesType LeftJoinTables;
     public static TableService.MergeTablesType MergeTables;
+    public static TableService.MetaTableType MetaTable;
     public static TableService.NaturalJoinTablesType NaturalJoinTables;
+    public static TableService.RangeJoinTablesType RangeJoinTables;
     public static TableService.RunChartDownsampleType RunChartDownsample;
     public static TableService.SeekRowType SeekRow;
     public static TableService.SelectType Select;

@@ -38,6 +38,9 @@ public interface RoundingModeMap {
     @JsProperty(name = "HALF_UP")
     int getHALF_UP();
 
+    @JsProperty(name = "ROUNDING_MODE_NOT_SPECIFIED")
+    double getROUNDING_MODE_NOT_SPECIFIED();
+
     @JsProperty(name = "UNNECESSARY")
     int getUNNECESSARY();
 
@@ -61,6 +64,9 @@ public interface RoundingModeMap {
 
     @JsProperty(name = "HALF_UP")
     void setHALF_UP(int HALF_UP);
+
+    @JsProperty(name = "ROUNDING_MODE_NOT_SPECIFIED")
+    void setROUNDING_MODE_NOT_SPECIFIED(double ROUNDING_MODE_NOT_SPECIFIED);
 
     @JsProperty(name = "UNNECESSARY")
     void setUNNECESSARY(int UNNECESSARY);
