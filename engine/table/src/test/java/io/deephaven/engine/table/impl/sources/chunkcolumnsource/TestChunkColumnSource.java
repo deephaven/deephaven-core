@@ -230,6 +230,9 @@ public class TestChunkColumnSource {
 
         checkDoubles(doubleChunk1, doubleChunk2, doubleColumnSource);
         checkLongs(longChunk1, longChunk2, longColumnSource);
+
+        longColumnSource.clear();
+        doubleColumnSource.clear();
     }
 
     private void checkDoubles(WritableDoubleChunk<Values> doubleChunk1,
@@ -451,8 +454,8 @@ public class TestChunkColumnSource {
             TestCase.assertEquals(makeExpectBoolean(ii), wrapped.get(ii));
         }
 
-        final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
-        try (final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+        try (final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
+             final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
             wrapped.fillChunk(fillContext, destChunk, RowSequenceFactory.forRange(0, 31));
             TestCase.assertEquals(32, destChunk.size());
             for (int ii = 0; ii < 32; ++ii) {
@@ -468,6 +471,8 @@ public class TestChunkColumnSource {
                 TestCase.assertEquals(makeExpectBoolean(ii), values.get(ii - 1));
             }
         }
+
+        columnSource.clear();
     }
 
     private static DateTime makeExpectDateTime(int idx) {
@@ -493,8 +498,8 @@ public class TestChunkColumnSource {
             TestCase.assertEquals(makeExpectDateTime(ii), wrapped.get(ii));
         }
 
-        final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
-        try (final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+        try (final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
+             final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
             wrapped.fillChunk(fillContext, destChunk, RowSequenceFactory.forRange(0, 31));
             TestCase.assertEquals(32, destChunk.size());
             for (int ii = 0; ii < 32; ++ii) {
@@ -510,6 +515,8 @@ public class TestChunkColumnSource {
                 TestCase.assertEquals(makeExpectDateTime(ii), values.get(ii - 1));
             }
         }
+
+        columnSource.clear();
     }
 
     @Test
@@ -549,5 +556,7 @@ public class TestChunkColumnSource {
             final IntChunk<? extends Values> actual = intColumnSource.getChunk(context, 0, 63).asIntChunk();
             TestCase.assertTrue(IntChunkEquals.equalReduce(actual, intChunk2));
         }
+
+        intColumnSource.clear();
     }
 }
