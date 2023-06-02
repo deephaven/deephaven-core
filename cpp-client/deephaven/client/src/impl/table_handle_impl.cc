@@ -71,9 +71,9 @@ namespace deephaven::client {
 namespace impl {
 std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
 TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *thm) {
-  CBPromise<Ticket> ticketPromise;
-  auto ticketFuture = ticketPromise.makeFuture();
-  auto cb = std::make_shared<internal::ExportedTableCreationCallback>(std::move(ticketPromise));
+  CBPromise<internal::LazyStateInfo> infoPromise;
+  auto ticketFuture = infoPromise.makeFuture();
+  auto cb = std::make_shared<internal::ExportedTableCreationCallback>(std::move(infoPromise));
   auto ls = std::make_shared<internal::LazyState>(thm->server(), thm->flightExecutor(),
       std::move(ticketFuture));
   return std::make_pair(std::move(cb), std::move(ls));
@@ -480,9 +480,25 @@ void TableHandleImpl::observe() {
   lazyState_->waitUntilReady();
 }
 
+int64_t TableHandleImpl::numRows() {
+  return lazyState_->info().numRows();
+}
+
+bool TableHandleImpl::isStatic() {
+  return lazyState_->info().isStatic();
+}
+
 namespace internal {
-ExportedTableCreationCallback::ExportedTableCreationCallback(CBPromise<Ticket> &&ticketPromise) :
-  ticketPromise_(std::move(ticketPromise)) {}
+LazyStateInfo::LazyStateInfo(Ticket ticket, int64_t numRows, bool isStatic) : ticket_(std::move(ticket)),
+    numRows_(numRows), isStatic_(isStatic) {}
+LazyStateInfo::LazyStateInfo(const LazyStateInfo &other) = default;
+LazyStateInfo &LazyStateInfo::operator=(const LazyStateInfo &other) = default;
+LazyStateInfo::LazyStateInfo(LazyStateInfo &&other) noexcept = default;
+LazyStateInfo &LazyStateInfo::operator=(LazyStateInfo &&other) noexcept = default;
+LazyStateInfo::~LazyStateInfo() = default;
+
+ExportedTableCreationCallback::ExportedTableCreationCallback(CBPromise<LazyStateInfo> &&infoPromise) :
+    infoPromise_(std::move(infoPromise)) {}
 ExportedTableCreationCallback::~ExportedTableCreationCallback() = default;
 
 void ExportedTableCreationCallback::onSuccess(ExportedTableCreationResponse item) {
@@ -492,15 +508,20 @@ void ExportedTableCreationCallback::onSuccess(ExportedTableCreationResponse item
     onFailure(std::move(ep));
     return;
   }
-  ticketPromise_.setValue(item.result_id().ticket());
+  LazyStateInfo info(std::move(*item.mutable_result_id()->mutable_ticket()), item.size(), item.is_static());
+  infoPromise_.setValue(std::move(info));
 }
 
 void ExportedTableCreationCallback::onFailure(std::exception_ptr error) {
-  ticketPromise_.setError(std::move(error));
+  infoPromise_.setError(std::move(error));
 }
 
 void LazyState::waitUntilReady() {
-  (void)ticketFuture_.value();
+  (void)infoFuture_.value();
+}
+
+const LazyStateInfo &LazyState::info() {
+  return infoFuture_.value();
 }
 
 namespace {
@@ -562,7 +583,7 @@ struct ArrowToElementTypeId final : public arrow::TypeVisitor {
 }  // namespace
 
 class GetSchemaCallback final :
-    public SFCallback<Ticket>,
+    public SFCallback<LazyStateInfo>,
     public Callback<>,
     public std::enable_shared_from_this<GetSchemaCallback> {
 public:
@@ -575,8 +596,8 @@ public:
     schemaPromise_.setError(std::move(ep));
   }
 
-  void onSuccess(Ticket ticket) final {
-    ticket_ = std::move(ticket);
+  void onSuccess(LazyStateInfo info) final {
+    ticket_ = std::move(info.ticket());
     flightExecutor_->invoke(shared_from_this());
   }
 
@@ -625,9 +646,9 @@ public:
 };
 
 LazyState::LazyState(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
-    CBFuture<Ticket> ticketFuture) : server_(std::move(server)),
-    flightExecutor_(std::move(flightExecutor)), ticketFuture_(std::move(ticketFuture)),
-    requestSent_(false), schemaFuture_(schemaPromise_.makeFuture()) {}
+    CBFuture<LazyStateInfo> infoFuture) : server_(std::move(server)),
+    flightExecutor_(std::move(flightExecutor)), infoFuture_(std::move(infoFuture)),
+    schemaRequestSent_(false), schemaFuture_(schemaPromise_.makeFuture()) {}
 
 LazyState::~LazyState() = default;
 
@@ -644,16 +665,15 @@ std::shared_ptr<Schema> LazyState::getSchema() {
   return std::get<0>(resultTuple);
 }
 
-void LazyState::getSchemaAsync(
-    std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb) {
+void LazyState::getSchemaAsync(std::shared_ptr<SFCallback<std::shared_ptr<Schema>>> cb) {
   schemaFuture_.invoke(std::move(cb));
 
-  if (requestSent_.test_and_set()) {
+  if (schemaRequestSent_.test_and_set()) {
     return;
   }
 
   auto cdCallback = std::make_shared<GetSchemaCallback>(server_, flightExecutor_, std::move(schemaPromise_));
-  ticketFuture_.invoke(std::move(cdCallback));
+  infoFuture_.invoke(std::move(cdCallback));
 }
 }  // namespace internal
 }  // namespace impl
