@@ -2,4 +2,4 @@
 #' @useDynLib rdeephaven, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 
-loadModule("ClientModule", TRUE)
+loadModule("DeephavenInternalModule", TRUE)

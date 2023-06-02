@@ -13,37 +13,22 @@
 #include <Rcpp.h>
 
 
-// TODO: good error handling
-
-
-// ######################### DH WRAPPERS, API #########################
+// ######################### DH WRAPPERS #########################
 
 class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
 
+    // DEEPHAVEN QUERY METHODS WILL GO HERE
+
     /**
-     * All of the following methods that return TableHandleWrapper* call directly into the C++ client.
-     * Please see the corresponding methods in deephaven/client/client.h for C++ level documentation.
+     * Binds the table referenced by this table handle to a variable on the server called tableName.
+     * Without this call, new tables are not accessible from the client.
+     * @param tableName Name for the new table on the server.
     */
-
-    TableHandleWrapper* select(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.select(columnSpecs));
-    };
-
-    TableHandleWrapper* view(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.view(columnSpecs));
-    };
-
-    TableHandleWrapper* dropColumns(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.dropColumns(columnSpecs));
-    };
-
-    TableHandleWrapper* update(std::vector<std::string> columnSpecs) {
-        return new TableHandleWrapper(internal_tbl_hdl.update(columnSpecs));
-    };
-
-    /////////////////////////////// INTERNAL METHODS TO USE FROM R
+    void bindToVariable(std::string tableName) {
+        internal_tbl_hdl.bindToVariable(tableName);
+    }
 
     /**
      * Creates and returns a pointer to an ArrowArrayStream C struct containing the data from the table referenced by internal_tbl_hdl.
@@ -57,8 +42,6 @@ public:
         DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // need to add OK or throw
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
-
-        // create C struct and export RecordBatchReader to that struct
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
         arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr);
 
@@ -80,32 +63,15 @@ public:
      * @return TableHandle reference to the fetched table. 
     */
     TableHandleWrapper* openTable(std::string tableName) {
-        if (!checkForTable(tableName)) {
-            std::cout << "Error: The table you've requested does not exist on the server.\n";
-            return NULL;
-        }
         return new TableHandleWrapper(internal_tbl_hdl_mngr.fetchTable(tableName));
     };
 
     /**
-     * Deletes a table named tableName from the server if it exists. THIS IS ONLY VALID if tableName has NO children on the sever. DELTE THEM FIRST.
-     * @param tableName Name of the table to delete.
+     * Runs a script on the server in the console language if a console was created.
+     * @param code String of the code to be executed on the server.
     */
-    void deleteTable(std::string tableName) {
-        if (!checkForTable(tableName)) {
-            std::cout << "Error: The table you're trying to delete does not exist on the server.\n";
-        }
-        if (session_type == "python") {
-            std::string delete_script = "del(" + tableName + ")";
-            runScript(delete_script);
-        }
-        else if (session_type == "groovy") {
-            std::string delete_script = tableName + " = null";
-            runScript(delete_script);
-        }
-        else {
-            std::cout << "Error: Cannot delete table without an active console.";
-        }
+    void runScript(std::string code) {
+        internal_tbl_hdl_mngr.runScript(code);
     };
 
     /**
@@ -125,19 +91,6 @@ public:
     };
 
     /**
-     * Runs a script on the server in the console language if a console was created.
-     * @param code String of the code to be executed on the server.
-    */
-    void runScript(std::string code) {
-        if (!(session_type == "python" || session_type == "groovy")) {
-            std::cout << "Error: Cannot run a script without an active console.";
-        }
-        internal_tbl_hdl_mngr.runScript(code);
-    };
-
-    /////////////////////////////// INTERNAL METHODS TO USE FROM R
-
-    /**
      * Allocates memory for an ArrowArrayStream C struct and returns a pointer to the new chunk of memory.
      * Intended to be used to get a pointer to pass to Arrow's R library RecordBatchReader$export_to_c(ptr).
     */
@@ -149,9 +102,8 @@ public:
     /**
      * Uses a pointer to a populated ArrowArrayStream C struct to create a new table on the server from the data in the C struct.
      * @param stream_ptr Pointer to an existing and populated ArrayArrayStream, populated by a call to RecordBatchReader$export_to_c(ptr) from R.
-     * @param new_table_name Name for the new table that will appear on the server.
     */
-    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr, std::string new_table_name) {
+    TableHandleWrapper* newTableFromArrowArrayStreamPtr(Rcpp::XPtr<ArrowArrayStream> stream_ptr) {
 
         auto wrapper = internal_tbl_hdl_mngr.createFlightWrapper();
         arrow::flight::FlightCallOptions options;
@@ -177,7 +129,6 @@ public:
         DEEPHAVEN_EXPR_MSG(fsw->DoneWriting()); // TODO: need to add okOrThrow
         DEEPHAVEN_EXPR_MSG(fsw->Close()); // TODO: need to add okOrThrow
 
-        new_tbl_hdl.bindToVariable(new_table_name);
         return new TableHandleWrapper(new_tbl_hdl);
     };
 
@@ -217,14 +168,11 @@ ClientWrapper* newClientWrapper(const std::string &target, const std::string &se
     } else if (authType == "custom") {
         client_options.setCustomAuthentication(key, value);
     } else {
-        std::cout << "complain about invalid authType\n";
+        client_options.setDefaultAuthentication();
     }
 
-    if (sessionType == "none") {}
-    else if (sessionType == "python" || sessionType == "groovy") {
+    if (sessionType == "python" || sessionType == "groovy") {
         client_options.setSessionType(sessionType);
-    } else {
-        std::cout << "complain about invalid sessionType\n";
     }
 
     return new ClientWrapper(deephaven::client::Client::connect(target, client_options), sessionType);
@@ -238,23 +186,19 @@ using namespace Rcpp;
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
-RCPP_MODULE(ClientModule) {
+RCPP_MODULE(DeephavenInternalModule) {
 
-    class_<TableHandleWrapper>("TableHandle")
-    .method("select", &TableHandleWrapper::select)
-    .method("view", &TableHandleWrapper::view)
-    .method("drop_columns", &TableHandleWrapper::dropColumns)
-    .method("update", &TableHandleWrapper::update)
-    .method(".get_arrowArrayStream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
+    class_<TableHandleWrapper>("INTERNAL_TableHandle")
+    .method("bind_to_variable", &TableHandleWrapper::bindToVariable)
+    .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;
 
-    class_<ClientWrapper>("Client")
+    class_<ClientWrapper>("INTERNAL_Client")
     .factory<const std::string&, const std::string&, const std::string&, const std::string&, const std::string&>(newClientWrapper)
     .method("open_table", &ClientWrapper::openTable)
-    .method("delete_table", &ClientWrapper::deleteTable)
     .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)
-    .method(".new_arrowArrayStream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
-    .method(".new_table_from_arrowArrayStream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
+    .method("new_arrow_array_stream_ptr", &ClientWrapper::newArrowArrayStreamPtr)
+    .method("new_table_from_arrow_array_stream_ptr", &ClientWrapper::newTableFromArrowArrayStreamPtr)
     ;
 }
