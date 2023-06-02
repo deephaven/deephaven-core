@@ -9,10 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTimeFormatter;
-import io.deephaven.time.DateTimeFormatters;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -29,8 +26,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.util.Scanner;
-import java.util.regex.Pattern;
+import java.util.List;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -91,7 +87,7 @@ public class TestCsvTools {
         final byte[] contentBytes = contents.getBytes(StandardCharsets.UTF_8);
         final byte[] contentTarBytes;
         try (final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-                final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
+             final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
             final TarArchiveEntry tarEntry = new TarArchiveEntry("test.csv");
             tarEntry.setSize(contentBytes.length);
             tarOut.putArchiveEntry(tarEntry);
@@ -208,57 +204,43 @@ public class TestCsvTools {
         final long numCols = colNames.length;
         final Table tableToTest = new InMemoryTable(
                 colNames,
-                new Object[] {
-                        new String[] {"key11", "key11", "key21", "key21", "key22"},
-                        new int[] {1, 2, 2, NULL_INT, 3},
-                        new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new Instant[] {
-                                DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(10000), null,
-                                DateTimeUtils.epochNanosToInstant(100000), DateTimeUtils.epochNanosToInstant(1000000)}
+                new Object[]{
+                        new String[]{
+                                "key11", "key11", "key21", "key21", "key22", null, "ABCDEFGHIJK", "\"", "123",
+                                "456", "789", ",", "8"
+                        },
+                        new int[]{
+                                1, 2, 2, NULL_INT, 3, -99, -100, Integer.MIN_VALUE + 1, Integer.MAX_VALUE,
+                                5, 6, 7, 8
+                        },
+                        new double[]{
+                                2.342, 0.0932, 10000000, NULL_DOUBLE, 3, Double.MIN_VALUE, Double.MAX_VALUE,
+                                Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, -1.00, 0.0, -0.001, Double.NaN
+                        },
+                        new Instant[]{
+                                DateTimeUtils.epochNanosToInstant(100),
+                                DateTimeUtils.epochNanosToInstant(10000),
+                                null,
+                                DateTimeUtils.epochNanosToInstant(100000),
+                                DateTimeUtils.epochNanosToInstant(1000000),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-05:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-04:00"),
+                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-05:00")
+                        }
                 });
 
-        final long numRows = tableToTest.size();
-        final DateTimeFormatter formatter = DateTimeFormatters.ISO9TZ.getFormatter();
-        final String allSeparators = ",|\tzZ- €9@";
+        final String allSeparators = ",|\tzZ- 9@";
         for (final char separator : allSeparators.toCharArray()) {
-            final String separatorStr = String.valueOf(separator);
-
-            // Ignore separators in double quotes using this regex
-            final String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
-
             CsvTools.writeCsv(
                     tableToTest, csvFile.getPath(), false, DateTimeUtils.timeZone(), false, separator, colNames);
-            final Scanner csvReader = new Scanner(csvFile);
-
-            // Check header
-            final String header = csvReader.nextLine();
-            final String[] headerLine = header.split(splitterPattern);
-            Assert.assertArrayEquals(colNames, headerLine);
-
-            // Check rest of values
-            for (int i = 0; i < numRows; i++) {
-                Assert.assertTrue(csvReader.hasNextLine());
-                final String rawLine = csvReader.nextLine();
-                final String[] csvLine = rawLine.split(splitterPattern);
-                Assert.assertEquals(numCols, csvLine.length);
-
-                // Use separatorCsvEscape and compare the values
-                for (int j = 0; j < numCols; j++) {
-                    final Object rawValFromTable = tableToTest.getColumn(colNames[j]).get(i);
-                    String valFromTable = rawValFromTable == null
-                            ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
-                            : rawValFromTable instanceof Instant
-                                    ? CsvTools.separatorCsvEscape(formatter.format((Instant) rawValFromTable),
-                                            separatorStr)
-                                    : CsvTools.separatorCsvEscape(rawValFromTable.toString(), separatorStr);
-
-                    Assert.assertEquals(valFromTable, csvLine[j]);
-                }
-
-            }
-
-            // Check we exhausted the file
-            Assert.assertFalse(csvReader.hasNextLine());
+            final Table result = CsvTools.readCsv(csvFile.getPath(),
+                    CsvSpecs.builder().delimiter(separator).nullValueLiterals(List.of("(null)")).build());
+            TstUtils.assertTableEquals(tableToTest, result);
         }
     }
 }

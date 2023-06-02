@@ -75,6 +75,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -304,7 +305,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readHeaderlessCsv(String filePath, Collection<String> columnNames) throws CsvReaderException {
-        return CsvTools.readCsv(filePath, builder().hasHeaderRow(false).build())
+        return readCsv(filePath, builder().hasHeaderRow(false).build())
                 .renameColumns(renamesForHeaderless(columnNames));
     }
 
@@ -314,7 +315,7 @@ public class CsvTools {
      */
     @ScriptApi
     public static Table readHeaderlessCsv(String filePath, String... columnNames) throws CsvReaderException {
-        return CsvTools.readCsv(filePath, builder().hasHeaderRow(false).build())
+        return readCsv(filePath, builder().hasHeaderRow(false).build())
                 .renameColumns(renamesForHeaderless(columnNames));
     }
 
@@ -446,8 +447,7 @@ public class CsvTools {
             throws IOException {
         final PrintWriter printWriter = new PrintWriter(out);
         final BufferedWriter bufferedWriter = new BufferedWriter(printWriter);
-        CsvTools.writeCsv(source, bufferedWriter, DateTimeUtils.timeZone(), null, nullsAsEmpty,
-                ',', columns);
+        writeCsv(source, bufferedWriter, DateTimeUtils.timeZone(), null, nullsAsEmpty, ',', columns);
     }
 
     /**
@@ -463,7 +463,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             String... columns) throws IOException {
-        CsvTools.writeCsv(source, destPath, compressed, timeZone, null, NULLS_AS_EMPTY_DEFAULT, ',', columns);
+        writeCsv(source, destPath, compressed, timeZone, null, NULLS_AS_EMPTY_DEFAULT, ',', columns);
     }
 
     /**
@@ -480,7 +480,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             boolean nullsAsEmpty, String... columns) throws IOException {
-        CsvTools.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, ',', columns);
+        writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, ',', columns);
     }
 
     /**
@@ -498,7 +498,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             boolean nullsAsEmpty, char separator, String... columns) throws IOException {
-        CsvTools.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, separator, columns);
+        writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, separator, columns);
     }
 
     /**
@@ -915,8 +915,8 @@ public class CsvTools {
             final long size,
             final boolean nullsAsEmpty,
             final char separator,
-            @Nullable BiConsumer<Long, Long> progress) throws IOException {
-        QueryPerformanceNugget nugget =
+            @Nullable final BiConsumer<Long, Long> progress) throws IOException {
+        final QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()");
         try {
             String separatorStr = String.valueOf(separator);
@@ -931,9 +931,9 @@ public class CsvTools {
                     if (o instanceof String) {
                         out.write("" + separatorCsvEscape((String) o, separatorStr));
                     } else if (o instanceof Instant) {
-                        // noinspection DataFlowIssue; non-null input ensures non-null output
+                        final ZonedDateTime zdt = ZonedDateTime.ofInstant((Instant) o, timeZone);
                         out.write(separatorCsvEscape(
-                                DateTimeUtils.formatDateTime((Instant) o, timeZone), separatorStr));
+                                zdt.toLocalDateTime().toString() + zdt.getOffset().toString(), separatorStr));
                     } else {
                         out.write(nullsAsEmpty
                                 ? separatorCsvEscape(o == null ? "" : o.toString(), separatorStr)
