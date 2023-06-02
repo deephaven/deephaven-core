@@ -54,6 +54,7 @@ applicationDistribution.into('bin') {
 
     from(createApplication('get-table', 'io.deephaven.client.examples.GetDirectTable'))
     from(createApplication('get-schema', 'io.deephaven.client.examples.GetDirectSchema'))
+    from(createApplication('get-meta-table', 'io.deephaven.client.examples.GetMetaTable'))
 
     from(createApplication('convert-to-table', 'io.deephaven.client.examples.ConvertToTable'))
 

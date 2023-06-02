@@ -231,6 +231,11 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final TableSpec meta() {
+        return MetaTable.of(this);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

@@ -42,15 +42,6 @@ public interface Table extends
     @ConcurrentMethod
     TableDefinition getDefinition();
 
-    /**
-     * Provides column metadata in Table form. Convenience method, behaves exactly the same as
-     * getDefinition().getColumnDefinitionsTable().
-     *
-     * @return A Table of metadata about this Table's columns.
-     */
-    @ConcurrentMethod
-    Table getMeta();
-
     @ConcurrentMethod
     String getDescription();
 

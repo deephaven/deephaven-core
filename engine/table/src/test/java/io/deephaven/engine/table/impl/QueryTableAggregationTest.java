@@ -11,7 +11,6 @@ import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -51,7 +50,6 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -1819,7 +1817,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.avgBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double avg = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avg);
@@ -1897,7 +1895,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.varBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double var = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, var);
@@ -2864,7 +2862,7 @@ public class QueryTableAggregationTest {
                         "MyBigDecimal=java.math.BigDecimal.TEN.add(java.math.BigDecimal.valueOf(i))",
                         "MyBigInteger=java.math.BigInteger.ZERO.add(java.math.BigInteger.valueOf(i))");
 
-        TableTools.showWithRowSet(table.getMeta());
+        TableTools.showWithRowSet(table.meta());
         TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();

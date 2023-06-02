@@ -580,5 +580,10 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
         return basicTransform(ct -> ct.dropColumns(columnNames));
     }
 
+    @Override
+    public PartitionedTable.Proxy meta() {
+        return basicTransform(Table::meta);
+    }
+
     // endregion TableOperations Implementation
 }

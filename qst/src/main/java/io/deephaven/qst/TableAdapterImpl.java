@@ -290,6 +290,11 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
                 parentOps(dropColumnsTable).dropColumns(dropColumnsTable.dropColumns().toArray(new ColumnName[0])));
     }
 
+    @Override
+    public void visit(MetaTable metaTable) {
+        addOp(metaTable, parentOps(metaTable).meta());
+    }
+
     private final class OutputTable implements Output<TOPS, TABLE> {
         private final TABLE table;
 
