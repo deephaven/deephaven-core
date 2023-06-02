@@ -45,6 +45,12 @@ if (!hasProperty('excludeClockImpl')) {
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
+if (!hasProperty('excludeSql')) {
+    dependencies {
+        runtimeOnly project(':engine-sql')
+    }
+}
+
 def authHandlers = []
 def authConfigs = ['AuthHandlers']
 if (hasProperty('anonymous')) {

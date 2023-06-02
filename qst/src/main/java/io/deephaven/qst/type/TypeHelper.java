@@ -54,7 +54,7 @@ class TypeHelper {
         return Optional.ofNullable((Type<T>) MAPPINGS.get(clazz));
     }
 
-    static class AddMappings implements Type.Visitor, PrimitiveType.Visitor, GenericType.Visitor {
+    static class AddMappings implements Type.Visitor, GenericType.Visitor {
 
         private final Map<Class<?>, Type<?>> mappings = new HashMap<>();
 
@@ -72,60 +72,13 @@ class TypeHelper {
 
         @Override
         public void visit(PrimitiveType<?> primitiveType) {
-            primitiveType.walk((PrimitiveType.Visitor) this);
+            addUnchecked(primitiveType.clazz(), primitiveType);
+            addUnchecked(primitiveType.boxedClass(), primitiveType);
         }
 
         @Override
         public void visit(GenericType<?> genericType) {
             genericType.walk((GenericType.Visitor) this);
-        }
-
-        @Override
-        public void visit(BooleanType booleanType) {
-            add(boolean.class, booleanType);
-            add(Boolean.class, booleanType);
-        }
-
-        @Override
-        public void visit(ByteType byteType) {
-            add(byte.class, byteType);
-            add(Byte.class, byteType);
-        }
-
-        @Override
-        public void visit(CharType charType) {
-            add(char.class, charType);
-            add(Character.class, charType);
-        }
-
-        @Override
-        public void visit(ShortType shortType) {
-            add(short.class, shortType);
-            add(Short.class, shortType);
-        }
-
-        @Override
-        public void visit(IntType intType) {
-            add(int.class, intType);
-            add(Integer.class, intType);
-        }
-
-        @Override
-        public void visit(LongType longType) {
-            add(long.class, longType);
-            add(Long.class, longType);
-        }
-
-        @Override
-        public void visit(FloatType floatType) {
-            add(float.class, floatType);
-            add(Float.class, floatType);
-        }
-
-        @Override
-        public void visit(DoubleType doubleType) {
-            add(double.class, doubleType);
-            add(Double.class, doubleType);
         }
 
         @Override

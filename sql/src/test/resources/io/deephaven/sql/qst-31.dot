@@ -1,0 +1,11 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/books)"]
+"op_1" ["label"="view(__p_1_0=Id,__p_1_1=Title,__p_1_2=AuthorId)"]
+"op_2" ["label"="view(__a_0_0=__p_1_0)"]
+"op_3" ["label"="selectDistinct(__a_0_0)"]
+"op_4" ["label"="view(Id=__a_0_0)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+"op_4" -> "op_3"
+}
