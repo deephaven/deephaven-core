@@ -14,10 +14,10 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +36,6 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -153,18 +153,18 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns));
 
 
-        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
-            timestamps[i] = ts[i].getNanos();
+            timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -289,9 +289,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns), "Sym");
@@ -303,10 +303,10 @@ public class TestRollingGroup extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            DateTime[] ts = (DateTime[]) source.getColumn("ts").getDirect();
+            Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
-                timestamps[i] = ts[i].getNanos();
+                timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 assertWithRollingGroupTime(source.getColumn(col).getDirect(), actual.getColumn(col).getDirect(),
@@ -500,9 +500,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -669,9 +669,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -731,9 +731,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -806,9 +806,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -828,9 +828,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -882,9 +882,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -952,9 +952,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(5);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
@@ -989,9 +989,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(5_000_000);
 
         final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 

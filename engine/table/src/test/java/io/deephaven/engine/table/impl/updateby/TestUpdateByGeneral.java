@@ -16,11 +16,12 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +39,6 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
@@ -95,9 +95,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
     private void doTestTicking(boolean redirected, boolean bucketed, boolean appendOnly, int steps, int size,
             int seed) {
         final CreateResult result = createTestTable(size, bucketed, false, true, seed,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         if (appendOnly) {
             result.t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -257,9 +257,9 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
     @Test
     public void testInMemoryColumn() {
         final CreateResult result = createTestTable(1000, true, false, false, 0xFEEDFACE,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY"))});
 
         final OperationControl skipControl = OperationControl.builder()
                 .onNullValue(BadDataBehavior.SKIP)

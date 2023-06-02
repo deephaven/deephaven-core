@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +16,7 @@ import java.time.ZonedDateTime;
  * ImmutableArraySource for {@link ZonedDateTime}s. Allows reinterpretation as long.
  */
 public class ImmutableZonedDateTimeArraySource extends ImmutableNanosBasedTimeArraySource<ZonedDateTime>
-        implements ImmutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertableTimeSource.Zoned {
+        implements ImmutableColumnSourceGetDefaults.ForObject<ZonedDateTime>, ConvertibleTimeSource.Zoned {
     private final ZoneId zone;
 
     public ImmutableZonedDateTimeArraySource(
@@ -34,12 +34,12 @@ public class ImmutableZonedDateTimeArraySource extends ImmutableNanosBasedTimeAr
 
     @Override
     protected ZonedDateTime makeValue(long nanos) {
-        return DateTimeUtils.makeZonedDateTime(nanos, zone);
+        return DateTimeUtils.epochNanosToZonedDateTime(nanos, zone);
     }
 
     @Override
     protected long toNanos(ZonedDateTime value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override

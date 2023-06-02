@@ -7,7 +7,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.benchmarking.*;
@@ -16,6 +15,7 @@ import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -74,8 +74,8 @@ public class RangeFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DateTime startTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
+        final Instant startTime = DateTimeUtils.parseInstant("2019-01-01T12:00:00 NY");
+        final Instant endTime = DateTimeUtils.parseInstant("2019-12-31T12:00:00 NY");
 
         switch (filterCol) {
             case "D1":
@@ -91,12 +91,12 @@ public class RangeFilterBenchmark {
                 builder.addColumn(BenchmarkTools.numberCol("I1", int.class, -10_000_000, 10_000_000));
                 break;
             case "Timestamp":
-                builder.addColumn(BenchmarkTools.dateCol("Timestamp", startTime, endTime));
+                builder.addColumn(BenchmarkTools.instantCol("Timestamp", startTime, endTime));
                 break;
         }
 
         if (filterCol.equals("Timestamp")) {
-            final DateTime lowerBound, upperBound;
+            final Instant lowerBound, upperBound;
             if (selectivity == 100) {
                 upperBound = endTime;
                 lowerBound = startTime;
@@ -104,16 +104,16 @@ public class RangeFilterBenchmark {
                 lowerBound = DateTimeUtils.plus(endTime, 1000_000_000L);
                 upperBound = DateTimeUtils.plus(lowerBound, 1000_000_00L);
             } else {
-                final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
-                final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound = DateTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
-                upperBound = DateTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
+                final long midpoint = (DateTimeUtils.epochNanos(startTime) + DateTimeUtils.epochNanos(endTime)) / 2;
+                final long range = (DateTimeUtils.epochNanos(endTime) - DateTimeUtils.epochNanos(startTime));
+                lowerBound = DateTimeUtils.epochNanosToInstant(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DateTimeUtils.epochNanosToInstant(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;
             assert upperBound != null;
 
-            rangeFilter = new DateTimeRangeFilter(filterCol, lowerBound, upperBound);
+            rangeFilter = new InstantRangeFilter(filterCol, lowerBound, upperBound);
         } else {
             final double lowerBound, upperBound;
             if (selectivity == 100) {

@@ -37,7 +37,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -151,7 +150,7 @@ public class QueryTableAggregationTest {
     @Test
     public void testStaticReinterpretableKeyByWithChunks() {
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTimeUtils.now());
         final Table input = emptyTable(10000).update("A=ii % 100 == 0 ? null : plus(" + nowName + ", (long) (ii / 5))",
                 "B=ii % 100 == 0 ? null : (ii & 1) == 0");
 
@@ -270,7 +269,7 @@ public class QueryTableAggregationTest {
         final long mergeChunkMultiple = UnionRedirection.ALLOCATION_UNIT_ROW_KEYS;
 
         final String nowName = "__now_" + Thread.currentThread().hashCode() + "__";
-        QueryScope.addParam(nowName, DateTime.now());
+        QueryScope.addParam(nowName, DateTimeUtils.now());
         final String tableIndexName = "__tableIndex_" + Thread.currentThread().hashCode() + "__";
 
         final QueryTable[] parents = IntStream.range(0, 20).mapToObj((final int tableIndex) -> {
@@ -319,10 +318,10 @@ public class QueryTableAggregationTest {
                 incrementalByEvalNugget(controlSize8, merged, "TimeCol"),
                 incrementalByEvalNugget(controlShiftByProbing, merged, "TimeCol"),
                 incrementalByEvalNugget(controlSize8,
-                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),
                 incrementalByEvalNugget(
-                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : TimeCol.getNanos()"),
+                        (QueryTable) merged.updateView("TimeCol=isNull(TimeCol) ? NULL_LONG : epochNanos(TimeCol)"),
                         "TimeCol"),
 
                 incrementalByEvalNugget(controlSize8, merged, "StrCol", "IntCol"),
@@ -859,8 +858,8 @@ public class QueryTableAggregationTest {
                         new String[] {"Sym", "Date", "intCol", "doubleCol", "BooleanCol", "ByteCol", "CharCol",
                                 "ShortCol", "FloatCol", "LongCol", "BigDecimalCol", "NonKey"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
-                        new UnsortedDateTimeLongGenerator(DateTimeUtils.convertDateTime("2018-10-15T09:30:00 NY"),
-                                DateTimeUtils.convertDateTime("2018-10-15T16:00:00 NY")),
+                        new UnsortedInstantLongGenerator(DateTimeUtils.parseInstant("2018-10-15T09:30:00 NY"),
+                                DateTimeUtils.parseInstant("2018-10-15T16:00:00 NY")),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100),
                         new BooleanGenerator(),
@@ -1395,8 +1394,8 @@ public class QueryTableAggregationTest {
                 new BooleanGenerator(0.5, 0.1),
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1),
-                new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-12-17T00:00:00 NY"),
-                        DateTimeUtils.convertDateTime("2019-12-17T23:59:59 NY"), 0.1),
+                new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2019-12-17T00:00:00 NY"),
+                        DateTimeUtils.parseInstant("2019-12-17T23:59:59 NY"), 0.1),
                 new BooleanGenerator(0.4, 0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
@@ -1824,7 +1823,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.avgBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double avg = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, avg);
@@ -1903,7 +1902,7 @@ public class QueryTableAggregationTest {
 
         final Table result = table.varBy();
         TableTools.show(result);
-        TableTools.show(result.getMeta());
+        TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double var = result.getColumn("IntCol").getDouble(0);
         TestCase.assertEquals(Double.NaN, var);
@@ -2315,8 +2314,8 @@ public class QueryTableAggregationTest {
                         new ShortGenerator((short) 10, (short) 100, 0.1),
                         new ByteGenerator((byte) 10, (byte) 100, 0.1),
                         new SetGenerator<>(10.1, 20.1, 30.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtils.convertDateTime("2020-01-25T00:00:00 NY")),
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseInstant("2020-01-25T00:00:00 NY")),
                         new BooleanGenerator(0.4, 0.2),
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
@@ -2875,7 +2874,7 @@ public class QueryTableAggregationTest {
                         "MyBigDecimal=java.math.BigDecimal.TEN.add(java.math.BigDecimal.valueOf(i))",
                         "MyBigInteger=java.math.BigInteger.ZERO.add(java.math.BigInteger.valueOf(i))");
 
-        TableTools.showWithRowSet(table.getMeta());
+        TableTools.showWithRowSet(table.meta());
         TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();
@@ -2887,9 +2886,10 @@ public class QueryTableAggregationTest {
 
         final Map<String, Object[]> expectedResults = new HashMap<>();
         expectedResults.put("Timestamp",
-                new Object[] {DateTimeUtils.convertDateTime("2020-03-14T00:01:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-03-14T00:05:00 NY"),
-                        DateTimeUtils.convertDateTime("2020-03-14T00:08:00 NY")});
+                new Object[] {
+                        DateTimeUtils.parseInstant("2020-03-14T00:01:00 NY"),
+                        DateTimeUtils.parseInstant("2020-03-14T00:05:00 NY"),
+                        DateTimeUtils.parseInstant("2020-03-14T00:08:00 NY")});
         expectedResults.put("MyString", new Object[] {"1", "5", "8"});
         expectedResults.put("MyInt", new Object[] {1, 4.5, 8});
         expectedResults.put("MyLong", new Object[] {1L, 4.5, 8L});
@@ -3259,7 +3259,7 @@ public class QueryTableAggregationTest {
         final Table randomValues = emptyTable(100)
                 .update("MyInt=(i%12==0 ? null : (int)(ids5942_scale*(Math.random()*2-1)))",
                         "MyBoolean=i%3==0 ? null : (i % 3 == 1)",
-                        "MyDateTime=new DateTime(DateTimeUtils.convertDateTime(\"2020-01-28T00:00:00 NY\").getNanos() + 1000000000L * i)",
+                        "MyInstant=epochNanosToInstant(epochNanos(parseInstant(\"2020-01-28T00:00:00 NY\")) + 1000000000L * i)",
                         "MyBigDecimal=(i%21==0 ? null : new java.math.BigDecimal(ids5942_scale*(Math.random()*2-1)))",
                         "MyBigInteger=(i%22==0 ? null : new java.math.BigInteger(Integer.toString((int)(ids5942_scale*(Math.random()*2-1)))))");
 

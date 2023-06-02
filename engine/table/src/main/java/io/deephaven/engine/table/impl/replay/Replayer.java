@@ -8,13 +8,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
@@ -30,8 +29,8 @@ import java.util.concurrent.locks.Condition;
 public class Replayer implements ReplayerInterface, Runnable {
     private static final Logger log = LoggerFactory.getLogger(Replayer.class);
 
-    protected DateTime startTime;
-    protected DateTime endTime;
+    protected Instant startTime;
+    protected Instant endTime;
     private long deltaNanos = Long.MAX_VALUE;
     private CopyOnWriteArrayList<Runnable> currentTables = new CopyOnWriteArrayList<>();
     private volatile boolean done;
@@ -49,7 +48,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param startTime start time
      * @param endTime end time
      */
-    public Replayer(DateTime startTime, DateTime endTime) {
+    public Replayer(Instant startTime, Instant endTime) {
         this.endTime = endTime;
         this.startTime = startTime;
         currentTables.add(this);
@@ -60,7 +59,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void start() {
-        deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - startTime.getNanos();
+        deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - DateTimeUtils.epochNanos(startTime);
         for (Runnable currentTable : currentTables) {
             updateGraph.addSource(currentTable);
         }
@@ -83,7 +82,8 @@ public class Replayer implements ReplayerInterface, Runnable {
      */
     @Override
     public void shutdown() throws IOException {
-        endTime = DateTime.of(clock());
+        Clock clock = clock();
+        endTime = clock.instantNanos();
         if (done) {
             return;
         }
@@ -169,7 +169,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void setTime(long updatedTime) {
         if (deltaNanos == Long.MAX_VALUE) {
-            startTime = DateTimeUtils.millisToTime(updatedTime);
+            startTime = DateTimeUtils.epochMillisToInstant(updatedTime);
         } else {
             long adjustment = updatedTime - clock().currentTimeMillis();
             if (adjustment > 0) {
@@ -245,7 +245,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * @param rowSet table row set
      * @param timestampSource column source containing time information.
      */
-    public void registerTimeSource(RowSet rowSet, ColumnSource<DateTime> timestampSource) {
+    public void registerTimeSource(RowSet rowSet, ColumnSource<Instant> timestampSource) {
         // Does nothing
     }
 
@@ -255,7 +255,8 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void run() {
         for (PeriodicTask timerTask : timerTasks) {
-            timerTask.next(DateTime.of(clock()));
+            Clock clock = clock();
+            timerTask.next(clock.instantNanos());
         }
 
         if (lastLap) {
@@ -265,7 +266,8 @@ public class Replayer implements ReplayerInterface, Runnable {
                 e.printStackTrace();
             }
         }
-        if (DateTime.of(clock()).compareTo(endTime) >= 0) {
+        Clock clock = clock();
+        if (clock.instantNanos().compareTo(endTime) >= 0) {
             lastLap = true;
         }
     }
@@ -275,7 +277,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         private final TimerTask task;
         private final long delayMillis;
         private final long periodMillis;
-        DateTime nextTime = null;
+        Instant nextTime = null;
 
         public PeriodicTask(TimerTask task, long delayMillis, long periodMillis) {
             this.task = task;
@@ -283,11 +285,11 @@ public class Replayer implements ReplayerInterface, Runnable {
             this.periodMillis = periodMillis;
         }
 
-        public void next(DateTime currentTime) {
+        public void next(Instant currentTime) {
             if (nextTime == null) {
                 nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(delayMillis));
             } else {
-                if (nextTime.getNanos() < currentTime.getNanos()) {
+                if (DateTimeUtils.epochNanos(nextTime) < DateTimeUtils.epochNanos(currentTime)) {
                     try {
                         task.run();
                         nextTime = DateTimeUtils.plus(currentTime, DateTimeUtils.millisToNanos(periodMillis));
@@ -335,20 +337,20 @@ public class Replayer implements ReplayerInterface, Runnable {
         @Override
         public long currentTimeNanos() {
             if (deltaNanos == Long.MAX_VALUE) {
-                return startTime.getNanos();
+                return DateTimeUtils.epochNanos(startTime);
             }
             final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
-            return Math.min(resultNanos, endTime.getNanos());
+            return Math.min(resultNanos, DateTimeUtils.epochNanos(endTime));
         }
 
         @Override
         public Instant instantNanos() {
             if (deltaNanos == Long.MAX_VALUE) {
-                return startTime.getInstant();
+                return startTime;
             }
             final long resultNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - deltaNanos;
-            if (resultNanos >= endTime.getNanos()) {
-                return endTime.getInstant();
+            if (resultNanos >= DateTimeUtils.epochNanos(endTime)) {
+                return endTime;
             }
             return Instant.ofEpochSecond(0, resultNanos);
         }

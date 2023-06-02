@@ -9,7 +9,7 @@ scale = 1000 as int;
 useRandomNullPoints = true as boolean;
 tableRandom = new Random(tableSeed) as Random;
 
-tt = TableTools.timeTable("00:00:01");
+tt = TableTools.timeTable("PT00:00:01");
 tickingValues = tt.update(
         "MyString=new String(`a`+i)",
         "MyInt=new Integer(i)",
@@ -34,7 +34,7 @@ if (useRandomNullPoints) {
 }
 
 randomValues1 = emptyTable(size)
-        .update("Timestamp= i%nullPoints[0] == 0 ? null : new DateTime(i*1_000_000_000L)")
+        .update("Timestamp= i%nullPoints[0] == 0 ? null : DateTimeUtils.epochNanosToInstant(i*1_000_000_000L)")
         .update("MyString=(i%nullPoints[1] == 0 ? null : `a`+ (tableRandom.nextInt(scale*2) - scale) )",
                 "MyInt=(i%nullPoints[2] == 0 ? null : tableRandom.nextInt(scale*2) - scale )",
                 "MyLong=(i%nullPoints[3] ==0 ? null : (long)(tableRandom.nextInt(scale*2) - scale))",

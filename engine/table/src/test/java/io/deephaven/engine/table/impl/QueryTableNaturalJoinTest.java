@@ -26,7 +26,6 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -37,6 +36,7 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -527,15 +527,15 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     private void testNaturalJoinDuplicateRightReinterpret(boolean leftRefreshing, boolean rightRefreshing) {
         // build from right
-        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
-        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
-        final DateTime dateTimeC = DateTimeUtils.convertDateTime("2022-05-06T09:32:00 NY");
-        final DateTime dateTimeD = DateTimeUtils.convertDateTime("2022-05-06T09:33:00 NY");
-        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA),
+        final Instant instantA = DateTimeUtils.parseInstant("2022-05-06T09:30:00 NY");
+        final Instant instantB = DateTimeUtils.parseInstant("2022-05-06T09:31:00 NY");
+        final Instant instantC = DateTimeUtils.parseInstant("2022-05-06T09:32:00 NY");
+        final Instant instantD = DateTimeUtils.parseInstant("2022-05-06T09:33:00 NY");
+        final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", instantA, instantA, instantA),
                 col("LeftSentinel", 1, 2, 3));
         left.setRefreshing(leftRefreshing);
         final QueryTable right =
-                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), col("RightSentinel", 10, 11));
+                testTable(col("JK1", true, true), col("JK2", instantA, instantA), col("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
         try {
@@ -543,32 +543,32 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             TableTools.showWithRowSet(cj);
             fail("Expected exception.");
         } catch (IllegalStateException e) {
-            assertEquals(dupMsg + "[true, " + dateTimeA + "]", e.getMessage());
+            assertEquals(dupMsg + "[true, " + instantA + "]", e.getMessage());
         }
 
         // build from left
-        final Table left2 = testTable(col("DT", dateTimeA, dateTimeB), col("LeftSentinel", 1, 2));
-        final Table right2 = newTable(col("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
+        final Table left2 = testTable(col("DT", instantA, instantB), col("LeftSentinel", 1, 2));
+        final Table right2 = newTable(col("DT", instantA, instantA, instantB, instantC, instantD),
                 col("RightSentinel", 10, 11, 12, 13, 14));
         try {
             final Table cj2 = left2.naturalJoin(right2, "DT");
             TableTools.showWithRowSet(cj2);
             fail("Expected exception");
         } catch (IllegalStateException e) {
-            assertEquals(dupMsg + dateTimeA, e.getMessage());
+            assertEquals(dupMsg + instantA, e.getMessage());
         }
     }
 
     private final static String dupMsg = "Natural Join found duplicate right key for ";
 
-    private static DateTime makeDateTimeKey(String a) {
-        final DateTime dateTimeA = DateTimeUtils.convertDateTime("2022-05-06T09:30:00 NY");
-        final DateTime dateTimeB = DateTimeUtils.convertDateTime("2022-05-06T09:31:00 NY");
+    private static Instant makeInstantKey(String a) {
+        final Instant instantA = DateTimeUtils.parseInstant("2022-05-06T09:30:00 NY");
+        final Instant instantB = DateTimeUtils.parseInstant("2022-05-06T09:31:00 NY");
         switch (a) {
             case "A":
-                return dateTimeA;
+                return instantA;
             case "B":
-                return dateTimeB;
+                return instantB;
             default:
                 throw new IllegalStateException();
         }
@@ -580,7 +580,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinDuplicateRightsRefreshingRight() {
         testNaturalJoinDuplicateRightsRefreshingRight(String.class, Function.identity());
-        testNaturalJoinDuplicateRightsRefreshingRight(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+        testNaturalJoinDuplicateRightsRefreshingRight(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
     }
 
     private <T> void testNaturalJoinDuplicateRightsRefreshingRight(Class<T> clazz, Function<String, T> makeKey) {
@@ -590,7 +590,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table left = castSymbol(clazz, testTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
         final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
-        TableTools.showWithRowSet(right.getMeta());
+        TableTools.showWithRowSet(right.meta());
         TableTools.showWithRowSet(right);
 
         try {
@@ -627,7 +627,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
         testNaturalJoinDuplicateRightsRefreshingBoth(String.class, Function.identity());
-        testNaturalJoinDuplicateRightsRefreshingBoth(DateTime.class, QueryTableNaturalJoinTest::makeDateTimeKey);
+        testNaturalJoinDuplicateRightsRefreshingBoth(Instant.class, QueryTableNaturalJoinTest::makeInstantKey);
     }
 
     private <T> void testNaturalJoinDuplicateRightsRefreshingBoth(Class<T> clazz, Function<String, T> makeKey) {
@@ -677,8 +677,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(cj);
         assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
-        final DateTime time1 = DateTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
-        final DateTime time2 = DateTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
+        final Instant time1 = DateTimeUtils.parseInstant("2019-05-10T09:45:00 NY");
+        final Instant time2 = DateTimeUtils.parseInstant("2019-05-10T21:45:00 NY");
 
         final Table left2 = testTable(col("JDate", time1, time2, null, time2), col("LeftSentinel", 1, 2, 3, 4));
         final Table right2 = newTable(col("JDate", time2, time1, null), col("RightSentinel", 10, 11, 12));

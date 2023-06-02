@@ -8,12 +8,12 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -94,7 +94,7 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
     }
 
     private static final Map<Class<?>, Class<?>> TYPE_TO_REINTERPRETED =
-            Map.of(Boolean.class, byte.class, DateTime.class, long.class);
+            Map.of(Boolean.class, byte.class, Instant.class, long.class);
 
     private static Pair<String, ColumnSource> columnSourceToTypeNameAndInternalSource(
             @NotNull final ColumnSource columnSource) {

@@ -7,15 +7,16 @@ import io.deephaven.engine.exceptions.NotSortableException;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -449,12 +450,12 @@ public class TestSort extends RefreshingTableTestCase {
         }
     }
 
-    private class DateTimeGenerator extends DataGenerator {
+    private class InstantGenerator extends DataGenerator {
         public Class getType() {
-            return DateTime.class;
+            return Instant.class;
         }
 
-        public DateTime makeEntry() {
+        public Instant makeEntry() {
             if (Math.random() < nullFraction) {
                 return null;
             }
@@ -463,8 +464,7 @@ public class TestSort extends RefreshingTableTestCase {
             long offset = (int) Math.rint(Math.random() * 3600);
             offset *= 1000000000;
 
-            DateTime dateTime = new DateTime((startTime * 1000000000) - offset);
-            return dateTime;
+            return DateTimeUtils.epochNanosToInstant((startTime * 1000000000) - offset);
         }
 
         @Override

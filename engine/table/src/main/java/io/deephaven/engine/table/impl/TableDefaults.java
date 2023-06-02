@@ -48,7 +48,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table getMeta() {
+    default Table meta() {
         List<String> columnNames = new ArrayList<>();
         List<String> columnDataTypes = new ArrayList<>();
         List<String> columnTypes = new ArrayList<>();
@@ -257,13 +257,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default Table moveColumns(int index, String... columnsToMove) {
         return moveColumns(index, false, columnsToMove);
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table dateTimeColumnAsNanos(String columnName) {
-        return dateTimeColumnAsNanos(columnName, columnName);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

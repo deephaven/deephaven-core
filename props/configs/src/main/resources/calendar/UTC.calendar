@@ -4,7 +4,7 @@
 
 <calendar>
     <name>UTC</name>
-    <timeZone>TZ_UTC</timeZone>
+    <timeZone>UTC</timeZone>
     <default>
         <businessPeriod>00:00,24:00</businessPeriod>
     </default>

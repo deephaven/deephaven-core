@@ -62,7 +62,7 @@ public class SessionStateTest {
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session));
+                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session));
         nextExportId = 1;
     }
 
@@ -639,7 +639,7 @@ public class SessionStateTest {
         final SessionState session =
                 new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session);
+                DateTimeUtils.epochMillis(DateTimeUtils.epochNanosToInstant(Long.MAX_VALUE)), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }

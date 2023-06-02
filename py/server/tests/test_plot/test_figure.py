@@ -19,11 +19,10 @@ class FigureTestCase(BaseTestCase):
         super().tearDown()
 
     def test_figure(self):
-        with self.subTest("Not supported yet."):
-            with self.assertRaises(Exception) as cm:
-                figure = Figure()
-                new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b", by=['e'])
-            self.assertIn("NullPointerException", str(cm.exception))
+        with self.subTest("this should work too"):
+            figure = Figure()
+            new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b", by=['e'])
+            self.assertIsNotNone(new_f)
 
         with self.subTest("this should work"):
             figure = Figure()

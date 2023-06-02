@@ -23,6 +23,11 @@ public abstract class FloatType extends PrimitiveTypeBase<Float> {
     }
 
     @Override
+    public final Class<Float> boxedClass() {
+        return Float.class;
+    }
+
+    @Override
     public final NativeArrayType<float[], Float> arrayType() {
         return NativeArrayType.of(float[].class, this);
     }

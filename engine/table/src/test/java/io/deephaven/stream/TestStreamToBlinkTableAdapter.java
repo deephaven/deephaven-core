@@ -14,7 +14,6 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.SimpleListener;
@@ -26,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.List;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -215,8 +215,8 @@ public class TestStreamToBlinkTableAdapter {
     @Test
     public void testWrappedTypes() {
         final TableDefinition tableDefinition = TableDefinition.from(
-                List.of("S", "B", "D"),
-                List.of(String.class, Boolean.class, DateTime.class));
+                List.of("S", "B", "T"),
+                List.of(String.class, Boolean.class, Instant.class));
         final Table empty = TableTools.newTable(tableDefinition);
 
         final StreamPublisher streamPublisher = new DummyStreamPublisher();
@@ -247,12 +247,12 @@ public class TestStreamToBlinkTableAdapter {
         wic.set(2, BooleanUtils.booleanAsByte(null));
         final WritableLongChunk<Values> wlc = WritableLongChunk.makeWritableChunk(3);
         chunks[2] = wlc;
-        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-04-28T12:00:00 NY");
-        wlc.set(0, dt1.getNanos());
-        final DateTime dt2 = DateTimeUtils.convertDateTime("2012-08-25T12:00:00 NY");
-        wlc.set(1, dt2.getNanos());
-        final DateTime dt3 = DateTimeUtils.convertDateTime("2030-01-20T12:00:00 NY");
-        wlc.set(2, dt3.getNanos());
+        final Instant instant1 = DateTimeUtils.parseInstant("2021-04-28T12:00:00 NY");
+        wlc.set(0, DateTimeUtils.epochNanos(instant1));
+        final Instant instant2 = DateTimeUtils.parseInstant("2012-08-25T12:00:00 NY");
+        wlc.set(1, DateTimeUtils.epochNanos(instant2));
+        final Instant instant3 = DateTimeUtils.parseInstant("2030-01-20T12:00:00 NY");
+        wlc.set(2, DateTimeUtils.epochNanos(instant3));
 
         adapter.accept(chunks);
 
@@ -268,7 +268,7 @@ public class TestStreamToBlinkTableAdapter {
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(col("S", "Collins", "Armstrong", "Aldrin"),
-                col("B", true, false, null), col("D", dt1, dt2, dt3));
+                col("B", true, false, null), col("T", instant1, instant2, instant3));
         TstUtils.assertTableEquals(expect1, result);
 
         listener.reset();

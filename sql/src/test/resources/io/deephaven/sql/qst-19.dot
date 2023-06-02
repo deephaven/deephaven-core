@@ -1,0 +1,19 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/my_time_1)"]
+"op_1" ["label"="ticketTable(scan/my_time_2)"]
+"op_2" ["label"="view(__p_3_0=Time1)"]
+"op_3" ["label"="view(__p_4_0=Time2)"]
+"op_4" ["label"="view(__p_1_0=__p_3_0,__p_1_1=(int)1)"]
+"op_5" ["label"="view(__p_1_0=__p_4_0,__p_1_1=(int)2)"]
+"op_6" ["label"="merge()"]
+"op_7" ["label"="view(PARENT=__p_1_1,Timestamp=__p_1_0)"]
+"op_8" ["label"="sort([ASCENDING(Timestamp)])"]
+"op_2" -> "op_0"
+"op_3" -> "op_1"
+"op_4" -> "op_2"
+"op_5" -> "op_3"
+"op_6" -> "op_4" ["label"="0"]
+"op_6" -> "op_5" ["label"="1"]
+"op_7" -> "op_6"
+"op_8" -> "op_7"
+}

@@ -23,7 +23,6 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -32,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
@@ -47,8 +47,8 @@ public class AppendOnlyFixedSizePageRegionTest {
 
     @Test
     public void testCorrectness() {
-        final DateTime startTime = DateTime.now();
-        final DateTime endTime = DateTimeUtils.plus(startTime, 1_000_000_000L);
+        final Instant startTime = Instant.now();
+        final Instant endTime = DateTimeUtils.plus(startTime, 1_000_000_000L);
         final SimulationClock clock = new SimulationClock(startTime, endTime, 100_000_000L);
         final TimeTable[] timeTables = new TimeTable[] {
                 new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, 1000, false),

@@ -15,14 +15,13 @@ import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TestClock;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
-import io.deephaven.test.types.SerialTest;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.GroovyDeephavenSession;
+import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
+import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assume;
@@ -33,6 +32,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DecimalFormat;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -93,8 +93,9 @@ public class FuzzerTest {
             groovyString = FileUtils.readTextFile(in);
         }
 
-        final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final TestClock clock = realtime ? null : new TestClock(fakeStart.getNanos());
+        final Instant fakeStart = DateTimeUtils.parseInstant("2020-03-17T13:53:25.123456 NY");
+        final TestClock clock;
+        clock = realtime ? null : new TestClock(DateTimeUtils.epochNanos(fakeStart));
 
         final GroovyDeephavenSession session = getGroovySession(clock);
 
@@ -215,8 +216,8 @@ public class FuzzerTest {
         final Random sourceRandom = new Random(mainTestSeed);
         final Random timeRandom = new Random(mainTestSeed + 1);
 
-        final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final TestClock clock = new TestClock(fakeStart.getNanos());
+        final Instant fakeStart = DateTimeUtils.parseInstant("2020-03-17T13:53:25.123456 NY");
+        final TestClock clock = new TestClock(DateTimeUtils.epochNanos(fakeStart));
 
         final long start = System.currentTimeMillis();
 
@@ -284,8 +285,10 @@ public class FuzzerTest {
 
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
-                + (realtime ? ""
-                        : (", sim: " + (double) (clock.now - fakeStart.getNanos()) / DateTimeUtils.SECOND))
+                + (realtime
+                        ? ""
+                        : (", sim: "
+                                + (double) (clock.now - DateTimeUtils.epochNanos(fakeStart)) / DateTimeUtils.SECOND))
                 + ", ttSize: " + timeTable.size());
     }
 

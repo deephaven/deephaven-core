@@ -10,10 +10,11 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as papq
 
-from deephaven import arrow as dharrow, dtypes, new_table, time_table
+from deephaven import arrow as dharrow, new_table, time_table
 from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, bool_col
 from deephaven.table import Table
+from deephaven.time import epoch_nanos_to_instant
 from tests.testbase import BaseTestCase
 
 
@@ -33,7 +34,7 @@ class ArrowTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(name="Datetime", data=[epoch_nanos_to_instant(1), epoch_nanos_to_instant(-1)]),
         ]
         cls.test_table = new_table(cols=cols)
 
@@ -187,7 +188,7 @@ class ArrowTestCase(BaseTestCase):
         self.assert_table_equals(dh_table_1, dh_table)
 
     def test_ticking_table(self):
-        table = time_table("00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
+        table = time_table("PT00:00:00.001").update(["X = i", "Y = String.valueOf(i)"])
         self.wait_ticking_table_update(table, row_count=100, timeout=5)
         pa_table = dharrow.to_arrow(table)
         self.assertEqual(len(pa_table.columns), 3)

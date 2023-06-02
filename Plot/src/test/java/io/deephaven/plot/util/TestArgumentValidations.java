@@ -3,17 +3,17 @@
  */
 package io.deephaven.plot.util;
 
-
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Color;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayInt;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTimeUtils;
 import junit.framework.TestCase;
 
+import java.time.Instant;
 import java.util.Date;
 
 public class TestArgumentValidations extends BaseArrayTestCase {
@@ -29,7 +29,7 @@ public class TestArgumentValidations extends BaseArrayTestCase {
         final int[] ints = {1};
         final IndexableNumericData intData = new IndexableNumericDataArrayInt(ints, null);
         final IndexableNumericData intData2 = new IndexableNumericDataArrayInt(new int[] {2, 3}, null);
-        final DateTime[] dates = {new DateTime(1)};
+        final Instant[] dates = {DateTimeUtils.epochNanosToInstant(1)};
         final Color[] colors = {new Color(1)};
         final Table table = TableTools.newTable(
                 TableTools.col(stringColumn, NON_NULL),
@@ -98,12 +98,12 @@ public class TestArgumentValidations extends BaseArrayTestCase {
             assertTrue(e.getMessage().contains(INVALID));
         }
 
-        assertTrue(ArgumentValidations.isTime(DateTime.class, null));
+        assertTrue(ArgumentValidations.isTime(Instant.class, null));
         assertTrue(ArgumentValidations.isTime(Date.class, null));
         assertFalse(ArgumentValidations.isTime(int.class, null));
         assertFalse(ArgumentValidations.isTime(Double.class, null));
 
-        assertTrue(ArgumentValidations.isNumericOrTime(DateTime.class, null));
+        assertTrue(ArgumentValidations.isNumericOrTime(Instant.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(Date.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(int.class, null));
         assertTrue(ArgumentValidations.isNumericOrTime(Double.class, null));

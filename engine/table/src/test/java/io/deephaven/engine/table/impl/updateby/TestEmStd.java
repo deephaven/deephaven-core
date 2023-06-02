@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -21,12 +20,10 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
-import io.deephaven.util.function.ThrowingRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -34,6 +31,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
@@ -44,8 +42,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.MINUTE;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
@@ -217,9 +214,9 @@ public class TestEmStd extends BaseUpdateByTest {
 
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final OperationControl skipControl = OperationControl.builder()
@@ -246,10 +243,10 @@ public class TestEmStd extends BaseUpdateByTest {
         final Table actualSkipTime = t.updateBy(UpdateByOperation.EmStd(skipControl, "ts", 10 * MINUTE, columns));
         final Table actualResetTime = t.updateBy(UpdateByOperation.EmStd(resetControl, "ts", 10 * MINUTE, columns));
 
-        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
-            timestamps[i] = ts[i].getNanos();
+            timestamps[i] = epochNanos(ts[i]);
         }
 
         for (String col : columns) {
@@ -278,9 +275,9 @@ public class TestEmStd extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final TableDefaults t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final OperationControl skipControl = OperationControl.builder()
@@ -328,10 +325,10 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final DateTime[] ts = (DateTime[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = ts[i].getNanos();
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -344,10 +341,10 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final DateTime[] ts = (DateTime[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
-                timestamps[i] = ts[i].getNanos();
+                timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
                 final Class colType = source.getColumn(col).getType();
@@ -440,10 +437,10 @@ public class TestEmStd extends BaseUpdateByTest {
     @Test
     public void testTimeThrowBehaviors() {
         final ColumnHolder ts = col("ts",
-                convertDateTime("2022-03-11T09:30:00.000 NY"),
-                convertDateTime("2022-03-11T09:29:00.000 NY"),
-                convertDateTime("2022-03-11T09:30:00.000 NY"),
-                convertDateTime("2022-03-11T09:32:00.000 NY"),
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:29:00.000 NY"),
+                parseInstant("2022-03-11T09:30:00.000 NY"),
+                parseInstant("2022-03-11T09:32:00.000 NY"),
                 null);
 
         testThrowsInternal(
@@ -668,10 +665,10 @@ public class TestEmStd extends BaseUpdateByTest {
     /**
      * This is a hacky, inefficient way to force nulls into the timestamps while maintaining sorted-ness otherwise
      */
-    private class SortedIntGeneratorWithNulls extends SortedDateTimeGenerator {
+    private class SortedIntGeneratorWithNulls extends SortedInstantGenerator {
         final double nullFrac;
 
-        public SortedIntGeneratorWithNulls(DateTime minTime, DateTime maxTime, double nullFrac) {
+        public SortedIntGeneratorWithNulls(Instant minTime, Instant maxTime, double nullFrac) {
             super(minTime, maxTime);
             this.nullFrac = nullFrac;
         }
@@ -682,7 +679,7 @@ public class TestEmStd extends BaseUpdateByTest {
             if (nullFrac == 0.0) {
                 return retChunk;
             }
-            ObjectChunk<DateTime, Values> srcChunk = retChunk.asObjectChunk();
+            ObjectChunk<Instant, Values> srcChunk = retChunk.asObjectChunk();
             Object[] dateArr = new Object[srcChunk.size()];
             srcChunk.copyToArray(0, dateArr, 0, dateArr.length);
 
@@ -700,9 +697,9 @@ public class TestEmStd extends BaseUpdateByTest {
     public void testNullTimestamps() {
         final CreateResult timeResult = createTestTable(100, true, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
 
         final OperationControl skipControl = OperationControl.builder()
@@ -779,9 +776,9 @@ public class TestEmStd extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)});
         final CreateResult timeResult = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                parseInstant("2022-03-09T09:00:00.000 NY"),
+                                parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
 
         if (appendOnly) {

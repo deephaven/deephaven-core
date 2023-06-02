@@ -835,7 +835,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 getRandomIntCol("e", 100, random));
         final PartitionedTable partitionedTable = testTable.partitionBy("c");
         final Proxy selfPtProxy = partitionedTable.proxy();
-        final Table triggerTable = timeTable("00:00:01");
+        final Table triggerTable = timeTable("PT00:00:01");
         final Proxy ptProxy = selfPtProxy.snapshotWhen(triggerTable);
         assertThat(ptProxy.target().constituentDefinition().numColumns()).isEqualTo(6);
         for (Table constituent : ptProxy.target().constituents()) {

@@ -12,25 +12,24 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.verify.TableAssertions;
+import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
+import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
-import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.RowIdSource;
-import io.deephaven.engine.table.impl.sources.UnionRedirection;
-import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -42,6 +41,7 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -916,8 +916,8 @@ public abstract class QueryTableWhereTest {
                         new DoubleGenerator(0.0, 100.0, 0, 0, 0, 0),
                         new LongGenerator(-100, 100, 0.01),
                         new CharGenerator('A', 'Z', 0.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtils.convertDateTime("2020-01-01T01:00:00 NY"))));
+                        new UnsortedInstantGenerator(DateTimeUtils.parseInstant("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseInstant("2020-01-01T01:00:00 NY"))));
         final String bigIntConversion = "BI4=" + getClass().getCanonicalName() + ".convertToBigInteger(L3)";
         final Table augmentedInts =
                 table.update(bigIntConversion, "D5=(double)L3", "I6=(int)L3", "S7=(short)L3", "B8=(byte)L3");
@@ -938,7 +938,7 @@ public abstract class QueryTableWhereTest {
         final BigDecimal two = BigDecimal.valueOf(2);
         final BigDecimal nine = BigDecimal.valueOf(9);
         final String filterTimeString = "2020-01-01T00:30:00 NY";
-        final DateTime filterTime = DateTimeUtils.convertDateTime(filterTimeString);
+        final Instant filterTime = DateTimeUtils.parseInstant(filterTimeString);
 
         QueryScope.addParam("two", two);
         QueryScope.addParam("nine", nine);
@@ -997,9 +997,11 @@ public abstract class QueryTableWhereTest {
                 new TableComparator(sortedL3R.where("L3 < 20 && true"), sortedL3R.where("I6 < 20")),
                 new TableComparator(sortedL3R.where("L3 < 20 && true"), sortedL3R.where("B8 < 20")),
                 new TableComparator(sortedL3R.where("L3 < 20 && true"), sortedL3R.where("S7 < 20")),
-                new TableComparator(sortedDT.where("DT == null || DT.getNanos() < " + filterTime.getNanos()),
+                new TableComparator(
+                        sortedDT.where("epochNanos(DT) < " + DateTimeUtils.epochNanos(filterTime)),
                         sortedDT.where("DT < '" + filterTimeString + "'")),
-                new TableComparator(sortedDT.where("DT != null && DT.getNanos() >= " + filterTime.getNanos()),
+                new TableComparator(
+                        sortedDT.where("epochNanos(DT) >= " + DateTimeUtils.epochNanos(filterTime)),
                         sortedDT.where("DT >= '" + filterTimeString + "'")),
                 new TableComparator(sortedCH.where("true && CH > 'M'"), sortedCH.where("CH > 'M'")),
                 new TableComparator(sortedCH.where("CH==null || CH <= 'O'"), sortedCH.where("CH <= 'O'")),
@@ -1019,9 +1021,9 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    public void testDateTimeRangeFilter() {
-        final DateTime startTime = DateTimeUtils.convertDateTime("2021-04-23T09:30 NY");
-        final DateTime[] array = new DateTime[10];
+    public void testInstantRangeFilter() {
+        final Instant startTime = DateTimeUtils.parseInstant("2021-04-23T09:30 NY");
+        final Instant[] array = new Instant[10];
         for (int ii = 0; ii < array.length; ++ii) {
             array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
         }

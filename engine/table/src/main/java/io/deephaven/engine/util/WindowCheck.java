@@ -26,7 +26,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -36,6 +35,7 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -430,11 +430,11 @@ public class WindowCheck {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            final ColumnSource<DateTime> timeStampSource = table.getColumnSource(timestampColumn);
-            if (!DateTime.class.isAssignableFrom(timeStampSource.getType())) {
-                throw new IllegalArgumentException(timestampColumn + " is not of type DateTime!");
+            final ColumnSource<Instant> timeStampSource = table.getColumnSource(timestampColumn);
+            if (!Instant.class.isAssignableFrom(timeStampSource.getType())) {
+                throw new IllegalArgumentException(timestampColumn + " is not of type Instant!");
             }
-            this.timeStampSource = ReinterpretUtils.dateTimeToLongSource(timeStampSource);
+            this.timeStampSource = ReinterpretUtils.instantToLongSource(timeStampSource);
         }
 
         /**

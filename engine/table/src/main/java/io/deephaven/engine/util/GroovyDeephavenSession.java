@@ -513,12 +513,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
-                "import io.deephaven.time.DateTime;\n" +
                 "import io.deephaven.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
-                "import org.joda.time.LocalTime;\n" +
-                "import io.deephaven.time.Period;\n" +
+                "import java.time.Instant;\n" +
+                "import java.time.LocalDate;\n" +
+                "import java.time.LocalTime;\n" +
+                "import java.time.ZoneId;\n" +
+                "import java.time.ZonedDateTime;\n" +
                 "import io.deephaven.engine.context.QueryScopeParam;\n" +
                 "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
@@ -526,7 +528,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.time.DateTimeUtils.*;\n" +
-                "import static io.deephaven.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +

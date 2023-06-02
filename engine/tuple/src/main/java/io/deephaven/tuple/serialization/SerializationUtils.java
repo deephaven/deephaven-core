@@ -3,9 +3,9 @@
  */
 package io.deephaven.tuple.serialization;
 
-import io.deephaven.time.DateTime;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.function.ThrowingConsumer;
 import io.deephaven.util.function.ThrowingSupplier;
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.lang.reflect.Constructor;
+import java.time.Instant;
 import java.util.Date;
 
 /**
@@ -61,8 +62,8 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return k -> out.writeUTF((String) k);
         }
-        if (itemClass == DateTime.class) {
-            return k -> out.writeLong(((DateTime) k).getNanos());
+        if (itemClass == Instant.class) {
+            return k -> out.writeLong(DateTimeUtils.epochNanos(((Instant) k)));
         }
         if (itemClass == Date.class) {
             return k -> out.writeLong(((Date) k).getTime());
@@ -117,8 +118,8 @@ public class SerializationUtils {
         if (itemClass == String.class) {
             return () -> (ITEM_TYPE) in.readUTF();
         }
-        if (itemClass == DateTime.class) {
-            return () -> (ITEM_TYPE) new DateTime(in.readLong());
+        if (itemClass == Instant.class) {
+            return () -> (ITEM_TYPE) DateTimeUtils.epochNanosToInstant(in.readLong());
         }
         if (itemClass == Date.class) {
             return () -> (ITEM_TYPE) new Date(in.readLong());

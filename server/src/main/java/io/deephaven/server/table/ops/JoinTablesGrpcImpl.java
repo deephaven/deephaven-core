@@ -94,6 +94,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
     }
 
     @Singleton
+    @Deprecated
     public static class AsOfJoinTablesGrpcImpl extends JoinTablesGrpcImpl<AsOfJoinTablesRequest> {
 
         private static final MultiDependencyFunction<AsOfJoinTablesRequest> EXTRACT_DEPS =
@@ -129,9 +130,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         }
 
         private static AsOfJoinRule adapt(MatchRule rule) {
-            // TODO: add new as-of join RPC, mark JoinTablesGrpcImpl as deprecated
-            // this looks wrong, but we need to also potentially transition the gRPC side, and preserve this old
-            // behavior if desired.
+            // Note: this is _correct_ to maintain backwards compatibility but it looks wrong. This is why the
+            // underlying proto and this class are now deprecated.
             switch (rule) {
                 case LESS_THAN_EQUAL:
                     return AsOfJoinRule.GREATER_THAN_EQUAL;

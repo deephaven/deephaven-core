@@ -145,8 +145,22 @@ service TableService {
 
   /*
    * Returns the result of an as of join operation.
+   *
+   * Deprecated: Please use AjTables or RajTables.
    */
-  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+  rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {
+    option deprecated = true;
+  }
+
+  /*
+   * Returns the result of an aj operation.
+   */
+  rpc AjTables(AjRajTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an raj operation.
+   */
+  rpc RajTables(AjRajTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns the result of a range join operation.
@@ -678,7 +692,9 @@ message LeftJoinTablesRequest {
 }
 
 message AsOfJoinTablesRequest {
+  option deprecated = true;
   enum MatchRule {
+    option deprecated = true;
     LESS_THAN_EQUAL = 0;
     LESS_THAN = 1;
     GREATER_THAN_EQUAL = 2;
@@ -692,6 +708,20 @@ message AsOfJoinTablesRequest {
   // Direction to search to find a match. LESS_THAN_EQUAL and LESS_THAN will be used to make a
   // Table.aj() call, and GREATER_THAN_EQUAL and GREATER_THAN will be used to make a Table.raj() call.
   MatchRule as_of_match_rule = 7;
+}
+
+message AjRajTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string exact_match_columns = 4;
+  // This is a comparison expression for the inexact as-of join match. In the case of an as-of join (aj), the comparison
+  // operator can be either ">=" or ">"; for example, "Foo>=Bar" or "Foo>Bar". In the case of a reverse-as-of join (raj),
+  // the comparison operator can be either "<=" or "<"; for example, "Foo<=Bar" or "Foo<Bar". In the case where the
+  // column name exists in both tables, the single column name can be used and it will inherit the default comparison
+  // operator: in the aj case, "Foo" is equivalent to "Foo>=Foo"; in the raj case, "Foo" is equivalent to "Foo<=Foo".
+  string as_of_column = 5;
+  repeated string columns_to_add = 6;
 }
 
 message RangeJoinTablesRequest {
@@ -1224,7 +1254,7 @@ message BatchTableRequest {
       NaturalJoinTablesRequest natural_join = 24;
       ExactJoinTablesRequest exact_join = 25;
       LeftJoinTablesRequest left_join = 26;
-      AsOfJoinTablesRequest as_of_join = 27;
+      AsOfJoinTablesRequest as_of_join = 27 [deprecated=true];
       FetchTableRequest fetch_table = 28;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
@@ -1236,6 +1266,8 @@ message BatchTableRequest {
       SnapshotWhenTableRequest snapshot_when = 37;
       MetaTableRequest meta_table = 38;
       RangeJoinTablesRequest range_join = 39;
+      AjRajTablesRequest aj = 40;
+      AjRajTablesRequest raj = 41;
     }
   }
 }

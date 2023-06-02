@@ -23,7 +23,7 @@ class ExperimentalTestCase(BaseTestCase):
 
     def test_full_outer_join(self):
         with self.subTest("full outer join with matching keys"):
-            t1 = time_table("00:00:00.001").update(["a = i", "b = i * 2"])
+            t1 = time_table("PT00:00:00.001").update(["a = i", "b = i * 2"])
             t2 = empty_table(100).update(["c = i", "d = i * 2"])
             self.wait_ticking_table_update(t1, row_count=100, timeout=5)
             rt = full_outer_join(t1, t2, on="a = c")
@@ -44,7 +44,7 @@ class ExperimentalTestCase(BaseTestCase):
 
     def test_left_outer_join(self):
         with self.subTest("left outer join with matching keys"):
-            t1 = time_table("00:00:00.001").update(["a = i", "b = i * 2"])
+            t1 = time_table("PT00:00:00.001").update(["a = i", "b = i * 2"])
             t2 = empty_table(100).update(["c = i", "d = i * 2"])
             self.wait_ticking_table_update(t1, row_count=100, timeout=5)
             rt = left_outer_join(t1, t2, on="a = c")
@@ -65,7 +65,7 @@ class ExperimentalTestCase(BaseTestCase):
 
     def test_time_window(self):
         with exclusive_lock():
-            source_table = time_table("00:00:00.01").update(["TS=currentTime()"])
+            source_table = time_table("PT00:00:00.01").update(["TS=now()"])
             t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
 
         self.assertEqual("InWindow", t.columns[-1].name)

@@ -286,12 +286,6 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return coalesce().dateTimeColumnAsNanos(dateTimeColumnName, nanosColumnName);
-    }
-
-    @Override
-    @ConcurrentMethod
     public Table head(long size) {
         return coalesce().head(size);
     }

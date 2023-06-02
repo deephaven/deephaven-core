@@ -424,9 +424,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new SetGenerator<>(10.1, 20.1, 30.1),
                                     new SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new BooleanGenerator(0.2),
-                                    new UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY"))));
+                                    new UnsortedInstantGenerator(
+                                            DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY"))));
         }
 
         public void createNuggets() {
@@ -1303,9 +1303,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new BooleanGenerator(0.2),
                                     new SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
-                                    new UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                                    new UnsortedInstantGenerator(
+                                            DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
@@ -1367,9 +1367,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new StringGenerator(),
                                     new SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
-                                    new UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                                    new UnsortedInstantGenerator(
+                                            DateTimeUtils.parseInstant("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtils.parseInstant("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };

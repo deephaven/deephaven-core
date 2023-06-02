@@ -9,13 +9,14 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.sources.DateTimeTestSource;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.DateTime;
+import io.deephaven.engine.testutil.sources.InstantTestSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
+
+import java.time.Instant;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
@@ -25,18 +26,18 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
-        final DateTime baseTime = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-        final DateTime baseTime2 = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
+        final Instant baseTime = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
+        final Instant baseTime2 = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
         for (int ii = 0; ii < 100; ii++) {
-            data[ii] = baseTime.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
-            data[100 + ii] = baseTime2.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+            data[ii] = DateTimeUtils.epochNanos(baseTime) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+            data[100 + ii] = DateTimeUtils.epochNanos(baseTime2) + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
         }
-        final DateTime threshold1 = new DateTime(data[99] - DateTimeUtils.secondsToNanos(600));
-        final DateTime threshold2 = new DateTime(data[199] - DateTimeUtils.secondsToNanos(600));
+        final Instant threshold1 = DateTimeUtils.epochNanosToInstant(data[99] - DateTimeUtils.secondsToNanos(600));
+        final Instant threshold2 = DateTimeUtils.epochNanosToInstant(data[199] - DateTimeUtils.secondsToNanos(600));
 
         final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
-                ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
-        final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
+                ColumnHolder.getInstantColumnHolder("Timestamp", false, data));
+        final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "PT00:10:00");
         TableTools.showWithRowSet(filtered);
         assertEquals(44, filtered.size());
 
@@ -48,14 +49,14 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         assertTableEquals(filtered, expected);
 
         updateGraph.runWithinUnitTestCycle(() -> {
-            final DateTime[] data2 = new DateTime[4];
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
+            final Instant[] data2 = new Instant[4];
+            data2[0] = DateTimeUtils.parseInstant("2020-08-20T06:00:00 NY");
+            data2[1] = DateTimeUtils.parseInstant("2020-08-20T06:30:00 NY");
+            data2[0] = DateTimeUtils.parseInstant("2020-08-20T07:00:00 NY");
+            data2[1] = DateTimeUtils.parseInstant("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().writableCast().insert(newRowSet);
-            ((DateTimeTestSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
+            ((InstantTestSource) input.<Instant>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });
 

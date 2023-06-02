@@ -31,29 +31,29 @@ class UgpTestCase(BaseTestCase):
 
     def test_ugp_context_manager(self):
         with self.assertRaises(DHError) as cm:
-            test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         with ugp.exclusive_lock():
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+            test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
         # nested locking
         with ugp.exclusive_lock():
             with ugp.shared_lock():
-                test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
-            test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+                test_table = time_table("PT00:00:00.001").update(["TS=now()"])
+            test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
         with self.assertRaises(DHError) as cm:
             with ugp.shared_lock():
                 with ugp.exclusive_lock():
-                    test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
+                    test_table = time_table("PT00:00:00.001").update(["TS=now()"])
         self.assertRegex(str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock")
 
     def test_ugp_decorator_exclusive(self):
-        def ticking_table_op(tail_size: int, period: str = "00:00:01"):
+        def ticking_table_op(tail_size: int, period: str = "PT00:00:01"):
             return time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
 
         with self.assertRaises(DHError) as cm:
@@ -61,7 +61,7 @@ class UgpTestCase(BaseTestCase):
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         @ugp.exclusive_locked
-        def ticking_table_op_decorated(tail_size: int, period: str = "00:00:01"):
+        def ticking_table_op_decorated(tail_size: int, period: str = "PT00:00:01"):
             t = time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
             self.assertEqual(t.size, 0)
             return t
@@ -72,12 +72,12 @@ class UgpTestCase(BaseTestCase):
         t = ticking_table_op_decorated(5)
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
-        t = ticking_table_op_decorated(10, "00:00:00.001")
+        t = ticking_table_op_decorated(10, "PT00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
 
     def test_ugp_decorator_shared(self):
         @ugp.shared_locked
-        def ticking_table_op_decorated(tail_size: int, period: str = "00:00:01"):
+        def ticking_table_op_decorated(tail_size: int, period: str = "PT00:00:01"):
             t = time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
             self.assertEqual(t.size, 0)
             return t
@@ -88,17 +88,17 @@ class UgpTestCase(BaseTestCase):
         t = ticking_table_op_decorated(5)
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
 
-        t = ticking_table_op_decorated(10, "00:00:00.001")
+        t = ticking_table_op_decorated(10, "PT00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
 
     def test_auto_locking_release(self):
         ugp.auto_locking = True
-        test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+        test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
         self.assertFalse(ugp.has_shared_lock())
         self.assertFalse(ugp.has_exclusive_lock())
 
     def test_auto_locking_update_select(self):
-        test_table = time_table("00:00:00.001")
+        test_table = time_table("PT00:00:00.001")
         ops = [
             Table.update,
             Table.lazy_update,
@@ -120,7 +120,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_wherein(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         unique_table = test_table.head(num_rows=50).select_distinct(formulas=["X", "Y"])
 
         with self.assertRaises(DHError) as cm:
@@ -137,7 +137,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_joins(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         left_table = test_table.drop_columns(["Z", "Timestamp"])
         right_table = test_table.drop_columns(["Y", "Timestamp"])
@@ -163,7 +163,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_rename_columns(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         cols_to_rename = [
             f"{f.name + '_2'} = {f.name}" for f in test_table.columns[::2]
@@ -178,7 +178,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_ungroup(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13"])
         grouped_table = test_table.group_by(by=["Y"])
         with self.assertRaises(DHError) as cm:
             ungrouped_table = grouped_table.ungroup(cols=["X"])
@@ -190,7 +190,7 @@ class UgpTestCase(BaseTestCase):
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
 
         for op in ops:
             with self.subTest(op=op):
@@ -207,7 +207,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_partitioned_table(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
         with self.subTest("Merge"):
@@ -241,8 +241,8 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_table_factory(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
-            test_table1 = time_table("00:00:00.001").update(["X=i", "Y=i%23", "Z=X*Y"])
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table1 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=X*Y"])
 
         with self.subTest("Merge"):
             ugp.auto_locking = False
@@ -258,7 +258,7 @@ class UgpTestCase(BaseTestCase):
 
     def test_auto_locking_partitioned_table_proxy(self):
         with ugp.shared_lock():
-            test_table = time_table("00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
+            test_table = time_table("PT00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
         proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
         proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
 

@@ -11,8 +11,14 @@ configurations {
 dependencies {
     api project(':engine-time')
     implementation project(':engine-function')
+    implementation project(':log-factory')
 
     testImplementation project(':base-test-utils')
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }

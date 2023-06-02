@@ -17,7 +17,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
@@ -375,7 +375,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+    protected void generateFilterCode(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
@@ -413,7 +415,9 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+    private StringBuilder getClassBody(
+            TableDefinition tableDefinition,
+            TimeLiteralReplacedExpression timeConversionResult,
             QueryLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;
@@ -541,7 +545,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             if (columnType.isPrimitive() && columnType != boolean.class) {
                 chunkType = toTitleCase(columnType.getSimpleName()) + "Chunk";
             } else {
-                // TODO: Reinterpret Boolean and DateTime to byte and long
+                // TODO: Reinterpret Boolean and Instant to byte and long
                 chunkType = "ObjectChunk";
             }
             classBody.append(indenter).append("final ").append(chunkType).append(" __columnChunk").append(i)
