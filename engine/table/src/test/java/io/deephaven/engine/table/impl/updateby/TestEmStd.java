@@ -919,7 +919,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 runningVariance = 0.0;
                 outputVal = Double.NaN;
             } else {
-                // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                 runningVariance = alpha * (runningVariance + oneMinusAlpha * Math.pow(values[i] - runningEma, 2.0));
 
                 final double decayedEmaVal = runningEma * alpha;
@@ -963,7 +963,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 runningVariance = BigDecimal.ZERO;
                 outputVal = null;
             } else {
-                // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                 runningVariance = alpha.multiply(
                         runningVariance.add(
                                 oneMinusAlpha.multiply(values[i].subtract(runningEma).pow(2, mathContextDefault)),
@@ -1029,7 +1029,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 final double alpha = Math.exp(-dt / (double) nanos);
                 final double oneMinusAlpha = 1.0 - alpha;
 
-                // incremental variance = (1 − alpha)(prevVariance + alpha * (x − prevEma)^2)
+                // incremental variance = (1 - alpha)(prevVariance + alpha * (x - prevEma)^2)
                 runningVariance = alpha * (runningVariance + oneMinusAlpha * Math.pow(values[i] - runningEma, 2.0));
 
                 final double decayedEmaVal = runningEma * alpha;

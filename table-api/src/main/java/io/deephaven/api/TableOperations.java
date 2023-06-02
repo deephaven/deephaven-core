@@ -524,7 +524,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
      * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
      * single-value range, only rows within the bucket where the right range column matches the single value are
-     * included in the output aggregations.</dt>
+     * included in the output aggregations.</dd>
      * <dt>invalid ranges</dt>
      * <dd>An <em>invalid</em> range occurs in two scenarios: First, when the range is inverted, i.e. when the value of
      * the left start column is greater than the value of the left end column. Second, when either relative-match is
@@ -568,9 +568,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
      * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
      * zero-or-more <em>exact join matches</em> and one <em>range join match</em>. The operation is performed
-     * identically to {@link #rangeJoin(TABLE, Collection, RangeJoinMatch, Collection)}, after parsing is applied to the
-     * elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and {@link RangeJoinMatch
-     * range join match}.
+     * identically to {@link #rangeJoin(Object, Collection, RangeJoinMatch, Collection)}, after parsing is applied to
+     * the elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and
+     * {@link RangeJoinMatch range join match}.
      * <p>
      * <h4>{@code columnsToMatch} Parsing</h4>
      * <p>
@@ -605,7 +605,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <li>For {@link RangeStartRule#LESS_THAN less than} paired with {@link RangeEndRule#GREATER_THAN greater than}:
      *
      * <pre>
-     * "leftStartColumn < rightRangeColumn < leftEndColumn"
+     * "leftStartColumn &lt; rightRangeColumn &lt; leftEndColumn"
      * </pre>
      *
      * </li>
@@ -613,7 +613,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * {@link RangeEndRule#GREATER_THAN_OR_EQUAL greater than or equal}:
      *
      * <pre>
-     * "leftStartColumn <= rightRangeColumn <= leftEndColumn"
+     * "leftStartColumn &lt;= rightRangeColumn &lt;= leftEndColumn"
      * </pre>
      *
      * </li>
@@ -621,7 +621,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * with {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)}:
      *
      * <pre>
-     * "<- leftStartColumn <= rightRangeColumn <= leftEndColumn ->"
+     * "&lt;- leftStartColumn &lt;= rightRangeColumn &lt;= leftEndColumn -&gt;"
      * </pre>
      *
      * </li>

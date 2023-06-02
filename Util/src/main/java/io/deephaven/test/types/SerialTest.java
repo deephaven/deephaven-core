@@ -33,10 +33,7 @@ package io.deephaven.test.types;
  * simple instance field, an @Rule instance field, or an @ClassRule static field) c-1) If your AdapterType has
  * setUp/tearDown, and you are not using @Rule or @ClassRule, annotate methods in your TestType: Add @Before/@After in
  * TestType which calls this.adapter.setUp()/tearDown() as appropriate. d) add an appropriate junit runner. If you do
- * not need anything fancy, use: {@code @RunWith(org.junit.runners.BlockJUnit4ClassRunner.class)}
- *
- * If you extend and use our existing JUnit3 test fixtures like RefreshingTableTestCase, you can use
- * {@link io.deephaven.test.junit4.JUnit4RefreshingTableTestCase} as an example.
+ * not need anything fancy, use: {@code @RunWith(org.junit.runners.BlockJUnit4ClassRunner.class)}.
  */
 @SuppressWarnings("JavadocReference")
 public interface SerialTest {

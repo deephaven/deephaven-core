@@ -122,7 +122,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton StringKey instance.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A String->StringKeyedObject key representation instance.
+     * @return A String-&gt;StringKeyedObject key representation instance.
      */
     @SuppressWarnings("unused")
     public static <VALUE_TYPE> KeyedObjectKey.Basic<String, VALUE_TYPE> stringKey() {
@@ -149,7 +149,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton NullSafeStringKey instance.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A String->StringKeyedObject key representation instance that supports null keys.
+     * @return A String-&gt;StringKeyedObject key representation instance that supports null keys.
      */
     @SuppressWarnings("unused")
     public static <VALUE_TYPE> KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> nullSafeStringKey() {
@@ -188,7 +188,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton StringKeyedObjectKey instance.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A String->StringKeyedObject key representation instance.
+     * @return A String-&gt;StringKeyedObject key representation instance.
      */
     @SuppressWarnings("unused")
     public static <VALUE_TYPE extends StringKeyedObject> KeyedObjectKey.Basic<String, VALUE_TYPE> stringKeyedObjectKey() {
@@ -217,7 +217,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton NullSafeStringKeyedObjectKey instance.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A String->StringKeyedObject key representation instance that supports null keys.
+     * @return A String-&gt;StringKeyedObject key representation instance that supports null keys.
      */
     @SuppressWarnings("unused")
     public static <VALUE_TYPE extends StringKeyedObject> KeyedObjectKey.NullSafeBasic<String, VALUE_TYPE> nullSafeStringKeyedObjectKey() {
@@ -262,7 +262,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton CharSequenceKey instance.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A CharSequence->StringKeyedObject key representation instance.
+     * @return A CharSequence-&gt;StringKeyedObject key representation instance.
      */
     public static <VALUE_TYPE extends StringKeyedObject> KeyedObjectKey<CharSequence, VALUE_TYPE> charSequenceKey() {
         // noinspection unchecked
@@ -307,7 +307,7 @@ public class StringUtils implements Serializable {
      * Generic accessor for the singleton CharSequenceKey instance, with support for null keys.
      * 
      * @param <VALUE_TYPE> The type of the value for this key implementation
-     * @return A CharSequence->StringKeyedObject key representation instance.
+     * @return A CharSequence-&gt;StringKeyedObject key representation instance.
      */
     @SuppressWarnings("unused")
     public static <VALUE_TYPE extends StringKeyedObject> KeyedObjectKey<CharSequence, VALUE_TYPE> nullSafeCharSequenceKey() {

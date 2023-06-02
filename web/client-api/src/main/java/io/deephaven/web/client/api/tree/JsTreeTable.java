@@ -1015,31 +1015,31 @@ public class JsTreeTable extends HasLifecycle {
         });
     }
 
-    // @JsMethod
-    // public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
-    // // we want to communicate to the JS dev that there is no default config, so we allow
-    // // returning null here, rather than a default config. They can then easily build a
-    // // default config, but without this ability, there is no way to indicate that the
-    // // config omitted a totals table
-    // return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
-    // }
-    //
-    // @JsMethod
-    // public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
-    // return sourceTable.get().then(t -> {
-    // // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
-    // // up.
-    // if (!t.getFilter().asList().equals(getFilter().asList())) {
-    // t.applyFilter(getFilter().asArray(new FilterCondition[0]));
-    // }
-    // return Promise.resolve(t.getTotalsTable(config));
-    // });
-    // }
-    //
-    // @JsMethod
-    // public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
-    // return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
-    // }
+    @JsMethod
+    public Promise<JsTotalsTableConfig> getTotalsTableConfig() {
+        // we want to communicate to the JS dev that there is no default config, so we allow
+        // returning null here, rather than a default config. They can then easily build a
+        // default config, but without this ability, there is no way to indicate that the
+        // config omitted a totals table
+        return sourceTable.get().then(t -> Promise.resolve(t.getTotalsTableConfig()));
+    }
+
+    @JsMethod
+    public Promise<JsTotalsTable> getTotalsTable(@JsOptional Object config) {
+        return sourceTable.get().then(t -> {
+            // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
+            // up.
+            if (!t.getFilter().asList().equals(getFilter().asList())) {
+                t.applyFilter(getFilter().asArray(new FilterCondition[0]));
+            }
+            return Promise.resolve(t.getTotalsTable(config));
+        });
+    }
+
+    @JsMethod
+    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional Object config) {
+        return sourceTable.get().then(t -> Promise.resolve(t.getGrandTotalsTable(config)));
+    }
 
     // TODO core#279 restore this with protobuf once smartkey has some pb-based analog
     // private static final int SERIALIZED_VERSION = 1;
