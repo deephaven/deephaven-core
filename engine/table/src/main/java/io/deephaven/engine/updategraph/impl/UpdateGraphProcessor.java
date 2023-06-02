@@ -60,6 +60,10 @@ import java.util.function.LongConsumer;
  */
 public class UpdateGraphProcessor implements UpdateGraph {
 
+    public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
+    public static final int NUM_THREADS_DEFAULT_UPDATE_GRAPH =
+            Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", -1);
+
     public static Builder newBuilder(final String name) {
         return new Builder(name);
     }
@@ -1801,7 +1805,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         MultiChunkPool.enableDedicatedPoolForThisThread();
         isUpdateThread.set(true);
         // Install this UpdateGraph via ExecutionContext for refresh threads
-        //noinspection resource
+        // noinspection resource
         ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 
@@ -1817,7 +1821,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         });
         isUpdateThread.set(true);
         // Install this UpdateGraph via ExecutionContext for refresh threads
-        //noinspection resource
+        // noinspection resource
         ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 

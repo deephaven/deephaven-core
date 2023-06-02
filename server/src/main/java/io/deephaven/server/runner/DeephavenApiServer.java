@@ -23,11 +23,13 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.IOException;
 import java.util.Map;
@@ -56,7 +58,7 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final GrpcServer server,
-            final UpdateGraph ug,
+            @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph ug,
             final LogInit logInit,
             final Provider<ScriptSession> scriptSessionProvider,
             final PluginRegistration pluginRegistration,
@@ -131,13 +133,17 @@ public class DeephavenApiServer {
         log.info().append("Starting UpdateGraph...").endl();
         ug.<UpdateGraphProcessor>cast().start();
 
-        EngineMetrics.maybeStartStatsCollection();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+            EngineMetrics.maybeStartStatsCollection();
+        }
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
         QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
-        UpdatePerformanceTracker.start();
-        ServerStateTracker.start();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
+            UpdatePerformanceTracker.start();
+            ServerStateTracker.start();
+        }
 
         for (UriResolver resolver : uriResolvers.resolvers()) {
             log.debug().append("Found table resolver ").append(resolver.getClass().toString()).endl();

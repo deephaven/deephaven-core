@@ -9,8 +9,8 @@ import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
@@ -147,8 +147,11 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
+    @Named(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME)
     public static UpdateGraph provideUpdateGraph() {
-        return ExecutionContext.getContext().getUpdateGraph();
+        return UpdateGraphProcessor.newBuilder(UpdateGraphProcessor.DEFAULT_UPDATE_GRAPH_NAME)
+                .numUpdateThreads(UpdateGraphProcessor.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+                .build();
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

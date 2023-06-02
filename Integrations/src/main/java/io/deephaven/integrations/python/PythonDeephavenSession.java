@@ -9,6 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
@@ -69,6 +70,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     /**
      * Create a Python ScriptSession.
      *
+     * @param updateGraph the default update graph to install for the repl
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
@@ -76,10 +78,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            PythonEvaluatorJpy pythonEvaluator)
-            throws IOException {
-        super(objectTypeLookup, listener);
+            final UpdateGraph updateGraph,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener listener,
+            final boolean runInitScripts,
+            final PythonEvaluatorJpy pythonEvaluator) throws IOException {
+        super(updateGraph, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -109,7 +113,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * IPython kernel session.
      */
     public PythonDeephavenSession(PythonScope<?> scope) {
-        super(NoOp.INSTANCE, null);
+        super(ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
         this.module = null;
         this.evaluator = null;

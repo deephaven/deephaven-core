@@ -1148,8 +1148,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @NotNull final WritableChunk<? super Values>[] destinations) {
         synchronized (snapshotState) {
             try (final SafeCloseable ignored1 = snapshotState.initializeSnapshot(columns, rows, destinations);
-                 final SafeCloseable ignored2 = ExecutionContext.getContext().withUpdateGraph(
-                         source.getUpdateGraph()).open()) {
+                    final SafeCloseable ignored2 = ExecutionContext.getContext().withUpdateGraph(
+                            source.getUpdateGraph()).open()) {
                 if (source.isRefreshing()) {
                     // NB: This snapshot control must be notification-aware, because if our sources tick we cannot
                     // guarantee that we won't observe some newly-created components on their instantiation step.

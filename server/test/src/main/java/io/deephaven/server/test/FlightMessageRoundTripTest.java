@@ -112,8 +112,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession() {
-            return new NoLanguageDeephavenSession("non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
+            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
         }
 
         @Provides

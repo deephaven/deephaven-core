@@ -156,9 +156,7 @@ public class SessionState {
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = executionContextProvider.get()
-                .withAuthContext(authContext)
-                .withUpdateGraph(ExecutionContext.getContext().getUpdateGraph());
+        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
         log.debug().append(logPrefix).append("session initialized").endl();
     }
 

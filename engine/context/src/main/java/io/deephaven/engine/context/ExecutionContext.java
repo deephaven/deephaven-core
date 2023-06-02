@@ -34,11 +34,7 @@ public class ExecutionContext {
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
                 if ((localContext = defaultContext) == null) {
-//                    final int numUpdateThreads = Configuration.getInstance().getIntegerWithDefault(
-//                            "UpdateGraphProcessor.updateThreads", -1);
-//                            .setUpdateGraph(UpdateGraphProcessor.newBuilder("DEFAULT")
-//                            .numUpdateThreads(numUpdateThreads)
-//                            .build())
+
                     localContext = defaultContext = new Builder(null)
                             .markSystemic()
                             .build();
