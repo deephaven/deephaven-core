@@ -5,6 +5,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
@@ -41,8 +42,10 @@ public class TestCumMinMax extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumMin(t.getColumn(col).getDirect(), result.getColumn(col + "Min").getDirect());
-            assertWithCumMax(t.getColumn(col).getDirect(), result.getColumn(col + "Max").getDirect());
+            assertWithCumMin(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col + "Min").getDirect());
+            assertWithCumMax(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col + "Max").getDirect());
         }
     }
 
@@ -80,8 +83,10 @@ public class TestCumMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumMin(source.getColumn(col).getDirect(), actual.getColumn(col + "Min").getDirect());
-                assertWithCumMax(source.getColumn(col).getDirect(), actual.getColumn(col + "Max").getDirect());
+                assertWithCumMin(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col + "Min").getDirect());
+                assertWithCumMax(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col + "Max").getDirect());
             });
             return source;
         });

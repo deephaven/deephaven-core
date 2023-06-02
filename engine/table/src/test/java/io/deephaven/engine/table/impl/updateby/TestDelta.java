@@ -6,6 +6,7 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -69,16 +70,16 @@ public class TestDelta extends BaseUpdateByTest {
 
         // default is NULL_DOMINATES
         QueryTable result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta()));
-        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputNullDominates);
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputNullDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.NULL_DOMINATES)));
-        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputNullDominates);
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputNullDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.VALUE_DOMINATES)));
-        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputValueDominates);
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputValueDominates);
 
         result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.ZERO_DOMINATES)));
-        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputZeroDominates);
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(result, "Int").getDirect(), outputZeroDominates);
     }
 
     // region Zero Key Tests
@@ -99,8 +100,8 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(t.getColumn(col).getDirect(),
-                    result.getColumn(col).getDirect(),
+            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getDirect(),
                     DeltaControl.DEFAULT);
         }
 
@@ -110,8 +111,8 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(t.getColumn(col).getDirect(),
-                    result.getColumn(col).getDirect(),
+            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getDirect(),
                     DeltaControl.NULL_DOMINATES);
         }
 
@@ -121,8 +122,8 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(t.getColumn(col).getDirect(),
-                    result.getColumn(col).getDirect(),
+            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getDirect(),
                     DeltaControl.VALUE_DOMINATES);
         }
 
@@ -132,8 +133,8 @@ public class TestDelta extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithDelta(t.getColumn(col).getDirect(),
-                    result.getColumn(col).getDirect(),
+            assertWithDelta(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getDirect(),
                     DeltaControl.ZERO_DOMINATES);
         }
     }
@@ -171,8 +172,8 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         DeltaControl.DEFAULT);
             });
             return source;
@@ -185,8 +186,8 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         DeltaControl.NULL_DOMINATES);
             });
             return source;
@@ -199,8 +200,8 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         DeltaControl.VALUE_DOMINATES);
             });
             return source;
@@ -213,8 +214,8 @@ public class TestDelta extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithDelta(source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                assertWithDelta(DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         DeltaControl.ZERO_DOMINATES);
             });
             return source;

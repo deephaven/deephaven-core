@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 
@@ -51,7 +52,7 @@ public class CumulativeUtilTest extends RefreshingTableTestCase {
     }
 
     private void assertColumnEquals(final Table t, final String column, final double[] values) {
-        final double[] colValues = t.getColumn(column).getDoubles(0, t.size());
+        final double[] colValues = DataAccessHelpers.getColumn(t, column).getDoubles(0, t.size());
         assertEquals(values, colValues);
     }
 }

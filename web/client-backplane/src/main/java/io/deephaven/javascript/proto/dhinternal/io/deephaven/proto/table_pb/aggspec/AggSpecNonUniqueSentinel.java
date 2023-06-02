@@ -197,7 +197,7 @@ public class AggSpecNonUniqueSentinel {
 
     public native String getLongValue();
 
-    public native double getNullValue();
+    public native int getNullValue();
 
     public native double getShortValue();
 
@@ -241,7 +241,7 @@ public class AggSpecNonUniqueSentinel {
 
     public native void setLongValue(String value);
 
-    public native void setNullValue(double value);
+    public native void setNullValue(int value);
 
     public native void setShortValue(double value);
 

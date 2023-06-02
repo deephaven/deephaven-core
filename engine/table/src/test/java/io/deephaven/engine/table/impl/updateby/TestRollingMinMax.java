@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -206,8 +207,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -218,8 +219,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -236,8 +237,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
 
-        biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -248,8 +249,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -275,8 +276,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
                         .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -287,8 +288,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -305,8 +306,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
 
-        biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -317,8 +318,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -344,8 +345,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
                         .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -356,8 +357,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -374,8 +375,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
 
-        biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -386,8 +387,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -414,8 +415,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=minBigInt.apply(bigIntCol)", "bigDecimalCol=minBigDec.apply(bigDecimalCol)");
 
-        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -426,8 +427,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -446,8 +447,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=maxBigInt.apply(bigIntCol)", "bigDecimalCol=maxBigDec.apply(bigDecimalCol)");
 
-        biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
-        biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        biActual = (BigInteger[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -458,8 +459,8 @@ public class TestRollingMinMax extends BaseUpdateByTest {
             }
         }
 
-        bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {

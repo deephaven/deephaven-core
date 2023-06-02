@@ -23,11 +23,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * table}. Each row of this table should contain all of the data necessary to populate an instance of {@code DATATYPE},
  * which will then be passed to the {@link ModelFarmBase#model model}.
  *
- * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
- * @param <DATATYPE> The type of the data (e.g.
- *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataOptionPrices}.
- * @param <ROWDATAMANAGERTYPE> The type of the RowDataManager (e.g.
- *        {@link io.deephaven.modelfarm.fitterfarm.futures.FuturesFitDataManager}).
+ * @param <KEYTYPE> The type of keys.
+ * @param <DATATYPE> The type of data.
+ * @param <ROWDATAMANAGERTYPE> The type of RowDataManager.
  */
 public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowDataManager<KEYTYPE, DATATYPE>>
         extends ModelFarmBase<DATATYPE> {

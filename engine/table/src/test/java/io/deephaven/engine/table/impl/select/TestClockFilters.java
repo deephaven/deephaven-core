@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 import static io.deephaven.engine.util.TableTools.col;
@@ -45,21 +46,22 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput1.sort("Timestamp").where(filter);
-        assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 
     public void testUnsorted1() {
@@ -67,21 +69,22 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput1.where(filter);
-        assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 
     public void testSorted2() {
@@ -89,21 +92,22 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput2.sort("Timestamp").where(filter);
-        assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 
     public void testUnsorted2() {
@@ -111,21 +115,22 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput2.where(filter);
-        assertEquals(new int[] {1, 1, 1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 1, 2, 3, 1, 2, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 
     public void testSorted3() {
@@ -133,21 +138,22 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput3.sort("Timestamp").where(filter);
-        assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 
     public void testUnsorted3() {
@@ -155,20 +161,21 @@ public class TestClockFilters extends RefreshingTableTestCase {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput3.where(filter);
-        assertEquals(new int[] {1, 1}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
-        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2}, (int[]) result.getColumn("Int").getDirect());
+        assertEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2},
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
-                (int[]) result.getColumn("Int").getDirect());
+                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
     }
 }

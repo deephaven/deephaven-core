@@ -159,11 +159,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default DataColumn getColumn(String columnName) {
-        return throwUnsupported();
-    }
-
-    @Override
     default <DATA_TYPE> CloseableIterator<DATA_TYPE> columnIterator(@NotNull String columnName) {
         return throwUnsupported();
     }
@@ -205,11 +200,6 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
-        return throwUnsupported();
-    }
-
-    @Override
-    default Object[] getRecord(long rowNo, String... columnNames) {
         return throwUnsupported();
     }
 

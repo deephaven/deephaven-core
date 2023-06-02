@@ -119,8 +119,9 @@ TableHandle TableHandleManager::timeTable(int64_t startTimeNanos, int64_t period
   return TableHandle(std::move(qsImpl));
 }
 
-TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor() const {
-  auto [thImpl, fd] = impl_->newTicket();
+TableHandleAndFlightDescriptor TableHandleManager::newTableHandleAndFlightDescriptor(int64_t numRows,
+    bool isStatic) const {
+  auto [thImpl, fd] = impl_->newTicket(numRows, isStatic);
   TableHandle th(std::move(thImpl));
   return {std::move(th), std::move(fd)};
 }
@@ -531,6 +532,14 @@ internal::TableHandleStreamAdaptor TableHandle::stream(bool wantHeaders) const {
 
 void TableHandle::observe() const {
   impl_->observe();
+}
+
+int64_t TableHandle::numRows() {
+  return impl_->numRows();
+}
+
+bool TableHandle::isStatic() {
+  return impl_->isStatic();
 }
 
 std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::getFlightStreamReader() const {

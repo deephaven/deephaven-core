@@ -20,10 +20,10 @@ import org.jetbrains.annotations.NotNull;
  * Non overlapping pages can be collected together in a {@link PageStore}, which provides the {@link ChunkSource}
  * interface to the collection of all of its Pages.
  * <p>
- * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a length() >
- * 0. These store length() values, which can be assessed via the {@link ChunkSource} methods. Valid {@link RowSequence}
- * passed to those methods will have their offset in the range [firstRowOffset(), firstRowOffset() + length()). Passing
- * OrderKeys with offsets outside of this range will have undefined results.
+ * There are two distinct use cases/types of pages. The first use case are {@code Page}s which always have a length()
+ * &gt; 0. These store length() values, which can be assessed via the {@link ChunkSource} methods. Valid
+ * {@link RowSequence} passed to those methods will have their offset in the range [firstRowOffset(), firstRowOffset() +
+ * length()). Passing OrderKeys with offsets outside of this range will have undefined results.
  * <p>
  * The second use case will always have length() == 0 and firstRowOffset() == 0. These represent "Null" regions which
  * return a fixed value, typically a null value, for every {@link RowSequence} passed into the {@link ChunkSource}
