@@ -276,7 +276,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         this.DEFAULT_TARGET_CYCLE_DURATION_MILLIS = targetCycleDurationMillis;
         this.targetCycleDurationMillis = targetCycleDurationMillis;
         this.minimumCycleDurationToLogNanos = minimumCycleDurationToLogNanos;
-        this.lock = UpdateGraphLock.create(logicalClock, ALLOW_UNIT_TEST_MODE);
+        this.lock = UpdateGraphLock.create(this, ALLOW_UNIT_TEST_MODE);
 
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
