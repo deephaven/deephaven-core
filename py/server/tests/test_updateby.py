@@ -19,8 +19,8 @@ class UpdateByTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.static_table = read_csv("tests/data/test_table.csv").update("Timestamp=now()")
-        self.test_update_graph = get_exec_ctx().getUpdateGraph()
-        with update_graph.exclusive_lock(get_exec_ctx().getUpdateGraph()):
+        self.test_update_graph = get_exec_ctx().update_graph
+        with update_graph.exclusive_lock(self.test_update_graph):
             self.ticking_table = time_table("PT00:00:00.001").update(
                 ["a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b"])
 

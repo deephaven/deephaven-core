@@ -23,47 +23,59 @@ table when the current thread doesn't own either the UG shared or the UG exclusi
 be released after the table operation finishes. Auto locking is turned on by default."""
 
 
-def has_exclusive_lock(ug: Union[_JUpdateGraph, "Table"]) -> bool:
+def has_exclusive_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> bool:
     """Checks if the current thread is holding the provided Update Graph's (UG) exclusive lock.
 
     Args:
-        ug (Union[_JUpdateGraph, "Table"]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
 
     Returns:
         True if the current thread is holding the Update Graph (UG) exclusive lock, False otherwise.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     return ug.exclusiveLock().isHeldByCurrentThread()
 
 
-def has_shared_lock(ug: Union[_JUpdateGraph, "Table"]) -> bool:
+def has_shared_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> bool:
     """Checks if the current thread is holding the provided Update Graph's (UG) shared lock.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
 
     Returns:
         True if the current thread is holding the Update Graph (UG) shared lock, False otherwise.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     return ug.sharedLock().isHeldByCurrentThread()
 
 
 @contextlib.contextmanager
-def exclusive_lock(ug: Union[_JUpdateGraph, "Table"]):
+def exclusive_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]):
     """Context manager for running a block of code under a Update Graph (UG) exclusive lock.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     lock = ug.exclusiveLock()
@@ -77,14 +89,18 @@ def exclusive_lock(ug: Union[_JUpdateGraph, "Table"]):
 
 
 @contextlib.contextmanager
-def shared_lock(ug: Union[_JUpdateGraph, "Table"]):
+def shared_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]):
     """Context manager for running a block of code under a Update Graph (UG) shared lock.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     lock = ug.sharedLock()
@@ -97,15 +113,19 @@ def shared_lock(ug: Union[_JUpdateGraph, "Table"]):
         lock.unlock()
 
 
-def exclusive_locked(ug: Union[_JUpdateGraph, "Table"]) -> Callable:
+def exclusive_locked(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> Callable:
     """A decorator that ensures the decorated function be called under the Update Graph (UG) exclusive
     lock. The lock is released after the function returns regardless of what happens inside the function.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     def inner_wrapper(f: Callable) -> Callable:
@@ -118,15 +138,19 @@ def exclusive_locked(ug: Union[_JUpdateGraph, "Table"]) -> Callable:
 
     return inner_wrapper
 
-def shared_locked(ug: Union[_JUpdateGraph, "Table"]) -> Callable:
+def shared_locked(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> Callable:
     """A decorator that ensures the decorated function be called under the Update Graph (UG) shared lock.
     The lock is released after the function returns regardless of what happens inside the function.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
     """
-    from deephaven.table import Table
+    from deephaven.table import Table, PartitionedTable, PartitionedTableProxy
     if isinstance(ug, Table):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTable):
+        ug = ug.update_graph
+    if isinstance(ug, PartitionedTableProxy):
         ug = ug.update_graph
 
     def inner_wrapper(f: Callable) -> Callable:

@@ -24,7 +24,7 @@ class UgpTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
         ugp.auto_locking = False
-        self.test_update_graph = get_exec_ctx().getUpdateGraph()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self):
         ugp.auto_locking = True

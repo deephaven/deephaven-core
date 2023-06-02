@@ -60,7 +60,7 @@ class TableTestCase(BaseTestCase):
                                     weighted_avg("var", ["weights"]),
                                     ]
         self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
-        self.test_update_graph = get_exec_ctx().getUpdateGraph()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self) -> None:
         self.test_table = None

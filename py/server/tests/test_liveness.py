@@ -16,7 +16,7 @@ class LivenessTestCase(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.test_update_graph = get_exec_ctx().getUpdateGraph()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def create_table(self):
         with exclusive_lock(self.test_update_graph):

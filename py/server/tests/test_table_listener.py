@@ -60,7 +60,7 @@ class TableListenerTestCase(BaseTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        with exclusive_lock(get_exec_ctx().getUpdateGraph()):
+        with exclusive_lock(get_exec_ctx().update_graph):
             self.test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
             source_table = time_table("PT00:00:00.001").update(["TS=now()"])
             self.test_table2 = time_window(source_table, ts_col="TS", window=10 ** 7, bool_col="InWindow")

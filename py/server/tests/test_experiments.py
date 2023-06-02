@@ -17,7 +17,7 @@ class ExperimentalTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
-        self.test_update_graph = get_exec_ctx().getUpdateGraph()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self) -> None:
         self.test_table = None

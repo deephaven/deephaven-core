@@ -15,7 +15,6 @@ from deephaven.table import Table, PartitionedTableProxy
 from test_helper import py_dh_session
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
 
 def table_equals(table_a: Table, table_b: Table) -> bool:
