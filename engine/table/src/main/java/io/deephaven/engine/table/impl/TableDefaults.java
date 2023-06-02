@@ -313,20 +313,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table ungroupAllBut(String... columnsNotToUngroup) {
-        final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType())))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
