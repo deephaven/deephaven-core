@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.TimeZone;
 import io.deephaven.engine.util.TableTools;
@@ -17,10 +18,7 @@ import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarConstants;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.experimental.categories.Category;
 
 import java.io.*;
@@ -38,6 +36,9 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  */
 @Category({OutOfBandTest.class})
 public class TestCsvTools {
+
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     private File tmpDir;
 
