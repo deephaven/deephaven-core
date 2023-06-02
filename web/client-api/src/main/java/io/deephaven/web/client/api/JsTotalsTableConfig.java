@@ -11,7 +11,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggSpec;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggregation;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NullValueMap;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationColumns;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationCount;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAbsSum;
@@ -43,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 @JsType(name = "TotalsTableConfig", namespace = "dh")
 public class JsTotalsTableConfig {
@@ -196,7 +196,7 @@ public class JsTotalsTableConfig {
     }
 
     @JsIgnore
-    public AggregateRequest buildRequest(JsArray<String> allColumns) {
+    public AggregateRequest buildRequest(JsArray<Column> allColumns) {
         AggregateRequest request = new AggregateRequest();
         customColumns = new JsArray<>();
         dropColumns = new JsArray<>();
@@ -204,14 +204,18 @@ public class JsTotalsTableConfig {
         request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupBy));
         JsArray<Aggregation> aggregations = new JsArray<>();
         request.setAggregationsList(aggregations);
+        Map<String, String> columnTypes = Arrays.stream(Js.<Column[]>uncheckedCast(allColumns)).collect(Collectors.toMap(Column::getName, Column::getType));
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
         groupBy.forEach((col, p1, p2) -> seenColNames.add(Js.cast(col)));
-        this.operationMap.forEach(col -> {
-            this.operationMap.get(col).forEach((agg, index, arr) -> {
-                String colName = Js.cast(col);
-                aggs.computeIfAbsent(Js.cast(agg), ignore -> new LinkedHashSet<>()).add(colName);
+        this.operationMap.forEach(colName -> {
+            this.operationMap.get(colName).forEach((agg, index, arr) -> {
+                if (!JsAggregationOperation.canAggregateType(agg, columnTypes.get(colName))) {
+                    // skip this column. to follow DHE's behavior
+                    return null;
+                }
+                aggs.computeIfAbsent(agg, ignore -> new LinkedHashSet<>()).add(colName);
                 if (seenColNames.contains(colName)) {
                     colsNeedingCompoundNames.add(colName);
                 } else {
@@ -220,10 +224,10 @@ public class JsTotalsTableConfig {
                 return null;
             });
         });
-        Set<String> unusedColumns = new HashSet<>(Arrays.asList(Js.<String[]>uncheckedCast(allColumns)));
+        Set<String> unusedColumns = new HashSet<>(columnTypes.keySet());
         unusedColumns.removeAll(seenColNames);
         // no unused column can collide, add to the default operation list
-        aggs.computeIfAbsent(defaultOperation, ignore -> new LinkedHashSet<>()).addAll(unusedColumns);
+        aggs.computeIfAbsent(defaultOperation, ignore -> new LinkedHashSet<>()).addAll(unusedColumns.stream().filter(colName -> JsAggregationOperation.canAggregateType(defaultOperation, columnTypes.get(colName))).collect(Collectors.toList()));
 
         aggs.forEach((aggregationType, cols) -> {
             Aggregation agg = new Aggregation();

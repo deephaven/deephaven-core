@@ -661,7 +661,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     "(", LazyString.of(target::getHandle), "), into ", LazyString.of(newState::getHandle), "(",
                     newState, ")");
 
-            AggregateRequest requestMessage = directive.buildRequest(getColumns().map((p0, p1, p2) -> p0.getName()));
+            AggregateRequest requestMessage = directive.buildRequest(getColumns());
             JsArray<String> updateViewExprs = directive.getCustomColumns();
             JsArray<String> dropColumns = directive.getDropColumns();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
