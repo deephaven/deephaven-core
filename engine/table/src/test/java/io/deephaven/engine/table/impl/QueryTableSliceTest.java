@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.col;
@@ -387,7 +388,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     public void testLongTail() {
         final Table bigTable = emptyTable(2 * (long) (Integer.MAX_VALUE)).updateView("I=i", "II=ii");
         final Table tailed = bigTable.tail(1);
-        assertEquals(2L * Integer.MAX_VALUE - 1, tailed.getColumn("II").get(0));
+        assertEquals(2L * Integer.MAX_VALUE - 1, DataAccessHelpers.getColumn(tailed, "II").get(0));
     }
 
     public void testZeroHead() {
