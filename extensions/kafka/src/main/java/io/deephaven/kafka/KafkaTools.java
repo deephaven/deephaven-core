@@ -37,7 +37,6 @@ import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
 import io.deephaven.stream.StreamToBlinkTableAdapter;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -72,6 +71,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.*;
@@ -238,7 +238,7 @@ public class KafkaTools {
             fass = base.doubleType().noDefault();
         } else if (type == String.class) {
             fass = base.stringType().noDefault();
-        } else if (type == DateTime.class) {
+        } else if (type == Instant.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
             final BigDecimalUtils.PropertyNames propertyNames =
@@ -374,7 +374,7 @@ public class KafkaTools {
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
                         if (LogicalTypes.timestampMicros().equals(logicalType) ||
                                 LogicalTypes.timestampMillis().equals(logicalType)) {
-                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, DateTime[].class));
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
                         }
@@ -994,8 +994,8 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
-         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A set specifying column names to omit; can only be used when {@code columnNames} is
+         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1038,8 +1038,9 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is
-         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A predicate specifying column names to omit; can only be used when {@code columnNames}
+         *        is null. In this case all table columns except for the ones in {@code excludeColumns} will be
+         *        included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -2011,7 +2012,7 @@ public class KafkaTools {
                 consumerProperties,
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, DateTime.class));
+                (final String colName) -> ColumnDefinition.fromGenericType(colName, Instant.class));
         return c;
     }
 

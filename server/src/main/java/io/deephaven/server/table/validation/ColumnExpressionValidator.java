@@ -25,11 +25,12 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.libs.GroovyStaticImports;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,9 +67,7 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
         // DateTime
         // String
         whitelistedInstanceMethods = Stream
-                .of(
-                        DateTime.class,
-                        String.class)
+                .of(Instant.class, String.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> !Modifier.isStatic(m.getModifiers()))
@@ -125,9 +124,9 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
         final int indexOfEquals = originalExpression.indexOf('=');
         Assert.assertion(indexOfEquals != -1, "Expected formula expression");
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
-        final DateTimeUtils.Result timeConversionResult;
+        final TimeLiteralReplacedExpression timeConversionResult;
         try {
-            timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaString);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);

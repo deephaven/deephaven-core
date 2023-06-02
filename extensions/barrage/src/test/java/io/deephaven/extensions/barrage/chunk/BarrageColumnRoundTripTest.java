@@ -24,7 +24,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -261,18 +260,6 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                             "computed.get(offset + off.getAndIncrement())"));
                 }
             });
-        }
-    }
-
-    public void testDateTimeChunkSerialization() throws IOException {
-        final Random random = new Random(0);
-        for (final BarrageSubscriptionOptions opts : options) {
-            testRoundTripSerialization(opts, DateTime.class, (utO) -> {
-                final WritableObjectChunk<DateTime, Values> chunk = utO.asWritableObjectChunk();
-                for (int i = 0; i < chunk.size(); ++i) {
-                    chunk.set(i, i % 7 == 0 ? null : new DateTime(random.nextLong()));
-                }
-            }, new ObjectIdentityValidator<>());
         }
     }
 

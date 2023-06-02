@@ -33,7 +33,7 @@ def j_hashmap(d: Dict = None) -> jpy.JType:
     if d is None:
         return None
 
-    r = jpy.get_type("java.util.HashMap")()
+    r = jpy.get_type("java.util.HashMap")(len(d))
     for k, v in d.items():
         k = unwrap(k)
         v = unwrap(v)
@@ -46,7 +46,7 @@ def j_hashset(s: Set = None) -> jpy.JType:
     if s is None:
         return None
 
-    r = jpy.get_type("java.util.HashSet")()
+    r = jpy.get_type("java.util.HashSet")(len(s))
     for v in s:
         r.add(unwrap(v))
     return r

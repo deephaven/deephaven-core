@@ -4,15 +4,16 @@
 package io.deephaven.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import junit.framework.TestCase;
+
+import java.time.Instant;
 
 public class TestBusinessPeriod extends BaseArrayTestCase {
 
     public void testBusinessPeriod() {
-        final DateTime open1 = DateTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY");
-        final DateTime close1 = DateTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY");
+        final Instant open1 = DateTimeUtils.parseInstant("2017-03-11T10:00:00.000000000 NY");
+        final Instant close1 = DateTimeUtils.parseInstant("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new BusinessPeriod(null, close1);
@@ -41,10 +42,14 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
         assertEquals(DateTimeUtils.HOUR, period.getLength());
 
         assertTrue(period.contains(open1));
-        assertTrue(period.contains(new DateTime(open1.getNanos() + DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DateTime(open1.getNanos() - DateTimeUtils.MINUTE)));
+        assertTrue(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) + DateTimeUtils.MINUTE)));
+        assertFalse(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(open1) - DateTimeUtils.MINUTE)));
         assertTrue(period.contains(close1));
-        assertTrue(period.contains(new DateTime(close1.getNanos() - DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DateTime(close1.getNanos() + DateTimeUtils.MINUTE)));
+        assertTrue(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) - DateTimeUtils.MINUTE)));
+        assertFalse(period
+                .contains(DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(close1) + DateTimeUtils.MINUTE)));
     }
 }

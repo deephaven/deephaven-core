@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.ColumnSourceManager;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.util.type.TypeUtils;
@@ -35,7 +34,6 @@ public class RegionedTableComponentFactoryImpl implements RegionedTableComponent
         typeToSupplier.put(Long.class, RegionedColumnSourceLong.AsValues::new);
         typeToSupplier.put(Short.class, RegionedColumnSourceShort.AsValues::new);
         typeToSupplier.put(Boolean.class, RegionedColumnSourceBoolean::new);
-        typeToSupplier.put(DateTime.class, RegionedColumnSourceDateTime::new);
         typeToSupplier.put(Instant.class, RegionedColumnSourceInstant::new);
         SIMPLE_DATA_TYPE_TO_REGIONED_COLUMN_SOURCE_SUPPLIER = Collections.unmodifiableMap(typeToSupplier);
     }

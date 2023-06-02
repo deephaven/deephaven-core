@@ -3,11 +3,10 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
-
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +48,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public TimeZone timeZone() {
+    public ZoneId timeZone() {
         return calendar.timeZone();
     }
 
@@ -60,7 +59,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
 
     @Override
     @Deprecated
-    public BusinessSchedule getBusinessDay(final DateTime time) {
+    public BusinessSchedule getBusinessDay(final Instant time) {
         return calendar.getBusinessDay(time);
     }
 
@@ -77,7 +76,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public BusinessSchedule getBusinessSchedule(final DateTime time) {
+    public BusinessSchedule getBusinessSchedule(final Instant time) {
         return calendar.getBusinessSchedule(time);
     }
 
@@ -92,12 +91,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public long diffBusinessNanos(final DateTime start, final DateTime end) {
+    public long diffBusinessNanos(final Instant start, final Instant end) {
         return calendar.diffBusinessNanos(start, end);
     }
 
     @Override
-    public double diffBusinessYear(final DateTime startTime, final DateTime endTime) {
+    public double diffBusinessYear(final Instant startTime, final Instant endTime) {
         return calendar.diffBusinessYear(startTime, endTime);
     }
 
@@ -128,12 +127,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String previousNonBusinessDay(DateTime time) {
+    public String previousNonBusinessDay(Instant time) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
     @Override
-    public String previousNonBusinessDay(DateTime time, int days) {
+    public String previousNonBusinessDay(Instant time, int days) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
@@ -158,12 +157,12 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String nextNonBusinessDay(DateTime time) {
+    public String nextNonBusinessDay(Instant time) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
     @Override
-    public String nextNonBusinessDay(DateTime time, int days) {
+    public String nextNonBusinessDay(Instant time, int days) {
         throw new UnsupportedOperationException("Calendar has no non-business days.");
     }
 
@@ -178,7 +177,7 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public String[] nonBusinessDaysInRange(DateTime start, DateTime end) {
+    public String[] nonBusinessDaysInRange(Instant start, Instant end) {
         return new String[0];
     }
 
@@ -188,22 +187,22 @@ public class DefaultNoHolidayBusinessCalendar extends AbstractBusinessCalendar {
     }
 
     @Override
-    public long diffNonBusinessNanos(DateTime start, DateTime end) {
+    public long diffNonBusinessNanos(Instant start, Instant end) {
         return 0;
     }
 
     @Override
-    public double diffNonBusinessDay(DateTime start, DateTime end) {
+    public double diffNonBusinessDay(Instant start, Instant end) {
         return 0;
     }
 
     @Override
-    public int numberOfNonBusinessDays(DateTime start, DateTime end) {
+    public int numberOfNonBusinessDays(Instant start, Instant end) {
         return 0;
     }
 
     @Override
-    public int numberOfNonBusinessDays(DateTime start, DateTime end, boolean endInclusive) {
+    public int numberOfNonBusinessDays(Instant start, Instant end, boolean endInclusive) {
         return 0;
     }
 

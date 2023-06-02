@@ -10,17 +10,18 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -28,7 +29,6 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -86,9 +86,9 @@ public class TestDelta extends BaseUpdateByTest {
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
@@ -154,9 +154,9 @@ public class TestDelta extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
@@ -237,9 +237,9 @@ public class TestDelta extends BaseUpdateByTest {
     private void doTestAppendOnly(boolean bucketed) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -265,9 +265,9 @@ public class TestDelta extends BaseUpdateByTest {
     public void testZeroKeyGeneralTicking() {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, false, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
@@ -288,9 +288,9 @@ public class TestDelta extends BaseUpdateByTest {
     public void testBucketedGeneralTicking() {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
@@ -488,12 +488,13 @@ public class TestDelta extends BaseUpdateByTest {
                 result[ii] = NULL_LONG;
             } else if (ii == 0 || expected[ii - 1] == null) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
-                        ? ((DateTime) expected[ii]).getNanos()
+                        ? DateTimeUtils.epochNanos(((Instant) expected[ii]))
                         : (control.nullBehavior() == NullBehavior.NullDominates
                                 ? NULL_LONG
                                 : 0); // ZeroDominates
             } else {
-                result[ii] = ((DateTime) expected[ii]).getNanos() - ((DateTime) expected[ii - 1]).getNanos();
+                result[ii] = DateTimeUtils.epochNanos(((Instant) expected[ii]))
+                        - DateTimeUtils.epochNanos(((Instant) expected[ii - 1]));
             }
         }
 
@@ -516,7 +517,7 @@ public class TestDelta extends BaseUpdateByTest {
             assertArrayEquals(delta((float[]) expected, control), (float[]) actual, .001f);
         } else if (expected instanceof double[]) {
             assertArrayEquals(delta((double[]) expected, control), (double[]) actual, .001d);
-        } else if (((Object[]) expected).length > 0 && ((Object[]) expected)[0] instanceof DateTime) {
+        } else if (((Object[]) expected).length > 0 && ((Object[]) expected)[0] instanceof Instant) {
             assertArrayEquals(deltaTime((Object[]) expected, control), (long[]) actual);
         } else if (((Object[]) expected).length > 0) {
             assertArrayEquals(delta((Object[]) expected, control), (Object[]) actual);

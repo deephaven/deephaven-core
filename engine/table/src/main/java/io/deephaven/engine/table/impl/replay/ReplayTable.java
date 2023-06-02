@@ -6,12 +6,12 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
 import java.util.Map;
 
 public class ReplayTable extends QueryTable implements Runnable {
@@ -37,9 +37,9 @@ public class ReplayTable extends QueryTable implements Runnable {
         // NB: This will behave incorrectly if our row set or any data in columns can change. Our source table *must*
         // be static. We also seem to be assuming that timeSource has no null values in rowSet. It would be nice to use
         // a column iterator for this, but that would upset unit tests by keeping pooled chunks across cycles.
-        final ColumnSource<DateTime> dateTimeSource = getColumnSource(timeColumn, DateTime.class);
-        replayer.registerTimeSource(rowSet, dateTimeSource);
-        nanoTimeSource = ReinterpretUtils.dateTimeToLongSource(dateTimeSource);
+        final ColumnSource<Instant> instantSource = getColumnSource(timeColumn, Instant.class);
+        replayer.registerTimeSource(rowSet, instantSource);
+        nanoTimeSource = ReinterpretUtils.instantToLongSource(instantSource);
         rowSetIterator = rowSet.iterator();
 
         setRefreshing(true);

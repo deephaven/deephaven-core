@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 
 public class JsonNodeUtil {
     private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -690,47 +690,47 @@ public class JsonNodeUtil {
     }
 
     /**
-     * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
-     * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param key The String key of the value to retrieve.
-     * @return A {@link DateTime}
+     * @returnan {@link Instant}
      */
     @Nullable
-    public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final String key,
+    public static Instant getInstant(@NotNull final JsonNode node, @NotNull final String key,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, key, allowMissingKeys, allowNullValues);
-        return getDateTime(tmpNode);
+        return getInstant(tmpNode);
     }
 
     /**
-     * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
-     * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      *
      * @param node The {@link JsonNode} from which to retrieve the value.
      * @param ptr A JsonPointer to the node for the value to retrieve.
-     * @return A {@link DateTime}
+     * @returnan {@link Instant}
      */
     @Nullable
-    public static DateTime getDateTime(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
+    public static Instant getInstant(@NotNull final JsonNode node, @NotNull final JsonPointer ptr,
             final boolean allowMissingKeys, final boolean allowNullValues) {
         final JsonNode tmpNode = checkAllowMissingOrNull(node, ptr, allowMissingKeys, allowNullValues);
-        return getDateTime(tmpNode);
+        return getInstant(tmpNode);
     }
 
     /**
-     * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
+     * Returns an {@link Instant} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
      * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
-     * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
+     * attempt to parse it as a Deephaven Instant string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
-     * @return A {@link DateTime}
+     * @returnan {@link Instant}
      */
     @Nullable
-    public static DateTime getDateTime(final JsonNode node) {
+    public static Instant getInstant(final JsonNode node) {
         if (isNullOrMissingField(node)) {
             return null;
         }
@@ -738,9 +738,9 @@ public class JsonNodeUtil {
         // ISO Zoned String, millis (small number), or nanos (large number)
         if (node.isLong() || node.isInt()) {
             final long value = node.asLong();
-            return DateTimeUtils.autoEpochToTime(value);
+            return DateTimeUtils.epochAutoToInstant(value);
         } else {
-            return DateTimeUtils.convertDateTime(node.asText());
+            return DateTimeUtils.parseInstant(node.asText());
         }
     }
 }

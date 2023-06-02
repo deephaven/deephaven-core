@@ -32,7 +32,7 @@ import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -42,6 +42,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.experimental.categories.Category;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -318,33 +319,34 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
     }
 
-    public void testDateTimeColumnHolder() {
+    public void testInstantColumnHolder() {
 
         // create two columns with the same data
-        final DateTime[] data = new DateTime[] {new DateTime(100), new DateTime(100), null};
+        final Instant[] data =
+                new Instant[] {DateTimeUtils.epochNanosToInstant(100), DateTimeUtils.epochNanosToInstant(100), null};
         final long[] longData = Arrays.stream(data)
-                .mapToLong(dt -> dt == null ? QueryConstants.NULL_LONG : dt.getNanos())
+                .mapToLong(dt -> dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt))
                 .toArray();
 
-        final ColumnHolder<?> dateTimeCol = col("DateTimeColumn", data);
-        final ColumnHolder<?> dateTimeCol2 = ColumnHolder.getDateTimeColumnHolder("DateTimeColumn2", false, longData);
+        final ColumnHolder<?> instantCol = col("InstantColumn", data);
+        final ColumnHolder<?> instantCol2 = ColumnHolder.getInstantColumnHolder("InstantColumn2", false, longData);
 
-        final Table table = TableTools.newTable(dateTimeCol, dateTimeCol2);
+        final Table table = TableTools.newTable(instantCol, instantCol2);
 
-        // make sure both columns are in fact DateTime columns
-        final Table meta = table.getMeta();
-        Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(0));
-        Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(1));
+        // make sure both columns are in fact Instant columns
+        final Table meta = table.meta();
+        Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(0));
+        Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(1));
 
         // make sure this doesn't crash
         showWithRowSet(table);
 
-        // validate column1 (backed with DateTime objects)
+        // validate column1 (backed with Instant objects)
         Assert.assertEquals(data[0], table.getColumn(0).get(0));
         Assert.assertEquals(data[1], table.getColumn(0).get(1));
         Assert.assertEquals(data[2], table.getColumn(0).get(2));
 
-        // validate column2 (backed with longs, but should be get-able as DateTimes as well)
+        // validate column2 (backed with longs, but should be get-able as Instants as well)
         Assert.assertEquals(data[0], table.getColumn(1).get(0));
         Assert.assertEquals(data[1], table.getColumn(1).get(1));
         Assert.assertEquals(data[2], table.getColumn(1).get(2));

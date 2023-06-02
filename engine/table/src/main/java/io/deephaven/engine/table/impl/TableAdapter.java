@@ -228,11 +228,6 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
-        return throwUnsupported();
-    }
-
-    @Override
     default Table slice(long firstPositionInclusive, long lastPositionExclusive) {
         return throwUnsupported();
     }

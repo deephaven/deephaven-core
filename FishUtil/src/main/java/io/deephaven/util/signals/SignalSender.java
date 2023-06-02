@@ -100,7 +100,7 @@ public class SignalSender {
     /**
      * Simple program for functionality testing.
      * 
-     * @param args [ <pid> <signal> <use native?> ]
+     * @param args [ &lt;pid&gt; &lt;signal&gt; &lt;use native?&gt; ]
      */
     public static void main(final String... args) {
         final int pid = Integer.parseInt(args[0]);

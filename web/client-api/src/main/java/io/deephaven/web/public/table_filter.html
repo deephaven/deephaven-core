@@ -161,11 +161,11 @@
           ide = await connection.startSession("python");
           await ide.runCode(`
 from deephaven import time_table
-remoteTable = time_table("00:00:01").update_view(["I=i", "J=I*I", "K=I%100", "L=(double)I/100.0"]).last_by("K")
+remoteTable = time_table("PT00:00:01").update_view(["I=i", "J=I*I", "K=I%100", "L=(double)I/100.0"]).last_by("K")
 `)
       } else if (types.indexOf("groovy") !== -1) {
           ide = await connection.startSession("groovy");
-          await ide.runCode('remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100", "L=(double)I/100.0").lastBy("K")')
+          await ide.runCode('remoteTable = timeTable("PT00:00:01").updateView("I=i", "J=I*I", "K=I%100", "L=(double)I/100.0").lastBy("K")')
       }
 
       openTable(await ide.getTable('remoteTable'));

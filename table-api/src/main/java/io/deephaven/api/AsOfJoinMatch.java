@@ -98,4 +98,26 @@ public abstract class AsOfJoinMatch {
 
     @Parameter
     public abstract ColumnName rightColumn();
+
+    public final String toRpcString() {
+        return leftColumn().name() + joinRule().operatorString() + rightColumn().name();
+    }
+
+    public final boolean isAj() {
+        switch (joinRule()) {
+            case GREATER_THAN_EQUAL:
+            case GREATER_THAN:
+                return true;
+        }
+        return false;
+    }
+
+    public final boolean isRaj() {
+        switch (joinRule()) {
+            case LESS_THAN_EQUAL:
+            case LESS_THAN:
+                return true;
+        }
+        return false;
+    }
 }

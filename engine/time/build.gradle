@@ -12,7 +12,6 @@ configurations {
 dependencies {
     api project(':Base')
     api project(':Util')
-    api 'joda-time:joda-time:2.10'
 
     implementation project(':engine-function')
     implementation project(':Configuration')

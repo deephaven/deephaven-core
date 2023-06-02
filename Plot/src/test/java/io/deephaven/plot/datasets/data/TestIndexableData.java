@@ -7,9 +7,10 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.time.DateTimeUtils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -28,7 +29,7 @@ public class TestIndexableData extends BaseArrayTestCase {
     private final Number[] numberArray = new Number[SIZE];
     private final List<Double> numberList = new ArrayList<>(SIZE);
     private final Date[] dateArray = new Date[SIZE];
-    private final DateTime[] dateTimesArray = new DateTime[SIZE];
+    private final Instant[] instantsArray = new Instant[SIZE];
 
     @Override
     public void setUp() throws Exception {
@@ -41,7 +42,7 @@ public class TestIndexableData extends BaseArrayTestCase {
         numberArray[i] = null;
         numberList.add(i, null);
         dateArray[i] = null;
-        dateTimesArray[i] = null;
+        instantsArray[i] = null;
 
         for (i = 1; i < SIZE; i++) {
             shortArray[i] = i;
@@ -52,7 +53,7 @@ public class TestIndexableData extends BaseArrayTestCase {
             numberArray[i] = i;
             numberList.add(i, (double) i);
             dateArray[i] = new Date(i, 1, 1);
-            dateTimesArray[i] = new DateTime(i);
+            instantsArray[i] = DateTimeUtils.epochNanosToInstant(i);
         }
     }
 
@@ -65,8 +66,8 @@ public class TestIndexableData extends BaseArrayTestCase {
         final IndexableNumericData numberData = new IndexableNumericDataArrayNumber<>(numberArray, null);
         final IndexableNumericData listData = new IndexableNumericDataListNumber<>(numberList, null);
         final IndexableNumericData dateData = new IndexableNumericDataArrayDate(dateArray, null);
-        final IndexableNumericData dateTimeData = new IndexableNumericDataArrayDateTime(dateTimesArray, null);
-        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData, dateTimeData);
+        final IndexableNumericData instantData = new IndexableNumericDataArrayInstant(instantsArray, null);
+        checkData(shortData, intData, doubleData, longData, floatData, numberData, listData, instantData);
         checkDateData(dateData);
     }
 

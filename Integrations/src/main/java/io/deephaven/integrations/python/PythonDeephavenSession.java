@@ -23,6 +23,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +62,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public static String SCRIPT_TYPE = "Python";
 
     private final PythonScriptSessionModule module;
-
     private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
@@ -111,7 +111,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(PythonScope<?> scope) {
         super(NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
-        this.module = null;
+        try (final SafeCloseable ignored = executionContext.open()) {
+            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        }
         this.evaluator = null;
         this.scriptFinder = null;
     }
@@ -164,6 +167,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void pushScope(PyObject pydict) {
         if (!pydict.isDict()) {
             throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
@@ -171,6 +176,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope.pushScope(pydict);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void popScope() {
         scope.popScope();
     }

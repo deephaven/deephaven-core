@@ -28,7 +28,7 @@ public class OHLCPlotBy {
                 TableTools.doubleCol("Close", close));
 
         QueryScope.addParam("time", time);
-        t = t.updateView("Time = new DateTime(time + (MINUTE * i))");
+        t = t.updateView("Time = DateTimeUtils.epochNanosToInstant(time + (MINUTE * i))");
 
         Figure fig = FigureFactory.figure();
         Figure cht = fig.newChart(0)

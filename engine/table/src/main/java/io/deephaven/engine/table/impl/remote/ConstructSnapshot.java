@@ -23,7 +23,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
 import io.deephaven.proto.backplane.grpc.Config;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -1302,8 +1301,8 @@ public class ConstructSnapshot {
      * <p>
      * Populate a BarrageMessage with the specified positions to snapshot and columns.
      * <p>
-     * >Note that care must be taken while using this method to ensure the underlying table is locked or does not
-     * change, otherwise the resulting snapshot may be inconsistent. In general users should instead use
+     * Note that care must be taken while using this method to ensure the underlying table is locked or does not change,
+     * otherwise the resulting snapshot may be inconsistent. In general users should instead use
      * {@link #constructBackplaneSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
      * uses.
      *
@@ -1546,8 +1545,7 @@ public class ConstructSnapshot {
             } else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
                 sizePerRow += 4;
             } else if (definition.getDataType() == long.class || definition.getDataType() == double.class
-                    || definition.getDataType() == DateTime.class || definition.getDataType() == Instant.class
-                    || definition.getDataType() == ZonedDateTime.class) {
+                    || definition.getDataType() == Instant.class || definition.getDataType() == ZonedDateTime.class) {
                 sizePerRow += 8;
             } else {
                 switch (definition.getName()) {

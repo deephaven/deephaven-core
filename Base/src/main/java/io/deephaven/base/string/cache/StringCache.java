@@ -15,7 +15,7 @@ public interface StringCache<STRING_LIKE_TYPE extends CharSequence> {
     /**
      * Get a hint about this cache's capacity and behavior.
      * 
-     * @return -1 : This is an unbounded cache. 0 : This "cache" doesn't actually perform any caching. >0 : Actual
+     * @return -1 : This is an unbounded cache. 0 : This "cache" doesn't actually perform any caching. &gt;0 : Actual
      *         capacity bound.
      */
     int capacity();

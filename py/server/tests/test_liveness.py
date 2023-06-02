@@ -15,7 +15,7 @@ from tests.testbase import BaseTestCase
 
 def create_table():
     with exclusive_lock():
-        return time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+        return time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
 
 
 class LivenessTestCase(BaseTestCase):

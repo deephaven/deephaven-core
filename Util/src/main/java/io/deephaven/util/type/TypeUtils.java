@@ -514,7 +514,7 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is a DateTime, ZonedDateTime, or Instant.
+     * Whether the class is an {@link Instant}, a {@link ZonedDateTime}, or annotated as {@link IsDateTime}.
      *
      * @param type The class.
      * @return true if the type is a DateTime, {@link java.time.ZonedDateTime} or {@link Instant}.

@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
@@ -60,8 +61,8 @@ import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.time.DateTime;
 import io.deephaven.server.table.ExportedTableUpdateListener;
+import io.deephaven.time.DateTimeUtils;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
@@ -70,6 +71,7 @@ import org.jetbrains.annotations.NotNull;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -322,6 +324,16 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void ajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AJ, request, responseObserver);
+    }
+
+    @Override
+    public void rajTables(AjRajTablesRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RAJ, request, responseObserver);
+    }
+
+    @Override
     public void rangeJoinTables(RangeJoinTablesRequest request,
             StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.RANGE_JOIN, request, responseObserver);
@@ -369,11 +381,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             }
             return literal.getStringValue();
         } else if (literal.hasNanoTimeValue()) {
-            if (!DateTime.class.isAssignableFrom(dataType)) {
+            if (!Instant.class.isAssignableFrom(dataType)) {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Invalid Date type for seek: " + dataType);
+                        "Invalid date type for seek: " + dataType);
             }
-            return new DateTime(literal.getNanoTimeValue());
+            return DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue());
         } else if (literal.hasLongValue()) {
             Long longValue = literal.getLongValue();
             if (dataType == byte.class) {

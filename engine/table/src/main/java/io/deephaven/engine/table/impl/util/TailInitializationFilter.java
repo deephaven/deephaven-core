@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -18,22 +17,23 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
 
+import java.time.Instant;
 import java.util.function.LongUnaryOperator;
 
 /**
  * For an Intraday restart, we often know that all data of interest must take place within a fixed period of time.
  * Rather than processing all of the data, we can binary search in each partition to find the relevant rows based on a
  * Timestamp.
- *
+ * <p>
  * This is only designed to operate against a source table, if any rows are modified or removed from the table, then the
  * ShiftObliviousListener throws an IllegalStateException. Each contiguous range of indices is assumed to be a
  * partition. If you filter or otherwise alter the source table before calling TailInitializationFilter, this assumption
  * will be violated and the resulting table will not be filtered as desired.
- *
+ * <p>
  * Once initialized, the filter returns all new rows, rows that have already been passed are not removed or modified.
- *
+ * <p>
  * The input must be sorted by Timestamp, or the resulting table is undefined. Null timestamps are not permitted.
- *
+ * <p>
  * For consistency, the last value of each partition is used to determine the threshold for that partition.
  */
 public class TailInitializationFilter {
@@ -42,11 +42,12 @@ public class TailInitializationFilter {
      *
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
-     * @param period interval between the last row in a partition (as converted by DateTimeUtils.expressionToNanos)
+     * @param period interval between the last row in a partition (as converted by
+     *        {@link DateTimeUtils#parseDurationNanos(String)})
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
-        return mostRecent(table, timestampName, DateTimeUtils.expressionToNanos(period));
+        return mostRecent(table, timestampName, DateTimeUtils.parseDurationNanos(period));
     }
 
     /**
@@ -59,13 +60,11 @@ public class TailInitializationFilter {
      */
     public static Table mostRecent(final Table table, final String timestampName, final long nanos) {
         return QueryPerformanceRecorder.withNugget("TailInitializationFilter(" + nanos + ")", () -> {
-            final ColumnSource timestampSource = table.getColumnSource(timestampName, DateTime.class);
+            final ColumnSource<Instant> timestampSource = table.getColumnSource(timestampName, Instant.class);
             if (timestampSource.allowsReinterpret(long.class)) {
-                // noinspection unchecked
                 return mostRecentLong(table, timestampSource.reinterpret(long.class), nanos);
             } else {
-                // noinspection unchecked
-                return mostRecentDateTime(table, timestampSource, nanos);
+                return mostRecentInstant(table, timestampSource, nanos);
             }
         });
     }
@@ -74,8 +73,11 @@ public class TailInitializationFilter {
         return mostRecentLong(table, reinterpret::getLong, nanos);
     }
 
-    private static Table mostRecentDateTime(final Table table, final ColumnSource<DateTime> cs, final long nanos) {
-        return mostRecentLong(table, (idx) -> cs.get(idx).getNanos(), nanos);
+    private static Table mostRecentInstant(final Table table, final ColumnSource<Instant> cs, final long nanos) {
+        return mostRecentLong(table, (idx) -> {
+            Instant instant = cs.get(idx);
+            return DateTimeUtils.epochNanos(instant);
+        }, nanos);
     }
 
     private static Table mostRecentLong(final Table table, final LongUnaryOperator getValue, final long nanos) {

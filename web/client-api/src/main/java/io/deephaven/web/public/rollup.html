@@ -195,8 +195,7 @@ remoteTable = empty_table(100).update(formulas = ["I=i", "J = \`\` + (int)(i/10)
                 var tableElt = new TreeGrid(treeTable).element;
                 treeParent.appendChild(tableElt);
 
-
-                // new TotalsTableHelper(null, treeTable, tableElt, 1);
+                new TotalsTableHelper(null, treeTable, tableElt, 1);
             });
         };
 

@@ -25,8 +25,7 @@ import io.deephaven.proto.backplane.grpc.MatchType;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
 import io.deephaven.proto.backplane.grpc.Value;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
+import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
@@ -185,7 +184,8 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + new DateTime(literal.getNanoTimeValue()).toString(TimeZone.TZ_DEFAULT) + "'";
+                values[i] = "'" + DateTimeUtils.formatDateTime(
+                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), DateTimeUtils.timeZone()) + "'";
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }

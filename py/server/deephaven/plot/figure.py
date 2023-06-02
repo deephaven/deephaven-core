@@ -19,7 +19,7 @@ import jpy
 
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import DateTime, PyObject
+from deephaven.dtypes import Instant, PyObject
 from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
     SelectableDataSet
 from deephaven.table import Table
@@ -1008,9 +1008,9 @@ class Figure(JObjectWrapper):
         series_name: str,
         t: Union[Table, SelectableDataSet] = None,
         category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[DateTime]] = None,
-        y_low: Union[str, List[int], List[float], List[DateTime]] = None,
-        y_high: Union[str, List[int], List[float], List[DateTime]] = None,
+        y: Union[str, List[int], List[float], List[Instant]] = None,
+        y_low: Union[str, List[int], List[float], List[Instant]] = None,
+        y_high: Union[str, List[int], List[float], List[Instant]] = None,
         by: List[str] = None,
     ) -> Figure:
         """Creates a plot with a discrete, categorical axis. Categorical data must not have duplicates.
@@ -1019,9 +1019,9 @@ class Figure(JObjectWrapper):
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             category (Union[str, List[str], List[int], List[float]]): discrete data or column name
-            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
-            y_low (Union[str, List[int], List[float], List[DateTime]]): lower y error bar
-            y_high (Union[str, List[int], List[float], List[DateTime]]): upper y error bar
+            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
+            y_low (Union[str, List[int], List[float], List[Instant]]): lower y error bar
+            y_high (Union[str, List[int], List[float], List[Instant]]): upper y error bar
             by (List[str]): columns that hold grouping data
 
         Returns:
@@ -1045,13 +1045,13 @@ class Figure(JObjectWrapper):
             category = _convert_j("category", category, [str, List[str], List[int], List[float]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[DateTime]])
+            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[DateTime]])
+            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[DateTime]])
+            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
         if by is not None:
             non_null_args.add("by")
             by = _no_convert_j("by", by, [List[str]])
@@ -1115,11 +1115,11 @@ class Figure(JObjectWrapper):
         self,
         series_name: str,
         t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[DateTime]] = None,
-        open: Union[str, List[int], List[float], List[DateTime]] = None,
-        high: Union[str, List[int], List[float], List[DateTime]] = None,
-        low: Union[str, List[int], List[float], List[DateTime]] = None,
-        close: Union[str, List[int], List[float], List[DateTime]] = None,
+        x: Union[str, List[Instant]] = None,
+        open: Union[str, List[int], List[float], List[Instant]] = None,
+        high: Union[str, List[int], List[float], List[Instant]] = None,
+        low: Union[str, List[int], List[float], List[Instant]] = None,
+        close: Union[str, List[int], List[float], List[Instant]] = None,
         by: List[str] = None,
     ) -> Figure:
         """Creates an open-high-low-close plot.
@@ -1127,11 +1127,11 @@ class Figure(JObjectWrapper):
         Args:
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[DateTime]]): x-values or column name
-            open (Union[str, List[int], List[float], List[DateTime]]): bar open y-values.
-            high (Union[str, List[int], List[float], List[DateTime]]): bar high y-values.
-            low (Union[str, List[int], List[float], List[DateTime]]): bar low y-values.
-            close (Union[str, List[int], List[float], List[DateTime]]): bar close y-values.
+            x (Union[str, List[Instant]]): x-values or column name
+            open (Union[str, List[int], List[float], List[Instant]]): bar open y-values.
+            high (Union[str, List[int], List[float], List[Instant]]): bar high y-values.
+            low (Union[str, List[int], List[float], List[Instant]]): bar low y-values.
+            close (Union[str, List[int], List[float], List[Instant]]): bar close y-values.
             by (List[str]): columns that hold grouping data
 
         Returns:
@@ -1152,19 +1152,19 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[DateTime]])
+            x = _convert_j("x", x, [str, List[Instant]])
         if open is not None:
             non_null_args.add("open")
-            open = _convert_j("open", open, [str, List[int], List[float], List[DateTime]])
+            open = _convert_j("open", open, [str, List[int], List[float], List[Instant]])
         if high is not None:
             non_null_args.add("high")
-            high = _convert_j("high", high, [str, List[int], List[float], List[DateTime]])
+            high = _convert_j("high", high, [str, List[int], List[float], List[Instant]])
         if low is not None:
             non_null_args.add("low")
-            low = _convert_j("low", low, [str, List[int], List[float], List[DateTime]])
+            low = _convert_j("low", low, [str, List[int], List[float], List[Instant]])
         if close is not None:
             non_null_args.add("close")
-            close = _convert_j("close", close, [str, List[int], List[float], List[DateTime]])
+            close = _convert_j("close", close, [str, List[int], List[float], List[Instant]])
         if by is not None:
             non_null_args.add("by")
             by = _no_convert_j("by", by, [List[str]])
@@ -1183,7 +1183,7 @@ class Figure(JObjectWrapper):
         series_name: str,
         t: Union[Table, SelectableDataSet] = None,
         category: Union[str, List[str], List[int], List[float]] = None,
-        y: Union[str, List[int], List[float], List[DateTime]] = None,
+        y: Union[str, List[int], List[float], List[Instant]] = None,
     ) -> Figure:
         """Creates a pie plot. Categorical data must not have duplicates.
 
@@ -1191,7 +1191,7 @@ class Figure(JObjectWrapper):
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
             category (Union[str, List[str], List[int], List[float]]): discrete data or column name
-            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
+            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
 
         Returns:
             a new Figure
@@ -1214,7 +1214,7 @@ class Figure(JObjectWrapper):
             category = _convert_j("category", category, [str, List[str], List[int], List[float]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[DateTime]])
+            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
 
         if non_null_args == {"series_name", "category", "y"}:
             return Figure(j_figure=self.j_figure.piePlot(series_name, category, y))
@@ -1296,12 +1296,12 @@ class Figure(JObjectWrapper):
         self,
         series_name: str,
         t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[DateTime]] = None,
-        x_low: Union[str, List[int], List[float], List[DateTime]] = None,
-        x_high: Union[str, List[int], List[float], List[DateTime]] = None,
-        y: Union[str, List[int], List[float], List[DateTime]] = None,
-        y_low: Union[str, List[int], List[float], List[DateTime]] = None,
-        y_high: Union[str, List[int], List[float], List[DateTime]] = None,
+        x: Union[str, List[int], List[float], List[Instant]] = None,
+        x_low: Union[str, List[int], List[float], List[Instant]] = None,
+        x_high: Union[str, List[int], List[float], List[Instant]] = None,
+        y: Union[str, List[int], List[float], List[Instant]] = None,
+        y_low: Union[str, List[int], List[float], List[Instant]] = None,
+        y_high: Union[str, List[int], List[float], List[Instant]] = None,
         function: Callable = None,
         by: List[str] = None,
         x_time_axis: bool = None,
@@ -1312,12 +1312,12 @@ class Figure(JObjectWrapper):
         Args:
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[int], List[float], List[DateTime]]): x-values or column name
-            x_low (Union[str, List[int], List[float], List[DateTime]]): lower x error bar
-            x_high (Union[str, List[int], List[float], List[DateTime]]): upper x error bar
-            y (Union[str, List[int], List[float], List[DateTime]]): y-values or column name
-            y_low (Union[str, List[int], List[float], List[DateTime]]): lower y error bar
-            y_high (Union[str, List[int], List[float], List[DateTime]]): upper y error bar
+            x (Union[str, List[int], List[float], List[Instant]]): x-values or column name
+            x_low (Union[str, List[int], List[float], List[Instant]]): lower x error bar
+            x_high (Union[str, List[int], List[float], List[Instant]]): upper x error bar
+            y (Union[str, List[int], List[float], List[Instant]]): y-values or column name
+            y_low (Union[str, List[int], List[float], List[Instant]]): lower y error bar
+            y_high (Union[str, List[int], List[float], List[Instant]]): upper y error bar
             function (Callable): function
             by (List[str]): columns that hold grouping data
             x_time_axis (bool): whether to treat the x-values as times
@@ -1341,22 +1341,22 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[int], List[float], List[DateTime]])
+            x = _convert_j("x", x, [str, List[int], List[float], List[Instant]])
         if x_low is not None:
             non_null_args.add("x_low")
-            x_low = _convert_j("x_low", x_low, [str, List[int], List[float], List[DateTime]])
+            x_low = _convert_j("x_low", x_low, [str, List[int], List[float], List[Instant]])
         if x_high is not None:
             non_null_args.add("x_high")
-            x_high = _convert_j("x_high", x_high, [str, List[int], List[float], List[DateTime]])
+            x_high = _convert_j("x_high", x_high, [str, List[int], List[float], List[Instant]])
         if y is not None:
             non_null_args.add("y")
-            y = _convert_j("y", y, [str, List[int], List[float], List[DateTime]])
+            y = _convert_j("y", y, [str, List[int], List[float], List[Instant]])
         if y_low is not None:
             non_null_args.add("y_low")
-            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[DateTime]])
+            y_low = _convert_j("y_low", y_low, [str, List[int], List[float], List[Instant]])
         if y_high is not None:
             non_null_args.add("y_high")
-            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[DateTime]])
+            y_high = _convert_j("y_high", y_high, [str, List[int], List[float], List[Instant]])
         if function is not None:
             non_null_args.add("function")
             function = _convert_j("function", function, [Callable])
@@ -1405,7 +1405,7 @@ class Figure(JObjectWrapper):
         self,
         series_name: str,
         t: Union[Table, SelectableDataSet] = None,
-        x: Union[str, List[int], List[float], List[DateTime]] = None,
+        x: Union[str, List[int], List[float], List[Instant]] = None,
         xmin: float = None,
         xmax: float = None,
         nbins: int = None,
@@ -1415,7 +1415,7 @@ class Figure(JObjectWrapper):
         Args:
             series_name (str): name of the data series
             t (Union[Table, SelectableDataSet]): table or selectable data set (e.g. OneClick filterable table)
-            x (Union[str, List[int], List[float], List[DateTime]]): x-values or column name
+            x (Union[str, List[int], List[float], List[Instant]]): x-values or column name
             xmin (float): minimum x value to display
             xmax (float): maximum x value to display
             nbins (int): number of bins
@@ -1438,7 +1438,7 @@ class Figure(JObjectWrapper):
             t = _convert_j("t", t, [Table, SelectableDataSet])
         if x is not None:
             non_null_args.add("x")
-            x = _convert_j("x", x, [str, List[int], List[float], List[DateTime]])
+            x = _convert_j("x", x, [str, List[int], List[float], List[Instant]])
         if xmin is not None:
             non_null_args.add("xmin")
             xmin = _convert_j("xmin", xmin, [float])

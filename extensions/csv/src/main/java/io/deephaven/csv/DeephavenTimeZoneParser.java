@@ -9,22 +9,20 @@ import io.deephaven.csv.tokenization.RangeTests;
 import io.deephaven.csv.tokenization.Tokenizer;
 import io.deephaven.csv.util.MutableLong;
 import io.deephaven.csv.util.MutableObject;
-import io.deephaven.time.TimeZone;
+import io.deephaven.time.TimeZoneAliases;
 
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-
+import java.util.Map;
 
 public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZoneParser {
-    private static final String DEEPHAVEN_TZ_PREFIX = "TZ_";
-    private static final int MAX_DEEPHAVEN_TZ_LENGTH = 3;
+    private static final int MAX_TZ_LENGTH = computeMaxTimeZoneLength();
     private static final TIntObjectHashMap<ZoneId> ZONE_ID_MAP = createZoneIdMap();
 
     private int lastTzKey = -1;
     private ZoneId lastZoneId = null;
 
-    public DeephavenTimeZoneParser() {
-
-    }
+    public DeephavenTimeZoneParser() {}
 
     @Override
     public boolean tryParse(ByteSlice bs, MutableObject<ZoneId> zoneId, MutableLong offsetSeconds) {
@@ -52,8 +50,18 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
         return true;
     }
 
+    private static int computeMaxTimeZoneLength() {
+        int rst = 0;
+
+        for (String tz : TimeZoneAliases.getAllZones().keySet()) {
+            rst = Math.max(tz.length(), rst);
+        }
+
+        return rst;
+    }
+
     /**
-     * Take up to three uppercase characters from a TimeZone string and pack them into an integer.
+     * Take up to three uppercase characters from a time zone string and pack them into an integer.
      *
      * @param bs A ByteSlice holding the timezone key.
      * @return The characters packed into an int, or -1 if there are too many or too few characters, or if the
@@ -63,50 +71,39 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
         int res = 0;
         int current;
         for (current = bs.begin(); current != bs.end(); ++current) {
-            if (current - bs.begin() > MAX_DEEPHAVEN_TZ_LENGTH) {
+            if (current - bs.begin() > MAX_TZ_LENGTH) {
                 return -1;
             }
             final char ch = RangeTests.toUpper((char) bs.data()[current]);
-            if (!RangeTests.isUpper(ch)) {
-                // If it's some nonalphabetic character
-                break;
-            }
             res = res * 26 + (ch - 'A');
         }
         if (current - bs.begin() == 0) {
             return -1;
         }
         bs.setBegin(current);
-        return res;
+        return Math.abs(res);
     }
 
     private static TIntObjectHashMap<ZoneId> createZoneIdMap() {
         final TIntObjectHashMap<ZoneId> zoneIdMap = new TIntObjectHashMap<>();
-        for (TimeZone zone : TimeZone.values()) {
-            final String zname = zone.name();
-            if (!zname.startsWith(DEEPHAVEN_TZ_PREFIX)) {
-                throw new RuntimeException("Logic error: unexpected enum in DBTimeZone: " + zname);
+        for (Map.Entry<String, ZoneId> entry : TimeZoneAliases.getAllZones().entrySet()) {
+            final String zname = entry.getKey();
+            final ZoneId zoneId = entry.getValue();
+            if (zname.length() > MAX_TZ_LENGTH) {
+                throw new RuntimeException("Logic error: unexpectedly-long time zone name: " + zname);
             }
-            final String zSuffix = zname.substring(DEEPHAVEN_TZ_PREFIX.length());
-            final int zlen = zSuffix.length();
-            if (zlen > MAX_DEEPHAVEN_TZ_LENGTH) {
-                throw new RuntimeException("Logic error: unexpectedly-long enum in DBTimeZone: " + zname);
-            }
-            final byte[] data = new byte[zlen];
-            for (int ii = 0; ii < zlen; ++ii) {
-                final char ch = zSuffix.charAt(ii);
-                if (!RangeTests.isUpper(ch)) {
-                    throw new RuntimeException("Logic error: unexpected character in DBTimeZone name: " + zname);
-                }
-                data[ii] = (byte) ch;
-            }
+            final byte[] data = zname.getBytes(StandardCharsets.UTF_8);
             final ByteSlice bs = new ByteSlice(data, 0, data.length);
             final int tzKey = tryParseTzKey(bs);
             if (tzKey < 0) {
-                throw new RuntimeException("Logic error: can't parse DBTimeZone as key: " + zname);
+                throw new RuntimeException("Logic error: can't parse time zone as key: " + zname);
             }
-            final ZoneId zoneId = zone.getTimeZone().toTimeZone().toZoneId();
-            zoneIdMap.put(tzKey, zoneId);
+
+            final ZoneId previous = zoneIdMap.put(tzKey, zoneId);
+
+            if (previous != null) {
+                throw new RuntimeException("Time zone hashing collision: " + zname + " " + tzKey);
+            }
         }
         return zoneIdMap;
     }

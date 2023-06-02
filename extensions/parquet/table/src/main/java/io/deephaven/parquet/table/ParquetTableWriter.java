@@ -36,7 +36,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -57,6 +56,7 @@ import java.math.BigInteger;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -510,10 +510,10 @@ public class ParquetTableWriter {
         }
 
         Class<DATA_TYPE> columnType = columnSource.getType();
-        if (columnType == DateTime.class) {
+        if (columnType == Instant.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(
-                    (ColumnSource<DateTime>) columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource(
+                    (ColumnSource<Instant>) columnSource);
             columnType = columnSource.getType();
         } else if (columnType == Boolean.class) {
             // noinspection unchecked

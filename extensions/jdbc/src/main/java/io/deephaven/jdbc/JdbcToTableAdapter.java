@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,10 +38,11 @@ import java.util.TimeZone;
 /**
  * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
  * {@link ResultSet} to a Deephaven {@link Table}.
- * <p/>
  *
+ * <p>
  * To use, first create a result set using your provided JDBC driver of choice:
- * 
+ * </p>
+ *
  * <pre>
  * Connection connection = DriverManager.getConnection("jdbc:sqlite:/path/to/db.sqlite");
  * Statement statement = connection.createStatement();
@@ -85,7 +87,7 @@ public class JdbcToTableAdapter {
         private String replacement = "_";
         private int maxRows = -1;
         private boolean strict = true;
-        private TimeZone sourceTimeZone = TimeZone.getDefault();
+        private TimeZone sourceTimeZone = TimeZone.getTimeZone(DateTimeUtils.timeZone());
         private String arrayDelimiter = ",";
         private final Map<String, Class<?>> targetTypeMap = new HashMap<>();
 

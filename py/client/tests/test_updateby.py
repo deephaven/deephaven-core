@@ -15,7 +15,7 @@ class UpdateByTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         pa_table = csv.read_csv(self.csv_file)
-        self.static_table = self.session.import_table(pa_table).update(["Timestamp=currentTime()"])
+        self.static_table = self.session.import_table(pa_table).update(["Timestamp=now()"])
         self.ticking_table = self.session.time_table(1000000).update(
                 ["a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b"])
 

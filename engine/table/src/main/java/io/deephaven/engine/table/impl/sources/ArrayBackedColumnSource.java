@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.time.DateTime;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -316,14 +315,14 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * Produces an DateTimeArraySource with the given data.
+     * Produces an InstantArraySource with the given data.
      *
      * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
-        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<Instant> getInstantMemoryColumnSource(LongChunk<Values> data) {
+        final WritableColumnSource<Instant> result = new InstantArraySource();
         result.ensureCapacity(data.size());
         for (int ii = 0; ii < data.size(); ++ii) {
             result.set(ii, data.get(ii));
@@ -332,14 +331,14 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     /**
-     * Produces an DateTimeArraySource with the given data.
+     * Produces an InstantArraySource with the given data.
      *
      * @param data an array containing the data to insert into the ColumnSource, represented as long nanoseconds since
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
-        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<Instant> getInstantMemoryColumnSource(@NotNull final long[] data) {
+        final WritableColumnSource<Instant> result = new InstantArraySource();
         result.ensureCapacity(data.length);
         final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
@@ -411,8 +410,6 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ShortArraySource();
         } else if (dataType == boolean.class || dataType == Boolean.class) {
             result = new BooleanArraySource();
-        } else if (dataType == DateTime.class) {
-            result = new DateTimeArraySource();
         } else if (dataType == Instant.class) {
             result = new InstantArraySource();
         } else {
@@ -624,41 +621,30 @@ public abstract class ArrayBackedColumnSource<T>
             generic.componentType().walk(new Visitor() {
                 @Override
                 public void visit(StringType stringType) {
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(stringType).values(), String.class,
-                            null);
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                            generic.cast(stringType).values(), String.class, null);
                 }
 
                 @Override
                 public void visit(InstantType instantType) {
-                    DateTimeArraySource source = new DateTimeArraySource();
-                    source.ensureCapacity(generic.size());
-                    int ix = 0;
-                    for (Instant value : generic.cast(instantType).values()) {
-                        if (value == null) {
-                            source.set(ix++, NULL_LONG);
-                        } else {
-                            long nanos =
-                                    Math.addExact(TimeUnit.SECONDS.toNanos(value.getEpochSecond()), value.getNano());
-                            source.set(ix++, nanos);
-                        }
-                    }
-                    out = source;
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                            generic.cast(instantType).values(), Instant.class, null);
                 }
 
                 @Override
                 public void visit(ArrayType<?, ?> arrayType) {
                     // noinspection unchecked
                     ArrayType<T, ?> tType = (ArrayType<T, ?>) arrayType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(),
-                            arrayType.componentType().clazz());
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                            generic.cast(tType).values(), tType.clazz(), arrayType.componentType().clazz());
                 }
 
                 @Override
                 public void visit(CustomType<?> customType) {
                     // noinspection unchecked
                     CustomType<T> tType = (CustomType<T>) customType;
-                    out = ArrayBackedColumnSource.getMemoryColumnSource(generic.cast(tType).values(), tType.clazz(),
-                            null);
+                    out = ArrayBackedColumnSource.getMemoryColumnSource(
+                            generic.cast(tType).values(), tType.clazz(), null);
                 }
             });
         }

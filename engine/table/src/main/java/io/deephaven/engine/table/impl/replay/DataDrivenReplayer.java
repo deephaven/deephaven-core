@@ -4,18 +4,21 @@
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.base.clock.Clock;
-import io.deephaven.time.DateTime;
+import io.deephaven.base.clock.ClockNanoBase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.rowset.RowSet;
 
+import java.time.Instant;
+
 public class DataDrivenReplayer extends Replayer {
-    private DateTime currentTime;
+
+    private Instant currentTime;
     private int pos;
     private long lastTime = -1;
 
-    public DataDrivenReplayer(DateTime startTime, DateTime endTime) {
+    public DataDrivenReplayer(Instant startTime, Instant endTime) {
         super(startTime, endTime);
         currentTime = startTime;
     }
@@ -23,7 +26,7 @@ public class DataDrivenReplayer extends Replayer {
     TLongArrayList allTimestamp = new TLongArrayList();
 
     @Override
-    public void registerTimeSource(RowSet rowSet, ColumnSource<DateTime> timestampSource) {
+    public void registerTimeSource(RowSet rowSet, ColumnSource<Instant> timestampSource) {
         long prevValue = -1;
         if (timestampSource.allowsReinterpret(long.class)) {
             ColumnSource<Long> longColumn = timestampSource.reinterpret(long.class);
@@ -35,7 +38,8 @@ public class DataDrivenReplayer extends Replayer {
             }
         } else {
             for (RowSet.Iterator iterator = rowSet.iterator(); iterator.hasNext();) {
-                long currentValue = timestampSource.get(iterator.nextLong()).getNanos();
+                Instant instant = timestampSource.get(iterator.nextLong());
+                long currentValue = DateTimeUtils.epochNanos(instant);
                 if (currentValue != prevValue) {
                     allTimestamp.add(prevValue = currentValue);
                 }
@@ -47,7 +51,7 @@ public class DataDrivenReplayer extends Replayer {
     @Override
     public void start() {
         allTimestamp.sort();
-        while (pos < allTimestamp.size() && allTimestamp.get(pos) < startTime.getNanos()) {
+        while (pos < allTimestamp.size() && allTimestamp.get(pos) < DateTimeUtils.epochNanos(startTime)) {
             pos++;
         }
         super.start();
@@ -58,15 +62,15 @@ public class DataDrivenReplayer extends Replayer {
         long currentTimeNanos = -1;
         while (pos < allTimestamp.size()) {
             currentTimeNanos = allTimestamp.get(pos);
-            if (currentTimeNanos > lastTime || currentTimeNanos > endTime.getNanos()) {
+            if (currentTimeNanos > lastTime || currentTimeNanos > DateTimeUtils.epochNanos(endTime)) {
                 break;
             }
             pos++;
         }
-        if (currentTime.getNanos() > endTime.getNanos() || pos >= allTimestamp.size()) {
+        if (DateTimeUtils.epochNanos(currentTime) > DateTimeUtils.epochNanos(endTime) || pos >= allTimestamp.size()) {
             currentTime = endTime;
         } else {
-            currentTime = new DateTime(currentTimeNanos);
+            currentTime = DateTimeUtils.epochNanosToInstant(currentTimeNanos);
         }
         lastTime = currentTimeNanos;
         super.run();
@@ -74,7 +78,7 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.epochMillisToInstant(Math.max(updatedTime, currentTime.toEpochMilli()));
     }
 
     @Override
@@ -82,10 +86,11 @@ public class DataDrivenReplayer extends Replayer {
         return new ClockImpl();
     }
 
-    private class ClockImpl extends DateTimeClock {
+    private class ClockImpl extends ClockNanoBase {
+
         @Override
-        public DateTime currentDateTime() {
-            return currentTime;
+        public long currentTimeNanos() {
+            return DateTimeUtils.epochNanos(currentTime);
         }
     }
 }
