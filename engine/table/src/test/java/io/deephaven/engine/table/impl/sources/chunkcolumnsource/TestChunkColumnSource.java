@@ -455,7 +455,7 @@ public class TestChunkColumnSource {
         }
 
         try (final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
-             final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+                final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
             wrapped.fillChunk(fillContext, destChunk, RowSequenceFactory.forRange(0, 31));
             TestCase.assertEquals(32, destChunk.size());
             for (int ii = 0; ii < 32; ++ii) {
@@ -499,7 +499,7 @@ public class TestChunkColumnSource {
         }
 
         try (final WritableObjectChunk<Boolean, Values> destChunk = WritableObjectChunk.makeWritableChunk(2048);
-             final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
+                final ChunkSource.FillContext fillContext = wrapped.makeFillContext(32)) {
             wrapped.fillChunk(fillContext, destChunk, RowSequenceFactory.forRange(0, 31));
             TestCase.assertEquals(32, destChunk.size());
             for (int ii = 0; ii < 32; ++ii) {

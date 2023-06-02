@@ -280,11 +280,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
                 // Always use "get" to pull in the baseline and delta pieces
                 final Chunk<? extends Values> bChunk = baseline.getChunk(context.baseline.getContext, baselineKeysBS);
                 final Chunk<? extends Values> dChunk = delta.getChunk(context.delta.getContext, deltaKeysDS);
-                // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse' will
-                // always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will be non-null.
-                // Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but context.optionalChunk
-                // will be non-null (having been created through makeGetContext()).
-                final WritableChunk<? super Values> destToUse = optionalDest != null ? optionalDest : context.optionalChunk;
+                // Merge them into either the user-provided chunk, or our own preallocated chunk. Note that 'destToUse'
+                // will always be non-null. This is because if we arrived here from fillChunk(), then optionalDest will
+                // be non-null. Otherwise (if we arrived here from getChunk()), then optionalDest will be null, but
+                // context.optionalChunk will be non-null (having been created through makeGetContext()).
+                final WritableChunk<? super Values> destToUse = optionalDest != null
+                        ? optionalDest
+                        : context.optionalChunk;
                 ChunkMerger.merge(bChunk, dChunk, baselineKeysBS, deltaKeysBS, destToUse);
                 return destToUse;
             }
