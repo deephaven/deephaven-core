@@ -106,9 +106,9 @@ public class TestSharedContext {
             final Table t2Filtered = t2.where(condition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) TableImpl.getColumn(t2Filtered, col).getDirect();
+                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
                 assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) TableImpl.getColumn(t1Filtered, col).getDirect();
+                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
                 assertEquals(t1Filtered.size(), t1fcs.length);
                 assertArrayEquals(t1fcs, t2fcs);
             };
@@ -152,9 +152,9 @@ public class TestSharedContext {
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) TableImpl.getColumn(t2Filtered, col).getDirect();
+                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
                 assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) TableImpl.getColumn(t1Filtered, col).getDirect();
+                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
                 assertEquals(t1Filtered.size(), t1fcs.length);
                 assertArrayEquals(t1fcs, t2fcs);
             };

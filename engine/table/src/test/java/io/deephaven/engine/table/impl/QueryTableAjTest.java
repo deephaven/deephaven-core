@@ -1220,11 +1220,11 @@ public class QueryTableAjTest {
         final TIntArrayList expectedStamp = new TIntArrayList();
         final TIntArrayList expectedSentinel = new TIntArrayList();
 
-        final int[] leftStampArray = (int[]) TableImpl.getColumn(leftTable, "LeftStamp").getDirect();
+        final int[] leftStampArray = (int[]) DataAccessHelpers.getColumn(leftTable, "LeftStamp").getDirect();
         final int[] rightStampArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
-                : (int[]) TableImpl.getColumn(rightTable, "RightStamp").getDirect();
+                : (int[]) DataAccessHelpers.getColumn(rightTable, "RightStamp").getDirect();
         final int[] rightSentinelArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
-                : (int[]) TableImpl.getColumn(rightTable, "RightSentinel").getDirect();
+                : (int[]) DataAccessHelpers.getColumn(rightTable, "RightSentinel").getDirect();
 
         for (final int leftStamp : leftStampArray) {
             final int rightPosition = Arrays.binarySearch(rightStampArray, leftStamp);

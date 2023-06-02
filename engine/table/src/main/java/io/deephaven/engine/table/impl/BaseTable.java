@@ -1253,18 +1253,4 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         childListenerReferences.clear();
         parents.clear();
     }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public DataColumn[] getColumns() {
-        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
-    }
-
-    public DataColumn getColumn(final int columnIndex) {
-        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
-    }
-
-    public abstract DataColumn getColumn(String columnName);
 }

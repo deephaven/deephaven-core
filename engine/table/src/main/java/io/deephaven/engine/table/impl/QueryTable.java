@@ -262,9 +262,6 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private static final AtomicReferenceFieldUpdater<QueryTable, ModifiedColumnSet> MODIFIED_COLUMN_SET_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, ModifiedColumnSet.class, "modifiedColumnSet");
-
-    private static final AtomicReferenceFieldUpdater<QueryTable, Map> INDEXED_DATA_COLUMNS_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(QueryTable.class, Map.class, "indexedDataColumns");
     private static final Map<String, IndexedDataColumn<?>> EMPTY_INDEXED_DATA_COLUMNS = Collections.emptyMap();
 
     private static final AtomicReferenceFieldUpdater<QueryTable, Map> CACHED_OPERATIONS_UPDATER =
@@ -275,10 +272,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     private final LinkedHashMap<String, ColumnSource<?>> columns;
     @SuppressWarnings("FieldMayBeFinal") // Set via MODIFIED_COLUMN_SET_UPDATER if not initialized
     private volatile ModifiedColumnSet modifiedColumnSet;
-
-    // Cached data columns
-    @SuppressWarnings("FieldMayBeFinal") // Set via INDEXED_DATA_COLUMNS_UPDATER
-    private volatile Map<String, IndexedDataColumn<?>> indexedDataColumns = EMPTY_INDEXED_DATA_COLUMNS;
 
     // Flattened table support
     private boolean flat;
@@ -381,17 +374,6 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Collection<? extends ColumnSource<?>> getColumnSources() {
         return Collections.unmodifiableCollection(columns.values());
-    }
-
-    @Override
-    public DataColumn getColumn(@NotNull final String columnName) {
-        return ensureIndexedDataColumns().computeIfAbsent(columnName, cn -> new IndexedDataColumn<>(cn, this));
-    }
-
-    private Map<String, IndexedDataColumn<?>> ensureIndexedDataColumns() {
-        // noinspection unchecked
-        return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
-                ConcurrentHashMap::new);
     }
 
     // region Column Iterators

@@ -628,7 +628,7 @@ public class TestSort extends BaseArrayTestCase {
     private Comparable[][] createBoxedData(Table source, int ncols, int size) {
         final Comparable[][] boxedData = new Comparable[ncols][];
         for (int ii = 0; ii < ncols; ++ii) {
-            final DataColumn column = TableImpl.getColumn(source, "Column" + ii);
+            final DataColumn column = DataAccessHelpers.getColumn(source, "Column" + ii);
             boxedData[ii] = new Comparable[size];
             for (int jj = 0; jj < size; ++jj) {
                 boxedData[ii][jj] = (Comparable) column.get(jj);
@@ -683,11 +683,11 @@ public class TestSort extends BaseArrayTestCase {
 
         // Now sort the table by the sentinel, which should just give us a simple ordering.
         assertEquals(source.size(), size);
-        assertEquals(TableImpl.getColumn(source, "Sentinel").size(), size);
+        assertEquals(DataAccessHelpers.getColumn(source, "Sentinel").size(), size);
 
         Table result0 = source.sort("Sentinel");
         // show(result0);
-        DataColumn col = TableImpl.getColumn(result0, "Sentinel");
+        DataColumn col = DataAccessHelpers.getColumn(result0, "Sentinel");
         assertEquals(col.size(), size);
         for (int jj = 0; jj < size; ++jj) {
             assertEquals(jj + 1, col.get(jj));
@@ -695,7 +695,7 @@ public class TestSort extends BaseArrayTestCase {
 
         Table result1 = source.sortDescending("Sentinel");
         // show(result1);
-        col = TableImpl.getColumn(result1, "Sentinel");
+        col = DataAccessHelpers.getColumn(result1, "Sentinel");
         assertEquals(col.size(), size);
         for (int jj = 0; jj < size; ++jj) {
             assertEquals(size - jj, col.get(jj));
@@ -715,9 +715,9 @@ public class TestSort extends BaseArrayTestCase {
             // TableTools.show(resultDescending);
 
 
-            DataColumn colAscending = TableImpl.getColumn(resultAscending, "Sentinel");
+            DataColumn colAscending = DataAccessHelpers.getColumn(resultAscending, "Sentinel");
             assertEquals(colAscending.size(), size);
-            DataColumn colDescending = TableImpl.getColumn(resultDescending, "Sentinel");
+            DataColumn colDescending = DataAccessHelpers.getColumn(resultDescending, "Sentinel");
             assertEquals(colDescending.size(), size);
 
             MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);

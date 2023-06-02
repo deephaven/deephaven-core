@@ -244,10 +244,12 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(3, table.size());
         TestCase.assertEquals(0, callCount);
         TestCase
-                .assertEquals(Arrays.asList(3, 6, 9), Arrays.asList(TableImpl.getColumn(table, "B").get(0, table.size())));
+                .assertEquals(Arrays.asList(3, 6, 9),
+                        Arrays.asList(DataAccessHelpers.getColumn(table, "B").get(0, table.size())));
         TestCase.assertEquals(3, callCount);
         TestCase
-                .assertEquals(Arrays.asList(3, 6, 9), Arrays.asList(TableImpl.getColumn(table, "B").get(0, table.size())));
+                .assertEquals(Arrays.asList(3, 6, 9),
+                        Arrays.asList(DataAccessHelpers.getColumn(table, "B").get(0, table.size())));
         TestCase.assertEquals(3, callCount);
 
         callCount = 0;
@@ -258,10 +260,10 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(6, table2.size());
         TestCase.assertEquals(0, callCount);
         TestCase.assertEquals(Arrays.asList(3, 6, 9, 6, 9, 3),
-                Arrays.asList(TableImpl.getColumn(table2, "B").get(0, table2.size())));
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "B").get(0, table2.size())));
         TestCase.assertEquals(3, callCount);
         TestCase.assertEquals(Arrays.asList(3, 6, 9, 6, 9, 3),
-                Arrays.asList(TableImpl.getColumn(table2, "B").get(0, table2.size())));
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "B").get(0, table2.size())));
         TestCase.assertEquals(3, callCount);
         TestCase.assertEquals(3, table2.getColumnSource("B").getInt(2));
         TestCase.assertEquals(3, table2.getColumnSource("B").get(2));
@@ -793,9 +795,11 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 3), Arrays.asList(TableImpl.getColumn(table2, "x").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(0, 3),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "x").get(0, table2.size())));
         TestCase
-                .assertEquals(Arrays.asList("7", "9"), Arrays.asList(TableImpl.getColumn(table2, "y").get(0, table2.size())));
+                .assertEquals(Arrays.asList("7", "9"),
+                        Arrays.asList(DataAccessHelpers.getColumn(table2, "y").get(0, table2.size())));
         TestCase.assertEquals(base.added, i(7, 9));
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
@@ -824,8 +828,10 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1), Arrays.asList(TableImpl.getColumn(table2, "Position").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList("7", "9"), Arrays.asList(TableImpl.getColumn(table2, "Key").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(0, 1),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList("7", "9"),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Key").get(0, table2.size())));
         TestCase.assertEquals(base.added, i(7, 9));
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
@@ -835,8 +841,10 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1), Arrays.asList(TableImpl.getColumn(table2, "Position").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList("7", "9"), Arrays.asList(TableImpl.getColumn(table2, "Key").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(0, 1),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList("7", "9"),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Key").get(0, table2.size())));
         TestCase.assertEquals(base.added, i());
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i(9));
@@ -863,9 +871,11 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1), Arrays.asList(TableImpl.getColumn(table2, "Position").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(0, 1),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
         // assertEquals(Arrays.asList("7", "9"), Arrays.asList(table2.getColumn("Key").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList(null, 0), Arrays.asList(TableImpl.getColumn(table2, "PrevI").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(null, 0),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "PrevI").get(0, table2.size())));
         TestCase.assertEquals(i(7, 9), base.added);
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
@@ -875,9 +885,11 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1), Arrays.asList(TableImpl.getColumn(table2, "Position").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(0, 1),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
         // assertEquals(Arrays.asList("7", "9"), Arrays.asList(table2.getColumn("Key").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList(null, 0), Arrays.asList(TableImpl.getColumn(table2, "PrevI").get(0, table2.size())));
+        TestCase.assertEquals(Arrays.asList(null, 0),
+                Arrays.asList(DataAccessHelpers.getColumn(table2, "PrevI").get(0, table2.size())));
 
         // note this modification is not reported to table2 since `update` is smart enough to notice that no columns
         // are actually modified in the result table
@@ -978,7 +990,7 @@ public class QueryTableSelectUpdateTest {
         final Table testtest = TableTools.emptyTable(554).view("Quantity=k").where("Quantity>200");
         final Table test = testtest.update("Quantity=100", "Test=Quantity");
 
-        final int[] testArray = (int[]) TableImpl.getColumn(test, "Test").getDirect();
+        final int[] testArray = (int[]) DataAccessHelpers.getColumn(test, "Test").getDirect();
         final int[] expected = new int[test.intSize()];
         Arrays.fill(expected, 100);
         BaseArrayTestCase.assertEquals(expected, testArray);
@@ -1025,7 +1037,7 @@ public class QueryTableSelectUpdateTest {
     public void testIds5746() {
         final Table x = TableTools.emptyTable(2).update("result = `blah`", "L = result.length()");
 
-        final int[] testArray = (int[]) TableImpl.getColumn(x, "L").getDirect();
+        final int[] testArray = (int[]) DataAccessHelpers.getColumn(x, "L").getDirect();
         final int[] expected = new int[] {4, 4};
         BaseArrayTestCase.assertEquals(expected, testArray);
     }

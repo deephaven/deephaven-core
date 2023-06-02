@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.TableImpl;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -382,7 +382,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         showWithRowSet(sentSum);
-        int[] actual = (int[]) TableImpl.getColumn(sentSum, "SS").getDirect();
+        int[] actual = (int[]) DataAccessHelpers.getColumn(sentSum, "SS").getDirect();
         int[] expected = new int[] {606, 610};
         assertEquals(expected, actual);
     }

@@ -608,7 +608,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
         // noinspection unchecked
-        final DataColumn<String> distinctDateColumn = TableImpl.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
+        final DataColumn<String> distinctDateColumn =
+                DataAccessHelpers.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
         assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
         final String[] distinctDates = (String[]) distinctDateColumn.getDirect();
         Arrays.sort(expectedDistinctDates);

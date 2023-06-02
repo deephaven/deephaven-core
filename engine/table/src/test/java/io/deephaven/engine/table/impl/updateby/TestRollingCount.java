@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.TableImpl;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -107,8 +107,8 @@ public class TestRollingCount extends BaseUpdateByTest {
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=countObject.apply(bigIntCol)", "bigDecimalCol=countObject.apply(bigDecimalCol)");
 
-        long[] biActual = (long[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -117,8 +117,8 @@ public class TestRollingCount extends BaseUpdateByTest {
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -139,8 +139,8 @@ public class TestRollingCount extends BaseUpdateByTest {
                         .update("bigIntCol=countObject.apply(bigIntCol)",
                                 "bigDecimalCol=countObject.apply(bigDecimalCol)");
 
-        long[] biActual = (long[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -149,8 +149,8 @@ public class TestRollingCount extends BaseUpdateByTest {
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -170,8 +170,8 @@ public class TestRollingCount extends BaseUpdateByTest {
                         .update("bigIntCol=countObject.apply(bigIntCol)",
                                 "bigDecimalCol=countObject.apply(bigDecimalCol)");
 
-        long[] biActual = (long[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -180,8 +180,8 @@ public class TestRollingCount extends BaseUpdateByTest {
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -202,8 +202,8 @@ public class TestRollingCount extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=countObject.apply(bigIntCol)", "bigDecimalCol=countObject.apply(bigDecimalCol)");
 
-        long[] biActual = (long[]) TableImpl.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) TableImpl.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -212,8 +212,8 @@ public class TestRollingCount extends BaseUpdateByTest {
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) TableImpl.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) TableImpl.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {

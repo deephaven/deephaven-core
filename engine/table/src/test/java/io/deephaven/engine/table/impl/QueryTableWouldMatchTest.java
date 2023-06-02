@@ -34,11 +34,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         show(t1Matched);
         assertEquals(Arrays.asList(true, false, true, false, false, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "HasAnE").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 6)));
         assertEquals(Arrays.asList(false, false, false, false, true, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "isGt3").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 6)));
         assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "Compound").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 6)));
 
         // Add
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -52,11 +52,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i());
         assertEquals(removed, i());
         assertEquals(Arrays.asList(true, false, true, false, false, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, false, false, true, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, true, true, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // Remove
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -68,11 +68,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i());
         assertEquals(removed, i(1, 3));
         assertEquals(Arrays.asList(true, true, false, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, true, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // Modify
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -87,11 +87,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i(4, 5));
         assertEquals(removed, i());
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "HasAnE").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
         assertEquals(Arrays.asList(false, false, false, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "isGt3").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
         assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "Compound").get(0, 8)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
 
         // All 3
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -107,11 +107,11 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(modified, i(0, 4));
         assertEquals(removed, i(9, 5));
         assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "HasAnE").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 11)));
         assertEquals(Arrays.asList(true, false, false, true, true, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "isGt3").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 11)));
         assertEquals(Arrays.asList(true, false, true, true, true, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "Compound").get(0, 11)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 11)));
     }
 
     public void testMatchRefilter() {
@@ -138,9 +138,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         show(t1Matched);
 
         assertEquals(Arrays.asList(false, false, false, true, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         // Tick one filter table
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -149,9 +149,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         });
 
         assertEquals(Arrays.asList(false, true, false, false, true, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         // Tick both of them
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -164,9 +164,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         });
 
         assertEquals(Arrays.asList(true, false, true, false, true, false),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InText").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
         assertEquals(Arrays.asList(false, false, true, false, false, true),
-                Arrays.asList(TableImpl.getColumn(t1Matched, "InNum").get(0, 6)));
+                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
 
         if (isRefreshing) {
             // Tick both of them, and the table itself
@@ -190,9 +190,9 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             show(numberTable);
 
             assertEquals(Arrays.asList(true, false, false, false, false, true),
-                    Arrays.asList(TableImpl.getColumn(t1Matched, "InText").get(0, 11)));
+                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 11)));
             assertEquals(Arrays.asList(false, true, true, false, true, true),
-                    Arrays.asList(TableImpl.getColumn(t1Matched, "InNum").get(0, 11)));
+                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 11)));
         }
     }
 
