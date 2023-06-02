@@ -12,8 +12,8 @@ import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
@@ -350,14 +350,25 @@ public interface TableServiceContextualAuthWiring {
             List<Table> sourceTables);
 
     /**
-     * Authorize a request to AsOfJoinTables2.
+     * Authorize a request to AjTables.
      *
      * @param authContext the authentication context of the request
      * @param request the request to authorize
      * @param sourceTables the operation's source tables
-     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke AsOfJoinTables2
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke AjTables
      */
-    void checkPermissionAsOfJoinTables2(AuthContext authContext, AsOfJoinTables2Request request,
+    void checkPermissionAjTables(AuthContext authContext, AjRajTablesRequest request,
+            List<Table> sourceTables);
+
+    /**
+     * Authorize a request to RajTables.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke RajTables
+     */
+    void checkPermissionRajTables(AuthContext authContext, AjRajTablesRequest request,
             List<Table> sourceTables);
 
     /**
@@ -644,8 +655,13 @@ public interface TableServiceContextualAuthWiring {
             checkPermission(authContext, sourceTables);
         }
 
-        public void checkPermissionAsOfJoinTables2(AuthContext authContext,
-                AsOfJoinTables2Request request, List<Table> sourceTables) {
+        public void checkPermissionAjTables(AuthContext authContext, AjRajTablesRequest request,
+                List<Table> sourceTables) {
+            checkPermission(authContext, sourceTables);
+        }
+
+        public void checkPermissionRajTables(AuthContext authContext, AjRajTablesRequest request,
+                List<Table> sourceTables) {
             checkPermission(authContext, sourceTables);
         }
 
@@ -925,10 +941,17 @@ public interface TableServiceContextualAuthWiring {
             }
         }
 
-        public void checkPermissionAsOfJoinTables2(AuthContext authContext,
-                AsOfJoinTables2Request request, List<Table> sourceTables) {
+        public void checkPermissionAjTables(AuthContext authContext, AjRajTablesRequest request,
+                List<Table> sourceTables) {
             if (delegate != null) {
-                delegate.checkPermissionAsOfJoinTables2(authContext, request, sourceTables);
+                delegate.checkPermissionAjTables(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionRajTables(AuthContext authContext, AjRajTablesRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionRajTables(authContext, request, sourceTables);
             }
         }
 

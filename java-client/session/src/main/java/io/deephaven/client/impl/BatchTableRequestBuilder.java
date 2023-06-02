@@ -26,14 +26,13 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.literal.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
+import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.AsOfRule;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.Builder;
@@ -371,37 +370,19 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(AsOfJoinTable aj) {
-            AsOfJoinTables2Request.Builder builder = AsOfJoinTables2Request.newBuilder()
+        public void visit(AsOfJoinTable asOfJoin) {
+            AjRajTablesRequest.Builder builder = AjRajTablesRequest.newBuilder()
                     .setResultId(ticket)
-                    .setLeftId(ref(aj.left()))
-                    .setRightId(ref(aj.right()));
-            for (JoinMatch match : aj.matches()) {
+                    .setLeftId(ref(asOfJoin.left()))
+                    .setRightId(ref(asOfJoin.right()));
+            for (JoinMatch match : asOfJoin.matches()) {
                 builder.addExactMatchColumns(Strings.of(match));
             }
-            builder
-                    .setLeftColumn(aj.joinMatch().leftColumn().name())
-                    .setRule(adapt(aj.joinMatch().joinRule()))
-                    .setRightColumn(aj.joinMatch().rightColumn().name());
-            for (JoinAddition addition : aj.additions()) {
+            builder.setAsOfColumn(asOfJoin.joinMatch().toRpcString());
+            for (JoinAddition addition : asOfJoin.additions()) {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
-            out = op(Builder::setAsOfJoin2, builder.build());
-        }
-
-        private static AsOfRule adapt(AsOfJoinRule rule) {
-            switch (rule) {
-                case LESS_THAN_EQUAL:
-                    return AsOfRule.LEQ;
-                case LESS_THAN:
-                    return AsOfRule.LT;
-                case GREATER_THAN_EQUAL:
-                    return AsOfRule.GEQ;
-                case GREATER_THAN:
-                    return AsOfRule.GT;
-                default:
-                    throw new IllegalArgumentException(String.format("Unrecognized AsOfJoinRule %s", rule));
-            }
+            out = op(asOfJoin.isAj() ? Builder::setAj : Builder::setRaj, builder.build());
         }
 
         @Override

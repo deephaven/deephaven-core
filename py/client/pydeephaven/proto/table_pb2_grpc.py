@@ -150,9 +150,14 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.AsOfJoinTables2 = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.SerializeToString,
+        self.AjTables = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/AjTables',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
+        self.RajTables = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/RajTables',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
         self.RangeJoinTables = channel.unary_unary(
@@ -443,15 +448,23 @@ class TableServiceServicer(object):
         """
         Returns the result of an as of join operation.
 
-        Deprecated: Please use AsOfJoinTables2 instead
+        Deprecated: Please use AjTables or RajTables.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def AsOfJoinTables2(self, request, context):
+    def AjTables(self, request, context):
         """
-        Returns the result of an as of join operation.
+        Returns the result of an aj operation.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RajTables(self, request, context):
+        """
+        Returns the result of an raj operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -727,9 +740,14 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
-            'AsOfJoinTables2': grpc.unary_unary_rpc_method_handler(
-                    servicer.AsOfJoinTables2,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.FromString,
+            'AjTables': grpc.unary_unary_rpc_method_handler(
+                    servicer.AjTables,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
+            'RajTables': grpc.unary_unary_rpc_method_handler(
+                    servicer.RajTables,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'RangeJoinTables': grpc.unary_unary_rpc_method_handler(
@@ -1272,7 +1290,7 @@ class TableService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def AsOfJoinTables2(request,
+    def AjTables(request,
             target,
             options=(),
             channel_credentials=None,
@@ -1282,8 +1300,25 @@ class TableService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables2',
-            deephaven_dot_proto_dot_table__pb2.AsOfJoinTables2Request.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AjTables',
+            deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def RajTables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/RajTables',
+            deephaven_dot_proto_dot_table__pb2.AjRajTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

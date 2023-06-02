@@ -145,15 +145,15 @@ extern Aggregation_AggregationPartitionDefaultTypeInternal _Aggregation_Aggregat
 class Aggregation_AggregationRowKey;
 struct Aggregation_AggregationRowKeyDefaultTypeInternal;
 extern Aggregation_AggregationRowKeyDefaultTypeInternal _Aggregation_AggregationRowKey_default_instance_;
+class AjRajTablesRequest;
+struct AjRajTablesRequestDefaultTypeInternal;
+extern AjRajTablesRequestDefaultTypeInternal _AjRajTablesRequest_default_instance_;
 class AndCondition;
 struct AndConditionDefaultTypeInternal;
 extern AndConditionDefaultTypeInternal _AndCondition_default_instance_;
 class ApplyPreviewColumnsRequest;
 struct ApplyPreviewColumnsRequestDefaultTypeInternal;
 extern ApplyPreviewColumnsRequestDefaultTypeInternal _ApplyPreviewColumnsRequest_default_instance_;
-class AsOfJoinTables2Request;
-struct AsOfJoinTables2RequestDefaultTypeInternal;
-extern AsOfJoinTables2RequestDefaultTypeInternal _AsOfJoinTables2Request_default_instance_;
 class AsOfJoinTablesRequest;
 struct AsOfJoinTablesRequestDefaultTypeInternal;
 extern AsOfJoinTablesRequestDefaultTypeInternal _AsOfJoinTablesRequest_default_instance_;
@@ -446,9 +446,9 @@ template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationColum
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationCount>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationPartition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Aggregation_AggregationRowKey>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AjRajTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::AndCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AndCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest>(Arena*);
-template<> ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::BatchTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::BatchTableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::BatchTableRequest_Operation>(Arena*);
@@ -599,34 +599,6 @@ inline bool AsOfJoinTablesRequest_MatchRule_Parse(
     ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, AsOfJoinTablesRequest_MatchRule* value) {
   return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<AsOfJoinTablesRequest_MatchRule>(
     AsOfJoinTablesRequest_MatchRule_descriptor(), name, value);
-}
-enum AsOfJoinTables2Request_AsOfRule : int {
-  AsOfJoinTables2Request_AsOfRule_UNSPECIFIED = 0,
-  AsOfJoinTables2Request_AsOfRule_GEQ = 1,
-  AsOfJoinTables2Request_AsOfRule_GT = 2,
-  AsOfJoinTables2Request_AsOfRule_LEQ = 3,
-  AsOfJoinTables2Request_AsOfRule_LT = 4,
-  AsOfJoinTables2Request_AsOfRule_AsOfJoinTables2Request_AsOfRule_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
-  AsOfJoinTables2Request_AsOfRule_AsOfJoinTables2Request_AsOfRule_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
-};
-bool AsOfJoinTables2Request_AsOfRule_IsValid(int value);
-constexpr AsOfJoinTables2Request_AsOfRule AsOfJoinTables2Request_AsOfRule_AsOfRule_MIN = AsOfJoinTables2Request_AsOfRule_UNSPECIFIED;
-constexpr AsOfJoinTables2Request_AsOfRule AsOfJoinTables2Request_AsOfRule_AsOfRule_MAX = AsOfJoinTables2Request_AsOfRule_LT;
-constexpr int AsOfJoinTables2Request_AsOfRule_AsOfRule_ARRAYSIZE = AsOfJoinTables2Request_AsOfRule_AsOfRule_MAX + 1;
-
-const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* AsOfJoinTables2Request_AsOfRule_descriptor();
-template<typename T>
-inline const std::string& AsOfJoinTables2Request_AsOfRule_Name(T enum_t_value) {
-  static_assert(::std::is_same<T, AsOfJoinTables2Request_AsOfRule>::value ||
-    ::std::is_integral<T>::value,
-    "Incorrect type passed to function AsOfJoinTables2Request_AsOfRule_Name.");
-  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
-    AsOfJoinTables2Request_AsOfRule_descriptor(), enum_t_value);
-}
-inline bool AsOfJoinTables2Request_AsOfRule_Parse(
-    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, AsOfJoinTables2Request_AsOfRule* value) {
-  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<AsOfJoinTables2Request_AsOfRule>(
-    AsOfJoinTables2Request_AsOfRule_descriptor(), name, value);
 }
 enum RangeJoinTablesRequest_RangeStartRule : int {
   RangeJoinTablesRequest_RangeStartRule_START_UNSPECIFIED = 0,
@@ -11208,24 +11180,24 @@ class AsOfJoinTablesRequest final :
 };
 // -------------------------------------------------------------------
 
-class AsOfJoinTables2Request final :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request) */ {
+class AjRajTablesRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.AjRajTablesRequest) */ {
  public:
-  inline AsOfJoinTables2Request() : AsOfJoinTables2Request(nullptr) {}
-  ~AsOfJoinTables2Request() override;
-  explicit PROTOBUF_CONSTEXPR AsOfJoinTables2Request(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+  inline AjRajTablesRequest() : AjRajTablesRequest(nullptr) {}
+  ~AjRajTablesRequest() override;
+  explicit PROTOBUF_CONSTEXPR AjRajTablesRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
 
-  AsOfJoinTables2Request(const AsOfJoinTables2Request& from);
-  AsOfJoinTables2Request(AsOfJoinTables2Request&& from) noexcept
-    : AsOfJoinTables2Request() {
+  AjRajTablesRequest(const AjRajTablesRequest& from);
+  AjRajTablesRequest(AjRajTablesRequest&& from) noexcept
+    : AjRajTablesRequest() {
     *this = ::std::move(from);
   }
 
-  inline AsOfJoinTables2Request& operator=(const AsOfJoinTables2Request& from) {
+  inline AjRajTablesRequest& operator=(const AjRajTablesRequest& from) {
     CopyFrom(from);
     return *this;
   }
-  inline AsOfJoinTables2Request& operator=(AsOfJoinTables2Request&& from) noexcept {
+  inline AjRajTablesRequest& operator=(AjRajTablesRequest&& from) noexcept {
     if (this == &from) return *this;
     if (GetOwningArena() == from.GetOwningArena()
   #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
@@ -11248,20 +11220,20 @@ class AsOfJoinTables2Request final :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return default_instance().GetMetadata().reflection;
   }
-  static const AsOfJoinTables2Request& default_instance() {
+  static const AjRajTablesRequest& default_instance() {
     return *internal_default_instance();
   }
-  static inline const AsOfJoinTables2Request* internal_default_instance() {
-    return reinterpret_cast<const AsOfJoinTables2Request*>(
-               &_AsOfJoinTables2Request_default_instance_);
+  static inline const AjRajTablesRequest* internal_default_instance() {
+    return reinterpret_cast<const AjRajTablesRequest*>(
+               &_AjRajTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     54;
 
-  friend void swap(AsOfJoinTables2Request& a, AsOfJoinTables2Request& b) {
+  friend void swap(AjRajTablesRequest& a, AjRajTablesRequest& b) {
     a.Swap(&b);
   }
-  inline void Swap(AsOfJoinTables2Request* other) {
+  inline void Swap(AjRajTablesRequest* other) {
     if (other == this) return;
   #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
     if (GetOwningArena() != nullptr &&
@@ -11274,7 +11246,7 @@ class AsOfJoinTables2Request final :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(AsOfJoinTables2Request* other) {
+  void UnsafeArenaSwap(AjRajTablesRequest* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
     InternalSwap(other);
@@ -11282,13 +11254,13 @@ class AsOfJoinTables2Request final :
 
   // implements Message ----------------------------------------------
 
-  AsOfJoinTables2Request* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
-    return CreateMaybeMessage<AsOfJoinTables2Request>(arena);
+  AjRajTablesRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<AjRajTablesRequest>(arena);
   }
   using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
-  void CopyFrom(const AsOfJoinTables2Request& from);
+  void CopyFrom(const AjRajTablesRequest& from);
   using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
-  void MergeFrom(const AsOfJoinTables2Request& from);
+  void MergeFrom(const AjRajTablesRequest& from);
   private:
   static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
   public:
@@ -11305,15 +11277,15 @@ class AsOfJoinTables2Request final :
   void SharedCtor();
   void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(AsOfJoinTables2Request* other);
+  void InternalSwap(AjRajTablesRequest* other);
 
   private:
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request";
+    return "io.deephaven.proto.backplane.grpc.AjRajTablesRequest";
   }
   protected:
-  explicit AsOfJoinTables2Request(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+  explicit AjRajTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                        bool is_message_owned = false);
   public:
 
@@ -11324,53 +11296,15 @@ class AsOfJoinTables2Request final :
 
   // nested types ----------------------------------------------------
 
-  typedef AsOfJoinTables2Request_AsOfRule AsOfRule;
-  static constexpr AsOfRule UNSPECIFIED =
-    AsOfJoinTables2Request_AsOfRule_UNSPECIFIED;
-  static constexpr AsOfRule GEQ =
-    AsOfJoinTables2Request_AsOfRule_GEQ;
-  static constexpr AsOfRule GT =
-    AsOfJoinTables2Request_AsOfRule_GT;
-  static constexpr AsOfRule LEQ =
-    AsOfJoinTables2Request_AsOfRule_LEQ;
-  static constexpr AsOfRule LT =
-    AsOfJoinTables2Request_AsOfRule_LT;
-  static inline bool AsOfRule_IsValid(int value) {
-    return AsOfJoinTables2Request_AsOfRule_IsValid(value);
-  }
-  static constexpr AsOfRule AsOfRule_MIN =
-    AsOfJoinTables2Request_AsOfRule_AsOfRule_MIN;
-  static constexpr AsOfRule AsOfRule_MAX =
-    AsOfJoinTables2Request_AsOfRule_AsOfRule_MAX;
-  static constexpr int AsOfRule_ARRAYSIZE =
-    AsOfJoinTables2Request_AsOfRule_AsOfRule_ARRAYSIZE;
-  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
-  AsOfRule_descriptor() {
-    return AsOfJoinTables2Request_AsOfRule_descriptor();
-  }
-  template<typename T>
-  static inline const std::string& AsOfRule_Name(T enum_t_value) {
-    static_assert(::std::is_same<T, AsOfRule>::value ||
-      ::std::is_integral<T>::value,
-      "Incorrect type passed to function AsOfRule_Name.");
-    return AsOfJoinTables2Request_AsOfRule_Name(enum_t_value);
-  }
-  static inline bool AsOfRule_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
-      AsOfRule* value) {
-    return AsOfJoinTables2Request_AsOfRule_Parse(name, value);
-  }
-
   // accessors -------------------------------------------------------
 
   enum : int {
     kExactMatchColumnsFieldNumber = 4,
-    kColumnsToAddFieldNumber = 8,
-    kLeftColumnFieldNumber = 5,
-    kRightColumnFieldNumber = 7,
+    kColumnsToAddFieldNumber = 6,
+    kAsOfColumnFieldNumber = 5,
     kResultIdFieldNumber = 1,
     kLeftIdFieldNumber = 2,
     kRightIdFieldNumber = 3,
-    kRuleFieldNumber = 6,
   };
   // repeated string exact_match_columns = 4;
   int exact_match_columns_size() const;
@@ -11396,7 +11330,7 @@ class AsOfJoinTables2Request final :
   std::string* _internal_add_exact_match_columns();
   public:
 
-  // repeated string columns_to_add = 8;
+  // repeated string columns_to_add = 6;
   int columns_to_add_size() const;
   private:
   int _internal_columns_to_add_size() const;
@@ -11420,32 +11354,18 @@ class AsOfJoinTables2Request final :
   std::string* _internal_add_columns_to_add();
   public:
 
-  // string left_column = 5;
-  void clear_left_column();
-  const std::string& left_column() const;
+  // string as_of_column = 5;
+  void clear_as_of_column();
+  const std::string& as_of_column() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_left_column(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_left_column();
-  PROTOBUF_NODISCARD std::string* release_left_column();
-  void set_allocated_left_column(std::string* left_column);
+  void set_as_of_column(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_as_of_column();
+  PROTOBUF_NODISCARD std::string* release_as_of_column();
+  void set_allocated_as_of_column(std::string* as_of_column);
   private:
-  const std::string& _internal_left_column() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_left_column(const std::string& value);
-  std::string* _internal_mutable_left_column();
-  public:
-
-  // string right_column = 7;
-  void clear_right_column();
-  const std::string& right_column() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_right_column(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_right_column();
-  PROTOBUF_NODISCARD std::string* release_right_column();
-  void set_allocated_right_column(std::string* right_column);
-  private:
-  const std::string& _internal_right_column() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_right_column(const std::string& value);
-  std::string* _internal_mutable_right_column();
+  const std::string& _internal_as_of_column() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_as_of_column(const std::string& value);
+  std::string* _internal_mutable_as_of_column();
   public:
 
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
@@ -11502,16 +11422,7 @@ class AsOfJoinTables2Request final :
       ::io::deephaven::proto::backplane::grpc::TableReference* right_id);
   ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_right_id();
 
-  // .io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.AsOfRule rule = 6;
-  void clear_rule();
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule rule() const;
-  void set_rule(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule value);
-  private:
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule _internal_rule() const;
-  void _internal_set_rule(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule value);
-  public:
-
-  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request)
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.AjRajTablesRequest)
  private:
   class _Internal;
 
@@ -11520,12 +11431,10 @@ class AsOfJoinTables2Request final :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> exact_match_columns_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_add_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr left_column_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr right_column_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr as_of_column_;
   ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
   ::io::deephaven::proto::backplane::grpc::TableReference* left_id_;
   ::io::deephaven::proto::backplane::grpc::TableReference* right_id_;
-  int rule_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -23142,7 +23051,8 @@ class BatchTableRequest_Operation final :
     kSnapshotWhen = 37,
     kMetaTable = 38,
     kRangeJoin = 39,
-    kAsOfJoin2 = 40,
+    kAj = 40,
+    kRaj = 41,
     OP_NOT_SET = 0,
   };
 
@@ -23259,7 +23169,8 @@ class BatchTableRequest_Operation final :
     kSnapshotWhenFieldNumber = 37,
     kMetaTableFieldNumber = 38,
     kRangeJoinFieldNumber = 39,
-    kAsOfJoin2FieldNumber = 40,
+    kAjFieldNumber = 40,
+    kRajFieldNumber = 41,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -23927,23 +23838,41 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join);
   ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* unsafe_arena_release_range_join();
 
-  // .io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request as_of_join_2 = 40;
-  bool has_as_of_join_2() const;
+  // .io.deephaven.proto.backplane.grpc.AjRajTablesRequest aj = 40;
+  bool has_aj() const;
   private:
-  bool _internal_has_as_of_join_2() const;
+  bool _internal_has_aj() const;
   public:
-  void clear_as_of_join_2();
-  const ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request& as_of_join_2() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* release_as_of_join_2();
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* mutable_as_of_join_2();
-  void set_allocated_as_of_join_2(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* as_of_join_2);
+  void clear_aj();
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& aj() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* release_aj();
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* mutable_aj();
+  void set_allocated_aj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj);
   private:
-  const ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request& _internal_as_of_join_2() const;
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* _internal_mutable_as_of_join_2();
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& _internal_aj() const;
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _internal_mutable_aj();
   public:
-  void unsafe_arena_set_allocated_as_of_join_2(
-      ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* as_of_join_2);
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* unsafe_arena_release_as_of_join_2();
+  void unsafe_arena_set_allocated_aj(
+      ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj);
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* unsafe_arena_release_aj();
+
+  // .io.deephaven.proto.backplane.grpc.AjRajTablesRequest raj = 41;
+  bool has_raj() const;
+  private:
+  bool _internal_has_raj() const;
+  public:
+  void clear_raj();
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& raj() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* release_raj();
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* mutable_raj();
+  void set_allocated_raj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& _internal_raj() const;
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _internal_mutable_raj();
+  public:
+  void unsafe_arena_set_allocated_raj(
+      ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj);
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* unsafe_arena_release_raj();
 
   void clear_op();
   OpCase op_case() const;
@@ -23987,7 +23916,8 @@ class BatchTableRequest_Operation final :
   void set_has_snapshot_when();
   void set_has_meta_table();
   void set_has_range_join();
-  void set_has_as_of_join_2();
+  void set_has_aj();
+  void set_has_raj();
 
   inline bool has_op() const;
   inline void clear_has_op();
@@ -24035,7 +23965,8 @@ class BatchTableRequest_Operation final :
     ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* snapshot_when_;
     ::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table_;
     ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* range_join_;
-    ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* as_of_join_2_;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj_;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj_;
   } op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -35651,25 +35582,25 @@ inline void AsOfJoinTablesRequest::set_as_of_match_rule(::io::deephaven::proto::
 
 // -------------------------------------------------------------------
 
-// AsOfJoinTables2Request
+// AjRajTablesRequest
 
 // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
-inline bool AsOfJoinTables2Request::_internal_has_result_id() const {
+inline bool AjRajTablesRequest::_internal_has_result_id() const {
   return this != internal_default_instance() && result_id_ != nullptr;
 }
-inline bool AsOfJoinTables2Request::has_result_id() const {
+inline bool AjRajTablesRequest::has_result_id() const {
   return _internal_has_result_id();
 }
-inline const ::io::deephaven::proto::backplane::grpc::Ticket& AsOfJoinTables2Request::_internal_result_id() const {
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AjRajTablesRequest::_internal_result_id() const {
   const ::io::deephaven::proto::backplane::grpc::Ticket* p = result_id_;
   return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
       ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::Ticket& AsOfJoinTables2Request::result_id() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.result_id)
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AjRajTablesRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
   return _internal_result_id();
 }
-inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_result_id(
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_result_id(
     ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
@@ -35680,9 +35611,9 @@ inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_result_id(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.result_id)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
 }
-inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::release_result_id() {
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::release_result_id() {
   
   ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
   result_id_ = nullptr;
@@ -35697,14 +35628,14 @@ inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::unsafe_arena_release_result_id() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.result_id)
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
   
   ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
   result_id_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::_internal_mutable_result_id() {
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::_internal_mutable_result_id() {
   
   if (result_id_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
@@ -35712,12 +35643,12 @@ inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::
   }
   return result_id_;
 }
-inline ::io::deephaven::proto::backplane::grpc::Ticket* AsOfJoinTables2Request::mutable_result_id() {
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AjRajTablesRequest::mutable_result_id() {
   ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.result_id)
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
   return _msg;
 }
-inline void AsOfJoinTables2Request::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+inline void AjRajTablesRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
@@ -35735,32 +35666,32 @@ inline void AsOfJoinTables2Request::set_allocated_result_id(::io::deephaven::pro
     
   }
   result_id_ = result_id;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.result_id)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.result_id)
 }
 
 // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
-inline bool AsOfJoinTables2Request::_internal_has_left_id() const {
+inline bool AjRajTablesRequest::_internal_has_left_id() const {
   return this != internal_default_instance() && left_id_ != nullptr;
 }
-inline bool AsOfJoinTables2Request::has_left_id() const {
+inline bool AjRajTablesRequest::has_left_id() const {
   return _internal_has_left_id();
 }
-inline void AsOfJoinTables2Request::clear_left_id() {
+inline void AjRajTablesRequest::clear_left_id() {
   if (GetArenaForAllocation() == nullptr && left_id_ != nullptr) {
     delete left_id_;
   }
   left_id_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& AsOfJoinTables2Request::_internal_left_id() const {
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::_internal_left_id() const {
   const ::io::deephaven::proto::backplane::grpc::TableReference* p = left_id_;
   return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
       ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& AsOfJoinTables2Request::left_id() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_id)
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::left_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
   return _internal_left_id();
 }
-inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_left_id(
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_left_id(
     ::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(left_id_);
@@ -35771,9 +35702,9 @@ inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_left_id(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_id)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::release_left_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::release_left_id() {
   
   ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
   left_id_ = nullptr;
@@ -35788,14 +35719,14 @@ inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2R
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::unsafe_arena_release_left_id() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_id)
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::unsafe_arena_release_left_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
   
   ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
   left_id_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::_internal_mutable_left_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::_internal_mutable_left_id() {
   
   if (left_id_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
@@ -35803,12 +35734,12 @@ inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2R
   }
   return left_id_;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::mutable_left_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::mutable_left_id() {
   ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_left_id();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_id)
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
   return _msg;
 }
-inline void AsOfJoinTables2Request::set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
+inline void AjRajTablesRequest::set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete left_id_;
@@ -35825,32 +35756,32 @@ inline void AsOfJoinTables2Request::set_allocated_left_id(::io::deephaven::proto
     
   }
   left_id_ = left_id;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_id)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.left_id)
 }
 
 // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
-inline bool AsOfJoinTables2Request::_internal_has_right_id() const {
+inline bool AjRajTablesRequest::_internal_has_right_id() const {
   return this != internal_default_instance() && right_id_ != nullptr;
 }
-inline bool AsOfJoinTables2Request::has_right_id() const {
+inline bool AjRajTablesRequest::has_right_id() const {
   return _internal_has_right_id();
 }
-inline void AsOfJoinTables2Request::clear_right_id() {
+inline void AjRajTablesRequest::clear_right_id() {
   if (GetArenaForAllocation() == nullptr && right_id_ != nullptr) {
     delete right_id_;
   }
   right_id_ = nullptr;
 }
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& AsOfJoinTables2Request::_internal_right_id() const {
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::_internal_right_id() const {
   const ::io::deephaven::proto::backplane::grpc::TableReference* p = right_id_;
   return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
       ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::TableReference& AsOfJoinTables2Request::right_id() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_id)
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& AjRajTablesRequest::right_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
   return _internal_right_id();
 }
-inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_right_id(
+inline void AjRajTablesRequest::unsafe_arena_set_allocated_right_id(
     ::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
   if (GetArenaForAllocation() == nullptr) {
     delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(right_id_);
@@ -35861,9 +35792,9 @@ inline void AsOfJoinTables2Request::unsafe_arena_set_allocated_right_id(
   } else {
     
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_id)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::release_right_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::release_right_id() {
   
   ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
   right_id_ = nullptr;
@@ -35878,14 +35809,14 @@ inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2R
 #endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::unsafe_arena_release_right_id() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_id)
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::unsafe_arena_release_right_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
   
   ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
   right_id_ = nullptr;
   return temp;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::_internal_mutable_right_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::_internal_mutable_right_id() {
   
   if (right_id_ == nullptr) {
     auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
@@ -35893,12 +35824,12 @@ inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2R
   }
   return right_id_;
 }
-inline ::io::deephaven::proto::backplane::grpc::TableReference* AsOfJoinTables2Request::mutable_right_id() {
+inline ::io::deephaven::proto::backplane::grpc::TableReference* AjRajTablesRequest::mutable_right_id() {
   ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_right_id();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_id)
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
   return _msg;
 }
-inline void AsOfJoinTables2Request::set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
+inline void AjRajTablesRequest::set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   if (message_arena == nullptr) {
     delete right_id_;
@@ -35915,276 +35846,206 @@ inline void AsOfJoinTables2Request::set_allocated_right_id(::io::deephaven::prot
     
   }
   right_id_ = right_id;
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_id)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.right_id)
 }
 
 // repeated string exact_match_columns = 4;
-inline int AsOfJoinTables2Request::_internal_exact_match_columns_size() const {
+inline int AjRajTablesRequest::_internal_exact_match_columns_size() const {
   return exact_match_columns_.size();
 }
-inline int AsOfJoinTables2Request::exact_match_columns_size() const {
+inline int AjRajTablesRequest::exact_match_columns_size() const {
   return _internal_exact_match_columns_size();
 }
-inline void AsOfJoinTables2Request::clear_exact_match_columns() {
+inline void AjRajTablesRequest::clear_exact_match_columns() {
   exact_match_columns_.Clear();
 }
-inline std::string* AsOfJoinTables2Request::add_exact_match_columns() {
+inline std::string* AjRajTablesRequest::add_exact_match_columns() {
   std::string* _s = _internal_add_exact_match_columns();
-  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
   return _s;
 }
-inline const std::string& AsOfJoinTables2Request::_internal_exact_match_columns(int index) const {
+inline const std::string& AjRajTablesRequest::_internal_exact_match_columns(int index) const {
   return exact_match_columns_.Get(index);
 }
-inline const std::string& AsOfJoinTables2Request::exact_match_columns(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+inline const std::string& AjRajTablesRequest::exact_match_columns(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
   return _internal_exact_match_columns(index);
 }
-inline std::string* AsOfJoinTables2Request::mutable_exact_match_columns(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+inline std::string* AjRajTablesRequest::mutable_exact_match_columns(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
   return exact_match_columns_.Mutable(index);
 }
-inline void AsOfJoinTables2Request::set_exact_match_columns(int index, const std::string& value) {
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const std::string& value) {
   exact_match_columns_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::set_exact_match_columns(int index, std::string&& value) {
+inline void AjRajTablesRequest::set_exact_match_columns(int index, std::string&& value) {
   exact_match_columns_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::set_exact_match_columns(int index, const char* value) {
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   exact_match_columns_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::set_exact_match_columns(int index, const char* value, size_t size) {
+inline void AjRajTablesRequest::set_exact_match_columns(int index, const char* value, size_t size) {
   exact_match_columns_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline std::string* AsOfJoinTables2Request::_internal_add_exact_match_columns() {
+inline std::string* AjRajTablesRequest::_internal_add_exact_match_columns() {
   return exact_match_columns_.Add();
 }
-inline void AsOfJoinTables2Request::add_exact_match_columns(const std::string& value) {
+inline void AjRajTablesRequest::add_exact_match_columns(const std::string& value) {
   exact_match_columns_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::add_exact_match_columns(std::string&& value) {
+inline void AjRajTablesRequest::add_exact_match_columns(std::string&& value) {
   exact_match_columns_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::add_exact_match_columns(const char* value) {
+inline void AjRajTablesRequest::add_exact_match_columns(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   exact_match_columns_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
-inline void AsOfJoinTables2Request::add_exact_match_columns(const char* value, size_t size) {
+inline void AjRajTablesRequest::add_exact_match_columns(const char* value, size_t size) {
   exact_match_columns_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-AsOfJoinTables2Request::exact_match_columns() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+AjRajTablesRequest::exact_match_columns() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
   return exact_match_columns_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-AsOfJoinTables2Request::mutable_exact_match_columns() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.exact_match_columns)
+AjRajTablesRequest::mutable_exact_match_columns() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.exact_match_columns)
   return &exact_match_columns_;
 }
 
-// string left_column = 5;
-inline void AsOfJoinTables2Request::clear_left_column() {
-  left_column_.ClearToEmpty();
+// string as_of_column = 5;
+inline void AjRajTablesRequest::clear_as_of_column() {
+  as_of_column_.ClearToEmpty();
 }
-inline const std::string& AsOfJoinTables2Request::left_column() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_column)
-  return _internal_left_column();
+inline const std::string& AjRajTablesRequest::as_of_column() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+  return _internal_as_of_column();
 }
 template <typename ArgT0, typename... ArgT>
 inline PROTOBUF_ALWAYS_INLINE
-void AsOfJoinTables2Request::set_left_column(ArgT0&& arg0, ArgT... args) {
+void AjRajTablesRequest::set_as_of_column(ArgT0&& arg0, ArgT... args) {
  
- left_column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_column)
+ as_of_column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
 }
-inline std::string* AsOfJoinTables2Request::mutable_left_column() {
-  std::string* _s = _internal_mutable_left_column();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_column)
+inline std::string* AjRajTablesRequest::mutable_as_of_column() {
+  std::string* _s = _internal_mutable_as_of_column();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
   return _s;
 }
-inline const std::string& AsOfJoinTables2Request::_internal_left_column() const {
-  return left_column_.Get();
+inline const std::string& AjRajTablesRequest::_internal_as_of_column() const {
+  return as_of_column_.Get();
 }
-inline void AsOfJoinTables2Request::_internal_set_left_column(const std::string& value) {
+inline void AjRajTablesRequest::_internal_set_as_of_column(const std::string& value) {
   
-  left_column_.Set(value, GetArenaForAllocation());
+  as_of_column_.Set(value, GetArenaForAllocation());
 }
-inline std::string* AsOfJoinTables2Request::_internal_mutable_left_column() {
+inline std::string* AjRajTablesRequest::_internal_mutable_as_of_column() {
   
-  return left_column_.Mutable(GetArenaForAllocation());
+  return as_of_column_.Mutable(GetArenaForAllocation());
 }
-inline std::string* AsOfJoinTables2Request::release_left_column() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_column)
-  return left_column_.Release();
+inline std::string* AjRajTablesRequest::release_as_of_column() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
+  return as_of_column_.Release();
 }
-inline void AsOfJoinTables2Request::set_allocated_left_column(std::string* left_column) {
-  if (left_column != nullptr) {
+inline void AjRajTablesRequest::set_allocated_as_of_column(std::string* as_of_column) {
+  if (as_of_column != nullptr) {
     
   } else {
     
   }
-  left_column_.SetAllocated(left_column, GetArenaForAllocation());
+  as_of_column_.SetAllocated(as_of_column, GetArenaForAllocation());
 #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (left_column_.IsDefault()) {
-    left_column_.Set("", GetArenaForAllocation());
+  if (as_of_column_.IsDefault()) {
+    as_of_column_.Set("", GetArenaForAllocation());
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.left_column)
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.as_of_column)
 }
 
-// .io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.AsOfRule rule = 6;
-inline void AsOfJoinTables2Request::clear_rule() {
-  rule_ = 0;
-}
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule AsOfJoinTables2Request::_internal_rule() const {
-  return static_cast< ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule >(rule_);
-}
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule AsOfJoinTables2Request::rule() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.rule)
-  return _internal_rule();
-}
-inline void AsOfJoinTables2Request::_internal_set_rule(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule value) {
-  
-  rule_ = value;
-}
-inline void AsOfJoinTables2Request::set_rule(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule value) {
-  _internal_set_rule(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.rule)
-}
-
-// string right_column = 7;
-inline void AsOfJoinTables2Request::clear_right_column() {
-  right_column_.ClearToEmpty();
-}
-inline const std::string& AsOfJoinTables2Request::right_column() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_column)
-  return _internal_right_column();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void AsOfJoinTables2Request::set_right_column(ArgT0&& arg0, ArgT... args) {
- 
- right_column_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_column)
-}
-inline std::string* AsOfJoinTables2Request::mutable_right_column() {
-  std::string* _s = _internal_mutable_right_column();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_column)
-  return _s;
-}
-inline const std::string& AsOfJoinTables2Request::_internal_right_column() const {
-  return right_column_.Get();
-}
-inline void AsOfJoinTables2Request::_internal_set_right_column(const std::string& value) {
-  
-  right_column_.Set(value, GetArenaForAllocation());
-}
-inline std::string* AsOfJoinTables2Request::_internal_mutable_right_column() {
-  
-  return right_column_.Mutable(GetArenaForAllocation());
-}
-inline std::string* AsOfJoinTables2Request::release_right_column() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_column)
-  return right_column_.Release();
-}
-inline void AsOfJoinTables2Request::set_allocated_right_column(std::string* right_column) {
-  if (right_column != nullptr) {
-    
-  } else {
-    
-  }
-  right_column_.SetAllocated(right_column, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (right_column_.IsDefault()) {
-    right_column_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.right_column)
-}
-
-// repeated string columns_to_add = 8;
-inline int AsOfJoinTables2Request::_internal_columns_to_add_size() const {
+// repeated string columns_to_add = 6;
+inline int AjRajTablesRequest::_internal_columns_to_add_size() const {
   return columns_to_add_.size();
 }
-inline int AsOfJoinTables2Request::columns_to_add_size() const {
+inline int AjRajTablesRequest::columns_to_add_size() const {
   return _internal_columns_to_add_size();
 }
-inline void AsOfJoinTables2Request::clear_columns_to_add() {
+inline void AjRajTablesRequest::clear_columns_to_add() {
   columns_to_add_.Clear();
 }
-inline std::string* AsOfJoinTables2Request::add_columns_to_add() {
+inline std::string* AjRajTablesRequest::add_columns_to_add() {
   std::string* _s = _internal_add_columns_to_add();
-  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
   return _s;
 }
-inline const std::string& AsOfJoinTables2Request::_internal_columns_to_add(int index) const {
+inline const std::string& AjRajTablesRequest::_internal_columns_to_add(int index) const {
   return columns_to_add_.Get(index);
 }
-inline const std::string& AsOfJoinTables2Request::columns_to_add(int index) const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+inline const std::string& AjRajTablesRequest::columns_to_add(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
   return _internal_columns_to_add(index);
 }
-inline std::string* AsOfJoinTables2Request::mutable_columns_to_add(int index) {
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+inline std::string* AjRajTablesRequest::mutable_columns_to_add(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
   return columns_to_add_.Mutable(index);
 }
-inline void AsOfJoinTables2Request::set_columns_to_add(int index, const std::string& value) {
+inline void AjRajTablesRequest::set_columns_to_add(int index, const std::string& value) {
   columns_to_add_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::set_columns_to_add(int index, std::string&& value) {
+inline void AjRajTablesRequest::set_columns_to_add(int index, std::string&& value) {
   columns_to_add_.Mutable(index)->assign(std::move(value));
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::set_columns_to_add(int index, const char* value) {
+inline void AjRajTablesRequest::set_columns_to_add(int index, const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   columns_to_add_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::set_columns_to_add(int index, const char* value, size_t size) {
+inline void AjRajTablesRequest::set_columns_to_add(int index, const char* value, size_t size) {
   columns_to_add_.Mutable(index)->assign(
     reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline std::string* AsOfJoinTables2Request::_internal_add_columns_to_add() {
+inline std::string* AjRajTablesRequest::_internal_add_columns_to_add() {
   return columns_to_add_.Add();
 }
-inline void AsOfJoinTables2Request::add_columns_to_add(const std::string& value) {
+inline void AjRajTablesRequest::add_columns_to_add(const std::string& value) {
   columns_to_add_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::add_columns_to_add(std::string&& value) {
+inline void AjRajTablesRequest::add_columns_to_add(std::string&& value) {
   columns_to_add_.Add(std::move(value));
-  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::add_columns_to_add(const char* value) {
+inline void AjRajTablesRequest::add_columns_to_add(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   columns_to_add_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
-inline void AsOfJoinTables2Request::add_columns_to_add(const char* value, size_t size) {
+inline void AjRajTablesRequest::add_columns_to_add(const char* value, size_t size) {
   columns_to_add_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
 }
 inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
-AsOfJoinTables2Request::columns_to_add() const {
-  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+AjRajTablesRequest::columns_to_add() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
   return columns_to_add_;
 }
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
-AsOfJoinTables2Request::mutable_columns_to_add() {
-  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request.columns_to_add)
+AjRajTablesRequest::mutable_columns_to_add() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.AjRajTablesRequest.columns_to_add)
   return &columns_to_add_;
 }
 
@@ -49424,77 +49285,151 @@ inline ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest* BatchTab
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.AsOfJoinTables2Request as_of_join_2 = 40;
-inline bool BatchTableRequest_Operation::_internal_has_as_of_join_2() const {
-  return op_case() == kAsOfJoin2;
+// .io.deephaven.proto.backplane.grpc.AjRajTablesRequest aj = 40;
+inline bool BatchTableRequest_Operation::_internal_has_aj() const {
+  return op_case() == kAj;
 }
-inline bool BatchTableRequest_Operation::has_as_of_join_2() const {
-  return _internal_has_as_of_join_2();
+inline bool BatchTableRequest_Operation::has_aj() const {
+  return _internal_has_aj();
 }
-inline void BatchTableRequest_Operation::set_has_as_of_join_2() {
-  _oneof_case_[0] = kAsOfJoin2;
+inline void BatchTableRequest_Operation::set_has_aj() {
+  _oneof_case_[0] = kAj;
 }
-inline void BatchTableRequest_Operation::clear_as_of_join_2() {
-  if (_internal_has_as_of_join_2()) {
+inline void BatchTableRequest_Operation::clear_aj() {
+  if (_internal_has_aj()) {
     if (GetArenaForAllocation() == nullptr) {
-      delete op_.as_of_join_2_;
+      delete op_.aj_;
     }
     clear_has_op();
   }
 }
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* BatchTableRequest_Operation::release_as_of_join_2() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join_2)
-  if (_internal_has_as_of_join_2()) {
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::release_aj() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  if (_internal_has_aj()) {
     clear_has_op();
-    ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* temp = op_.as_of_join_2_;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.aj_;
     if (GetArenaForAllocation() != nullptr) {
       temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
     }
-    op_.as_of_join_2_ = nullptr;
+    op_.aj_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline const ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request& BatchTableRequest_Operation::_internal_as_of_join_2() const {
-  return _internal_has_as_of_join_2()
-      ? *op_.as_of_join_2_
-      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request&>(::io::deephaven::proto::backplane::grpc::_AsOfJoinTables2Request_default_instance_);
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::_internal_aj() const {
+  return _internal_has_aj()
+      ? *op_.aj_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest&>(::io::deephaven::proto::backplane::grpc::_AjRajTablesRequest_default_instance_);
 }
-inline const ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request& BatchTableRequest_Operation::as_of_join_2() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join_2)
-  return _internal_as_of_join_2();
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::aj() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  return _internal_aj();
 }
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* BatchTableRequest_Operation::unsafe_arena_release_as_of_join_2() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join_2)
-  if (_internal_has_as_of_join_2()) {
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_aj() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  if (_internal_has_aj()) {
     clear_has_op();
-    ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* temp = op_.as_of_join_2_;
-    op_.as_of_join_2_ = nullptr;
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.aj_;
+    op_.aj_ = nullptr;
     return temp;
   } else {
     return nullptr;
   }
 }
-inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_as_of_join_2(::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* as_of_join_2) {
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_aj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* aj) {
   clear_op();
-  if (as_of_join_2) {
-    set_has_as_of_join_2();
-    op_.as_of_join_2_ = as_of_join_2;
+  if (aj) {
+    set_has_aj();
+    op_.aj_ = aj;
   }
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join_2)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
 }
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* BatchTableRequest_Operation::_internal_mutable_as_of_join_2() {
-  if (!_internal_has_as_of_join_2()) {
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::_internal_mutable_aj() {
+  if (!_internal_has_aj()) {
     clear_op();
-    set_has_as_of_join_2();
-    op_.as_of_join_2_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request >(GetArenaForAllocation());
+    set_has_aj();
+    op_.aj_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest >(GetArenaForAllocation());
   }
-  return op_.as_of_join_2_;
+  return op_.aj_;
 }
-inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* BatchTableRequest_Operation::mutable_as_of_join_2() {
-  ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request* _msg = _internal_mutable_as_of_join_2();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.as_of_join_2)
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::mutable_aj() {
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _msg = _internal_mutable_aj();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.aj)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.AjRajTablesRequest raj = 41;
+inline bool BatchTableRequest_Operation::_internal_has_raj() const {
+  return op_case() == kRaj;
+}
+inline bool BatchTableRequest_Operation::has_raj() const {
+  return _internal_has_raj();
+}
+inline void BatchTableRequest_Operation::set_has_raj() {
+  _oneof_case_[0] = kRaj;
+}
+inline void BatchTableRequest_Operation::clear_raj() {
+  if (_internal_has_raj()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.raj_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::release_raj() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  if (_internal_has_raj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.raj_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.raj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::_internal_raj() const {
+  return _internal_has_raj()
+      ? *op_.raj_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest&>(::io::deephaven::proto::backplane::grpc::_AjRajTablesRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest& BatchTableRequest_Operation::raj() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  return _internal_raj();
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_raj() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+  if (_internal_has_raj()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* temp = op_.raj_;
+    op_.raj_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_raj(::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* raj) {
+  clear_op();
+  if (raj) {
+    set_has_raj();
+    op_.raj_ = raj;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::_internal_mutable_raj() {
+  if (!_internal_has_raj()) {
+    clear_op();
+    set_has_raj();
+    op_.raj_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest >(GetArenaForAllocation());
+  }
+  return op_.raj_;
+}
+inline ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* BatchTableRequest_Operation::mutable_raj() {
+  ::io::deephaven::proto::backplane::grpc::AjRajTablesRequest* _msg = _internal_mutable_raj();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.raj)
   return _msg;
 }
 
@@ -49810,11 +49745,6 @@ template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::AsOfJ
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest_MatchRule>() {
   return ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest_MatchRule_descriptor();
-}
-template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule> : ::std::true_type {};
-template <>
-inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule>() {
-  return ::io::deephaven::proto::backplane::grpc::AsOfJoinTables2Request_AsOfRule_descriptor();
 }
 template <> struct is_proto_enum< ::io::deephaven::proto::backplane::grpc::RangeJoinTablesRequest_RangeStartRule> : ::std::true_type {};
 template <>
