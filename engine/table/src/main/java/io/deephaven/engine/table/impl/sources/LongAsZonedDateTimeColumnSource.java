@@ -13,7 +13,7 @@ import java.time.ZonedDateTime;
  * Reinterpret result {@link ColumnSource} implementations that translates {@code long} to {@link ZonedDateTime} values.
  */
 public class LongAsZonedDateTimeColumnSource extends BoxedLongAsTimeSource<ZonedDateTime>
-        implements ConvertableTimeSource.Zoned {
+        implements ConvertibleTimeSource.Zoned {
     private final ZoneId zone;
 
     public LongAsZonedDateTimeColumnSource(ColumnSource<Long> alternateColumnSource, ZoneId zone) {
@@ -23,7 +23,7 @@ public class LongAsZonedDateTimeColumnSource extends BoxedLongAsTimeSource<Zoned
 
     @Override
     protected ZonedDateTime makeValue(long val) {
-        return DateTimeUtils.makeZonedDateTime(val, zone);
+        return DateTimeUtils.epochNanosToZonedDateTime(val, zone);
     }
 
     @Override

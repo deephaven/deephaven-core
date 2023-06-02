@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
@@ -12,7 +13,6 @@ import org.junit.Test;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -168,7 +168,7 @@ public class TestQueryCompiler {
     }
 
     private String printMillis(final long millis) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), ZoneId.systemDefault());
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(millis), DateTimeUtils.timeZone());
         return localDateTime.toString();
     }
 

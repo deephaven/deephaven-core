@@ -3,11 +3,11 @@
  */
 package io.deephaven.time.calendar;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.time.TimeZone;
 
 import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.ZoneId;
 
 /**
  * A calendar.
@@ -16,7 +16,7 @@ import java.time.DayOfWeek;
  * To comply with the ISO-8601 standard for Dates, Strings should be of the form "yyyy-MM-dd",
  *
  *
- * Methods on DateTime may not be precisely defined enough to return a DateTime, e.g nextDay(). In these cases, the
+ * Methods on Instant may not be precisely defined enough to return an Instant, e.g nextDay(). In these cases, the
  * method will return a String as discussed above.
  *
  *
@@ -24,9 +24,9 @@ import java.time.DayOfWeek;
  * a different time zone is considered a different calendar.
  *
  *
- * Frequently, the default implementation for methods on DateTimes is to call the corresponding method on a String with
- * {@code DateTime.toDateString}. This can be slower than methods written explicitly for DateTimes. If performance is an
- * issue, consider overriding these methods with other behavior.
+ * Frequently, the default implementation for methods on Instants is to call the corresponding method on a String with
+ * {@code DateTimeUtils.formatDate}. This can be slower than methods written explicitly for DateTimes. If performance is
+ * an issue, consider overriding these methods with other behavior.
  */
 public interface Calendar {
 
@@ -43,7 +43,7 @@ public interface Calendar {
      * @return the current day
      */
     default String currentDay() {
-        return DateTimeUtils.currentDate(timeZone());
+        return DateTimeUtils.today(timeZone());
     }
 
     /**
@@ -71,7 +71,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day before {@code time}
      */
-    String previousDay(final DateTime time);
+    String previousDay(final Instant time);
 
     /**
      * Gets the date the specified number of days prior to the input date.
@@ -80,7 +80,7 @@ public interface Calendar {
      * @param days number of days;
      * @return the date {@code days} before {@code date}
      */
-    String previousDay(final DateTime time, final int days);
+    String previousDay(final Instant time, final int days);
 
     /**
      * Gets the previous date.
@@ -124,7 +124,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day after {@code time}
      */
-    String nextDay(final DateTime time);
+    String nextDay(final Instant time);
 
     /**
      * Gets the date {@code days} after the input {@code time}.
@@ -133,7 +133,7 @@ public interface Calendar {
      * @param days number of days;
      * @return the day after {@code time}
      */
-    String nextDay(final DateTime time, final int days);
+    String nextDay(final Instant time, final int days);
 
     /**
      * Gets the next date.
@@ -159,7 +159,7 @@ public interface Calendar {
      * @param end end of a time range; if null, return empty array
      * @return the inclusive days between {@code start} and {@code end}
      */
-    String[] daysInRange(DateTime start, DateTime end);
+    String[] daysInRange(Instant start, Instant end);
 
     /**
      * Gets the days in a given range.
@@ -177,7 +177,7 @@ public interface Calendar {
      * @param end end of a time range; if null, return {@code NULL_INT}
      * @return the number days between {@code start} and {@code end}, inclusive and exclusive respectively.
      */
-    int numberOfDays(final DateTime start, final DateTime end);
+    int numberOfDays(final Instant start, final Instant end);
 
     /**
      * Gets the number of days in a given range.
@@ -188,7 +188,7 @@ public interface Calendar {
      * @return the number of days between {@code start} and {@code end}, inclusive and {@code endInclusive}
      *         respectively.
      */
-    int numberOfDays(final DateTime start, final DateTime end, final boolean endInclusive);
+    int numberOfDays(final Instant start, final Instant end, final boolean endInclusive);
 
     /**
      * Gets the number of days in a given range, end date exclusive.
@@ -217,7 +217,7 @@ public interface Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of time in nanoseconds between the {@code start} and {@code end}
      */
-    long diffNanos(final DateTime start, final DateTime end);
+    long diffNanos(final Instant start, final Instant end);
 
     /**
      * Returns the amount of time in days between {@code start} and {@code end}.
@@ -226,16 +226,25 @@ public interface Calendar {
      * @param end end time; if null, return NULL_LONG
      * @return the amount of time in days between the {@code start} and {@code end}
      */
-    double diffDay(final DateTime start, final DateTime end);
+    double diffDay(final Instant start, final Instant end);
 
     /**
-     * Returns the number of years between {@code start} and {@code end}.
+     * Returns the number of 365 day years between {@code start} and {@code end}.
      *
      * @param start start; if null, return null
      * @param end end; if null, return null
      * @return the amount of time in years between the {@code start} and {@code end}
      */
-    double diffYear(DateTime start, DateTime end);
+    double diffYear365(Instant start, Instant end);
+
+    /**
+     * Returns the number of average (365.2425 day) years between {@code start} and {@code end}.
+     *
+     * @param start start; if null, return null
+     * @param end end; if null, return null
+     * @return the amount of time in years between the {@code start} and {@code end}
+     */
+    double diffYearAvg(Instant start, Instant end);
 
     /**
      * Gets the day of the week for the current day.
@@ -252,7 +261,7 @@ public interface Calendar {
      * @param time time; if null, return null
      * @return the day of the week of {@code time}
      */
-    DayOfWeek dayOfWeek(final DateTime time);
+    DayOfWeek dayOfWeek(final Instant time);
 
     /**
      * Gets the day of the week for a time.
@@ -267,5 +276,5 @@ public interface Calendar {
      *
      * @return the time zone of the calendar
      */
-    TimeZone timeZone();
+    ZoneId timeZone();
 }

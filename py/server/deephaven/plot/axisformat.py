@@ -62,4 +62,4 @@ class NanosAxisFormat(AxisFormat):
         if not tz:
             self.j_axis_format = _JNanosAxisFormat()
         else:
-            self.j_axis_format = _JNanosAxisFormat(tz.value)
+            self.j_axis_format = _JNanosAxisFormat(tz)

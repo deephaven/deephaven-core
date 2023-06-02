@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
-import io.deephaven.time.DateTime;
 import io.deephaven.vector.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.hash.KeyedObjectKey;
@@ -286,7 +285,7 @@ public abstract class AbstractColumnSource<T> implements
      */
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        if (getType() == DateTime.class || getType() == Instant.class || getType() == ZonedDateTime.class) {
+        if (getType() == Instant.class || getType() == ZonedDateTime.class) {
             Assert.eq(alternateDataType, "alternateDataType", long.class);
             // noinspection unchecked
             return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedLongBackedColumnSource<>(this);

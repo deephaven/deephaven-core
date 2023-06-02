@@ -184,8 +184,7 @@ public class ViewportData implements TableData {
                 return cleanData;
             }
             case "java.time.Instant":
-            case "java.time.ZonedDateTime":
-            case "io.deephaven.time.DateTime": {
+            case "java.time.ZonedDateTime": {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 DateWrapper[] cleanData = new DateWrapper[values.length];
                 for (int i = 0; i < values.length; i++) {

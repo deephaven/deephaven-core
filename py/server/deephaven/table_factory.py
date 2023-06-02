@@ -52,7 +52,7 @@ def time_table(period: Union[str, int], start_time: str = None) -> Table:
 
     Args:
         period (Union[str, int]): time interval between new row additions, can be expressed as an integer in
-            nanoseconds or a time interval string, e.g. "00:00:00.001"
+            nanoseconds or a time interval string, e.g. "PT00:00:00.001"
         start_time (str): start time for adding new rows
 
     Returns:

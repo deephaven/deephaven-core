@@ -4,13 +4,11 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
-import static io.deephaven.time.DateTimeUtils.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
@@ -395,24 +393,13 @@ public final class MutableColumnSourceGetDefaults {
     }
 
     /**
-     * Default interface for mutable {@link DateTime} {@link ColumnSource} implementations.
-     */
-    public interface ForLongAsDateTime extends ColumnSourceGetDefaults.ForLongAsDateTime, LongBacked<DateTime> {
-        @Nullable
-        @Override
-        default DateTime getPrev(final long rowKey) {
-            return nanosToTime(getPrevLong(rowKey));
-        }
-    }
-
-    /**
      * Default interface for mutable {@link Instant} {@link ColumnSource} implementations.
      */
     public interface ForLongAsInstant extends ColumnSourceGetDefaults.ForLongAsInstant, LongBacked<Instant> {
         @Nullable
         @Override
         default Instant getPrev(long rowKey) {
-            return DateTimeUtils.makeInstant(getPrevLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(getPrevLong(rowKey));
         }
     }
 

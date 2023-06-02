@@ -651,13 +651,13 @@ public class QueryTableSelectUpdateTest {
                 EvalNugget.from(() -> queryTable.select("intCol = intCol/2")),
                 EvalNugget.from(() -> queryTable.update("newCol = `` + intCol/2")),
                 EvalNugget.from(() -> queryTable.update("newCol = intCol > 50")),
-                // Let's create a datetime and use it as an override
+                // Let's create an Instant and use it as an override
                 partialEvalNuggetFrom(queryTable, false,
-                        () -> queryTable.update("Time = new DateTime(0) + intCol * MINUTE")
+                        () -> queryTable.update("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE")
                                 .update("Diff = Time_[i]")),
                 partialEvalNuggetFrom(queryTable, true,
-                        () -> queryTable.select("Time = new DateTime(0) + intCol * MINUTE").select("Time",
-                                "Diff = Time_[i]")),
+                        () -> queryTable.select("Time = DateTimeUtils.epochNanosToInstant(0) + intCol * MINUTE")
+                                .select("Time", "Diff = Time_[i]")),
         };
 
         final int maxSteps = numSteps.intValue();
@@ -1056,7 +1056,7 @@ public class QueryTableSelectUpdateTest {
 
     @Test
     public void testStaticSelectFlattenDateTimeCol() {
-        final Table input = emptyTable(10).view("A=ii", "B = DateTime.now()").where("A % 2 == 0");
+        final Table input = emptyTable(10).view("A=ii", "B = DateTimeUtils.now()").where("A % 2 == 0");
         final Table output = input.select("B");
         Assert.assertEquals(5, output.size());
         Assert.assertTrue(output.isFlat());

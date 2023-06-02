@@ -1064,8 +1064,8 @@ public class GeneratePyV2FigureAPI {
         final String[] taTable = new String[] {"Table", "SelectableDataSet"};
 
         final String[] taDataCategory = new String[] {"str", "List[str]", "List[int]", "List[float]"};
-        final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[DateTime]"};
-        final String[] taDataTime = new String[] {"str", "List[DateTime]"};
+        final String[] taDataNumeric = new String[] {"str", "List[int]", "List[float]", "List[Instant]"};
+        final String[] taDataTime = new String[] {"str", "List[Instant]"};
         final String[] taMultiSeriesKey = new String[] {"List[Any]"}; // todo keys are technically Object[]. How to
         // support?
         final String[] taColor = new String[] {"str", "int", "Color"};

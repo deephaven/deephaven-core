@@ -7,10 +7,11 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.time.DateTimeUtils;
 
+import java.time.Instant;
 import java.util.Map;
 
 public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
@@ -21,7 +22,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         super(rowSet, input, timeColumn, replayer, WritableRowRedirection.FACTORY.createRowRedirection(100),
                 groupingColumns);
         // noinspection unchecked
-        replayer.registerTimeSource(rowSet, (ColumnSource<DateTime>) input.get(timeColumn));
+        replayer.registerTimeSource(rowSet, (ColumnSource<Instant>) input.get(timeColumn));
     }
 
     @Override
@@ -33,7 +34,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         RowSetBuilderRandom modifiedBuilder = RowSetFactory.builderRandom();
         // List<IteratorsAndNextTime> iteratorsToAddBack = new ArrayList<>(allIterators.size());
         while (!allIterators.isEmpty()
-                && allIterators.peek().lastTime.getNanos() < replayer.clock().currentTimeNanos()) {
+                && DateTimeUtils.epochNanos(allIterators.peek().lastTime) < replayer.clock().currentTimeNanos()) {
             IteratorsAndNextTime currentIt = allIterators.poll();
             rowRedirection.put(currentIt.pos, currentIt.lastIndex);
             if (getRowSet().find(currentIt.pos) >= 0) {
@@ -43,7 +44,8 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
             }
             do {
                 currentIt = currentIt.next();
-            } while (currentIt != null && currentIt.lastTime.getNanos() < replayer.clock().currentTimeNanos());
+            } while (currentIt != null
+                    && DateTimeUtils.epochNanos(currentIt.lastTime) < replayer.clock().currentTimeNanos());
             if (currentIt != null) {
                 allIterators.add(currentIt);
             }

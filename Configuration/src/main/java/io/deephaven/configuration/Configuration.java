@@ -9,6 +9,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
+import java.time.ZoneId;
 import java.util.*;
 
 /**
@@ -160,7 +161,7 @@ public class Configuration extends PropertyFile {
      * @return the TimeZone the server is running in
      */
     public TimeZone getServerTimezone() {
-        return TimeZone.getTimeZone(getProperty("server.timezone"));
+        return TimeZone.getTimeZone(ZoneId.systemDefault());
     }
 
     /**

@@ -135,7 +135,7 @@ public class RegionedColumnSourceBenchmark {
                 copier = Copier.Object;
                 break;
             case "Timestamp":
-                builder.addColumn(BenchmarkTools.dateCol("Timestamp"));
+                builder.addColumn(BenchmarkTools.instantCol("Timestamp"));
                 destination = ChunkType.Object.makeWritableChunk(chunkCapacity);
                 copier = Copier.Object;
                 break;

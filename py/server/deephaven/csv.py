@@ -80,7 +80,7 @@ def read(
                 dht.float_: _JParsers.FLOAT_FAST,
                 dht.double: _JParsers.DOUBLE,
                 dht.string: _JParsers.STRING,
-                dht.DateTime: _JParsers.DATETIME,
+                dht.Instant: _JParsers.DATETIME,
             }
             for column_name, column_type in header.items():
                 csv_specs_builder.putParserForName(column_name, parser_map[column_type])

@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -16,32 +15,17 @@ import java.util.function.Consumer;
 public class ReinterpretUtils {
 
     /**
-     * Given a DateTime column source turn it into a long column source, either via reinterpretation or wrapping.
+     * Given a long column source turn it into a Instant column source, either via reinterpretation or wrapping.
      *
-     * @param source the source to turn into a long source
-     *
-     * @return the long source
-     */
-    public static ColumnSource<Long> dateTimeToLongSource(ColumnSource<DateTime> source) {
-        if (source.allowsReinterpret(long.class)) {
-            return source.reinterpret(long.class);
-        } else {
-            return new DateTimeAsLongColumnSource(source);
-        }
-    }
-
-    /**
-     * Given a long column source turn it into a DateTime column source, either via reinterpretation or wrapping.
-     *
-     * @param source the source to turn into a DateTime source
+     * @param source the source to turn into a Instant source
      *
      * @return the long source
      */
-    public static ColumnSource<DateTime> longToDateTimeSource(ColumnSource<Long> source) {
-        if (source.allowsReinterpret(DateTime.class)) {
-            return source.reinterpret(DateTime.class);
+    public static ColumnSource<Instant> longToInstantSource(ColumnSource<Long> source) {
+        if (source.allowsReinterpret(Instant.class)) {
+            return source.reinterpret(Instant.class);
         } else {
-            return new LongAsDateTimeColumnSource(source);
+            return new LongAsInstantColumnSource(source);
         }
     }
 
@@ -92,21 +76,6 @@ public class ReinterpretUtils {
         } else {
             return new ZonedDateTimeAsLongSource(source);
         }
-    }
-
-    /**
-     * Given a writable DateTime column source turn it into a writable long column source via reinterpretation if
-     * possible.
-     *
-     * @param source the source to turn into a long source
-     *
-     * @return the long source or null if it could not be reinterpreted
-     */
-    public static WritableColumnSource<Long> writableDateTimeToLongSource(WritableColumnSource<DateTime> source) {
-        if (source.allowsReinterpret(long.class)) {
-            return (WritableColumnSource<Long>) source.reinterpret(long.class);
-        }
-        return null;
     }
 
     /**
@@ -167,9 +136,6 @@ public class ReinterpretUtils {
         if (source.getType() == Boolean.class || source.getType() == boolean.class) {
             return booleanToByteSource((ColumnSource<Boolean>) source);
         }
-        if (source.getType() == DateTime.class) {
-            return dateTimeToLongSource((ColumnSource<DateTime>) source);
-        }
         if (source.getType() == Instant.class) {
             return instantToLongSource((ColumnSource<Instant>) source);
         }
@@ -191,8 +157,6 @@ public class ReinterpretUtils {
         WritableColumnSource<?> result = null;
         if (source.getType() == Boolean.class || source.getType() == boolean.class) {
             result = writableBooleanToByteSource((WritableColumnSource<Boolean>) source);
-        } else if (source.getType() == DateTime.class) {
-            result = writableDateTimeToLongSource((WritableColumnSource<DateTime>) source);
         } else if (source.getType() == Instant.class) {
             result = writableInstantToLongSource((WritableColumnSource<Instant>) source);
         } else if (source.getType() == ZonedDateTime.class) {
@@ -212,7 +176,7 @@ public class ReinterpretUtils {
         if (dataType == Boolean.class || dataType == boolean.class) {
             return ChunkType.Byte;
         }
-        if (dataType == DateTime.class || dataType == Instant.class || dataType == ZonedDateTime.class) {
+        if (dataType == Instant.class || dataType == ZonedDateTime.class) {
             return ChunkType.Long;
         }
         return ChunkType.fromElementType(dataType);
@@ -229,7 +193,7 @@ public class ReinterpretUtils {
         if (dataType == Boolean.class || dataType == boolean.class) {
             return byte.class;
         }
-        if (dataType == DateTime.class || dataType == Instant.class || dataType == ZonedDateTime.class) {
+        if (dataType == Instant.class || dataType == ZonedDateTime.class) {
             return long.class;
         }
         return dataType;
@@ -258,12 +222,6 @@ public class ReinterpretUtils {
             // noinspection unchecked
             return source.allowsReinterpret(Boolean.class) ? source.reinterpret(Boolean.class)
                     : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
-        }
-        if (originalType == DateTime.class) {
-            validateSourceType.accept(long.class);
-            // noinspection unchecked
-            return source.allowsReinterpret(DateTime.class) ? source.reinterpret(DateTime.class)
-                    : new BoxedColumnSource.OfDateTime((ColumnSource<Long>) source);
         }
         if (originalType == Instant.class) {
             validateSourceType.accept(long.class);

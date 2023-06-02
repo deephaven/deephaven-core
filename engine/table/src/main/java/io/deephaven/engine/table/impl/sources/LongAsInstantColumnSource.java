@@ -18,6 +18,6 @@ public class LongAsInstantColumnSource extends BoxedLongAsTimeSource<Instant> {
 
     @Override
     protected Instant makeValue(long val) {
-        return DateTimeUtils.makeInstant(val);
+        return DateTimeUtils.epochNanosToInstant(val);
     }
 }

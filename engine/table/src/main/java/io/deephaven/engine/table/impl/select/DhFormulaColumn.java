@@ -31,8 +31,7 @@ import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
@@ -190,7 +189,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         try {
-            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            final TimeLiteralReplacedExpression timeConversionResult =
+                    TimeLiteralReplacedExpression.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
@@ -847,7 +847,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             return true;
         }
         final Class<?> type = value.getClass();
-        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class
+        if (type == String.class || type == BigInteger.class || type == BigDecimal.class
                 || type == Instant.class || type == ZonedDateTime.class || Table.class.isAssignableFrom(type)) {
             return true;
         }
