@@ -5,8 +5,10 @@ package io.deephaven.engine.updategraph;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -17,6 +19,9 @@ import java.util.function.Consumer;
  * Unit tests for {@link UpdateGraphLock}.
  */
 public class TestUpdateGraphLock {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testUpgradeFailures() throws InterruptedException {
