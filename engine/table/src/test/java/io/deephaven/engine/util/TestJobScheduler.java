@@ -6,7 +6,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -32,7 +32,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -78,7 +78,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -142,7 +142,7 @@ public final class TestJobScheduler {
 
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -198,7 +198,7 @@ public final class TestJobScheduler {
         updateGraph.runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -263,7 +263,7 @@ public final class TestJobScheduler {
 
             final boolean[] completed = new boolean[100];
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -317,7 +317,7 @@ public final class TestJobScheduler {
         // nop
         updateGraph.runWithinUnitTestCycle(() -> {
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -356,7 +356,7 @@ public final class TestJobScheduler {
         UpdateGraph updateGraph1 = ExecutionContext.getContext().getUpdateGraph();
         updateGraph1.<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -409,7 +409,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -484,7 +484,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateSerial(
                     ExecutionContext.getContext(),
                     null,
@@ -566,7 +566,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -647,7 +647,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,
@@ -724,7 +724,7 @@ public final class TestJobScheduler {
                 }
             }
 
-            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler(updateGraph);
+            final JobScheduler scheduler = new UpdateGraphJobScheduler(updateGraph);
             scheduler.iterateParallel(
                     ExecutionContext.getContext(),
                     null,

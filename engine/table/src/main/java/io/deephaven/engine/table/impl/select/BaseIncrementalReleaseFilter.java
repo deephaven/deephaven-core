@@ -28,7 +28,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     private RecomputeListener listener;
     private boolean releaseMoreEntries = false;
 
-    transient private boolean addedToUpdateGraphProcessor = false;
+    transient private boolean addedToUpdateGraph = false;
 
     private transient volatile long firstReleaseNanos = QueryConstants.NULL_LONG;
     private transient volatile long releaseAllNanos = QueryConstants.NULL_LONG;
@@ -66,13 +66,13 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
         if (!started) {
             return;
         }
-        addToUpdateGraphProcessor();
+        addToUpdateGraph();
     }
 
-    private void addToUpdateGraphProcessor() {
-        if (!addedToUpdateGraphProcessor) {
+    private void addToUpdateGraph() {
+        if (!addedToUpdateGraph) {
             updateGraph.addSource(this);
-            addedToUpdateGraphProcessor = true;
+            addedToUpdateGraph = true;
         }
     }
 
@@ -177,7 +177,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     public void start() {
         started = true;
         if (initialized) {
-            addToUpdateGraphProcessor();
+            addToUpdateGraph();
         }
     }
 

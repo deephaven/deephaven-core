@@ -1714,7 +1714,7 @@ public class KafkaTools {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 

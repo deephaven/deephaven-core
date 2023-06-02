@@ -34,7 +34,7 @@ public abstract class UpdateGraphLock {
     private static final Logger log = LoggerFactory.getLogger(UpdateGraphLock.class);
 
     private static final boolean STACK_DUMP_LOCKS =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.stackDumpLocks", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphLock.stackDumpLocks", false);
 
     /**
      * Instrumentation interface for recording lock events.
@@ -299,7 +299,7 @@ public abstract class UpdateGraphLock {
             checkForIllegalLockFromRefreshThread(updateGraph);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordAction("Acquire UpdateGraphProcessor readLock", () -> {
+                instrumentation.recordAction("Acquire UpdateGraph readLock", () -> {
                     readLock.lock();
                     lockSucceeded.setValue(true);
                 });
@@ -319,7 +319,7 @@ public abstract class UpdateGraphLock {
             checkForIllegalLockFromRefreshThread(updateGraph);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordActionInterruptibly("Acquire UpdateGraphProcessor readLock interruptibly",
+                instrumentation.recordActionInterruptibly("Acquire UpdateGraph readLock interruptibly",
                         () -> {
                             readLock.lockInterruptibly();
                             lockSucceeded.setValue(true);
@@ -408,7 +408,7 @@ public abstract class UpdateGraphLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordAction("Acquire UpdateGraphProcessor writeLock", () -> {
+                instrumentation.recordAction("Acquire UpdateGraph writeLock", () -> {
                     writeLock.lock();
                     lockSucceeded.setValue(true);
                 });
@@ -430,7 +430,7 @@ public abstract class UpdateGraphLock {
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordActionInterruptibly("Acquire UpdateGraphProcessor writeLock interruptibly",
+                instrumentation.recordActionInterruptibly("Acquire UpdateGraph writeLock interruptibly",
                         () -> {
                             writeLock.lockInterruptibly();
                             lockSucceeded.setValue(true);
@@ -723,7 +723,7 @@ public abstract class UpdateGraphLock {
 
     private static void maybeLogStackTrace(final String type) {
         if (STACK_DUMP_LOCKS) {
-            log.info().append("Update Graph Processor ").append(new LockDebugException(type)).endl();
+            log.info().append("Update Graph ").append(new LockDebugException(type)).endl();
         }
     }
 

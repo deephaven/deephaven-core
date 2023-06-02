@@ -12,12 +12,12 @@ import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.function.Consumer;
 
-public class UpdateGraphProcessorJobScheduler implements JobScheduler {
+public class UpdateGraphJobScheduler implements JobScheduler {
     final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
 
     private final UpdateGraph updateGraph;
 
-    public UpdateGraphProcessorJobScheduler(final UpdateGraph updateGraph) {
+    public UpdateGraphJobScheduler(final UpdateGraph updateGraph) {
         this.updateGraph = updateGraph;
     }
 

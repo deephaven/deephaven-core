@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -13,7 +12,7 @@ import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
-import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -86,7 +85,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
-            jobScheduler = new UpdateGraphProcessorJobScheduler(getUpdateGraph());
+            jobScheduler = new UpdateGraphJobScheduler(getUpdateGraph());
         } else {
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }

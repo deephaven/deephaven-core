@@ -11,7 +11,7 @@ import java.util.Collections;
 
 /**
  * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
- * {@link UpdateGraphProcessor update graph processor} registered in the update context at the time of construction.
+ * {@link UpdateGraph update graph} registered in the update context at the time of construction.
  */
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
@@ -32,11 +32,11 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
     public void addSource(@NotNull final Runnable updateSource) {
         if (updateSource instanceof DynamicNode) {
             final DynamicNode dynamicUpdateSource = (DynamicNode) updateSource;
-            // Like a UpdateGraphProcessor, we need to ensure that DynamicNodes added to this combiner are set to
+            // Like a UpdateGraph, we need to ensure that DynamicNodes added to this combiner are set to
             // refreshing.
             // NB: addParentReference usually sets refreshing as a side effect, but it's clearer to do it explicitly.
             dynamicUpdateSource.setRefreshing(true);
-            // Unlike an UpdateGraphProcessor, we must also ensure that DynamicNodes added to this combiner have the
+            // Unlike an UpdateGraph, we must also ensure that DynamicNodes added to this combiner have the
             // combiner as a parent, in order to ensure the integrity of the resulting DAG.
             dynamicUpdateSource.addParentReference(this);
         }
@@ -49,7 +49,7 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
     }
 
     /**
-     * Passes through to the {@link UpdateGraphProcessor update graph processor} registered in the update context at
+     * Passes through to the {@link UpdateGraph update graph processor} registered in the update context at
      * construction.
      */
     @Override

@@ -355,7 +355,7 @@ public class ExecutionContext {
         }
 
         /**
-         * Use the current ExecutionContext's UpdateGraphProcessor instance.
+         * Use the current ExecutionContext's UpdateGraph instance.
          */
         @ScriptApi
         public Builder captureUpdateGraph() {

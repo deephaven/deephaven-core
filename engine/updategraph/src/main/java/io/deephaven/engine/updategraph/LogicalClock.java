@@ -16,12 +16,12 @@ public interface LogicalClock {
     enum State {
 
         /**
-         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is propagating updates.
+         * Clock state for logical timestamps when the associated {@link UpdateGraph} is propagating updates.
          */
         Updating,
 
         /**
-         * Clock state for logical timestamps when the associated {@link UpdateGraphProcessor} is <em>not</em>
+         * Clock state for logical timestamps when the associated {@link UpdateGraph} is <em>not</em>
          * propagating updates.
          */
         Idle

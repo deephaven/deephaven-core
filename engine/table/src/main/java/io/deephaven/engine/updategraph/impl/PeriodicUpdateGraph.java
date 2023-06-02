@@ -323,7 +323,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     @NotNull
     private NotificationProcessor makeNotificationProcessor() {
         if (updateThreads > 1) {
-            final ThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
+            final ThreadFactory threadFactory = new NotificationProcessorThreadFactory(
                     new ThreadGroup("PeriodicUpdateGraph-updateExecutors"), "updateExecutor");
             return new ConcurrentNotificationProcessor(threadFactory, updateThreads);
         } else {
@@ -334,7 +334,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     @TestUseOnly
     private NotificationProcessor makeRandomizedNotificationProcessor(final Random random, final int nThreads,
             final int notificationStartDelay) {
-        final UpdateGraphProcessorThreadFactory threadFactory = new UpdateGraphProcessorThreadFactory(
+        final ThreadFactory threadFactory = new NotificationProcessorThreadFactory(
                 new ThreadGroup("PeriodicUpdateGraph-randomizedUpdatedExecutors"), "randomizedUpdateExecutor");
         return new ConcurrentNotificationProcessor(threadFactory, nThreads) {
 
@@ -1744,8 +1744,8 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
     }
 
-    private class UpdateGraphProcessorThreadFactory extends NamingThreadFactory {
-        private UpdateGraphProcessorThreadFactory(@NotNull final ThreadGroup threadGroup, @NotNull final String name) {
+    private class NotificationProcessorThreadFactory extends NamingThreadFactory {
+        private NotificationProcessorThreadFactory(@NotNull final ThreadGroup threadGroup, @NotNull final String name) {
             super(threadGroup, PeriodicUpdateGraph.class, name, true);
         }
 
@@ -1779,13 +1779,13 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     private ExecutorService makeUnitTestRefreshExecutor() {
-        return Executors.newFixedThreadPool(1, new UnitTestRefreshThreadFactory());
+        return Executors.newFixedThreadPool(1, new UnitTestThreadFactory());
     }
 
     @TestUseOnly
-    private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
+    private class UnitTestThreadFactory extends NamingThreadFactory {
 
-        private UnitTestRefreshThreadFactory() {
+        private UnitTestThreadFactory() {
             super(PeriodicUpdateGraph.class, "unitTestRefresh");
         }
 
@@ -1831,7 +1831,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     public static final class Builder {
-        private boolean allowUnitTestMode =
+        private final boolean allowUnitTestMode =
                 Configuration.getInstance().getBooleanWithDefault(ALLOW_UNIT_TEST_MODE_PROP, false);
         private long targetCycleDurationMillis =
                 Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
@@ -1843,18 +1843,6 @@ public class PeriodicUpdateGraph implements UpdateGraph {
 
         public Builder(String name) {
             this.name = name;
-        }
-
-        /**
-         * This enables Unit Test Mode. Unit tests mode allows complete control over the update graph processor. This is
-         * useful for testing boundary conditions to validate the behavior of table operations.
-         *
-         * @param allowUnitTestMode true to allow unit test mode
-         * @return this builder
-         */
-        public Builder allowUnitTestMode(boolean allowUnitTestMode) {
-            this.allowUnitTestMode = allowUnitTestMode;
-            return this;
         }
 
         /**
