@@ -243,9 +243,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
         jobScheduler.iterateParallel(
                 executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                numTasks, (ctx, ti, nec) -> doParallelApplyUpdate(
-                        splitUpdates.get(ti), helper, liveResultOwner, serialTableOperationsSafe,
-                        destinationOffsets[ti]),
+                numTasks, (ctx, ti, nec) -> doParallelApplyUpdate(splitUpdates.get(ti), helper, liveResultOwner,
+                        serialTableOperationsSafe, destinationOffsets[ti]),
                 () -> {
                     if (!isRedirected) {
                         clearObjectsAtThisLevel(toClear);

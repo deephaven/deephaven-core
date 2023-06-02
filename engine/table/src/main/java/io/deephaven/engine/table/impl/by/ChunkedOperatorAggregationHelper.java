@@ -1644,9 +1644,9 @@ public class ChunkedOperatorAggregationHelper {
                         "InitialKeyTableSnapshot-" + System.identityHashCode(initialKeys) + ": ",
                         ConstructSnapshot.makeSnapshotControl(false, true, (NotificationStepSource) initialKeys),
                         (final boolean usePrev, final long beforeClockValue) -> {
-                            stateManagerHolder
-                                    .setValue(makeInitializedStateManager(initialKeys, reinterpretedKeySources,
-                                            ac, outputPosition, stateManagerSupplier, useGroupingAllowed, usePrev));
+                            stateManagerHolder.setValue(makeInitializedStateManager(
+                                    initialKeys, reinterpretedKeySources, ac, outputPosition, stateManagerSupplier,
+                                    useGroupingAllowed, usePrev));
                             return true;
                         });
                 stateManager = stateManagerHolder.getValue();

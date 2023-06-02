@@ -1821,7 +1821,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         });
         isUpdateThread.set(true);
         // Install this UpdateGraph via ExecutionContext for refresh threads
-        // noinspection resource
+            // noinspection resource
         ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 

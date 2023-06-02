@@ -34,7 +34,6 @@ public class ExecutionContext {
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
                 if ((localContext = defaultContext) == null) {
-
                     localContext = defaultContext = new Builder(null)
                             .markSystemic()
                             .build();
