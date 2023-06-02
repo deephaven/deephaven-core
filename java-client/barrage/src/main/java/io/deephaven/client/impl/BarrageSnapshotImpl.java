@@ -9,7 +9,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.*;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -179,15 +178,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         // test lock conditions
-        if (ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
                     "Cannot snapshot while holding the UpdateGraph shared lock");
         }
 
         prevUsed = true;
 
-        if (ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition();
+        if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+            completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
         }
 
         if (!connected) {
@@ -243,7 +242,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private void signalCompletion() {
         if (completedCondition != null) {
-            ExecutionContext.getContext().getUpdateGraph().requestSignal(completedCondition);
+            resultTable.getUpdateGraph().requestSignal(completedCondition);
         } else {
             synchronized (BarrageSnapshotImpl.this) {
                 BarrageSnapshotImpl.this.notifyAll();

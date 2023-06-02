@@ -118,9 +118,8 @@ public class ArrowToTableConverter {
         }
 
         final Condition completedCondition;
-        UpdateGraph updateGraph1 = resultTable.getUpdateGraph();
-        if (updateGraph1.exclusiveLock().isHeldByCurrentThread()) {
-            UpdateGraph updateGraph = resultTable.getUpdateGraph();
+        final UpdateGraph updateGraph = resultTable.getUpdateGraph();
+        if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
             completedCondition = updateGraph.exclusiveLock().newCondition();
         } else {
             completedCondition = null;

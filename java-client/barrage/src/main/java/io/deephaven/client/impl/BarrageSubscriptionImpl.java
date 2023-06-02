@@ -11,7 +11,6 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.TableDefinition;
@@ -194,13 +193,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     "BarrageSubscription objects cannot be reused.");
         } else {
             // test lock conditions
-            if (ExecutionContext.getContext().getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
+            if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
                 throw new UnsupportedOperationException(
                         "Cannot create subscription while holding the UpdateGraph shared lock");
             }
 
-            if (ExecutionContext.getContext().getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
-                completedCondition = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().newCondition();
+            if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+                completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
             }
 
             // Send the initial subscription:
@@ -230,7 +229,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     exceptionWhileCompleting = originalException;
                     if (completedCondition != null) {
-                        ExecutionContext.getContext().getUpdateGraph().requestSignal(completedCondition);
+                        resultTable.getUpdateGraph().requestSignal(completedCondition);
                     } else {
                         synchronized (BarrageSubscriptionImpl.this) {
                             BarrageSubscriptionImpl.this.notifyAll();
@@ -294,7 +293,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
     private void signalCompletion() {
         completed = true;
         if (completedCondition != null) {
-            ExecutionContext.getContext().getUpdateGraph().requestSignal(completedCondition);
+            resultTable.getUpdateGraph().requestSignal(completedCondition);
         } else {
             synchronized (BarrageSubscriptionImpl.this) {
                 BarrageSubscriptionImpl.this.notifyAll();
