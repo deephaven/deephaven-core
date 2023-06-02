@@ -325,7 +325,7 @@ public abstract class UpdateBy {
                     }
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
+                if (ExecutionContext.getContext().getUpdateGraph().parallelismFactor() > 1) {
                     jobScheduler = new UpdateGraphProcessorJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;

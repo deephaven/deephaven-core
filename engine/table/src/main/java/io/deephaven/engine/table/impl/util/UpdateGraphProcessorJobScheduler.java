@@ -61,6 +61,6 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return ExecutionContext.getContext().getUpdateGraph().getUpdateThreads();
+        return ExecutionContext.getContext().getUpdateGraph().parallelismFactor();
     }
 }

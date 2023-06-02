@@ -525,7 +525,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         addUpdateListener(new LegacyListenerAdapter(listener, getRowSet()));
         if (replayInitialImage) {
             if (isRefreshing()) {
-                updateGraph.checkInitiateTableOperation();
+                updateGraph.checkInitiateSerialTableOperation();
             }
             if (getRowSet().isNonempty()) {
                 listener.setInitialImage(getRowSet());

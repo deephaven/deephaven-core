@@ -1109,7 +1109,7 @@ public class ConstructSnapshot {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested while not updating: " + beforeClockValue);
             }
-            if (ExecutionContext.getContext().getUpdateGraph().isRefreshThread() && usePrev) {
+            if (ExecutionContext.getContext().getUpdateGraph().currentThreadProcessesUpdates() && usePrev) {
                 // noinspection ThrowableNotThrown
                 Assert.statementNeverExecuted("Previous values requested from a run thread: " + beforeClockValue);
             }

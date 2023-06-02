@@ -40,7 +40,7 @@ import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CH
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
-     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
+     * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpreted
      */
     private final WritableColumnSource<?> writableSource;
 
@@ -148,11 +148,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
 
-                        final boolean checkTableOperations =
-                                ExecutionContext.getContext().getUpdateGraph().getCheckTableOperations()
-                                        && !ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                        final boolean serialTableOperationsSafe =
+                                ExecutionContext.getContext().getUpdateGraph().serialTableOperationsSafe()
+                                        || ExecutionContext.getContext().getUpdateGraph().sharedLock()
                                                 .isHeldByCurrentThread()
-                                        && !ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
+                                        || ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
                                                 .isHeldByCurrentThread();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
@@ -197,13 +197,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     executionContext,
                                     () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
                                             liveResultOwner, onCompletion, this::onError, updates,
-                                            checkTableOperations),
+                                            serialTableOperationsSafe),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
                                     executionContext,
                                     () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
-                                            checkTableOperations),
+                                            serialTableOperationsSafe),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -249,15 +249,15 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
-            final boolean checkTableOperations) {
+            final boolean serialTableOperationsSafe) {
         doEnsureCapacity();
-        final boolean oldCheck =
-                ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(checkTableOperations);
+        final boolean oldSafe = ExecutionContext.getContext().getUpdateGraph()
+                .setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
         } finally {
-            ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(oldCheck);
+            ExecutionContext.getContext().getUpdateGraph().setSerialTableOperationsSafe(oldSafe);
         }
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
@@ -266,14 +266,15 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final boolean checkTableOperations, final long startOffset) {
-        final boolean oldCheck =
-                ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(checkTableOperations);
+            @Nullable final LivenessNode liveResultOwner, final boolean serialTableOperationsSafe,
+            final long startOffset) {
+        final boolean oldSafe = ExecutionContext.getContext().getUpdateGraph()
+                .setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
         } finally {
-            ExecutionContext.getContext().getUpdateGraph().setCheckTableOperations(oldCheck);
+            ExecutionContext.getContext().getUpdateGraph().setSerialTableOperationsSafe(oldSafe);
         }
         upstream.release();
     }

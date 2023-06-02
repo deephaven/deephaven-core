@@ -8,7 +8,6 @@ import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
@@ -127,7 +126,7 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                UpdateGraph updateGraph = getQueryTable().getUpdateGraph();
+                UpdateGraphProcessor updateGraph = getQueryTable().getUpdateGraph().cast();
                 updateGraph.takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(

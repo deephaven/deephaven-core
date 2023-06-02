@@ -49,7 +49,6 @@ jpy.jdlLib=/usr/local/lib/python2.7/dist-packages/jdl.so,/Library/Python/2.7/sit
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
 
-UpdateGraphProcessor.checkTableOperations=true
 UpdateGraphProcessor.allowUnitTestMode=true
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr

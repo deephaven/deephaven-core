@@ -42,10 +42,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 
 /**
  * <p>
@@ -147,6 +145,67 @@ public class UpdateGraphProcessor implements UpdateGraph {
      */
     private long currentCycleSleepTotalNanos = 0L;
 
+    public static class AccumulatedCycleStats {
+        /**
+         * Number of cycles run.
+         */
+        public int cycles = 0;
+        /**
+         * Number of cycles run not exceeding their time budget.
+         */
+        public int cyclesOnBudget = 0;
+        /**
+         * Accumulated safepoints over all cycles.
+         */
+        public int safePoints = 0;
+        /**
+         * Accumulated safepoint time over all cycles.
+         */
+        public long safePointPauseTimeMillis = 0L;
+
+        public int[] cycleTimesMicros = new int[32];
+        public static final int MAX_DOUBLING_LEN = 1024;
+
+        synchronized void accumulate(
+                final long targetCycleDurationMillis,
+                final long cycleTimeNanos,
+                final long safePoints,
+                final long safePointPauseTimeMillis) {
+            final boolean onBudget = targetCycleDurationMillis * 1000 * 1000 >= cycleTimeNanos;
+            if (onBudget) {
+                ++cyclesOnBudget;
+            }
+            this.safePoints += safePoints;
+            this.safePointPauseTimeMillis += safePointPauseTimeMillis;
+            if (cycles >= cycleTimesMicros.length) {
+                final int newLen;
+                if (cycleTimesMicros.length < MAX_DOUBLING_LEN) {
+                    newLen = cycleTimesMicros.length * 2;
+                } else {
+                    newLen = cycleTimesMicros.length + MAX_DOUBLING_LEN;
+                }
+                cycleTimesMicros = Arrays.copyOf(cycleTimesMicros, newLen);
+            }
+            cycleTimesMicros[cycles] = (int) ((cycleTimeNanos + 500) / 1_000);
+            ++cycles;
+        }
+
+        public synchronized void take(final AccumulatedCycleStats out) {
+            out.cycles = cycles;
+            out.cyclesOnBudget = cyclesOnBudget;
+            out.safePoints = safePoints;
+            out.safePointPauseTimeMillis = safePointPauseTimeMillis;
+            if (out.cycleTimesMicros.length < cycleTimesMicros.length) {
+                out.cycleTimesMicros = new int[cycleTimesMicros.length];
+            }
+            System.arraycopy(cycleTimesMicros, 0, out.cycleTimesMicros, 0, cycles);
+            cycles = 0;
+            cyclesOnBudget = 0;
+            safePoints = 0;
+            safePointPauseTimeMillis = 0;
+        }
+    }
+
     public final AccumulatedCycleStats accumulatedCycleStats = new AccumulatedCycleStats();
 
     /**
@@ -175,11 +234,9 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * Is this one of the threads engaged in notification processing? (Either the solitary run thread, or one of the
      * pooled threads it uses in some configurations)
      */
-    private final ThreadLocal<Boolean> isRefreshThread = ThreadLocal.withInitial(() -> false);
+    private final ThreadLocal<Boolean> isUpdateThread = ThreadLocal.withInitial(() -> false);
 
-    private final boolean CHECK_TABLE_OPERATIONS =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.checkTableOperations", false);
-    private final ThreadLocal<Boolean> checkTableOperations = ThreadLocal.withInitial(() -> CHECK_TABLE_OPERATIONS);
+    private final ThreadLocal<Boolean> serialTableOperationsSafe = ThreadLocal.withInitial(() -> false);
 
     private final long minimumInterCycleSleep =
             Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.minimumInterCycleSleep", 0);
@@ -323,7 +380,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * @return the number of update threads configured.
      */
     @Override
-    public int getUpdateThreads() {
+    public int parallelismFactor() {
         if (notificationProcessor == null) {
             return updateThreads;
         } else if (notificationProcessor instanceof ConcurrentNotificationProcessor) {
@@ -380,110 +437,32 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * @return whether this is one of our run threads.
      */
     @Override
-    public boolean isRefreshThread() {
-        return isRefreshThread.get();
+    public boolean currentThreadProcessesUpdates() {
+        return isUpdateThread.get();
     }
 
-    /**
-     * <p>
-     * If we are establishing a new table operation, on a refreshing table without the UpdateGraphProcessor lock; then
-     * we are likely committing a grievous error, but one that will only occasionally result in us getting the wrong
-     * answer or if we are lucky an assertion. This method is called from various query operations that should not be
-     * established without the UGP lock.
-     * </p>
-     *
-     * <p>
-     * The run thread pool threads are allowed to instantiate operations, even though that thread does not have the
-     * lock; because they are protected by the main run thread and dependency tracking.
-     * </p>
-     *
-     * <p>
-     * If you are sure that you know what you are doing better than the query engine, you may call
-     * {@link #setCheckTableOperations(boolean)} to set a thread local variable bypassing this check.
-     * </p>
-     */
     @Override
-    public void checkInitiateTableOperation() {
-        if (!getCheckTableOperations() || exclusiveLock().isHeldByCurrentThread()
-                || sharedLock().isHeldByCurrentThread() || isRefreshThread()) {
-            return;
-        }
-        throw new IllegalStateException(
-                "May not initiate table operations: UGP exclusiveLockHeld=" + exclusiveLock().isHeldByCurrentThread()
-                        + ", sharedLockHeld=" + sharedLock().isHeldByCurrentThread()
-                        + ", refreshThread=" + isRefreshThread());
+    public boolean serialTableOperationsSafe() {
+        return serialTableOperationsSafe.get();
     }
 
-    /**
-     * If you know that the table operations you are performing are indeed safe, then call this method with false to
-     * disable table operation checking. Conversely, if you want to enforce checking even if the configuration
-     * disagrees; call it with true.
-     *
-     * @param value the new value of check table operations
-     * @return the old value of check table operations
-     */
     @Override
-    public boolean setCheckTableOperations(boolean value) {
-        final boolean old = checkTableOperations.get();
-        checkTableOperations.set(value);
+    public boolean setSerialTableOperationsSafe(final boolean newValue) {
+        final boolean old = serialTableOperationsSafe.get();
+        serialTableOperationsSafe.set(newValue);
         return old;
     }
 
-
     /**
-     * Execute the supplied code while table operations are unchecked.
-     *
-     * @param supplier the function to run
-     * @return the result of supplier
-     */
-    @SuppressWarnings("unused")
-    public <T> T doUnchecked(Supplier<T> supplier) {
-        final boolean old = getCheckTableOperations();
-        try {
-            setCheckTableOperations(false);
-            return supplier.get();
-        } finally {
-            setCheckTableOperations(old);
-        }
-    }
-
-    /**
-     * Execute the supplied code while table operations are unchecked.
-     *
-     * @param runnable the function to run
-     */
-    @SuppressWarnings("unused")
-    public void doUnchecked(Runnable runnable) {
-        final boolean old = getCheckTableOperations();
-        try {
-            setCheckTableOperations(false);
-            runnable.run();
-        } finally {
-            setCheckTableOperations(old);
-        }
-    }
-
-    /**
-     * Should this thread check table operations for safety with respect to the update lock?
-     *
-     * @return if we should check table operations.
-     */
-    public boolean getCheckTableOperations() {
-        return checkTableOperations.get();
-    }
-
-    /**
-     * <p>
      * Set the target duration of an update cycle, including the updating phase and the idle phase. This is also the
      * target interval between the start of one cycle and the start of the next.
      * <p>
-     * Can be reset to default via {@link #resetCycleDuration()}.
+     * Can be reset to default via {@link #resetTargetCycleDuration()}.
      *
      * @implNote Any target cycle duration {@code < 0} will be clamped to 0.
      *
      * @param targetCycleDurationMillis The target duration for update cycles in milliseconds
      */
-    @Override
     public void setTargetCycleDurationMillis(final long targetCycleDurationMillis) {
         this.targetCycleDurationMillis = Math.max(targetCycleDurationMillis, 0);
     }
@@ -494,7 +473,6 @@ public class UpdateGraphProcessor implements UpdateGraph {
      *
      * @return The {@link #setTargetCycleDurationMillis(long) current} target cycle duration
      */
-    @Override
     public long getTargetCycleDurationMillis() {
         return targetCycleDurationMillis;
     }
@@ -505,9 +483,8 @@ public class UpdateGraphProcessor implements UpdateGraph {
      * @implNote If the {@link Builder#targetCycleDurationMillis(long)} property is not set, this value defaults to
      *           {@link Builder#DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} which defaults to 1000ms.
      */
-    @Override
     @SuppressWarnings("unused")
-    public void resetCycleDuration() {
+    public void resetTargetCycleDuration() {
         targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
     }
 
@@ -570,36 +547,6 @@ public class UpdateGraphProcessor implements UpdateGraph {
      */
     public void setWatchDogTimeoutProcedure(LongConsumer procedure) {
         this.watchDogTimeoutProcedure = procedure;
-    }
-
-    public void requestSignal(Condition updateGraphProcessorCondition) {
-        if (exclusiveLock().isHeldByCurrentThread()) {
-            updateGraphProcessorCondition.signalAll();
-        } else {
-            // terminal notifications always run on the UGP thread
-            final Notification terminalNotification = new TerminalNotification() {
-                @Override
-                public void run() {
-                    Assert.assertion(exclusiveLock().isHeldByCurrentThread(),
-                            "exclusiveLock().isHeldByCurrentThread()");
-                    updateGraphProcessorCondition.signalAll();
-                }
-
-                @Override
-                public boolean mustExecuteWithUgpLock() {
-                    return true;
-                }
-
-                @Override
-                public LogOutput append(LogOutput output) {
-                    return output.append("SignalNotification(")
-                            .append(System.identityHashCode(updateGraphProcessorCondition)).append(")");
-                }
-            };
-            synchronized (terminalNotifications) {
-                terminalNotifications.offer(terminalNotification);
-            }
-        }
     }
 
     private class WatchdogJob extends TimedJob {
@@ -814,7 +761,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
         synchronized (pendingNormalNotifications) {
             pendingNormalNotifications.clear();
         }
-        isRefreshThread.remove();
+        isUpdateThread.remove();
         if (randomizedNotifications) {
             notificationProcessor = makeRandomizedNotificationProcessor(notificationRandomizer,
                     maxRandomizedThreadCount, notificationStartDelay);
@@ -885,7 +832,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
     @TestUseOnly
     private void startCycleForUnitTestsInternal() {
         // noinspection AutoBoxing
-        isRefreshThread.set(true);
+        isUpdateThread.set(true);
         exclusiveLock().lock();
 
         Assert.eqNull(refreshScope, "refreshScope");
@@ -921,7 +868,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
             }
 
             exclusiveLock().unlock();
-            isRefreshThread.remove();
+            isUpdateThread.remove();
         }) {
             flushNotificationsAndCompleteCycle();
         }
@@ -995,7 +942,8 @@ public class UpdateGraphProcessor implements UpdateGraph {
             final Notification notification = it.next();
 
             Assert.eqFalse(notification.isTerminal(), "notification.isTerminal()");
-            Assert.eqFalse(notification.mustExecuteWithUgpLock(), "notification.mustExecuteWithUgpLock()");
+            Assert.eqFalse(notification.mustExecuteWithUpdateGraphLock(),
+                    "notification.mustExecuteWithUpdateGraphLock()");
 
             if (notification.canExecute(logicalClock.currentStep())) {
                 satisfied = notification;
@@ -1128,7 +1076,8 @@ public class UpdateGraphProcessor implements UpdateGraph {
                 final Notification notification = it.next();
 
                 Assert.eqFalse(notification.isTerminal(), "notification.isTerminal()");
-                Assert.eqFalse(notification.mustExecuteWithUgpLock(), "notification.mustExecuteWithUgpLock()");
+                Assert.eqFalse(notification.mustExecuteWithUpdateGraphLock(),
+                        "notification.mustExecuteWithUpdateGraphLock()");
 
                 final boolean satisfied = notification.canExecute(sourcesLastSatisfiedStep);
                 if (satisfied) {
@@ -1168,7 +1117,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
                 final Notification notification = it.next();
                 Assert.assertion(notification.isTerminal(), "notification.isTerminal()");
 
-                if (!notification.mustExecuteWithUgpLock()) {
+                if (!notification.mustExecuteWithUpdateGraphLock()) {
                     it.remove();
                     // for the single threaded queue case; this enqueues the notification;
                     // for the executor service case, this causes the notification to be kicked off
@@ -1853,10 +1802,9 @@ public class UpdateGraphProcessor implements UpdateGraph {
     private void configureRefreshThread() {
         SystemicObjectTracker.markThreadSystemic();
         MultiChunkPool.enableDedicatedPoolForThisThread();
-        isRefreshThread.set(true);
+        isUpdateThread.set(true);
     }
 
-    @Override
     public void takeAccumulatedCycleStats(AccumulatedCycleStats ugpAccumCycleStats) {
         accumulatedCycleStats.take(ugpAccumCycleStats);
     }

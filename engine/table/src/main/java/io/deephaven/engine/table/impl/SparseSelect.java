@@ -137,7 +137,7 @@ public class SparseSelect {
                 source.sizeForInstrumentation(), () -> {
                     if (source.isRefreshing()) {
                         UpdateGraph updateGraph = source.getUpdateGraph();
-                        updateGraph.checkInitiateTableOperation();
+                        updateGraph.checkInitiateSerialTableOperation();
                     }
 
                     final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();

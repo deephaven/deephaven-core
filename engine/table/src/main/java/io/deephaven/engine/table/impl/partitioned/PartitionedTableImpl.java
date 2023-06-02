@@ -153,7 +153,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return merged;
             }
             if (table.isRefreshing()) {
-                table.getUpdateGraph().checkInitiateTableOperation();
+                table.getUpdateGraph().checkInitiateSerialTableOperation();
             }
             final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
             merged = unionSourceManager.getResult();
@@ -309,10 +309,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
         if (table.isRefreshing()) {
-            table.getUpdateGraph().checkInitiateTableOperation();
+            table.getUpdateGraph().checkInitiateSerialTableOperation();
         }
         if (other.table().isRefreshing()) {
-            other.table().getUpdateGraph().checkInitiateTableOperation();
+            other.table().getUpdateGraph().checkInitiateSerialTableOperation();
         }
         if (table.isRefreshing() && other.table().isRefreshing()
                 && table.getUpdateGraph() != other.table().getUpdateGraph()) {

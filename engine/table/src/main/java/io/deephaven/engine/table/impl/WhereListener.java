@@ -67,13 +67,13 @@ class WhereListener extends MergedListener {
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-        if (ExecutionContext.getContext().getUpdateGraph().getUpdateThreads() > 1) {
+        if (ExecutionContext.getContext().getUpdateGraph().parallelismFactor() > 1) {
             minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
         } else {
             minimumThreadSize = Long.MAX_VALUE;
         }
         if (QueryTable.PARALLEL_WHERE_SEGMENTS <= 0) {
-            segmentCount = ExecutionContext.getContext().getUpdateGraph().getUpdateThreads();
+            segmentCount = ExecutionContext.getContext().getUpdateGraph().parallelismFactor();
         } else {
             segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS;
         }

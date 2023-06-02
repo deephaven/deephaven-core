@@ -124,7 +124,7 @@ public class ArrowWrapperTools {
     private static final int MAX_POOL_SIZE;
 
     static {
-        MAX_POOL_SIZE = Math.max(ExecutionContext.getContext().getUpdateGraph().getUpdateThreads(),
+        MAX_POOL_SIZE = Math.max(ExecutionContext.getContext().getUpdateGraph().parallelismFactor(),
                 Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
     }
 

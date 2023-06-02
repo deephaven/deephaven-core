@@ -116,7 +116,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     @ScriptApi
     public void waitForCompletion() throws InterruptedException {
-        if (updateGraph.isRefreshThread()) {
+        if (updateGraph.currentThreadProcessesUpdates()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }
@@ -137,7 +137,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     @ScriptApi
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
-        if (updateGraph.isRefreshThread()) {
+        if (updateGraph.currentThreadProcessesUpdates()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }

@@ -91,10 +91,10 @@ public class Replayer implements ReplayerInterface, Runnable {
         currentTables = null;
         if (updateGraph.exclusiveLock().isHeldByCurrentThread()) {
             shutdownInternal();
-        } else if (updateGraph.isRefreshThread()) {
+        } else if (updateGraph.currentThreadProcessesUpdates()) {
             updateGraph.addNotification(new TerminalNotification() {
                 @Override
-                public boolean mustExecuteWithUgpLock() {
+                public boolean mustExecuteWithUpdateGraphLock() {
                     return true;
                 }
 
