@@ -522,7 +522,6 @@ public abstract class UpdateGraphLock {
      * @param updateGraph The update graph to check for {@link UpdateGraph#clock()#currentState() current state}
      */
     private static void checkForIllegalLockFromRefreshThread(@NotNull final UpdateGraph updateGraph) {
-        // TODO-MULTI-UGP: Pass the UG in for this
         if (updateGraph.clock().currentState() == LogicalClock.State.Updating
                 && updateGraph.currentThreadProcessesUpdates()) {
             // This exception message assumes the misbehavior is from a notification (e.g. for a user listener), rather
