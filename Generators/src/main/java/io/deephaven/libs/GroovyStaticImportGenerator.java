@@ -181,7 +181,7 @@ public class GroovyStaticImportGenerator {
         this.skips = skips;
 
         for (String imp : imports) {
-            Class<?> c = Class.forName(imp);
+            Class<?> c = Class.forName(imp, false, Thread.currentThread().getContextClassLoader());
             log.info("Processing class: " + c);
 
             for (Method m : c.getMethods()) {
