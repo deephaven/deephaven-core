@@ -8,7 +8,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.internal.log.LoggerFactory;
@@ -103,8 +102,7 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                UpdateGraph updateGraph = getQueryTable().getUpdateGraph();
-                updateGraph.sharedLock().doLocked(
+                getQueryTable().getUpdateGraph().sharedLock().doLocked(
                         () -> finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
             }

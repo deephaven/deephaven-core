@@ -90,8 +90,13 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
 
     @Override
     public PartitionedTable of(@NotNull final Table table) {
-        table.getUpdateGraph();
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return internalOf(table);
+        }
+    }
 
+    private PartitionedTable internalOf(@NotNull final Table table) {
         final Map<Boolean, List<ColumnDefinition<?>>> splitColumns = table.getDefinition().getColumnStream().collect(
                 Collectors.partitioningBy(cd -> Table.class.isAssignableFrom(cd.getDataType())));
         final List<ColumnDefinition<?>> tableColumns = splitColumns.get(true);
@@ -166,7 +171,6 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         if (constituentsToUse.length == 0) {
             throw new IllegalArgumentException("No non-null constituents provided");
         }
-        // validate that the update graph is consistent
 
         final TableDefinition constituentDefinitionToUse =
                 constituentDefinition == null ? constituentsToUse[0].getDefinition() : constituentDefinition;
@@ -177,6 +181,7 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
                 Map.of(CONSTITUENT.name(), InMemoryColumnSource.getImmutableMemoryColumnSource(constituentsToUse));
 
         final Table table;
+        // validate that the update graph is consistent
         final UpdateGraph updateGraph = constituents[0].getUpdateGraph(constituents);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             table = new QueryTable(

@@ -32,10 +32,9 @@ public class ZeroKeyCrossJoinShiftState extends CrossJoinShiftState {
     }
 
     public boolean rightEmptyPrev() {
-        if (emptyChangeStep != -1) {
-            if (emptyChangeStep == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
-                return prevRightEmpty;
-            }
+        if (emptyChangeStep != -1
+                && emptyChangeStep == ExecutionContext.getContext().getUpdateGraph().clock().currentStep()) {
+            return prevRightEmpty;
         }
         return rightEmpty;
     }

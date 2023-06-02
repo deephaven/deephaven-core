@@ -29,6 +29,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -435,16 +436,18 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private Table[] snapshotConstituents() {
         if (constituentChangesPermitted) {
             final MutableObject<Table[]> resultHolder = new MutableObject<>();
-            table.getUpdateGraph();
 
-            ConstructSnapshot.callDataSnapshotFunction(
-                    "PartitionedTable.constituents(): ",
-                    ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        resultHolder.setValue(fetchConstituents(usePrev));
-                        return true;
-                    });
-            return resultHolder.getValue();
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    table.getUpdateGraph()).open()) {
+                ConstructSnapshot.callDataSnapshotFunction(
+                        "PartitionedTable.constituents(): ",
+                        ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            resultHolder.setValue(fetchConstituents(usePrev));
+                            return true;
+                        });
+                return resultHolder.getValue();
+            }
         } else {
             return fetchConstituents(false);
         }

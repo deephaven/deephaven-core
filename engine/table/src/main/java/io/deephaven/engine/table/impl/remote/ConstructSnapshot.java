@@ -492,8 +492,11 @@ public class ConstructSnapshot {
             @NotNull final BaseTable<?> table,
             @Nullable final BitSet columnsToSerialize,
             @Nullable final RowSet positionsToSnapshot) {
-        return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                positionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                table.getUpdateGraph()).open()) {
+            return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
+                    positionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
+        }
     }
 
     static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
@@ -517,7 +520,10 @@ public class ConstructSnapshot {
             return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
         };
 
-        snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                table.getUpdateGraph()).open()) {
+            snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+        }
         return snapshot;
     }
 
@@ -1280,7 +1286,6 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             RowSet keysToSnapshot) {
-        table.getUpdateGraph();
         // noinspection resource
         snapshot.rowSet = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
 
@@ -1353,7 +1358,6 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
-        table.getUpdateGraph();
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();

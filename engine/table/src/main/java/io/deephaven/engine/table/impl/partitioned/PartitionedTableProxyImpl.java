@@ -24,7 +24,9 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -184,15 +186,13 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
                     otherTable.getUpdateGraph().checkInitiateSerialTableOperation();
                 }
             }
-            if (target.table().isRefreshing() && otherTable.isRefreshing()
-                    && target.table().getUpdateGraph() != otherTable.getUpdateGraph()) {
-                throw new IllegalStateException(
-                        "Cannot perform a complexTransform between two tables that have different update contexts.");
+            final UpdateGraph updateGraph = target.table().getUpdateGraph(otherTable);
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+                return new PartitionedTableProxyImpl(
+                        target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
+                        requireMatchingKeys,
+                        sanityCheckJoins);
             }
-            return new PartitionedTableProxyImpl(
-                    target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
-                    requireMatchingKeys,
-                    sanityCheckJoins);
         }
         if (other instanceof PartitionedTable.Proxy) {
             final PartitionedTable.Proxy otherProxy = (PartitionedTable.Proxy) other;
@@ -205,32 +205,30 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             if (otherTarget.table().isRefreshing()) {
                 otherTarget.table().getUpdateGraph().checkInitiateSerialTableOperation();
             }
-            if (target.table().isRefreshing() && otherTarget.table().isRefreshing()
-                    && target.table().getUpdateGraph() != otherTarget.table().getUpdateGraph()) {
-                throw new IllegalStateException(
-                        "Cannot perform a complexTransform between two tables that have different update contexts.");
+            final UpdateGraph updateGraph = target.table().getUpdateGraph(otherTarget.table());
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+
+                final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
+                final DependentValidation uniqueKeys = requireMatchingKeys
+                        ? matchingKeysValidation(target, otherTarget, keyColumnNamePairs)
+                        : null;
+                final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
+                        ? overlappingLhsJoinKeysValidation(target, joinMatches)
+                        : null;
+                final DependentValidation overlappingRhsJoinKeys = sanityCheckJoins && joinMatches != null
+                        ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
+                        : null;
+
+                final Table validatedLhsTable = validated(target.table(), uniqueKeys, overlappingLhsJoinKeys);
+                final Table validatedRhsTable = validated(otherTarget.table(), uniqueKeys, overlappingRhsJoinKeys);
+                final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
+                final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
+
+                return new PartitionedTableProxyImpl(
+                        lhsToUse.partitionedTransform(rhsToUse, context, transformer, refreshingResults),
+                        requireMatchingKeys,
+                        sanityCheckJoins);
             }
-
-            final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
-            final DependentValidation uniqueKeys = requireMatchingKeys
-                    ? matchingKeysValidation(target, otherTarget, keyColumnNamePairs)
-                    : null;
-            final DependentValidation overlappingLhsJoinKeys = sanityCheckJoins && joinMatches != null
-                    ? overlappingLhsJoinKeysValidation(target, joinMatches)
-                    : null;
-            final DependentValidation overlappingRhsJoinKeys = sanityCheckJoins && joinMatches != null
-                    ? overlappingRhsJoinKeysValidation(otherTarget, joinMatches)
-                    : null;
-
-            final Table validatedLhsTable = validated(target.table(), uniqueKeys, overlappingLhsJoinKeys);
-            final Table validatedRhsTable = validated(otherTarget.table(), uniqueKeys, overlappingRhsJoinKeys);
-            final PartitionedTable lhsToUse = maybeRewrap(validatedLhsTable, target);
-            final PartitionedTable rhsToUse = maybeRewrap(validatedRhsTable, otherTarget);
-
-            return new PartitionedTableProxyImpl(
-                    lhsToUse.partitionedTransform(rhsToUse, context, transformer, refreshingResults),
-                    requireMatchingKeys,
-                    sanityCheckJoins);
         }
         throw new IllegalArgumentException("Unexpected TableOperations input " + other
                 + ", expected Table or PartitionedTable.Proxy");
