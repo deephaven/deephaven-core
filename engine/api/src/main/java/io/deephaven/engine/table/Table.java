@@ -736,31 +736,33 @@ public interface Table extends
     // Methods for refreshing tables
     // -----------------------------------------------------------------------------------------------------------------
 
-    // TODO (https://github.com/deephaven/deephaven-core/pull/3506): Update this advice for multiple update graphs,
-    // and on the other overloads, as well.
     /**
      * <p>
      * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}.
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     void awaitUpdate() throws InterruptedException;
 
     /**
      * <p>
      * Wait for updates to this Table. Should not be invoked from a {@link TableListener} or other
-     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification}.
+     * {@link io.deephaven.engine.updategraph.NotificationQueue.Notification notification} on this Table's
+     * {@link #getUpdateGraph() update graph}. It may be suitable to wait from another update graph if doing so does not
+     * introduce any cycles.
      * <p>
-     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup (see
-     * java.util.concurrent.locks.Condition#await()).
+     * In some implementations, this call may also terminate in case of interrupt or spurious wakeup.
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return false if the timeout elapses without notification, true otherwise.
      * @throws InterruptedException In the event this thread is interrupted
+     * @see java.util.concurrent.locks.Condition#await()
      */
     boolean awaitUpdate(long timeout) throws InterruptedException;
 
