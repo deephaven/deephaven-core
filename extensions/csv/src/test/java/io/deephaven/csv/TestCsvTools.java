@@ -87,7 +87,7 @@ public class TestCsvTools {
         final byte[] contentBytes = contents.getBytes(StandardCharsets.UTF_8);
         final byte[] contentTarBytes;
         try (final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-             final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
+                final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
             final TarArchiveEntry tarEntry = new TarArchiveEntry("test.csv");
             tarEntry.setSize(contentBytes.length);
             tarOut.putArchiveEntry(tarEntry);
@@ -204,20 +204,20 @@ public class TestCsvTools {
         final long numCols = colNames.length;
         final Table tableToTest = new InMemoryTable(
                 colNames,
-                new Object[]{
-                        new String[]{
+                new Object[] {
+                        new String[] {
                                 "key11", "key11", "key21", "key21", "key22", null, "ABCDEFGHIJK", "\"", "123",
                                 "456", "789", ",", "8"
                         },
-                        new int[]{
+                        new int[] {
                                 1, 2, 2, NULL_INT, 3, -99, -100, Integer.MIN_VALUE + 1, Integer.MAX_VALUE,
                                 5, 6, 7, 8
                         },
-                        new double[]{
+                        new double[] {
                                 2.342, 0.0932, 10000000, NULL_DOUBLE, 3, Double.MIN_VALUE, Double.MAX_VALUE,
                                 Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, -1.00, 0.0, -0.001, Double.NaN
                         },
-                        new Instant[]{
+                        new Instant[] {
                                 DateTimeUtils.epochNanosToInstant(100),
                                 DateTimeUtils.epochNanosToInstant(10000),
                                 null,
