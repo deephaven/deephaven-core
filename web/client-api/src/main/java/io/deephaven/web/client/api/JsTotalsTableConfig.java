@@ -196,8 +196,7 @@ public class JsTotalsTableConfig {
     }
 
     @JsIgnore
-    public AggregateRequest buildRequest() {
-
+    public AggregateRequest buildRequest(JsArray<String> allColumns) {
         AggregateRequest request = new AggregateRequest();
         customColumns = new JsArray<>();
         dropColumns = new JsArray<>();
@@ -221,6 +220,10 @@ public class JsTotalsTableConfig {
                 return null;
             });
         });
+        Set<String> unusedColumns = new HashSet<>(Arrays.asList(Js.<String[]>uncheckedCast(allColumns)));
+        unusedColumns.removeAll(seenColNames);
+        // no unused column can collide, add to the default operation list
+        aggs.computeIfAbsent(defaultOperation, ignore -> new LinkedHashSet<>()).addAll(unusedColumns);
 
         aggs.forEach((aggregationType, cols) -> {
             Aggregation agg = new Aggregation();
