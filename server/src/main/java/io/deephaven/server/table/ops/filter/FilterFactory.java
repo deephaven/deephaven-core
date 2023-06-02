@@ -29,7 +29,6 @@ import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -186,7 +185,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
                 values[i] = "'" + DateTimeUtils.formatDateTime(
-                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), ZoneId.systemDefault()) + "'";
+                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), DateTimeUtils.timeZone()) + "'";
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }

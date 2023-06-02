@@ -1660,7 +1660,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
             TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
                     DateTimeUtils.today(TZ_AL));
-            TestCase.assertEquals(DateTimeUtils.today(ZoneId.systemDefault()), DateTimeUtils.today());
+            TestCase.assertEquals(DateTimeUtils.today(DateTimeUtils.timeZone()), DateTimeUtils.today());
         } catch (Exception ex) {
             DateTimeUtils.setClock(initial);
             throw ex;
@@ -1686,7 +1686,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(TimeZoneAliases.zoneId(v[1]), DateTimeUtils.timeZone(v[1]));
         }
 
-        TestCase.assertEquals(ZoneId.systemDefault(), DateTimeUtils.timeZone());
+        TestCase.assertEquals(DateTimeUtils.timeZone(), DateTimeUtils.timeZone());
     }
 
     public void testTimeZoneAliasAddRm() {

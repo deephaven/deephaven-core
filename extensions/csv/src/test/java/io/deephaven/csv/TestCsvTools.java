@@ -29,8 +29,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
@@ -229,7 +227,7 @@ public class TestCsvTools {
             final String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
 
             CsvTools.writeCsv(
-                    tableToTest, csvFile.getPath(), false, ZoneId.systemDefault(), false, separator, colNames);
+                    tableToTest, csvFile.getPath(), false, DateTimeUtils.timeZone(), false, separator, colNames);
             final Scanner csvReader = new Scanner(csvFile);
 
             // Check header

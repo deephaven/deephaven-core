@@ -388,7 +388,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, boolean compressed, String destPath, boolean nullsAsEmpty,
             String... columns) throws IOException {
-        writeCsv(source, destPath, compressed, ZoneId.systemDefault(), nullsAsEmpty, columns);
+        writeCsv(source, destPath, compressed, DateTimeUtils.timeZone(), nullsAsEmpty, columns);
     }
 
     /**
@@ -416,7 +416,7 @@ public class CsvTools {
     @ScriptApi
     public static void writeCsv(Table source, String destPath, boolean nullsAsEmpty, String... columns)
             throws IOException {
-        writeCsv(source, destPath, false, ZoneId.systemDefault(), nullsAsEmpty, columns);
+        writeCsv(source, destPath, false, DateTimeUtils.timeZone(), nullsAsEmpty, columns);
     }
 
     /**
@@ -446,7 +446,7 @@ public class CsvTools {
             throws IOException {
         final PrintWriter printWriter = new PrintWriter(out);
         final BufferedWriter bufferedWriter = new BufferedWriter(printWriter);
-        CsvTools.writeCsv(source, bufferedWriter, ZoneId.systemDefault(), null, nullsAsEmpty,
+        CsvTools.writeCsv(source, bufferedWriter, DateTimeUtils.timeZone(), null, nullsAsEmpty,
                 ',', columns);
     }
 
@@ -461,8 +461,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             String... columns) throws IOException {
         CsvTools.writeCsv(source, destPath, compressed, timeZone, null, NULLS_AS_EMPTY_DEFAULT, ',', columns);
     }
@@ -479,8 +478,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             boolean nullsAsEmpty, String... columns) throws IOException {
         CsvTools.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, ',', columns);
     }
@@ -498,8 +496,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table source, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table source, String destPath, boolean compressed, ZoneId timeZone,
             boolean nullsAsEmpty, char separator, String... columns) throws IOException {
         CsvTools.writeCsv(source, destPath, compressed, timeZone, null, nullsAsEmpty, separator, columns);
     }
@@ -516,8 +513,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, ZoneId timeZone,
             String tableSeparator, String... columns) throws IOException {
         writeCsv(sources, destPath, compressed, timeZone, tableSeparator, NULLS_AS_EMPTY_DEFAULT, columns);
     }
@@ -534,8 +530,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, ZoneId timeZone,
             String tableSeparator, boolean nullsAsEmpty, String... columns) throws IOException {
         writeCsv(sources, destPath, compressed, timeZone, tableSeparator, ',', nullsAsEmpty, columns);
     }
@@ -554,8 +549,7 @@ public class CsvTools {
      * @throws IOException if the target file cannot be written
      */
     @ScriptApi
-    public static void writeCsv(Table[] sources, String destPath, boolean compressed,
-            ZoneId timeZone,
+    public static void writeCsv(Table[] sources, String destPath, boolean compressed, ZoneId timeZone,
             String tableSeparator, char fieldSeparator, boolean nullsAsEmpty, String... columns) throws IOException {
         BufferedWriter out =
                 (compressed ? new BufferedWriter(new OutputStreamWriter(new BzipFileOutputStream(destPath + ".bz2")))

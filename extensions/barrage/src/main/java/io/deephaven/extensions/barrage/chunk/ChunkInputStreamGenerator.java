@@ -247,7 +247,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == ZonedDateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), ZoneId.systemDefault()),
+                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), DateTimeUtils.timeZone()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }

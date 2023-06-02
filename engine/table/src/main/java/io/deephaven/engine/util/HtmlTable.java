@@ -11,7 +11,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 
@@ -39,7 +38,7 @@ public class HtmlTable {
                 if (value instanceof String) {
                     out.append(StringEscapeUtils.escapeCsv((String) value));
                 } else if (value instanceof Instant) {
-                    out.append(DateTimeUtils.formatDateTime((Instant) value, ZoneId.systemDefault()));
+                    out.append(DateTimeUtils.formatDateTime((Instant) value, DateTimeUtils.timeZone()));
                 } else {
                     out.append(TableTools.nullToNullString(value));
                 }
