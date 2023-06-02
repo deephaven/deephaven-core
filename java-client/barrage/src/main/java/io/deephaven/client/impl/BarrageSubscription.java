@@ -90,7 +90,8 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
+     *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
      * @return the {@code BarrageTable}
      */
@@ -102,7 +103,8 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
+     *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      * @param blockUntilComplete block execution until the subscribed table viewport is satisfied
      *
      * @return the {@code BarrageTable}
@@ -146,7 +148,8 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
+     *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      *
      * @return the {@code BarrageTable}
      */
@@ -159,7 +162,8 @@ public interface BarrageSubscription extends LivenessReferent, AutoCloseable {
      *
      * @param viewport the position-space viewport to use for the subscription
      * @param columns the columns to include in the subscription
-     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from {@link #size()} rather than {@code 0}
+     * @param reverseViewport Whether to treat {@code posRowSet} as offsets from
+     *        {@link io.deephaven.engine.table.Table#size()} rather than {@code 0}
      * @param blockUntilComplete block execution until the subscribed table viewport is satisfied
      *
      * @return the {@code BarrageTable}

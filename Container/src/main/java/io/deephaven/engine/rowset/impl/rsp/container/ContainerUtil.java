@@ -137,22 +137,22 @@ public final class ContainerUtil {
          * greater than the provided value, respectively.
          *
          * @param value
-         * @return -1 if target is to the left of value (target < value ); 0 if value == target; +1 if target is to the
-         *         right of value (value < target).
+         * @return -1 if target is to the left of value (target &lt; value ); 0 if value == target; +1 if target is to
+         *         the right of value (value &lt; target).
          */
         int directionFrom(final int value);
     }
 
     /**
-     * Search for the largest value in array such that comp.directionFrom(value) > 0, or any value such that
+     * Search for the largest value in array such that comp.directionFrom(value) &gt; 0, or any value such that
      * comp.directionFrom(value) == 0, and return its index. If there is no such a value return -1.
      *
      * @param array Array with values sorted in increasing order.
      * @param begin Start position in the array for the search.
      * @param end One past the last position in the array for the search.
      * @param comp A comparator.
-     * @return -1 if comp.directionFrom(array[begin]) < 0, otherwise the biggest position pos in [begin, end - 1] such
-     *         that comp.directionFrom(array[pos]) > 0 or, if there is a one or more positions pos for which
+     * @return -1 if comp.directionFrom(array[begin]) &lt; 0, otherwise the biggest position pos in [begin, end - 1]
+     *         such that comp.directionFrom(array[pos]) &gt; 0 or, if there is a one or more positions pos for which
      *         comp.directionFrom(array[pos]) == 0, return any of them.
      */
     public static int search(final short[] array, final int begin, final int end, final TargetComparator comp) {
@@ -203,12 +203,12 @@ public final class ContainerUtil {
     }
 
     /**
-     * Look for the biggest value of i that satisfies begin <= i < end and comp.directionFrom(i) >= 0.
+     * Look for the biggest value of i that satisfies begin &lt;= i &lt; end and comp.directionFrom(i) &gt;= 0.
      *
      * @param begin The beginning of the range (inclusive)
      * @param end The end of the range (exclusive)
      * @param comp a TargetComparator.
-     * @return the last position i inside the provided range that satisfies comp.directionFrom(i) >= 0, or -1 if none
+     * @return the last position i inside the provided range that satisfies comp.directionFrom(i) &gt;= 0, or -1 if none
      *         does.
      */
     public static int rangeSearch(final int begin, final int end, final TargetComparator comp) {

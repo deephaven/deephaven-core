@@ -12,8 +12,8 @@ import java.nio.ByteBuffer;
 /**
  * This is a ridiculously simple, light-as-I-can-make-it, but decidedly single-purpose data structure. Specifically,
  * it's a CompressedString with an embedded (to avoid reference or Object instance overhead) open-addressed
- * SimpleReference<Object>-identity -> int hash map with load factor 1 (100%) and no public operations other than
- * "putIfAbsent".
+ * SimpleReference&lt;Object&gt;-identity -&gt; int hash map with load factor 1 (100%) and no public operations other
+ * than "putIfAbsent".
  *
  * The reason for requiring that key objects be SimpleReferences is to allow for O(1) automatic slot reclamation across
  * many MappedCompressedString instances at the same time. A given source of mappings creates a single SimpleReference
@@ -23,8 +23,9 @@ import java.nio.ByteBuffer;
  *
  * Unfortunately, I haven't figured out a way to make this allow concurrent gets.
  *
- * The intended use is in Deephaven import code, for storing SymbolManager -> SymbolId mappings on the CompressedString
- * that represents the Symbol itself, typically inside of a (bounded) StringCache of MappedCompressedString instances.
+ * The intended use is in Deephaven import code, for storing SymbolManager -&gt; SymbolId mappings on the
+ * CompressedString that represents the Symbol itself, typically inside of a (bounded) StringCache of
+ * MappedCompressedString instances.
  *
  * Note that this uses io.deephaven.base.reference.SimpleReference instead of java.lang.ref.Reference so that unit tests
  * can avoid being required to use the concrete sub-classes of Reference, which all come with GC-related side-effects.
@@ -92,7 +93,7 @@ public final class MappedCompressedString extends AbstractCompressedString<Mappe
     }
 
     /**
-     * Add the specified <key, value> pair if no mapping already exists for key.
+     * Add the specified &lt;key, value&gt; pair if no mapping already exists for key.
      * 
      * @param key A non-null Reference to an arbitrary object whose reachability determines mapping validity.
      * @param potentialValue The value to insert if none already exists. Must not equal NULL_MAPPING_VALUE.
