@@ -3,29 +3,22 @@ package io.deephaven.engine.context;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NoExecutionContextRegisteredException;
+import io.deephaven.util.ExecutionContextRegistrationException;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public class PoisonedUpdateGraph implements UpdateGraph {
-    private static final Logger logger = LoggerFactory.getLogger(PoisonedUpdateGraph.class);
+
     public static final PoisonedUpdateGraph INSTANCE = new PoisonedUpdateGraph();
 
     private PoisonedUpdateGraph() {}
 
     private <T> T fail() {
-        logger.error().append("No ExecutionContext provided, or current ExecutionContext has no UpdateGraph.")
-                .append(" If this is being run in a thread, did you specify an ExecutionContext for the thread?")
-                .append(" Please refer to the documentation on ExecutionContext for details.")
-                .endl();
-        throw new NoExecutionContextRegisteredException();
+        throw ExecutionContextRegistrationException.onFailedComponentAccess("UpdateGraph");
     }
-
 
     @Override
     public LogOutput append(LogOutput logOutput) {

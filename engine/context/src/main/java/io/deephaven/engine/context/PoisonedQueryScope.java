@@ -3,24 +3,18 @@
  */
 package io.deephaven.engine.context;
 
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NoExecutionContextRegisteredException;
+import io.deephaven.util.ExecutionContextRegistrationException;
 
 import java.util.Set;
 
 public class PoisonedQueryScope extends QueryScope {
-    private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
+
     public static final PoisonedQueryScope INSTANCE = new PoisonedQueryScope();
 
     private PoisonedQueryScope() {}
 
     private <T> T fail() {
-        logger.error().append("No ExecutionContext provided, or current ExecutionContext has no QueryScope.")
-                .append(" If this is being run in a thread, did you specify an ExecutionContext for the thread?")
-                .append(" Please refer to the documentation on ExecutionContext for details.")
-                .endl();
-        throw new NoExecutionContextRegisteredException();
+        throw ExecutionContextRegistrationException.onFailedComponentAccess("QueryScope");
     }
 
     @Override
