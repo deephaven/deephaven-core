@@ -50,8 +50,7 @@ public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
     }
 
     /**
-     * Passes through to the {@link UpdateGraph update graph} associated with the current update
-     * context.
+     * Passes through to the {@link UpdateGraph update graph} associated with the current update context.
      */
     @Override
     public void requestRefresh() {

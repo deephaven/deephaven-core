@@ -21,8 +21,8 @@ public interface LogicalClock {
         Updating,
 
         /**
-         * Clock state for logical timestamps when the associated {@link UpdateGraph} is <em>not</em>
-         * propagating updates.
+         * Clock state for logical timestamps when the associated {@link UpdateGraph} is <em>not</em> propagating
+         * updates.
          */
         Idle
     }
