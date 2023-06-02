@@ -5,11 +5,11 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
+from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition, unique, count_distinct, distinct
 from deephaven.column import datetime_col
-from deephaven.execution_context import make_user_exec_ctx
+from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
@@ -60,6 +60,7 @@ class TableTestCase(BaseTestCase):
                                     weighted_avg("var", ["weights"]),
                                     ]
         self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
+        self.test_update_graph = get_exec_ctx().getUpdateGraph()
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -745,7 +746,7 @@ class TableTestCase(BaseTestCase):
             t = empty_table(1).update("X = p * 10")
             return t.to_string().split()[2]
 
-        with make_user_exec_ctx(), ugp.shared_lock():
+        with make_user_exec_ctx(), update_graph.shared_lock(self.test_update_graph):
             t = time_table("PT00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
 
         self.wait_ticking_table_update(t, row_count=5, timeout=10)
@@ -793,9 +794,9 @@ class TableTestCase(BaseTestCase):
         self.verify_table_data(rt, [101, 202])
 
     def test_ticking_table_scope(self):
-        from deephaven import ugp
+        from deephaven import update_graph
         x = 1
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             rt = time_table("PT00:00:01").update("X = x")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
         self.verify_table_data(rt, [1])
@@ -806,12 +807,12 @@ class TableTestCase(BaseTestCase):
 
         x = SimpleNamespace()
         x.v = 1
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             rt = time_table("PT00:00:01").update("X = x.v").drop_columns("Timestamp")
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)
 
         for i in range(2, 5):
-            with ugp.exclusive_lock():
+            with update_graph.exclusive_lock(self.test_update_graph):
                 x.v = i
                 self.wait_ticking_table_update(rt, row_count=rt.size + 1, timeout=5)
         self.verify_table_data(rt, list(range(1, 5)))
@@ -831,13 +832,13 @@ class TableTestCase(BaseTestCase):
         self.assertIn("2000", html_output)
 
     def test_slice(self):
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             t = time_table("PT00:00:00.01")
         rt = t.slice(0, 3)
         self.assert_table_equals(t.head(3), rt)
 
         self.wait_ticking_table_update(t, row_count=5, timeout=5)
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             rt = t.slice(t.size, -2)
             self.assertEqual(0, rt.size)
         self.wait_ticking_table_update(rt, row_count=1, timeout=5)

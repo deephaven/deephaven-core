@@ -5,8 +5,9 @@
 import unittest
 
 from deephaven import time_table, empty_table, DHError
-from deephaven.ugp import exclusive_lock
+from deephaven.update_graph import exclusive_lock
 from deephaven.experimental import time_window
+from deephaven.execution_context import get_exec_ctx
 from tests.testbase import BaseTestCase
 from deephaven import read_csv
 from deephaven.experimental.outer_joins import full_outer_join, left_outer_join
@@ -16,6 +17,7 @@ class ExperimentalTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
+        self.test_update_graph = get_exec_ctx().getUpdateGraph()
 
     def tearDown(self) -> None:
         self.test_table = None
@@ -64,7 +66,7 @@ class ExperimentalTestCase(BaseTestCase):
             self.assertRegex(str(cm.exception), r"Conflicting column names")
 
     def test_time_window(self):
-        with exclusive_lock():
+        with exclusive_lock(self.test_update_graph):
             source_table = time_table("PT00:00:00.01").update(["TS=now()"])
             t = time_window(source_table, ts_col="TS", window=10 ** 8, bool_col="InWindow")
 

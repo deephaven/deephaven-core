@@ -27,7 +27,7 @@ from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
 # Table
@@ -42,6 +42,7 @@ _JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
+_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -536,6 +537,15 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def update_graph(self) -> _JUpdateGraph:
+        """None if not refreshing otherwise is this table's update graph."""
+        if self.is_refrshing:
+            if self._update_graph is None:
+                self._update_graph = self.j_table.getUpdateGraph()
+            return self._update_graph
+        return None
 
     @property
     def is_flat(self) -> bool:
