@@ -6,9 +6,11 @@ package io.deephaven.engine.context;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
@@ -53,23 +55,8 @@ public class TestQueryCompiler {
         CLASS_CODE = testClassCode1.toString();
     }
 
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() {
-        executionContext = new ExecutionContext.Builder(new AuthContext.SuperUser())
-                .markSystemic()
-                .newQueryScope()
-                .newQueryLibrary()
-                .setQueryCompiler(QueryCompiler.createForUnitTests())
-                .setUpdateGraph(new ControlledUpdateGraph())
-                .build().open();
-    }
-
-    @After
-    public void tearDown() {
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testParallelCompile() throws Throwable {

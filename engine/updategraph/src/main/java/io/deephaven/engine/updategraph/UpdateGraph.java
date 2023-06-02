@@ -7,7 +7,6 @@ import io.deephaven.util.function.ThrowingSupplier;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.concurrent.locks.Condition;
 import java.util.function.Supplier;
 

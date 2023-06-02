@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.updategraph;
+package io.deephaven.engine.updategraph.impl;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.SleepUtil;
@@ -10,10 +10,11 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hotspot.JvmIntrospectionContext;
@@ -734,8 +735,7 @@ public class UpdateGraphProcessor implements UpdateGraph {
      */
     @TestUseOnly
     public void resetForUnitTests(final boolean after) {
-        this.<ControlledUpdateGraph>cast().resetForUnitTests(after, false, 0, 0, 0,
-                0);
+        resetForUnitTests(after, false, 0, 0, 0, 0);
     }
 
     /**
@@ -883,11 +883,11 @@ public class UpdateGraphProcessor implements UpdateGraph {
     @TestUseOnly
     public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
             throws T {
-        this.<ControlledUpdateGraph>cast().startCycleForUnitTests();
+        startCycleForUnitTests();
         try {
             runnable.run();
         } finally {
-            this.<ControlledUpdateGraph>cast().completeCycleForUnitTests();
+            completeCycleForUnitTests();
         }
     }
 
@@ -1803,6 +1803,8 @@ public class UpdateGraphProcessor implements UpdateGraph {
         SystemicObjectTracker.markThreadSystemic();
         MultiChunkPool.enableDedicatedPoolForThisThread();
         isUpdateThread.set(true);
+        // the execution context for refresh threads point toward this update graph
+        ExecutionContext.newBuilder().setUpdateGraph(this).build().open();
     }
 
     public void takeAccumulatedCycleStats(AccumulatedCycleStats ugpAccumCycleStats) {

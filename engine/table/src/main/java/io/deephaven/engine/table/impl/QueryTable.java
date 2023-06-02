@@ -1206,11 +1206,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                                             currentMappingFuture.completeExceptionally(throwable);
                                         }
                                     };
+                                    final ExecutionContext executionContext = ExecutionContext.getContext();
                                     initialFilterExecution.scheduleCompletion(x -> {
-                                        if (x.exceptionResult != null) {
-                                            currentMappingFuture.completeExceptionally(x.exceptionResult);
-                                        } else {
-                                            currentMappingFuture.complete(x.addedResult.toTracking());
+                                        try (final SafeCloseable ignored = executionContext.open()) {
+                                            if (x.exceptionResult != null) {
+                                                currentMappingFuture.completeExceptionally(x.exceptionResult);
+                                            } else {
+                                                currentMappingFuture.complete(x.addedResult.toTracking());
+                                            }
                                         }
                                     });
 

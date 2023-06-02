@@ -3,16 +3,13 @@
  */
 package io.deephaven.engine.liveness;
 
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -20,30 +17,8 @@ import org.junit.Test;
  */
 public class TestLiveness {
 
-    private boolean oldSerialSafe;
-    private LivenessScope scope;
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() throws Exception {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.enableUnitTestMode();
-        updateGraph.resetForUnitTests(false);
-        oldSerialSafe = updateGraph.setSerialTableOperationsSafe(true);
-        scope = new LivenessScope();
-        LivenessScopeStack.push(scope);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        LivenessScopeStack.pop(scope);
-        scope.release();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        updateGraph.setSerialTableOperationsSafe(oldSerialSafe);
-        updateGraph.resetForUnitTests(true);
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testRecursion() {

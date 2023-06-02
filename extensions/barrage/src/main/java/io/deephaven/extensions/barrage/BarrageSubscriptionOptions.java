@@ -60,7 +60,7 @@ public abstract class BarrageSubscriptionOptions implements StreamReaderOptions 
      *
      * Related, when shortening the minUpdateInterval, you typically want to shorten the server's UGP cycle enough to
      * update at least as quickly. This can be done on the server with the flag
-     * {@code io.deephaven.engine.updategraph.UpdateGraphProcessor#defaultTargetCycleTime}, or
+     * {@code io.deephaven.engine.updategraph.impl.UpdateGraphProcessor#defaultTargetCycleTime}, or
      * {@code -DUpdateGraphProcessor.targetcycletime=1000}.
      *
      * @return the update interval to subscribe for

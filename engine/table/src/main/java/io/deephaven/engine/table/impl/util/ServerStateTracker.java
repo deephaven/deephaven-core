@@ -8,7 +8,7 @@ import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 

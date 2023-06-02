@@ -81,7 +81,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.parentRowSet = parentRowSet;
         this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
         this.isRedirected = isRedirected;
-        this.executionContext = ExecutionContext.getContextToRecord();
+
+        final ExecutionContext userSuppliedContext = ExecutionContext.getContextToRecord();
+        if (userSuppliedContext != null) {
+            this.executionContext = userSuppliedContext;
+        } else {
+            // the job scheduler requires the update graph
+            this.executionContext = ExecutionContext.newBuilder().setUpdateGraph(updateGraph).build();
+        }
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
@@ -213,7 +220,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
             final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
             final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
-            final List<TableUpdate> splitUpdates, final boolean checkTableOperations) {
+            final List<TableUpdate> splitUpdates, final boolean serialTableOperationsSafe) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
@@ -237,7 +244,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         jobScheduler.iterateParallel(
                 executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                 numTasks, (ctx, ti, nec) -> doParallelApplyUpdate(
-                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti]),
+                        splitUpdates.get(ti), helper, liveResultOwner, serialTableOperationsSafe, destinationOffsets[ti]),
                 () -> {
                     if (!isRedirected) {
                         clearObjectsAtThisLevel(toClear);

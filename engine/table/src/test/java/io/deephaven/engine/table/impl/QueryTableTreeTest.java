@@ -3,50 +3,10 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.QueryTableTestBase;
-import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.io.log.LogLevel;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Function;
-import java.util.function.UnaryOperator;
-
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ReflexiveUse;
-import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 import org.junit.experimental.categories.Category;
-
-import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.testutil.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Test of Tree Tables and rollups.

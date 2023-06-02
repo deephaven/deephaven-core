@@ -13,7 +13,7 @@ public class NotificationAdapter extends AbstractNotification {
 
     private final NotificationQueue.Notification wrapped;
 
-    NotificationAdapter(@NotNull final NotificationQueue.Notification wrapped) {
+    public NotificationAdapter(@NotNull final NotificationQueue.Notification wrapped) {
         super(wrapped.isTerminal());
         this.wrapped = wrapped;
     }

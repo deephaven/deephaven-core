@@ -4,9 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -36,13 +34,13 @@ public class ExecutionContext {
         if ((localContext = defaultContext) == null) {
             synchronized (ExecutionContext.class) {
                 if ((localContext = defaultContext) == null) {
-                    final int numUpdateThreads = Configuration.getInstance().getIntegerWithDefault(
-                            "UpdateGraphProcessor.updateThreads", -1);
+//                    final int numUpdateThreads = Configuration.getInstance().getIntegerWithDefault(
+//                            "UpdateGraphProcessor.updateThreads", -1);
+//                            .setUpdateGraph(UpdateGraphProcessor.newBuilder("DEFAULT")
+//                            .numUpdateThreads(numUpdateThreads)
+//                            .build())
                     localContext = defaultContext = new Builder(null)
                             .markSystemic()
-                            .setUpdateGraph(UpdateGraphProcessor.newBuilder("DEFAULT")
-                                    .numUpdateThreads(numUpdateThreads)
-                                    .build())
                             .build();
                 }
             }
@@ -214,7 +212,7 @@ public class ExecutionContext {
         private QueryLibrary queryLibrary = PoisonedQueryLibrary.INSTANCE;
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
-        private UpdateGraph updateGraph = null;
+        private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
 
         private Builder() {
             // propagate the auth context from the current context
