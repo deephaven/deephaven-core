@@ -20,8 +20,8 @@ public class JsAggregationOperation {
             AVG = "Avg",
             STD = "Std",
             FIRST = "First",
-            LAST = "Last"/*,
-            UNIQUE = "Unique"*/;
+            LAST = "Last",
+            UNIQUE = "Unique";
     // Array operation isn't legal in all contexts, just omit it for now
     // ARRAY = "Array",
     // These need some other parameter to function, not supported yet

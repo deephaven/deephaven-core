@@ -71,8 +71,8 @@ public class JsTotalsTableConfig {
             JsAggregationOperation.FIRST,
             JsAggregationOperation.LAST,
             JsAggregationOperation.COUNT_DISTINCT,
-            JsAggregationOperation.DISTINCT/*,
-            JsAggregationOperation.UNIQUE*/);
+            JsAggregationOperation.DISTINCT,
+            JsAggregationOperation.UNIQUE);
 
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
@@ -82,6 +82,10 @@ public class JsTotalsTableConfig {
             Js.cast(JsObject.create(null));
 
     public JsArray<String> groupBy = new JsArray<>();
+
+    private AggregateRequest grpcRequest;
+    private JsArray<String> customColumns;
+    private JsArray<String> dropColumns;
 
     public JsTotalsTableConfig() {}
 
@@ -193,7 +197,10 @@ public class JsTotalsTableConfig {
 
     @JsIgnore
     public AggregateRequest buildRequest() {
+
         AggregateRequest request = new AggregateRequest();
+        customColumns = new JsArray<>();
+        dropColumns = new JsArray<>();
 
         request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupBy));
         JsArray<Aggregation> aggregations = new JsArray<>();
@@ -226,6 +233,12 @@ public class JsTotalsTableConfig {
                     AggregationCount count = new AggregationCount();
                     count.setColumnName("Count");
                     agg.setCount(count);
+                    aggColumns.forEach((p0, p1, p2) -> {
+                        String colName = p0.split("=")[0].trim();
+                        customColumns.push(colName + "__Count = Count");
+                        return null;
+                    });
+                    dropColumns.push("Count");
                     break;
                 }
                 case JsAggregationOperation.COUNT_DISTINCT: {
@@ -233,8 +246,8 @@ public class JsTotalsTableConfig {
                     spec.setCountDistinct(new AggSpecCountDistinct());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.DISTINCT: {
@@ -242,8 +255,13 @@ public class JsTotalsTableConfig {
                     spec.setDistinct(new AggSpecDistinct());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
+                    aggColumns.forEach((p0, p1, p2) -> {
+                        String colName = p0.split("=")[0].trim();
+                        customColumns.push(colName + "= `` + " + colName);
+                        return null;
+                    });
                     break;
                 }
                 case JsAggregationOperation.MIN: {
@@ -251,8 +269,8 @@ public class JsTotalsTableConfig {
                     spec.setMin(new AggSpecMin());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.MAX: {
@@ -260,8 +278,8 @@ public class JsTotalsTableConfig {
                     spec.setMax(new AggSpecMax());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.SUM: {
@@ -269,8 +287,8 @@ public class JsTotalsTableConfig {
                     spec.setSum(new AggSpecSum());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.ABS_SUM: {
@@ -278,8 +296,8 @@ public class JsTotalsTableConfig {
                     spec.setAbsSum(new AggSpecAbsSum());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.VAR: {
@@ -287,8 +305,8 @@ public class JsTotalsTableConfig {
                     spec.setVar(new AggSpecVar());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.AVG: {
@@ -296,8 +314,8 @@ public class JsTotalsTableConfig {
                     spec.setAvg(new AggSpecAvg());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.STD: {
@@ -305,8 +323,8 @@ public class JsTotalsTableConfig {
                     spec.setStd(new AggSpecStd());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.FIRST: {
@@ -314,8 +332,8 @@ public class JsTotalsTableConfig {
                     spec.setFirst(new AggSpecFirst());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
                 case JsAggregationOperation.LAST: {
@@ -323,23 +341,23 @@ public class JsTotalsTableConfig {
                     spec.setLast(new AggSpecLast());
                     columns = new AggregationColumns();
                     columns.setSpec(spec);
-                    agg.setColumns(columns);
                     columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
                     break;
                 }
-//                case JsAggregationOperation.UNIQUE: {
-//                    AggSpec spec = new AggSpec();
-//                    AggSpecUnique unique = new AggSpecUnique();
-//                    AggSpecNonUniqueSentinel sentinel = new AggSpecNonUniqueSentinel();
-//                    sentinel.setNullValue(Table_pb.NullValue.getNULL_VALUE());
-//                    unique.setNonUniqueSentinel(sentinel);
-//                    spec.setUnique(unique);
-//                    columns = new AggregationColumns();
-//                    columns.setSpec(spec);
-//                    agg.setColumns(columns);
-//                    columns.setMatchPairsList(aggColumns);
-//                    break;
-//                }
+                case JsAggregationOperation.UNIQUE: {
+                    AggSpec spec = new AggSpec();
+                    AggSpecUnique unique = new AggSpecUnique();
+                    AggSpecNonUniqueSentinel sentinel = new AggSpecNonUniqueSentinel();
+                    sentinel.setNullValue(Table_pb.NullValue.getNULL_VALUE());
+                    unique.setNonUniqueSentinel(sentinel);
+                    spec.setUnique(unique);
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    columns.setMatchPairsList(aggColumns);
+                    agg.setColumns(columns);
+                    break;
+                }
                 // case JsAggregationOperation.SORTED_FIRST: {
                 // // TODO #3302 support this
                 // }
@@ -376,5 +394,14 @@ public class JsTotalsTableConfig {
                 JsArray<String>::new,
                 JsArray::push,
                 (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))));
+    }
+
+    @JsIgnore
+    public JsArray<String> getCustomColumns() {
+        return customColumns;
+    }
+    @JsIgnore
+    public JsArray<String> getDropColumns() {
+        return dropColumns;
     }
 }

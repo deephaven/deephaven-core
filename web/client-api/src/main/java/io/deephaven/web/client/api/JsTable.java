@@ -17,21 +17,28 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedta
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SeekRowResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batchtablerequest.Operation;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.ResponseStream;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
@@ -656,10 +663,41 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     newState, ")");
 
             AggregateRequest requestMessage = directive.buildRequest();
+            JsArray<String> updateViewExprs = directive.getCustomColumns();
+            JsArray<String> dropColumns = directive.getDropColumns();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
             requestMessage.setResultId(newState.getHandle().makeTicket());
-            workerConnection.tableServiceClient().aggregate(requestMessage, workerConnection.metadata(),
-                    callback::apply);
+            if (updateViewExprs != null && updateViewExprs.length != 0) {
+                SelectOrUpdateRequest columnExpr = new SelectOrUpdateRequest();
+                columnExpr.setResultId(requestMessage.getResultId());
+                requestMessage.setResultId();
+                columnExpr.setColumnSpecsList(updateViewExprs);
+                TableReference prev = new TableReference();
+                prev.setBatchOffset(0);
+                columnExpr.setSourceId(prev);
+                BatchTableRequest batch = new BatchTableRequest();
+                Operation aggOp = new Operation();
+                aggOp.setAggregate(requestMessage);
+                Operation colsOp = new Operation();
+                colsOp.setUpdateView(columnExpr);
+                batch.addOps(aggOp);
+                batch.addOps(colsOp);
+                ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper.of(workerConnection.tableServiceClient().batch(batch, workerConnection.metadata()));
+                stream.onData(creationResponse -> {
+                    if (creationResponse.getResultId().hasTicket()) {
+                        // represents the final output
+                        callback.apply(null, creationResponse);
+                    }
+                });
+                stream.onEnd(status -> {
+                    if (!status.isOk()) {
+                        callback.apply(status, null);
+                    }
+                });
+            } else {
+                workerConnection.tableServiceClient().aggregate(requestMessage, workerConnection.metadata(),
+                        callback::apply);
+            }
         };
         String summary = "totals table " + directive + ", " + directive.groupBy.join(",");
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
