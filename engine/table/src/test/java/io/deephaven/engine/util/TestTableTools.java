@@ -334,7 +334,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final Table table = TableTools.newTable(instantCol, instantCol2);
 
         // make sure both columns are in fact Instant columns
-        final Table meta = table.getMeta();
+        final Table meta = table.meta();
         Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(0));
         Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(1));
 

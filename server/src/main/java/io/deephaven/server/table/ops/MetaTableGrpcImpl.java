@@ -26,6 +26,6 @@ public class MetaTableGrpcImpl extends GrpcTableOperation<MetaTableRequest> {
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table parent = sourceTables.get(0).get();
-        return parent.getMeta();
+        return parent.meta();
     }
 }
