@@ -7,7 +7,6 @@ the data between table operations.
 """
 
 import contextlib
-from collections import abc
 from functools import wraps
 from typing import Callable, Union
 
@@ -65,7 +64,7 @@ def has_shared_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "Parti
 
 @contextlib.contextmanager
 def exclusive_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]):
-    """Context manager for running a block of code under a Update Graph (UG) exclusive lock.
+    """Context manager for running a block of code under an Update Graph (UG) exclusive lock.
 
     Args:
         ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
@@ -90,7 +89,7 @@ def exclusive_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "Partit
 
 @contextlib.contextmanager
 def shared_lock(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]):
-    """Context manager for running a block of code under a Update Graph (UG) shared lock.
+    """Context manager for running a block of code under an Update Graph (UG) shared lock.
 
     Args:
         ug (Union[_JUpdateGraph, Table, PartitionedTable, PartitionTableProxy]): The Update Graph (UG) or a table-like object.
@@ -137,6 +136,7 @@ def exclusive_locked(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "Part
         return do_locked
 
     return inner_wrapper
+
 
 def shared_locked(ug: Union[_JUpdateGraph, "Table", "PartitionedTable", "PartitionTableProxy"]) -> Callable:
     """A decorator that ensures the decorated function be called under the Update Graph (UG) shared lock.

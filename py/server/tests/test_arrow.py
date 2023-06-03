@@ -22,6 +22,7 @@ class ArrowTestCase(BaseTestCase):
     test_table: Table
 
     def setUp(self) -> None:
+        super().setUp()
         cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
@@ -39,6 +40,7 @@ class ArrowTestCase(BaseTestCase):
 
     def tearDown(self) -> None:
         del self.test_table
+        super().tearDown()
 
     def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]

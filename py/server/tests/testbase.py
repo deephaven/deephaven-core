@@ -3,7 +3,6 @@
 #
 
 import time
-import contextlib
 import unittest
 
 import jpy

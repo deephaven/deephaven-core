@@ -5,8 +5,8 @@
 import jpy
 import unittest
 
-from deephaven import time_table, DHError, merge, merge_sorted
-from deephaven import update_graph as ugp
+from deephaven import time_table, DHError, merge
+from deephaven import update_graph as ug
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -20,40 +20,40 @@ def partitioned_transform_func(t: Table, ot: Table) -> Table:
     return t.natural_join(ot, on=["X", "Z"], joins=["f"])
 
 
-class UgpTestCase(BaseTestCase):
+class UpdateGraphTestCase(BaseTestCase):
     def setUp(self) -> None:
         super().setUp()
-        ugp.auto_locking = False
+        ug.auto_locking = False
         self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self):
-        ugp.auto_locking = True
+        ug.auto_locking = True
         super().tearDown()
 
-    def test_ugp_context_manager(self):
+    def test_ug_context_manager(self):
         with self.assertRaises(DHError) as cm:
             test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        with ugp.exclusive_lock(self.test_update_graph):
+        with ug.exclusive_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
         # nested locking
-        with ugp.exclusive_lock(self.test_update_graph):
-            with ugp.shared_lock(self.test_update_graph):
+        with ug.exclusive_lock(self.test_update_graph):
+            with ug.shared_lock(self.test_update_graph):
                 test_table = time_table("PT00:00:00.001").update(["TS=now()"])
             test_table = time_table("PT00:00:00.001").update(["TS=now()"])
 
         with self.assertRaises(DHError) as cm:
-            with ugp.shared_lock(self.test_update_Graph):
-                with ugp.exclusive_lock(self.test_update_graph):
+            with ug.shared_lock(self.test_update_graph):
+                with ug.exclusive_lock(self.test_update_graph):
                     test_table = time_table("PT00:00:00.001").update(["TS=now()"])
         self.assertRegex(str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock")
 
-    def test_ugp_decorator_exclusive(self):
+    def test_ug_decorator_exclusive(self):
         def ticking_table_op(tail_size: int, period: str = "PT00:00:01"):
             return time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
 
@@ -61,7 +61,7 @@ class UgpTestCase(BaseTestCase):
             t = ticking_table_op(16)
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        @ugp.exclusive_locked(self.test_update_graph)
+        @ug.exclusive_locked(self.test_update_graph)
         def ticking_table_op_decorated(tail_size: int, period: str = "PT00:00:01"):
             t = time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
             self.assertEqual(t.size, 0)
@@ -76,8 +76,8 @@ class UgpTestCase(BaseTestCase):
         t = ticking_table_op_decorated(10, "PT00:00:00.001")
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
 
-    def test_ugp_decorator_shared(self):
-        @ugp.shared_locked(self.test_update_graph)
+    def test_ug_decorator_shared(self):
+        @ug.shared_locked(self.test_update_graph)
         def ticking_table_op_decorated(tail_size: int, period: str = "PT00:00:01"):
             t = time_table(period).update(["X=i%11"]).sort("X").tail(tail_size)
             self.assertEqual(t.size, 0)
@@ -93,10 +93,10 @@ class UgpTestCase(BaseTestCase):
         self.wait_ticking_table_update(t, row_count=8, timeout=5)
 
     def test_auto_locking_release(self):
-        ugp.auto_locking = True
+        ug.auto_locking = True
         test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
-        self.assertFalse(ugp.has_shared_lock(self.test_update_graph))
-        self.assertFalse(ugp.has_exclusive_lock(self.test_update_graph))
+        self.assertFalse(ug.has_shared_lock(self.test_update_graph))
+        self.assertFalse(ug.has_exclusive_lock(self.test_update_graph))
 
     def test_auto_locking_update_select(self):
         test_table = time_table("PT00:00:00.001")
@@ -114,13 +114,13 @@ class UgpTestCase(BaseTestCase):
                 self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         # auto_locking on
-        ugp.auto_locking = True
+        ug.auto_locking = True
         for op in ops:
             with self.subTest(op=op):
                 result_table = op(test_table, "X = i % 11")
 
     def test_auto_locking_wherein(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         unique_table = test_table.head(num_rows=50).select_distinct(formulas=["X", "Y"])
 
@@ -132,12 +132,12 @@ class UgpTestCase(BaseTestCase):
             result_table = test_table.where_not_in(unique_table, cols=["Y"])
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         result_table = test_table.where_in(unique_table, cols=["Y"])
         result_table = test_table.where_not_in(unique_table, cols=["Y"])
 
     def test_auto_locking_joins(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         left_table = test_table.drop_columns(["Z", "Timestamp"])
@@ -157,13 +157,13 @@ class UgpTestCase(BaseTestCase):
                     result_table = left_table.aj(right_table, on="X")
                 self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         for op in ops:
             with self.subTest(op=op):
                 result_table = left_table.aj(right_table, on="X")
 
     def test_auto_locking_rename_columns(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         cols_to_rename = [
@@ -174,23 +174,23 @@ class UgpTestCase(BaseTestCase):
             result_table = test_table.rename_columns(cols_to_rename)
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         result_table = test_table.rename_columns(cols_to_rename)
 
     def test_auto_locking_ungroup(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13"])
         grouped_table = test_table.group_by(by=["Y"])
         with self.assertRaises(DHError) as cm:
             ungrouped_table = grouped_table.ungroup(cols=["X"])
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         ungrouped_table = grouped_table.ungroup(cols=["X"])
 
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
 
         for op in ops:
@@ -200,65 +200,65 @@ class UgpTestCase(BaseTestCase):
                     self.assertLessEqual(result_table.size, test_table.size)
                 self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         for op in ops:
             with self.subTest(op=op):
                 result_table = op(test_table, num_rows=1, by=["X"])
                 self.assertLessEqual(result_table.size, test_table.size)
 
     def test_auto_locking_partitioned_table(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
         pt = test_table.partition_by(by="Y")
 
         with self.subTest("Merge"):
-            ugp.auto_locking = False
+            ug.auto_locking = False
             with self.assertRaises(DHError) as cm:
                 t = pt.merge()
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-            ugp.auto_locking = True
+            ug.auto_locking = True
             t = pt.merge()
 
         with self.subTest("Transform"):
-            ugp.auto_locking = False
+            ug.auto_locking = False
             with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt1 = pt.transform(transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-            ugp.auto_locking = True
+            ug.auto_locking = True
             with make_user_exec_ctx():
                 pt1 = pt.transform(transform_func)
 
         with self.subTest("Partitioned Transform"):
-            ugp.auto_locking = False
+            ug.auto_locking = False
             with make_user_exec_ctx(), self.assertRaises(DHError) as cm:
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-            ugp.auto_locking = True
+            ug.auto_locking = True
             with make_user_exec_ctx():
                 pt2 = pt.partitioned_transform(pt1, partitioned_transform_func)
 
     def test_auto_locking_table_factory(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
             test_table1 = time_table("PT00:00:00.001").update(["X=i", "Y=i%23", "Z=X*Y"])
 
         with self.subTest("Merge"):
-            ugp.auto_locking = False
+            ug.auto_locking = False
             with self.assertRaises(DHError) as cm:
                 t = merge([test_table, test_table1])
             self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-            ugp.auto_locking = True
+            ug.auto_locking = True
             t = merge([test_table, test_table1])
 
         with self.subTest("Merge Sorted"):
             self.skipTest("mergeSorted does not yet support refreshing tables")
 
     def test_auto_locking_partitioned_table_proxy(self):
-        with ugp.shared_lock(self.test_update_graph):
+        with ug.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
         proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
         proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
@@ -267,7 +267,7 @@ class UgpTestCase(BaseTestCase):
             joined_pt_proxy = proxy.natural_join(proxy2, on="X")
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
-        ugp.auto_locking = True
+        ug.auto_locking = True
         joined_pt_proxy = proxy.natural_join(proxy2, on="X")
         del joined_pt_proxy
 

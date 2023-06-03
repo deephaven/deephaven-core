@@ -8,8 +8,9 @@ from deephaven.pandas import to_pandas
 
 from deephaven import time_table, DHError
 
-from deephaven.update_graph import exclusive_lock
+from deephaven.execution_context import get_exec_ctx
 from deephaven.liveness_scope import liveness_scope
+from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 
 class LivenessTestCase(BaseTestCase):

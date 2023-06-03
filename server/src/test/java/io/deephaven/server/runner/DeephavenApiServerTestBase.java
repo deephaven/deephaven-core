@@ -8,8 +8,9 @@ import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -80,6 +81,7 @@ public abstract class DeephavenApiServerTestBase {
     private TestComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
+    private SafeCloseable scopeCloseable;
 
     @Before
     public void setUp() throws Exception {
@@ -108,10 +110,13 @@ public abstract class DeephavenApiServerTestBase {
 
         server = serverComponent.getServer();
         server.startForUnitTests();
+
+        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
     }
 
     @After
     public void tearDown() throws Exception {
+        scopeCloseable.close();
 
         try {
             server.server().stopWithTimeout(5, TimeUnit.SECONDS);
