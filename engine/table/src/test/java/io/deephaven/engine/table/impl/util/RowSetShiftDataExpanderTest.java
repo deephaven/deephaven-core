@@ -11,14 +11,20 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClockImpl;
+import net.bytebuddy.build.Plugin;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 public class RowSetShiftDataExpanderTest {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
 
     /**
      * These tests names have a few qualities worth defining: - Major Shift: shift with no overlap in keyspace before
