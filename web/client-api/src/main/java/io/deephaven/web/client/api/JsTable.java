@@ -19,6 +19,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggr
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Literal;
@@ -666,14 +667,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             JsArray<String> dropColumns = directive.getDropColumns();
             requestMessage.setSourceId(target.getHandle().makeTableReference());
             requestMessage.setResultId(newState.getHandle().makeTicket());
-            if (updateViewExprs != null && updateViewExprs.length != 0) {
+            if (updateViewExprs.length != 0) {
                 SelectOrUpdateRequest columnExpr = new SelectOrUpdateRequest();
                 columnExpr.setResultId(requestMessage.getResultId());
                 requestMessage.setResultId();
                 columnExpr.setColumnSpecsList(updateViewExprs);
-                TableReference prev = new TableReference();
-                prev.setBatchOffset(0);
-                columnExpr.setSourceId(prev);
+                columnExpr.setSourceId(new TableReference());
+                columnExpr.getSourceId().setBatchOffset(0);
                 BatchTableRequest batch = new BatchTableRequest();
                 Operation aggOp = new Operation();
                 aggOp.setAggregate(requestMessage);
@@ -681,6 +681,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 colsOp.setUpdateView(columnExpr);
                 batch.addOps(aggOp);
                 batch.addOps(colsOp);
+                if (dropColumns.length != 0) {
+                    DropColumnsRequest drop = new DropColumnsRequest();
+                    drop.setColumnNamesList(dropColumns);
+                    drop.setResultId(columnExpr.getResultId());
+                    columnExpr.setResultId();
+                    drop.setSourceId(new TableReference());
+                    drop.getSourceId().setBatchOffset(1);
+
+                    Operation dropOp = new Operation();
+                    dropOp.setDropColumns(drop);
+                    batch.addOps(dropOp);
+                }
                 ResponseStreamWrapper<ExportedTableCreationResponse> stream = ResponseStreamWrapper
                         .of(workerConnection.tableServiceClient().batch(batch, workerConnection.metadata()));
                 stream.onData(creationResponse -> {
