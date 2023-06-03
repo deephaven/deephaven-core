@@ -102,8 +102,8 @@ public abstract class DeephavenApiServerTestBase {
 
         server = serverComponent.getServer();
 
-        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(server.getUpdateGraph()).open();
-        final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
+        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.enableUnitTestMode();
             updateGraph.resetForUnitTests(false);
