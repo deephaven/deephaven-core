@@ -1871,7 +1871,7 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
 
         /**
-         * Sets the number of threads to use in the update graph processor. Values < 0 indicate to use one thread per
+         * Sets the number of threads to use in the update graph processor. Values &lt; 0 indicate to use one thread per
          * available processor.
          *
          * @param numUpdateThreads number of threads to use in update processing
