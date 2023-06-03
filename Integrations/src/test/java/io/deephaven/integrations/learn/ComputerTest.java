@@ -8,19 +8,21 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.junit.*;
 
 import java.util.Objects;
 import java.util.function.Function;
 
 public class ComputerTest {
 
-    private static InMemoryTable table;
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
-    @BeforeClass
-    public static void createTable() {
+    private InMemoryTable table;
+
+    @Before
+    public void createTable() {
         table = new InMemoryTable(
                 new String[] {"Column1", "Column2", "Column3"},
                 new Object[] {
