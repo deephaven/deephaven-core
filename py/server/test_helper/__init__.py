@@ -12,7 +12,6 @@ from typing import Dict
 
 from deephaven_internal import jvm
 
-
 py_dh_session = None
 
 
@@ -57,7 +56,6 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         }
         jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
 
-
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
@@ -69,7 +67,10 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         global py_dh_session
-        py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+        _JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
+        test_update_graph = _JUpdateGraph.newBuilder("PYTHON_TEST").existingOrBuild()
+        _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+        py_dh_session = _JPythonScriptSession(test_update_graph, py_scope_jpy)
 
 
 def _expandWildcardsInList(elements):

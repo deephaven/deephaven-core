@@ -26,8 +26,8 @@ import io.deephaven.client.impl.FlightSessionFactory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -113,8 +113,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession() {
-            return new NoLanguageDeephavenSession("non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
+            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
         }
 
         @Provides
@@ -167,8 +167,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Provides
         @Singleton
-        static UpdateGraphProcessor provideUpdateGraphProcessor() {
-            return UpdateGraphProcessor.DEFAULT;
+        static UpdateGraph provideUpdateGraph() {
+            return ExecutionContext.getContext().getUpdateGraph();
         }
     }
 
@@ -609,8 +609,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
         scriptSession.setVariable(staticTableName, table);
@@ -640,8 +640,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
             // stuff table into the scope

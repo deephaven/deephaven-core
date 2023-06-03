@@ -2,11 +2,13 @@ package io.deephaven.engine.table.impl.hierarchical;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.hierarchical.*;
+import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -14,6 +16,7 @@ import io.deephaven.engine.table.impl.TableAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -180,14 +183,21 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
     static abstract class RecordingTableAdapter implements TableAdapter {
 
         private final TableDefinition definition;
+        private final UpdateGraph updateGraph;
 
         RecordingTableAdapter(@NotNull final TableDefinition definition) {
+            this.updateGraph = ExecutionContext.getContext().getUpdateGraph();
             this.definition = definition;
         }
 
         @Override
         public final TableDefinition getDefinition() {
             return definition;
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return updateGraph;
         }
     }
 

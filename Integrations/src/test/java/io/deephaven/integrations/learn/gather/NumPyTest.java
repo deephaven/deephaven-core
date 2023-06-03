@@ -6,15 +6,17 @@ package io.deephaven.integrations.learn.gather;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.junit.*;
+
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class NumPyTest {
 
-    private static InMemoryTable table;
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private static final String[] boolColNames = {"bool1", "bool2"};
     private static final boolean[][] boolData = {
             new boolean[] {true, true, false, false},
@@ -69,12 +71,14 @@ public class NumPyTest {
             doubleData[0], doubleData[1]
     };
 
-    @BeforeClass
-    public static void setup() {
+    private InMemoryTable table;
+
+    @Before
+    public void setup() {
         table = new InMemoryTable(columnNames, columnData);
     }
 
-    public static ColumnSource<?>[] getColSet(final String[] colNames) {
+    public ColumnSource<?>[] getColSet(final String[] colNames) {
         ColumnSource<?>[] rst = new ColumnSource[2];
 
         for (int i = 0; i < 2; i++) {

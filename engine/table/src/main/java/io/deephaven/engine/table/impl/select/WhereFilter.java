@@ -126,7 +126,7 @@ public interface WhereFilter extends Filter {
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
-     *        then the caller must acquire the UpdateGraphProcessor lock.
+     *        then the caller must acquire the PeriodicUpdateGraph lock.
      *
      * @return The subset of selection accepted by this filter; ownership passes to the caller
      */
@@ -157,7 +157,7 @@ public interface WhereFilter extends Filter {
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
-     *        then the caller must acquire the UpdateGraphProcessor lock.
+     *        then the caller must acquire the PeriodicUpdateGraph lock.
      *
      * @return The subset of selection not accepted by this filter; ownership passes to the caller
      */
@@ -179,7 +179,7 @@ public interface WhereFilter extends Filter {
      * @param table the table to filter
      * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
      *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
-     *        then the caller must acquire the UpdateGraphProcessor lock.
+     *        then the caller must acquire the PeriodicUpdateGraph lock.
      * @param invert if the filter should be inverted
      * @return The subset of selection; ownership passes to the caller
      */

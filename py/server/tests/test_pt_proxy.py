@@ -4,11 +4,12 @@
 
 import unittest
 
-from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, ugp
+from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, update_graph
 from deephaven.agg import sum_, avg, pct, weighted_avg, formula, group, first, last, max_, median, min_, std, abs_sum, \
     var
 from deephaven.table import PartitionedTableProxy
 from tests.testbase import BaseTestCase
+from deephaven.execution_context import get_exec_ctx
 
 
 class PartitionedTableProxyTestCase(BaseTestCase):
@@ -17,6 +18,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self):
         self.partitioned_table = None
@@ -27,7 +29,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
 
     def test_is_refreshing(self):
-        with ugp.shared_lock():
+        with update_graph.shared_lock(self.test_update_graph):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         pt = test_table.partition_by("Y")

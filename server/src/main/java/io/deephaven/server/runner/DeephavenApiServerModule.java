@@ -9,7 +9,9 @@ import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.appmode.ApplicationsModule;
 import io.deephaven.server.config.ConfigServiceModule;
@@ -96,8 +98,10 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static Scheduler provideScheduler(final @Named("scheduler.poolSize") int poolSize) {
-        final ThreadFactory concurrentThreadFactory = new ThreadFactory("Scheduler-Concurrent");
+    public static Scheduler provideScheduler(
+            final @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) UpdateGraph updateGraph,
+            final @Named("scheduler.poolSize") int poolSize) {
+        final ThreadFactory concurrentThreadFactory = new ThreadFactory("Scheduler-Concurrent", updateGraph);
         final ScheduledExecutorService concurrentExecutor =
                 new ScheduledThreadPoolExecutor(poolSize, concurrentThreadFactory) {
                     @Override
@@ -107,7 +111,7 @@ public class DeephavenApiServerModule {
                     }
                 };
 
-        final ThreadFactory serialThreadFactory = new ThreadFactory("Scheduler-Serial");
+        final ThreadFactory serialThreadFactory = new ThreadFactory("Scheduler-Serial", updateGraph);
         final ExecutorService serialExecutor = new ThreadPoolExecutor(1, 1, 0L,
                 TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), serialThreadFactory) {
 
@@ -146,19 +150,27 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static UpdateGraphProcessor provideUpdateGraphProcessor() {
-        return UpdateGraphProcessor.DEFAULT;
+    @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
+    public static UpdateGraph provideUpdateGraph() {
+        return PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
+                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+                .existingOrBuild();
     }
 
     private static class ThreadFactory extends NamingThreadFactory {
-        public ThreadFactory(final String name) {
+        private final UpdateGraph updateGraph;
+
+        public ThreadFactory(final String name, final UpdateGraph updateGraph) {
             super(DeephavenApiServer.class, name);
+            this.updateGraph = updateGraph;
         }
 
         @Override
         public Thread newThread(final @NotNull Runnable r) {
             return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
+                // noinspection resource
+                ExecutionContext.getContext().withUpdateGraph(updateGraph).open();
                 r.run();
             }));
         }

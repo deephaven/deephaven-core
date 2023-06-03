@@ -3,14 +3,24 @@
  */
 package io.deephaven.plot.datasets.category;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.*;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
+import org.junit.Rule;
+import org.junit.Test;
 
-public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
+
+public class TestCategoryDataSeriesMap {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
+
     private static final int SIZE = 500;
     private static final BaseFigureImpl f = new BaseFigureImpl();
     private static final AxesImpl a = f.newChart().newAxes();
@@ -37,6 +47,7 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
     private static final IndexableDataDouble dxMismatched = new IndexableDataDouble(dataXMisMatched, false, null);
     private static final IndexableNumericData dy = new IndexableNumericDataArrayDouble(dataY, null);
 
+    @Test
     public void testCategoryDataSeriesMap() {
         CategoryDataSeriesMap map = new CategoryDataSeriesMap(a, 1, "Test", dx, dy);
 
@@ -80,6 +91,7 @@ public class TestCategoryDataSeriesMap extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testCopy() {
         final CategoryDataSeriesMap map1 = new CategoryDataSeriesMap(a, 1, "Test", dx, dy);
         final CategoryDataSeriesMap map1Copy = map1.copy(new BaseFigureImpl().newChart().newAxes());

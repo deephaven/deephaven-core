@@ -11,6 +11,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
@@ -967,18 +968,21 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @NotNull final Table keyTable,
             @Nullable final ColumnName keyTableActionColumn) {
         if (keyTable.isRefreshing()) {
-            final MutableObject<Collection<KeyTableDirective>> rootNodeInfoHolder = new MutableObject<>();
-            // NB: This snapshot need not be notification-aware. If the key table ticks so be it, as long as we
-            // extracted a consistent view of its contents.
-            final SnapshotControl keyTableSnapshotControl =
-                    makeSnapshotControl(false, true, (NotificationStepSource) keyTable);
-            callDataSnapshotFunction(getClass().getSimpleName() + "-keys", keyTableSnapshotControl,
-                    (final boolean usePrev, final long beforeClockValue) -> {
-                        rootNodeInfoHolder.setValue(extractKeyTableNodeDirectives(
-                                keyTable, keyTableActionColumn, usePrev));
-                        return true;
-                    });
-            return rootNodeInfoHolder.getValue();
+            try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
+                    keyTable.getUpdateGraph()).open()) {
+                final MutableObject<Collection<KeyTableDirective>> rootNodeInfoHolder = new MutableObject<>();
+                // NB: This snapshot need not be notification-aware. If the key table ticks so be it, as long as we
+                // extracted a consistent view of its contents.
+                final SnapshotControl keyTableSnapshotControl =
+                        makeSnapshotControl(false, true, (NotificationStepSource) keyTable);
+                callDataSnapshotFunction(getClass().getSimpleName() + "-keys", keyTableSnapshotControl,
+                        (final boolean usePrev, final long beforeClockValue) -> {
+                            rootNodeInfoHolder.setValue(extractKeyTableNodeDirectives(
+                                    keyTable, keyTableActionColumn, usePrev));
+                            return true;
+                        });
+                return rootNodeInfoHolder.getValue();
+            }
         } else {
             return extractKeyTableNodeDirectives(keyTable, keyTableActionColumn, false);
         }
@@ -1143,7 +1147,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             @NotNull final RowSequence rows,
             @NotNull final WritableChunk<? super Values>[] destinations) {
         synchronized (snapshotState) {
-            try (final SafeCloseable ignored = snapshotState.initializeSnapshot(columns, rows, destinations)) {
+            try (final SafeCloseable ignored1 = snapshotState.initializeSnapshot(columns, rows, destinations);
+                    final SafeCloseable ignored2 = ExecutionContext.getContext().withUpdateGraph(
+                            source.getUpdateGraph()).open()) {
                 if (source.isRefreshing()) {
                     // NB: This snapshot control must be notification-aware, because if our sources tick we cannot
                     // guarantee that we won't observe some newly-created components on their instantiation step.

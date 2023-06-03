@@ -1,18 +1,19 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
@@ -295,7 +296,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     void updateAndValidate(QueryTable src, Table result, ThrowingRunnable<?> updateFunc)
             throws Exception {
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateFunc);
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(updateFunc);
 
         try {
             for (int ii = 0; ii < 2; ii++) {
@@ -406,7 +407,8 @@ public class TestForwardFill extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < 100; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> generateAppends(100, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(100, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }

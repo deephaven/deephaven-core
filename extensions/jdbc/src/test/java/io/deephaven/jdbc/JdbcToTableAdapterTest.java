@@ -5,16 +5,14 @@ package io.deephaven.jdbc;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeFormatter;
 import io.deephaven.time.DateTimeFormatters;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.function.ThrowingRunnable;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -30,6 +28,9 @@ import java.util.TimeZone;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
 public class JdbcToTableAdapterTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     private static final ZoneId TZ_UTC = ZoneId.of("UTC");
 

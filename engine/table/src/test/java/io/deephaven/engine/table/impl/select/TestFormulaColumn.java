@@ -45,15 +45,13 @@ public class TestFormulaColumn {
         return Arrays.asList(new Object[] {false}, new Object[] {true});
     }
 
-    private final Table testDataTable;
-    private final Map<String, ColumnDefinition<?>> availableColumns;
+    private Table testDataTable;
+    private Map<String, ColumnDefinition<?>> availableColumns;
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
 
     public TestFormulaColumn(boolean useKernelFormulas) {
         this.useKernelFormulas = useKernelFormulas;
-        testDataTable = getTestDataTable();
-        availableColumns = testDataTable.getDefinition().getColumnNameMap();
     }
 
     @Rule
@@ -61,6 +59,9 @@ public class TestFormulaColumn {
 
     @Before
     public void setUp() throws Exception {
+        testDataTable = getTestDataTable();
+        availableColumns = testDataTable.getDefinition().getColumnNameMap();
+
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
 

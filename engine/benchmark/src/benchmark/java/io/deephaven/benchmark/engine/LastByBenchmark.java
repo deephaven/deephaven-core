@@ -5,8 +5,10 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
@@ -67,7 +69,8 @@ public class LastByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        TestExecutionContext.createForUnitTests().open();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -192,8 +195,8 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastByStatic(@NotNull final Blackhole bh) {
-        final Table result =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.lastBy(keyColumnNames));
+        final Table result = ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                .computeLocked(() -> table.lastBy(keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -201,7 +204,10 @@ public class LastByBenchmark {
     @Benchmark
     public Table lastByIncremental(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> t.lastBy(keyColumnNames));
+                }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -209,7 +215,10 @@ public class LastByBenchmark {
     @Benchmark
     public Table lastByRolling(@NotNull final Blackhole bh) {
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.lastBy(keyColumnNames)), table);
+                (t) -> {
+                    return ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                            .computeLocked(() -> t.lastBy(keyColumnNames));
+                }, table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -221,9 +230,10 @@ public class LastByBenchmark {
         final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
+        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> {
+            return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                    () -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames));
+        },
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -236,9 +246,10 @@ public class LastByBenchmark {
         final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
+        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> {
+            return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                    () -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames));
+        },
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -251,9 +262,10 @@ public class LastByBenchmark {
         final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
+        final Table result = IncrementalBenchmark.rollingBenchmark((t) -> {
+            return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                    () -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames));
+        },
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

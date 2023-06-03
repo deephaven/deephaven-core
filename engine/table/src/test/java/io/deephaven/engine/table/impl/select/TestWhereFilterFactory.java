@@ -3,20 +3,16 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class TestWhereFilterFactory extends TestCase {
-
-    private SafeCloseable executionContext;
+public class TestWhereFilterFactory extends RefreshingTableTestCase {
 
     private static final String STRING_COLUMN = "Strings";
     private static final String INTEGER_COLUMN = "Integers";
@@ -36,21 +32,14 @@ public class TestWhereFilterFactory extends TestCase {
     private Table table;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
         table = TableTools.newTable(
                 TableTools.col(STRING_COLUMN, NORMAL_STRING, NEEDS_ESCAPE, NO_COMMAS_A, NO_COMMAS_B, WITH_COMMAS_A,
                         WITH_COMMAS_B),
                 TableTools.col(INTEGER_COLUMN, 0, 1, 2, 3, 4, 5),
                 TableTools.col(FLOAT_COLUMN, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0),
                 TableTools.col(BOOLEAN_COLUMN, true, false, true, false, true, false));
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
     }
 
     public void testColumnNameInValueNormal() {

@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
@@ -48,15 +47,15 @@ public class TestParquetTools {
     @Rule
     public final EngineCleanup framework = new EngineCleanup();
 
+    private Table table1;
+    private Table emptyTable;
+    private Table brokenTable;
+
     private String testRoot;
     private File testRootFile;
 
-    private static Table table1;
-    private static Table emptyTable;
-    private static Table brokenTable;
-
-    @BeforeClass
-    public static void setUpFirst() {
+    @Before
+    public void setUp() throws IOException {
         table1 = new InMemoryTable(
                 new String[] {"StringKeys", "GroupedInts"},
                 new Object[] {
@@ -70,19 +69,9 @@ public class TestParquetTools {
                         new byte[] {}
                 });
         brokenTable = (Table) Proxy.newProxyInstance(Table.class.getClassLoader(), new Class[] {Table.class},
-                new InvocationHandler() {
-                    @Override
-                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                        throw new UnsupportedOperationException("This table is broken!");
-                    }
+                (proxy, method, args) -> {
+                    throw new UnsupportedOperationException("This table is broken!");
                 });
-    }
-
-    @Before
-    public void setUp() throws IOException {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-
         testRootFile = Files.createTempDirectory(TestParquetTools.class.getName()).toFile();
         testRoot = testRootFile.toString();
     }

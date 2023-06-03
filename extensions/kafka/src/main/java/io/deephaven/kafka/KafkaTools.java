@@ -17,6 +17,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -29,7 +30,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
@@ -1331,7 +1332,7 @@ public class KafkaTools {
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
-            return UpdateGraphProcessor.DEFAULT;
+            return ExecutionContext.getContext().getUpdateGraph();
         }
 
         @Override
@@ -1354,7 +1355,8 @@ public class KafkaTools {
 
     private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
 
-        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
+        private final UpdateSourceCombiner refreshCombiner =
+                new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
@@ -1618,10 +1620,10 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
         if (table.isRefreshing()
-                && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
-                && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
+                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
@@ -1713,7 +1715,7 @@ public class KafkaTools {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 
@@ -1740,7 +1742,8 @@ public class KafkaTools {
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
+            UpdateGraph updateGraph = table().getUpdateGraph();
+            updateGraph.addSource(refreshCombiner);
         }
 
         @Override

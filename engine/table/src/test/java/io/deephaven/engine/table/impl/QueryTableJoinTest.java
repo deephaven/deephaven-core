@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -15,7 +16,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -561,15 +561,16 @@ public class QueryTableJoinTest {
                 }
         };
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
         TstUtils.validate(en);
 
         System.out.println("Notifying listeners of modification.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
+        updateGraph.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
         System.out.println("Finished notifying listeners of modification.");
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(4));
             table.notifyListeners(i(), i(4), i());
         });
@@ -632,7 +633,8 @@ public class QueryTableJoinTest {
         assertEquals(asList(null, null, null, null),
                 asList((Object[]) DataAccessHelpers.getColumn(aj, "RSentinel").getDirect()));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(left, i(2), col("Group", "h"), col("LInt", 4), col("LSentinel", "b"));
             left.notifyListeners(i(), i(), i(2));
         });

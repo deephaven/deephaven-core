@@ -15,13 +15,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.BarrageMessage.Listener;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.tablelogger.Row;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -180,15 +178,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         }
 
         // test lock conditions
-        if (UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+        if (resultTable.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new UnsupportedOperationException(
-                    "Cannot snapshot while holding the UpdateGraphProcessor shared lock");
+                    "Cannot snapshot while holding the UpdateGraph shared lock");
         }
 
         prevUsed = true;
 
-        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
-            completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+        if (resultTable.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()) {
+            completedCondition = resultTable.getUpdateGraph().exclusiveLock().newCondition();
         }
 
         if (!connected) {
@@ -244,7 +242,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private void signalCompletion() {
         if (completedCondition != null) {
-            UpdateGraphProcessor.DEFAULT.requestSignal(completedCondition);
+            resultTable.getUpdateGraph().requestSignal(completedCondition);
         } else {
             synchronized (BarrageSnapshotImpl.this) {
                 BarrageSnapshotImpl.this.notifyAll();

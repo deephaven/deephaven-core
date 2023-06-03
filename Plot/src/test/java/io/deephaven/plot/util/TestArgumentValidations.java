@@ -3,7 +3,7 @@
  */
 package io.deephaven.plot.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.gui.color.Color;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayInt;
@@ -12,12 +12,22 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTimeUtils;
 import junit.framework.TestCase;
+import org.junit.Rule;
+import org.junit.Test;
 
 import java.time.Instant;
 import java.util.Date;
 
-public class TestArgumentValidations extends BaseArrayTestCase {
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 
+public class TestArgumentValidations {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
+
+    @Test
     public void testArgumentValidations() {
         final String NON_NULL = "TEST";
         final String message = "message";
@@ -247,6 +257,7 @@ public class TestArgumentValidations extends BaseArrayTestCase {
         }
     }
 
+    @Test
     public void testNaNSafeEquals() {
         assertTrue(ArgumentValidations.nanSafeEquals(5, 5));
         assertFalse(ArgumentValidations.nanSafeEquals(4, 5));

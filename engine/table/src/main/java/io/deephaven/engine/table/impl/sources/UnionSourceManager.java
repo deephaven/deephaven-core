@@ -96,7 +96,8 @@ public class UnionSourceManager {
             coalescedPartitions.addUpdateListener(constituentChangesListener);
             listenerRecorders.offer(constituentChangesListener);
 
-            updateCommitter = new UpdateCommitter<>(this, usm -> usm.unionRedirection.copyCurrToPrev());
+            updateCommitter = new UpdateCommitter<>(this, partitionedTable.table().getUpdateGraph(),
+                    usm -> usm.unionRedirection.copyCurrToPrev());
         } else {
             listenerRecorders = null;
             mergedListener = null;

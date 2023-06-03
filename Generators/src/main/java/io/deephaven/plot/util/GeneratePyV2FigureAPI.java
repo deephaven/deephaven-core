@@ -123,7 +123,7 @@ public class GeneratePyV2FigureAPI {
      * @throws ClassNotFoundException JCLASS is not found
      */
     public static Map<Key, ArrayList<JavaFunction>> getMethodSignatures() throws ClassNotFoundException {
-        final Class<?> c = Class.forName(JCLASS);
+        final Class<?> c = Class.forName(JCLASS, false, Thread.currentThread().getContextClassLoader());
         final Map<Key, ArrayList<JavaFunction>> signatures = new TreeMap<>();
 
         for (final Method m : c.getMethods()) {

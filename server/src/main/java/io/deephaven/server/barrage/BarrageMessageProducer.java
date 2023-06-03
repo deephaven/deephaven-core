@@ -29,9 +29,8 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ShiftInversionHelper;
 import io.deephaven.engine.table.impl.util.UpdateCoalescer;
-import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -69,18 +68,18 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
 
 /**
  * The server-side implementation of a Barrage replication source.
- *
+ * <p>
  * When a client subscribes initially, a snapshot of the table is sent. The snapshot is obtained using either get() or
  * getPrev() based on the state of the LogicalClock. On each subsequent update, the client is given the deltas between
  * the last update propagation and the next.
- *
+ * <p>
  * When a client changes its subscription it will be sent a snapshot of only the data that the server believes it needs
  * assuming that the client has been respecting the existing subscription. Practically, this means that the server may
  * omit some data if the client's viewport change overlaps the currently recognized viewport.
- *
+ * <p>
  * It is possible to use this replication source to create subscriptions that propagate changes from one UGP to another
  * inside the same JVM.
- *
+ * <p>
  * The client-side counterpart of this is the {@link StreamReader}.
  *
  * @param <MessageView> The sub-view type that the listener expects to receive.
@@ -114,12 +113,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         @AssistedFactory
         public interface Factory<MessageView> {
-            Operation<MessageView> create(BaseTable parent, long updateIntervalMs);
+            Operation<MessageView> create(BaseTable<?> parent, long updateIntervalMs);
         }
 
         private final Scheduler scheduler;
         private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
-        private final BaseTable parent;
+        private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
 
@@ -127,7 +126,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                @Assisted final BaseTable parent,
+                @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
             this(scheduler, streamGeneratorFactory, parent, updateIntervalMs, null);
         }
@@ -136,7 +135,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-                final BaseTable parent,
+                final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
             this.scheduler = scheduler;
@@ -303,7 +302,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     public BarrageMessageProducer(final Scheduler scheduler,
             final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
-            final BaseTable parent,
+            final BaseTable<?> parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
@@ -596,9 +595,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         @Override
         public void onUpdate(final TableUpdate upstream) {
             synchronized (BarrageMessageProducer.this) {
-                if (lastIndexClockStep >= LogicalClock.DEFAULT.currentStep()) {
+                if (lastIndexClockStep >= parent.getUpdateGraph().clock().currentStep()) {
                     throw new IllegalStateException(logPrefix + "lastIndexClockStep=" + lastIndexClockStep
-                            + " >= notification on " + LogicalClock.DEFAULT.currentStep());
+                            + " >= notification on "
+                            + parent.getUpdateGraph().clock().currentStep());
                 }
 
                 final boolean shouldEnqueueDelta = !activeSubscriptions.isEmpty();
@@ -611,7 +611,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 parentTableSize = parent.size();
 
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
-                lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
+                lastIndexClockStep = parent.getUpdateGraph().clock().currentStep();
                 if (log.isDebugEnabled()) {
                     try (final RowSet prevRowSet = parent.getRowSet().copyPrev()) {
                         log.debug().append(logPrefix)
@@ -841,9 +841,11 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (log.isDebugEnabled()) {
-            log.debug().append(logPrefix).append("step=").append(LogicalClock.DEFAULT.currentStep())
-                    .append(", upstream=").append(upstream).append(", activeSubscriptions=")
-                    .append(activeSubscriptions.size())
+            log.debug().append(logPrefix)
+                    .append("updateGraph=").append(parent.getUpdateGraph())
+                    .append(", step=").append(parent.getUpdateGraph().clock().currentStep())
+                    .append(", upstream=").append(upstream)
+                    .append(", activeSubscriptions=").append(activeSubscriptions.size())
                     .append(", numFullSubscriptions=").append(numFullSubscriptions)
                     .append(", addsToRecord=").append(addsToRecord)
                     .append(", modsToRecord=").append(modsToRecord)
@@ -920,11 +922,12 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
         if (log.isDebugEnabled()) {
             log.debug().append(logPrefix).append("update accumulation complete for step=")
-                    .append(LogicalClock.DEFAULT.currentStep()).endl();
+                    .append(parent.getUpdateGraph().clock().currentStep()).endl();
         }
 
-        pendingDeltas.add(new Delta(LogicalClock.DEFAULT.currentStep(), deltaColumnOffset, upstream, addsToRecord,
-                modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
+        pendingDeltas
+                .add(new Delta(parent.getUpdateGraph().clock().currentStep(), deltaColumnOffset,
+                        upstream, addsToRecord, modsToRecord, (BitSet) activeColumns.clone(), modifiedColumns));
     }
 
     private void schedulePropagation() {
@@ -1328,8 +1331,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
                 if (SUBSCRIPTION_GROWTH_ENABLED && snapshot.rowsIncluded.size() > 0) {
                     // very simplistic logic to take the last snapshot and extrapolate max number of rows that will
                     // not exceed the target UGP processing time percentage
+                    PeriodicUpdateGraph updateGraph = parent.getUpdateGraph().cast();
                     long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                            * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000000);
+                            * updateGraph.getTargetCycleDurationMillis()
+                            * 1000000);
 
                     long nanosPerCell = elapsed / (snapshot.rowsIncluded.size() * columnCount);
 
@@ -2208,7 +2213,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     }
 
     @Override
-    protected void destroy() {
+    protected synchronized void destroy() {
         super.destroy();
         if (stats != null) {
             stats.stop();
@@ -2324,6 +2329,10 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
             parents.add(parent);
             if (parent instanceof LivenessReferent) {
                 manage((LivenessReferent) parent);
+            }
+            if (parent instanceof NotificationQueue.Dependency) {
+                // ensure that we are in the same update graph
+                this.parent.getUpdateGraph((NotificationQueue.Dependency) parent);
             }
         }
     }

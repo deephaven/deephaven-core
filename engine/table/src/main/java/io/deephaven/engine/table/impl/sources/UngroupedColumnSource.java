@@ -3,15 +3,15 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 
 public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
-    long lastPreviousClockTick = LogicalClock.DEFAULT.currentStep();
+    long lastPreviousClockTick = updateGraph.clock().currentStep();
 
     public void initializeBase(long base) {
         this.prevBase = base;
@@ -24,7 +24,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     public void setBase(long base) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = updateGraph.clock().currentStep();
         if (lastPreviousClockTick != currentStep) {
             prevBase = this.base;
             lastPreviousClockTick = currentStep;
@@ -33,7 +33,7 @@ public abstract class UngroupedColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     public long getPrevBase() {
-        if (lastPreviousClockTick == LogicalClock.DEFAULT.currentStep()) {
+        if (lastPreviousClockTick == updateGraph.clock().currentStep()) {
             return prevBase;
         } else {
             return base;

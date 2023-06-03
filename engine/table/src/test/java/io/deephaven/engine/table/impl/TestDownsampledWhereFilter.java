@@ -3,16 +3,14 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
-import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
-import io.deephaven.util.SafeCloseable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import org.junit.Test;
 
 import java.util.Random;
@@ -20,17 +18,8 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class TestDownsampledWhereFilter {
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() throws Exception {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testDownsampledWhere() {

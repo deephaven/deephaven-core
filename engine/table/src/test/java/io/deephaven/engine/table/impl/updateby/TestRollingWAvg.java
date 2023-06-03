@@ -4,15 +4,16 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -1035,8 +1036,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
 
@@ -1071,8 +1072,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -1109,8 +1110,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
 
@@ -1147,8 +1148,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -1297,7 +1298,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1331,7 +1332,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1368,7 +1369,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1405,7 +1406,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }

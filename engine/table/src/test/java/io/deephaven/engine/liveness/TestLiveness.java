@@ -3,15 +3,13 @@
  */
 package io.deephaven.engine.liveness;
 
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -19,28 +17,8 @@ import org.junit.Test;
  */
 public class TestLiveness {
 
-    private boolean oldCheckUgp;
-    private LivenessScope scope;
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
-        scope = new LivenessScope();
-        LivenessScopeStack.push(scope);
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        LivenessScopeStack.pop(scope);
-        scope.release();
-        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testRecursion() {

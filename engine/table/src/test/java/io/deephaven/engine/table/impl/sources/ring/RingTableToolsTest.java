@@ -3,14 +3,15 @@
  */
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.BlinkTableTools;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
@@ -96,8 +97,9 @@ public class RingTableToolsTest {
         final Table tail = BlinkTableTools.blinkToAppendOnly(streamHelper.blinkTable).tail(capacity);
         final Table ring = RingTableTools.of(streamHelper.blinkTable, capacity, true);
         checkEquals(tail, ring);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int i = 0; i < times; ++i) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 streamHelper.addAndNotify(appendSize, holders);
                 checkEquals(tail, ring);
             });

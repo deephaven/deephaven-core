@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import com.github.javaparser.ast.expr.Expression;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -360,15 +360,15 @@ public class TestConstantFormulaEvaluation {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
         final String[] formulas = new String[] {"x = x * 2", "z = y", "u=7"};
-        QueryTable table2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
+        QueryTable table2 = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
                 () -> (QueryTable) table.select(formulas));
         Set<String> expectedConstValueColumns = Collections.singleton("u");
         Integer[] expectedConstValues = new Integer[] {7};
         checkConstantFormula(table2, expectedConstValueColumns, expectedConstValues, int.class);
 
         final String[] formulas2 = new String[] {"x = x * 2", "z1 = z", "u1=u", "u2=u1 * 2"};
-        QueryTable table3 =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> (QueryTable) table2.select(formulas2));
+        QueryTable table3 = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> (QueryTable) table2.select(formulas2));
         Set<String> expectedConstValueColumns2 = Collections.singleton("u1");
         Integer[] expectedConstValues2 = new Integer[] {7};
         // verify parent constant value ColumnSource is same when inherited as is

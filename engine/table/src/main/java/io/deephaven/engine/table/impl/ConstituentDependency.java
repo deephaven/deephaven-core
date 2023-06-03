@@ -14,7 +14,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
@@ -72,6 +72,11 @@ public class ConstituentDependency implements Dependency {
     }
 
     @Override
+    public UpdateGraph getUpdateGraph() {
+        return resultUpdatedDependency.getUpdateGraph();
+    }
+
+    @Override
     public LogOutput append(@NotNull final LogOutput logOutput) {
         return logOutput.append("ConstituentDependency-").append(System.identityHashCode(this));
     }
@@ -82,7 +87,7 @@ public class ConstituentDependency implements Dependency {
             return true;
         }
         if (!resultUpdatedDependency.satisfied(step)) {
-            UpdateGraphProcessor.DEFAULT.logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("Result updated dependency not satisfied for ").append(this)
                     .append(", dependency=").append(resultUpdatedDependency)
                     .endl();
@@ -118,7 +123,7 @@ public class ConstituentDependency implements Dependency {
                         for (int di = 0; di < numConstituents; ++di) {
                             final Dependency constituent = dependencies.get(di);
                             if (constituent != null && !constituent.satisfied(step)) {
-                                UpdateGraphProcessor.DEFAULT.logDependencies()
+                                getUpdateGraph().logDependencies()
                                         .append("Constituent dependencies not satisfied for ")
                                         .append(this).append(", constituent=").append(constituent)
                                         .endl();
@@ -135,7 +140,7 @@ public class ConstituentDependency implements Dependency {
             }
             Assert.eq(firstUnsatisfiedRowPosition, "firstUnsatisfiedRowPosition", resultRows.size(),
                     "resultRows.size()");
-            UpdateGraphProcessor.DEFAULT.logDependencies()
+            getUpdateGraph().logDependencies()
                     .append("All constituent dependencies satisfied for ").append(this)
                     .endl();
             lastSatisfiedStep = step;

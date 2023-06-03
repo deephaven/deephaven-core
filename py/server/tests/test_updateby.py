@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import read_csv, time_table, ugp
+from deephaven import read_csv, time_table, update_graph
 from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick, ema_time, \
     ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, emstd_tick, emstd_time,\
     cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
@@ -12,13 +12,15 @@ from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, D
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
     rolling_std_tick, rolling_std_time, rolling_wavg_tick, rolling_wavg_time
 from tests.testbase import BaseTestCase
+from deephaven.execution_context import get_exec_ctx
 
 
 class UpdateByTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
         self.static_table = read_csv("tests/data/test_table.csv").update("Timestamp=now()")
-        with ugp.exclusive_lock():
+        self.test_update_graph = get_exec_ctx().update_graph
+        with update_graph.exclusive_lock(self.test_update_graph):
             self.ticking_table = time_table("PT00:00:00.001").update(
                 ["a = i", "b = i*i % 13", "c = i * 13 % 23", "d = a + b", "e = a - b"])
 
@@ -163,7 +165,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt = t.update_by(ops=op, by="b")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.columns), 1 + len(t.columns))
-                    with ugp.exclusive_lock():
+                    with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
     def test_em_proxy(self):
@@ -178,7 +180,7 @@ class UpdateByTestCase(BaseTestCase):
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
                         self.assertEqual(len(rct.columns), 1 + len(ct.columns))
-                        with ugp.exclusive_lock():
+                        with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)                        
 
     def test_simple_ops(self):
@@ -190,7 +192,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt = t.update_by(ops=op(pairs), by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
+                    with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
     def test_simple_ops_proxy(self):
@@ -209,7 +211,7 @@ class UpdateByTestCase(BaseTestCase):
                                      2 + len(pt_proxy.target.constituent_table_columns))
 
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        with ugp.exclusive_lock():
+                        with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)
 
     def test_rolling_ops(self):
@@ -219,7 +221,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt = t.update_by(ops=op, by="c")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
+                    with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
     def test_rolling_ops_proxy(self):
@@ -234,7 +236,7 @@ class UpdateByTestCase(BaseTestCase):
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
                         self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
+                        with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)                       
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ public abstract class AbstractNotification implements NotificationQueue.Notifica
     }
 
     @Override
-    public boolean mustExecuteWithUgpLock() {
+    public boolean mustExecuteWithUpdateGraphLock() {
         return false;
     }
 

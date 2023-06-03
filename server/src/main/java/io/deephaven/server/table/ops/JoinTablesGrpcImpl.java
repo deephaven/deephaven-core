@@ -12,7 +12,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -39,10 +38,9 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
 
     private final Function<T, List<String>> getColMatchList;
     private final Function<T, List<String>> getColAddList;
-    private final UpdateGraphProcessor updateGraphProcessor;
     private final RealTableOperation<T> realTableOperation;
 
-    protected JoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor,
+    protected JoinTablesGrpcImpl(
             final PermissionFunction<T> permission,
             final Function<BatchTableRequest.Operation, T> getRequest,
             final Function<T, Ticket> getTicket,
@@ -51,7 +49,6 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             final Function<T, List<String>> getColAddList,
             final RealTableOperation<T> realTableOperation) {
         super(permission, getRequest, getTicket, getDependencies);
-        this.updateGraphProcessor = updateGraphProcessor;
         this.getColMatchList = getColMatchList;
         this.getColAddList = getColAddList;
         this.realTableOperation = realTableOperation;
@@ -90,8 +87,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         if (!lhs.isRefreshing() && !rhs.isRefreshing()) {
             result = realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request);
         } else {
-            result = updateGraphProcessor.sharedLock().computeLocked(
-                    () -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
+            result = lhs.getUpdateGraph(rhs).sharedLock()
+                    .computeLocked(() -> realTableOperation.apply(lhs, rhs, columnsToMatch, columnsToAdd, request));
         }
         return result;
     }
@@ -104,10 +101,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> List.of(request.getLeftId(), request.getRightId());
 
         @Inject
-        protected AsOfJoinTablesGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, authWiring::checkPermissionAsOfJoinTables,
+        protected AsOfJoinTablesGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionAsOfJoinTables,
                     BatchTableRequest.Operation::getAsOfJoin, AsOfJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     AsOfJoinTablesRequest::getColumnsToMatchList, AsOfJoinTablesRequest::getColumnsToAddList,
@@ -159,10 +154,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> List.of(request.getLeftId(), request.getRightId());
 
         @Inject
-        public CrossJoinTablesGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, authWiring::checkPermissionCrossJoinTables,
+        public CrossJoinTablesGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionCrossJoinTables,
                     BatchTableRequest.Operation::getCrossJoin, CrossJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     CrossJoinTablesRequest::getColumnsToMatchList, CrossJoinTablesRequest::getColumnsToAddList,
@@ -190,10 +183,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> List.of(request.getLeftId(), request.getRightId());
 
         @Inject
-        public ExactJoinTablesGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, authWiring::checkPermissionExactJoinTables,
+        public ExactJoinTablesGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionExactJoinTables,
                     BatchTableRequest.Operation::getExactJoin, ExactJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     ExactJoinTablesRequest::getColumnsToMatchList, ExactJoinTablesRequest::getColumnsToAddList,
@@ -214,10 +205,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> List.of(request.getLeftId(), request.getRightId());
 
         @Inject
-        public LeftJoinTablesGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, authWiring::checkPermissionLeftJoinTables,
+        public LeftJoinTablesGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionLeftJoinTables,
                     BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
@@ -238,10 +227,8 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 (request) -> List.of(request.getLeftId(), request.getRightId());
 
         @Inject
-        public NaturalJoinTablesGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, authWiring::checkPermissionNaturalJoinTables,
+        public NaturalJoinTablesGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionNaturalJoinTables,
                     BatchTableRequest.Operation::getNaturalJoin, NaturalJoinTablesRequest::getResultId,
                     EXTRACT_DEPS,
                     NaturalJoinTablesRequest::getColumnsToMatchList, NaturalJoinTablesRequest::getColumnsToAddList,

@@ -21,6 +21,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,6 +61,11 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default String getDescription() {
+        return throwUnsupported();
+    }
+
+    @Override
+    default UpdateGraph getUpdateGraph() {
         return throwUnsupported();
     }
 

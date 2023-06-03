@@ -9,9 +9,6 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Simple source table with no partitioning support.
  */

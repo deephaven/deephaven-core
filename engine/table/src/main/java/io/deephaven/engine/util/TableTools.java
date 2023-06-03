@@ -8,6 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -15,7 +16,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.replay.Replayer;
@@ -847,7 +847,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer), null, periodNanos, false);
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), Replayer.getClock(replayer),
+                null, periodNanos, false);
     }
 
     /**
@@ -858,7 +859,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Instant startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentClock(), startTime, periodNanos, false);
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), DateTimeUtils.currentClock(),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -870,7 +872,8 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Instant startTime, long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer), startTime, periodNanos, false);
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), Replayer.getClock(replayer),
+                startTime, periodNanos, false);
     }
 
     /**
@@ -905,7 +908,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Clock clock, Instant startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, periodNanos, false);
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), clock, startTime, periodNanos, false);
     }
 
     /**

@@ -10,12 +10,13 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.table.validation.ColumnExpressionValidator;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -30,16 +31,13 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     }
 
     private final RealTableOperation realTableOperation;
-    private final UpdateGraphProcessor updateGraphProcessor;
 
     protected HeadOrTailByGrpcImpl(
             final PermissionFunction<HeadOrTailByRequest> permission,
             final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
-            final RealTableOperation realTableOperation,
-            final UpdateGraphProcessor updateGraphProcessor) {
+            final RealTableOperation realTableOperation) {
         super(permission, getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
-        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -64,31 +62,34 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         // overloads that take SelectColumn arrays throw UnsupportedOperationException, but we validate anyway
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
-
         // note that headBy/tailBy use ungroup which currently requires the UGP lock
-        return updateGraphProcessor.sharedLock()
-                .computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
+        try (final SafeCloseable ignored = lock(parent)) {
+            return realTableOperation.apply(parent, request.getNumRows(), columnSpecs);
+        }
+    }
+
+    private SafeCloseable lock(Table parent) {
+        if (parent.isRefreshing()) {
+            UpdateGraph updateGraph = parent.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 
     @Singleton
     public static class HeadByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public HeadByGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(authWiring::checkPermissionHeadBy, BatchTableRequest.Operation::getHeadBy, Table::headBy,
-                    updateGraphProcessor);
+        public HeadByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionHeadBy, BatchTableRequest.Operation::getHeadBy, Table::headBy);
         }
     }
 
     @Singleton
     public static class TailByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public TailByGrpcImpl(
-                final TableServiceContextualAuthWiring authWiring,
-                final UpdateGraphProcessor updateGraphProcessor) {
-            super(authWiring::checkPermissionTailBy, BatchTableRequest.Operation::getTailBy, Table::tailBy,
-                    updateGraphProcessor);
+        public TailByGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionTailBy, BatchTableRequest.Operation::getTailBy, Table::tailBy);
         }
     }
 }

@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -19,10 +20,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -31,22 +32,15 @@ import java.util.Random;
 import static junit.framework.TestCase.*;
 
 public abstract class AbstractObjectColumnSourceTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     @NotNull
     abstract WritableColumnSource<Object> makeTestSource();
 
     int getSourceSize() {
         return 16384;
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Test
@@ -61,47 +55,46 @@ public abstract class AbstractObjectColumnSourceTest {
     private void testFill(Random random, int chunkSize) {
         final WritableColumnSource<Object> source = makeTestSource();
 
-        final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-        final WritableObjectChunk dest = WritableObjectChunk.makeWritableChunk(chunkSize);
+        try (final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
+             final WritableObjectChunk dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
 
-        source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
-        for (int ii = 0; ii < 1024; ++ii) {
-            checkFromSource("null check: " + ii, null, dest.get(ii));
-        }
+            source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
+            for (int ii = 0; ii < 1024; ++ii) {
+                checkFromSource("null check: " + ii, null, dest.get(ii));
+            }
 
-        final int expectedBlockSize = 1024;
-        final Object [] expectations = new Object[getSourceSize()];
-        // region arrayFill
-        Arrays.fill(expectations, null);
-        // endregion arrayFill
-        final Object [] randomObjects = ArrayGenerator.randomObjects(random, expectations.length / 2);
-        for (int ii = 0; ii < expectations.length; ++ii) {
-            final int block = ii / expectedBlockSize;
-            if (block % 2 == 0) {
-                final Object randomObject = randomObjects[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
-                expectations[ii] = randomObject;
-                source.set(ii, randomObject);
+            final int expectedBlockSize = 1024;
+            final Object[] expectations = new Object[getSourceSize()];
+            // region arrayFill
+            Arrays.fill(expectations, null);
+            // endregion arrayFill
+            final Object[] randomObjects = ArrayGenerator.randomObjects(random, expectations.length / 2);
+            for (int ii = 0; ii < expectations.length; ++ii) {
+                final int block = ii / expectedBlockSize;
+                if (block % 2 == 0) {
+                    final Object randomObject = randomObjects[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
+                    expectations[ii] = randomObject;
+                    source.set(ii, randomObject);
+                }
+            }
+
+            // before we have the previous tracking enabled, prev should just fall through to get
+            for (boolean usePrev : new boolean[]{false, true}) {
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 0, expectations.length - 1, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, expectations.length - 100, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 200, expectations.length - 1124, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 700, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 1024, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 250, 250, usePrev);
+                checkRangeFill(chunkSize, source, fillContext, dest, expectations, 250, 251, usePrev);
+
+                // lets make a few random indices
+                for (int seed = 0; seed < 100; ++seed) {
+                    final RowSet rowSet = generateIndex(random, expectations.length, 1 + random.nextInt(31));
+                    checkRandomFill(chunkSize, source, fillContext, dest, expectations, rowSet, usePrev);
+                }
             }
         }
-
-        // before we have the previous tracking enabled, prev should just fall through to get
-        for (boolean usePrev : new boolean[]{false, true}) {
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 0, expectations.length - 1, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, expectations.length - 100, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 200, expectations.length - 1124, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 700, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 100, 1024, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 250, 250, usePrev);
-            checkRangeFill(chunkSize, source, fillContext, dest, expectations, 250, 251, usePrev);
-
-            // lets make a few random indices
-            for (int seed = 0; seed < 100; ++seed) {
-                final RowSet rowSet = generateIndex(random, expectations.length, 1 + random.nextInt(31));
-                checkRandomFill(chunkSize, source, fillContext, dest, expectations, rowSet, usePrev);
-            }
-        }
-
-        fillContext.close();
     }
 
     @Test
@@ -307,17 +300,17 @@ public abstract class AbstractObjectColumnSourceTest {
     // null reference exception at commit time. The fix is to have the chunk methods bail out early if there is nothing
     // to do.
     @Test
-    public void testFilllEmptyChunkWithPrev() {
+    public void testFillEmptyChunkWithPrev() {
         final ObjectSparseArraySource src = new ObjectSparseArraySource<>(String.class);
         src.startTrackingPrevValues();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ObjectSparseArraySource.commitUpdates()
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
     }
 
     @Test
@@ -329,40 +322,39 @@ public abstract class AbstractObjectColumnSourceTest {
     private void testFillUnordered(Random random, int chunkSize) {
         final WritableColumnSource<Object> source = makeTestSource();
 
-        final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-        final WritableObjectChunk dest = WritableObjectChunk.makeWritableChunk(chunkSize);
+        try (final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
+             final WritableObjectChunk dest = WritableObjectChunk.makeWritableChunk(chunkSize)) {
 
-        source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
-        for (int ii = 0; ii < 1024; ++ii) {
-            checkFromSource("null check: " + ii, null, dest.get(ii));
-        }
-
-        final int expectedBlockSize = 1024;
-        final Object [] expectations = new Object[getSourceSize()];
-        // region arrayFill
-        Arrays.fill(expectations, null);
-        // endregion arrayFill
-        final Object [] randomObjects = ArrayGenerator.randomObjects(random, expectations.length / 2);
-        for (int ii = 0; ii < expectations.length; ++ii) {
-            final int block = ii / expectedBlockSize;
-            if (block % 2 == 0) {
-                final Object randomObject = randomObjects[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
-                expectations[ii] = randomObject;
-                source.set(ii, randomObject);
+            source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
+            for (int ii = 0; ii < 1024; ++ii) {
+                checkFromSource("null check: " + ii, null, dest.get(ii));
             }
-        }
 
-        // before we have the previous tracking enabled, prev should just fall through to get
-        for (boolean usePrev : new boolean[]{false, true}) {
-            // lets make a few random indices
-            for (int seed = 0; seed < 100; ++seed) {
-                int count = random.nextInt(chunkSize);
-                try (final WritableLongChunk<RowKeys> rowKeys = generateRandomKeys(random, count, expectations.length)) {
-                    checkRandomFillUnordered(source, fillContext, dest, expectations, rowKeys, usePrev);
+            final int expectedBlockSize = 1024;
+            final Object[] expectations = new Object[getSourceSize()];
+            // region arrayFill
+            Arrays.fill(expectations, null);
+            // endregion arrayFill
+            final Object[] randomObjects = ArrayGenerator.randomObjects(random, expectations.length / 2);
+            for (int ii = 0; ii < expectations.length; ++ii) {
+                final int block = ii / expectedBlockSize;
+                if (block % 2 == 0) {
+                    final Object randomObject = randomObjects[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
+                    expectations[ii] = randomObject;
+                    source.set(ii, randomObject);
+                }
+            }
+
+            // before we have the previous tracking enabled, prev should just fall through to get
+            for (boolean usePrev : new boolean[]{false, true}) {
+                // lets make a few random indices
+                for (int seed = 0; seed < 100; ++seed) {
+                    int count = random.nextInt(chunkSize);
+                    try (final WritableLongChunk<RowKeys> rowKeys = generateRandomKeys(random, count, expectations.length)) {
+                        checkRandomFillUnordered(source, fillContext, dest, expectations, rowKeys, usePrev);
+                    }
                 }
             }
         }
-
-        fillContext.close();
     }
 }

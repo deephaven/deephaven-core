@@ -14,7 +14,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -42,7 +42,7 @@ import java.util.Map;
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables} that conform to
  * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} semantics.
  *
- * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to the {@link PeriodicUpdateGraph} and thus cannot be subclassed.
  */
 public class StreamToBlinkTableAdapter extends ReferenceCountedLivenessNode
         implements SafeCloseable, StreamConsumer, Runnable {

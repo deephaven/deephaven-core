@@ -9,6 +9,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -20,7 +21,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
@@ -49,12 +49,13 @@ import static io.deephaven.util.type.TypeUtils.box;
  *
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
  *
- * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
+ * @implNote The constructor publishes {@code this} to the {@link UpdateSourceRegistrar} and thus cannot be subclassed.
  */
 public final class TimeTable extends QueryTable implements Runnable {
 
     public static class Builder {
-        private UpdateSourceRegistrar registrar = UpdateGraphProcessor.DEFAULT;
+        private UpdateSourceRegistrar registrar = ExecutionContext.getContext().getUpdateGraph();
+
         private Clock clock;
         private Instant startTime;
         private long period;
@@ -112,6 +113,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     private final Clock clock;
     private final PerformanceEntry entry;
     private final boolean isBlinkTable;
+    private final UpdateSourceRegistrar registrar;
 
     public TimeTable(
             UpdateSourceRegistrar registrar,
@@ -120,6 +122,7 @@ public final class TimeTable extends QueryTable implements Runnable {
             long period,
             boolean isBlinkTable) {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
+        this.registrar = registrar;
         this.isBlinkTable = isBlinkTable;
         final String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
@@ -191,7 +194,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        registrar.removeSource(this);
     }
 
     private static final class SyntheticInstantSource extends AbstractColumnSource<Instant> implements

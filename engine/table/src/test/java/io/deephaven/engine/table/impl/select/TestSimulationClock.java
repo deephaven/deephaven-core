@@ -3,8 +3,9 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 import java.time.Instant;
@@ -18,8 +19,9 @@ public class TestSimulationClock extends RefreshingTableTestCase {
         final Instant start = DateTimeUtils.now();
         final SimulationClock clock = new SimulationClock(start, start.plusNanos(1), 1);
         clock.start();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int ci = 0; ci < 2; ++ci) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(clock::advance);
+            updateGraph.runWithinUnitTestCycle(clock::advance);
         }
         clock.awaitDoneUninterruptibly();
     }

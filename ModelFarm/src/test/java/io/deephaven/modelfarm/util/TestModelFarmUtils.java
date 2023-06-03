@@ -3,36 +3,16 @@
  */
 package io.deephaven.modelfarm.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.*;
 import io.deephaven.engine.util.TableTools;
-import org.junit.After;
-import org.junit.Before;
 
 import java.time.Instant;
 
-public class TestModelFarmUtils extends BaseArrayTestCase {
-
-    private SafeCloseable executionContext;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
-    }
+public class TestModelFarmUtils extends RefreshingTableTestCase {
 
     public void testRequireTable() {
         final Table t = TableTools.emptyTable(5).updateView("A=(int)i", "B=(long)i", "C=(double)i");

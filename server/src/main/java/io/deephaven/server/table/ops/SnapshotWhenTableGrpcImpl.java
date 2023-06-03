@@ -11,7 +11,7 @@ import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
@@ -26,7 +26,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 @Singleton
 public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<SnapshotWhenTableRequest> {
@@ -52,18 +51,13 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
         return builder.build();
     }
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
-    public SnapshotWhenTableGrpcImpl(
-            final TableServiceContextualAuthWiring auth,
-            final UpdateGraphProcessor updateGraphProcessor) {
+    public SnapshotWhenTableGrpcImpl(final TableServiceContextualAuthWiring auth) {
         super(
                 auth::checkPermissionSnapshotWhen,
                 Operation::getSnapshotWhen,
                 SnapshotWhenTableRequest::getResultId,
                 SnapshotWhenTableGrpcImpl::refs);
-        this.updateGraphProcessor = Objects.requireNonNull(updateGraphProcessor);
     }
 
     @Override
@@ -88,12 +82,19 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
         final Table base = sourceTables.get(0).get();
         final Table trigger = sourceTables.get(1).get();
         final SnapshotWhenOptions options = options(request);
-        try (final SafeCloseable _lock = lock(base, trigger)) {
+        try (final SafeCloseable ignored = lock(base, trigger)) {
             return base.snapshotWhen(trigger, options);
         }
     }
 
     private SafeCloseable lock(Table base, Table trigger) {
-        return base.isRefreshing() || trigger.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
+        if (base.isRefreshing()) {
+            UpdateGraph updateGraph = base.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
+        } else if (trigger.isRefreshing()) {
+            UpdateGraph updateGraph = trigger.getUpdateGraph();
+            return updateGraph.sharedLock().lockCloseable();
+        }
+        return null;
     }
 }

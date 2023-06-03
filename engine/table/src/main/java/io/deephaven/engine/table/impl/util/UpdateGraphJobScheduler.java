@@ -5,15 +5,21 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.function.Consumer;
 
-public class UpdateGraphProcessorJobScheduler implements JobScheduler {
+public class UpdateGraphJobScheduler implements JobScheduler {
     final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
+
+    private final UpdateGraph updateGraph;
+
+    public UpdateGraphJobScheduler(final UpdateGraph updateGraph) {
+        this.updateGraph = updateGraph;
+    }
 
     @Override
     public void submit(
@@ -21,7 +27,7 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
+        updateGraph.addNotification(new AbstractNotification(false) {
             @Override
             public boolean canExecute(long step) {
                 return true;
@@ -62,6 +68,6 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
+        return updateGraph.parallelismFactor();
     }
 }

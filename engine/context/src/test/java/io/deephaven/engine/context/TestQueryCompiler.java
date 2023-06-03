@@ -4,10 +4,9 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.SafeCloseable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
@@ -51,17 +50,8 @@ public class TestQueryCompiler {
         CLASS_CODE = testClassCode1.toString();
     }
 
-    private SafeCloseable executionContext;
-
-    @Before
-    public void setUp() {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    public void tearDown() {
-        executionContext.close();
-    }
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Test
     public void testParallelCompile() throws Throwable {

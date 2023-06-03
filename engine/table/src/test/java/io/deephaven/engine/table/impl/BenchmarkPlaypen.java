@@ -3,9 +3,11 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.parquet.table.ParquetTools;
@@ -19,6 +21,8 @@ import java.text.DecimalFormat;
  */
 public class BenchmarkPlaypen {
     public static void main(String[] args) throws InterruptedException {
+        TestExecutionContext.createForUnitTests().open();
+
         if (args.length != 4) {
             usage();
         }
@@ -104,7 +108,7 @@ public class BenchmarkPlaypen {
         final AutoTuningIncrementalReleaseFilter filter;
         if (incremental) {
             System.out.println("Running test incrementally.");
-            UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().enableUnitTestMode();
             filter = new AutoTuningIncrementalReleaseFilter(new StreamLoggerImpl(), 0, 1_000_000L, 1.0, true);
             input = viewed.where(filter);
         } else {
@@ -144,8 +148,9 @@ public class BenchmarkPlaypen {
             filter.start();
             while (viewed.size() > input.size()) {
                 final long initialSize = input.size();
-                System.out.println("Running UpdateGraphProcessor cycle: " + input.size() + " / " + viewed.size());
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
+                System.out.println("Running PeriodicUpdateGraph cycle: " + input.size() + " / " + viewed.size());
+                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+                updateGraph.runWithinUnitTestCycle(filter::run);
                 if (initialSize == input.size()) {
                     throw new RuntimeException("Did not increase size of input table during cycle!");
                 }

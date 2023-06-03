@@ -260,7 +260,11 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
 
-        return new Result<>(staticRangeJoin(jobScheduler));
+        final ExecutionContext executionContext = ExecutionContext.newBuilder()
+                .captureUpdateGraph()
+                .markSystemic().build();
+
+        return new Result<>(staticRangeJoin(jobScheduler, executionContext));
     }
 
     @Override
@@ -268,9 +272,11 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         return memoizedOperationKey;
     }
 
-    private QueryTable staticRangeJoin(@NotNull final JobScheduler jobScheduler) {
+    private QueryTable staticRangeJoin(
+            @NotNull final JobScheduler jobScheduler,
+            @NotNull final ExecutionContext executionContext) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
-        new StaticRangeJoinPhase1(jobScheduler, resultFuture).start();
+        new StaticRangeJoinPhase1(jobScheduler, executionContext, resultFuture).start();
         try {
             return resultFuture.get();
         } catch (InterruptedException e) {
@@ -283,12 +289,15 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     private static class RangeJoinPhase {
 
         protected final JobScheduler jobScheduler;
+        protected final ExecutionContext executionContext;
         protected final CompletableFuture<QueryTable> resultFuture;
 
         protected RangeJoinPhase(
                 @NotNull final JobScheduler jobScheduler,
+                @NotNull final ExecutionContext executionContext,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
             this.jobScheduler = jobScheduler;
+            this.executionContext = executionContext;
             this.resultFuture = resultFuture;
         }
     }
@@ -297,15 +306,16 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         private StaticRangeJoinPhase1(
                 @NotNull final JobScheduler jobScheduler,
+                @NotNull final ExecutionContext executionContext,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
-            super(jobScheduler, resultFuture);
+            super(jobScheduler, executionContext, resultFuture);
         }
 
         private void start() {
             // Perform the left table work via the job scheduler, possibly concurrently with the right table work.
             final CompletableFuture<Table> groupLeftTableFuture = new CompletableFuture<>();
             jobScheduler.submit(
-                    ExecutionContext.getContextToRecord(),
+                    executionContext,
                     () -> groupLeftTableFuture.complete(groupLeftTable()),
                     logOutput -> logOutput.append("static range join group left table"),
                     groupLeftTableFuture::completeExceptionally);
@@ -331,7 +341,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 resultFuture.completeExceptionally(e);
                 return;
             }
-            new StaticRangeJoinPhase2(jobScheduler, resultFuture).start(leftTableGrouped, rightTableGrouped);
+            new StaticRangeJoinPhase2(jobScheduler, executionContext, resultFuture).start(
+                    leftTableGrouped,
+                    rightTableGrouped);
         }
 
         private Table groupLeftTable() {
@@ -390,8 +402,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         private StaticRangeJoinPhase2(
                 @NotNull final JobScheduler jobScheduler,
+                @NotNull final ExecutionContext executionContext,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
-            super(jobScheduler, resultFuture);
+            super(jobScheduler, executionContext, resultFuture);
 
             leftStartValues = ReinterpretUtils.maybeConvertToPrimitive(
                     leftTable.getColumnSource(rangeMatch.leftStartColumn().name()));
@@ -458,13 +471,13 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             leftGroupRowSets = joinedInputTables.getColumnSource(LEFT_ROW_SET.name(), RowSet.class);
             rightGroupRowSets = joinedInputTables.getColumnSource(RIGHT_ROW_SET.name(), RowSet.class);
             jobScheduler.iterateParallel(
-                    ExecutionContext.getContextToRecord(),
+                    executionContext,
                     logOutput -> logOutput.append("static range join find ranges"),
                     TaskContext::new,
                     0,
                     joinedInputTables.intSize(),
                     this,
-                    () -> new StaticRangeJoinPhase3(jobScheduler, resultFuture).start(
+                    () -> new StaticRangeJoinPhase3(jobScheduler, executionContext, resultFuture).start(
                             rightGroupRowSets,
                             outputSlotsExposed,
                             outputStartPositionsInclusiveExposed,
@@ -769,8 +782,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         private StaticRangeJoinPhase3(
                 @NotNull final JobScheduler jobScheduler,
+                @NotNull final ExecutionContext executionContext,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
-            super(jobScheduler, resultFuture);
+            super(jobScheduler, executionContext, resultFuture);
         }
 
         public void start(

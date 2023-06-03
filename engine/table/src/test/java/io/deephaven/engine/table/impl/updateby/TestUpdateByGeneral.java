@@ -4,10 +4,12 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -16,7 +18,6 @@ import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -173,9 +174,10 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
-                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                        generateAppends(stepSize, result.random, result.t, result.infos);
-                    });
+                    ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                            () -> {
+                                generateAppends(stepSize, result.random, result.t, result.infos);
+                            });
                     validate("Table", nuggets);
                 } else {
                     simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
@@ -205,22 +207,27 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final QueryTable result = (QueryTable) table.updateBy(
                 List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // Add to "B" bucket
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
             table.notifyListeners(i(8), i(), i());
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // New "C" bucket in isolation
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
             table.notifyListeners(i(9), i(), i());
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // Row from "B" bucket to "C" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
             table.notifyListeners(i(), i(), i(8));
         });
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // New "D" bucket
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
             table.notifyListeners(i(10, 11), i(), i());
         });
@@ -304,7 +311,7 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
     @Override
     public void reportUpdateError(Throwable t) {
-        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+        ExecutionContext.getContext().getUpdateGraph().addNotification(new TerminalNotification() {
             @Override
             public void run() {
                 System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());

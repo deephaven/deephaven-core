@@ -7,7 +7,6 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
@@ -20,7 +19,6 @@ import io.grpc.StatusRuntimeException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.Objects;
 
 @Singleton
 public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
@@ -29,15 +27,10 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
         return List.of(request.getLeftId(), request.getRightId());
     }
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
-    public WhereInGrpcImpl(
-            final TableServiceContextualAuthWiring authWiring,
-            final UpdateGraphProcessor updateGraphProcessor) {
+    public WhereInGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
         super(authWiring::checkPermissionWhereIn, BatchTableRequest.Operation::getWhereIn,
                 WhereInRequest::getResultId, WhereInGrpcImpl::refs);
-        this.updateGraphProcessor = Objects.requireNonNull(updateGraphProcessor);
     }
 
     @Override
@@ -57,12 +50,17 @@ public class WhereInGrpcImpl extends GrpcTableOperation<WhereInRequest> {
         final Table left = sourceTables.get(0).get();
         final Table right = sourceTables.get(1).get();
         final List<JoinMatch> columnsToMatch = JoinMatch.from(request.getColumnsToMatchList());
-        try (final SafeCloseable _lock = lock(left, right)) {
+        try (final SafeCloseable ignored = lock(left, right)) {
             return request.getInverted() ? left.whereNotIn(right, columnsToMatch) : left.whereIn(right, columnsToMatch);
         }
     }
 
     private SafeCloseable lock(Table left, Table right) {
-        return left.isRefreshing() || right.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
+        if (left.isRefreshing()) {
+            return left.getUpdateGraph().sharedLock().lockCloseable();
+        } else if (right.isRefreshing()) {
+            return right.getUpdateGraph().sharedLock().lockCloseable();
+        }
+        return null;
     }
 }

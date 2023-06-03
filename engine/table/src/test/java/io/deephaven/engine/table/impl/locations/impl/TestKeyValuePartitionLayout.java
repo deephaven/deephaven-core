@@ -6,10 +6,12 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.parquet.table.layout.KeyValuePartitionLayout;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -24,6 +26,9 @@ import java.util.stream.Collectors;
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class TestKeyValuePartitionLayout {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
 
     private File dataDirectory;
 

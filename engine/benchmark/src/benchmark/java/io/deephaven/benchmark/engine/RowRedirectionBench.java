@@ -3,8 +3,8 @@
  */
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
@@ -62,13 +62,16 @@ public class RowRedirectionBench extends RedirectionBenchBase {
                 new IncrementalReleaseFilter(sizePerStep, sizePerStep);
         final Table live;
         if (doSelect) {
-            live = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
-                    () -> t1.where(incrementalReleaseFilter).select(joinCol, "PartCol1", "I1").sort("I1").naturalJoin(
-                            t2, joinCol, "PartCol2"));
+            live = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                    () -> t1.where(incrementalReleaseFilter)
+                            .select(joinCol, "PartCol1", "I1")
+                            .sort("I1")
+                            .naturalJoin(t2, joinCol, "PartCol2"));
         } else {
-            live = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
-                    () -> t1.where(incrementalReleaseFilter).sort("I1").naturalJoin(
-                            t2, joinCol, "PartCol2"));
+            live = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
+                    () -> t1.where(incrementalReleaseFilter)
+                            .sort("I1")
+                            .naturalJoin(t2, joinCol, "PartCol2"));
         }
         return new QueryData(
                 live,
