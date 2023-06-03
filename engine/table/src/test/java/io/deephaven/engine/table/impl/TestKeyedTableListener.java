@@ -19,16 +19,22 @@ public class TestKeyedTableListener extends RefreshingTableTestCase {
     private KeyedTableListener keyedTableListener;
     private KeyedTableListener.KeyUpdateListener mockListener;
 
-    private final RowSet noAdded = RowSetFactory.empty();
-    private final RowSet noRemoved = RowSetFactory.empty();
-    private final RowSet noModified = RowSetFactory.empty();
+    private RowSet noAdded;
+    private RowSet noRemoved;
+    private RowSet noModified;
 
     private ArrayTuple aKey;
     private ArrayTuple bKey;
     private ArrayTuple cKey;
 
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
+
+        this.noAdded = RowSetFactory.empty();
+        this.noRemoved = RowSetFactory.empty();
+        this.noModified = RowSetFactory.empty();
+
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),
                 col("Key1", "A", "B", "C"),
