@@ -1361,6 +1361,16 @@ public:
   void observe() const;
 
   /**
+   * A specialized operation to release the state of this TableHandle. This operation is normally done by the
+   * destructor, so most programs will never need to call this method.. If there are no other copies of this
+   * TableHandle, and if there are no "child" TableHandles dependent on this TableHandle, then the corresponding server
+   * resources will be released.
+   */
+  void release() {
+    impl_.reset();
+  }
+
+  /**
    * Number of rows in the table at the time this TableHandle was created.
    */
   int64_t numRows();

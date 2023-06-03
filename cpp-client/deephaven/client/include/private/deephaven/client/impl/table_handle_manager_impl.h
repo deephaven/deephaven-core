@@ -11,7 +11,7 @@
 namespace deephaven::client::impl {
 class TableHandleImpl;
 
-class TableHandleManagerImpl {
+class TableHandleManagerImpl final : public std::enable_shared_from_this<TableHandleManagerImpl> {
   struct Private {};
   typedef deephaven::client::server::Server Server;
   typedef deephaven::client::utility::Executor Executor;
@@ -47,7 +47,7 @@ public:
    * so that TableHandleImpl has something to report for TableHandleImpl::numRows() and TableHandleImpl::isStatic().
    */
   std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket(int64_t numRows,
-      bool isStatic) const;
+      bool isStatic);
 
   const std::optional<Ticket> &consoleId() const { return consoleId_; }
   const std::shared_ptr<Server> &server() const { return server_; }
@@ -59,6 +59,5 @@ private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Executor> executor_;
   std::shared_ptr<Executor> flightExecutor_;
-  std::weak_ptr<TableHandleManagerImpl> self_;
 };
 }  // namespace deephaven::client::impl

@@ -30,6 +30,7 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
+using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SortDescriptor;
 using io::deephaven::proto::backplane::grpc::TableReference;
 using io::deephaven::proto::backplane::grpc::Ticket;
@@ -79,60 +80,72 @@ TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *thm) {
   return std::make_pair(std::move(cb), std::move(ls));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleImpl::create(std::shared_ptr<TableHandleManagerImpl> thm,
-    Ticket ticket, std::shared_ptr<internal::LazyState> lazyState) {
-  return std::make_shared<TableHandleImpl>(Private(), std::move(thm), std::move(ticket),
+std::shared_ptr<TableHandleImpl> TableHandleImpl::create(std::shared_ptr<const TableHandleImpl> parent,
+    std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket, std::shared_ptr<internal::LazyState> lazyState) {
+  return std::make_shared<TableHandleImpl>(Private(), std::move(parent), std::move(thm), std::move(ticket),
       std::move(lazyState));
 }
 
-TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm,
-    Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState) :
-    managerImpl_(std::move(thm)), ticket_(std::move(ticket)), lazyState_(std::move(lazyState)) {
+TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<const TableHandleImpl> &&parent,
+    std::shared_ptr<TableHandleManagerImpl> &&thm, Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState) :
+    parent_(std::move(parent)), managerImpl_(std::move(thm)), ticket_(std::move(ticket)),
+    lazyState_(std::move(lazyState)) {
 }
 
-// TODO(kosak): Need to actually send Release to the server
-TableHandleImpl::~TableHandleImpl() = default;
+TableHandleImpl::~TableHandleImpl() {
+  struct ReleaseCallback final : public SFCallback<ReleaseResponse> {
+    void onSuccess(ReleaseResponse resp) final {
+      // Do nothing
+    }
+
+    void onFailure(std::exception_ptr ep) final {
+      // Do nothing
+    }
+  };
+  auto cb = std::make_shared<ReleaseCallback>();
+  managerImpl_->server()->releaseAsync(ticket_, std::move(cb));
+}
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::select(std::vector<std::string> columnSpecs) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->selectAsync(ticket_, std::move(columnSpecs),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::update(std::vector<std::string> columnSpecs) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->updateAsync(ticket_, std::move(columnSpecs),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::view(std::vector<std::string> columnSpecs) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->viewAsync(ticket_, std::move(columnSpecs),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::dropColumns(std::vector<std::string> columnSpecs) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->dropColumnsAsync(ticket_, std::move(columnSpecs),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::updateView(std::vector<std::string> columnSpecs) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->updateViewAsync(ticket_, std::move(columnSpecs),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::where(std::string condition) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->whereAsync(ticket_, std::move(condition),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::sort(std::vector<SortPair> sortPairs) {
@@ -151,7 +164,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::sort(std::vector<SortPair> sor
   }
   auto resultTicket = managerImpl_->server()->sortAsync(ticket_, std::move(sortDescriptors),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::preemptive(int32_t sampleIntervalMs) {
@@ -171,7 +184,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::defaultAggregateByDescriptor(
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->comboAggregateDescriptorAsync(ticket_,
       std::move(descriptors), std::move(columnSpecs), false, std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::defaultAggregateByType(
@@ -191,7 +204,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::by(
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->comboAggregateDescriptorAsync(ticket_,
       std::move(descriptors), std::move(groupByColumns), false, std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::minBy(std::vector<std::string> columnSpecs) {
@@ -279,7 +292,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::headOrTailByHelper(int64_t n, 
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->headOrTailByAsync(ticket_, head, n,
       std::move(columnSpecs), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::tail(int64_t n) {
@@ -293,7 +306,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::head(int64_t n) {
 std::shared_ptr<TableHandleImpl> TableHandleImpl::headOrTailHelper(bool head, int64_t n) {
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->headOrTailAsync(ticket_, head, n, std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::ungroup(bool nullFill,
@@ -301,7 +314,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::ungroup(bool nullFill,
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->ungroupAsync(ticket_, nullFill, std::move(groupByColumns),
       std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::merge(std::string keyColumn,
@@ -309,7 +322,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::merge(std::string keyColumn,
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->mergeAsync(std::move(sourceTickets),
       std::move(keyColumn), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::crossJoin(const TableHandleImpl &rightSide,
@@ -317,7 +330,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::crossJoin(const TableHandleImp
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->crossJoinAsync(ticket_, rightSide.ticket_,
       std::move(columnsToMatch), std::move(columnsToAdd), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::naturalJoin(const TableHandleImpl &rightSide,
@@ -325,7 +338,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::naturalJoin(const TableHandleI
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->naturalJoinAsync(ticket_, rightSide.ticket_,
       std::move(columnsToMatch), std::move(columnsToAdd), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::exactJoin(const TableHandleImpl &rightSide,
@@ -333,7 +346,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::exactJoin(const TableHandleImp
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->exactJoinAsync(ticket_, rightSide.ticket_,
       std::move(columnsToMatch), std::move(columnsToAdd), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
@@ -342,7 +355,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest
   auto [cb, ls] = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->asOfJoinAsync(matchRule, ticket_,
       rightSide.ticket(), std::move(columnsToMatch), std::move(columnsToAdd), std::move(cb));
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(ls));
+  return TableHandleImpl::create(shared_from_this(), managerImpl_, std::move(resultTicket), std::move(ls));
 }
 
 std::shared_ptr<SubscriptionHandle> TableHandleImpl::subscribe(
