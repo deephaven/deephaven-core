@@ -6,7 +6,6 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
@@ -59,9 +58,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
         final String scopeName = nameForDescriptor(descriptor, logId);
 
+        final ScriptSession gss = scriptSessionProvider.get();
         final Flight.FlightInfo flightInfo =
-                ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> {
-                    final ScriptSession gss = scriptSessionProvider.get();
+                gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
                     Object scopeVar = gss.getVariable(scopeName, null);
                     if (scopeVar == null) {
                         throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
@@ -103,9 +102,9 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final String scopeName, final String logId) {
+        final ScriptSession gss = scriptSessionProvider.get();
         // fetch the variable from the scope right now
-        T export = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(() -> {
-            final ScriptSession gss = scriptSessionProvider.get();
+        T export = gss.getExecutionContext().getUpdateGraph().sharedLock().computeLocked(() -> {
             T scopeVar = null;
             try {
                 // noinspection unchecked

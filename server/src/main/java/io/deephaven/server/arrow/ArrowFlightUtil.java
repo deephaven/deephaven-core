@@ -606,8 +606,9 @@ public class ArrowFlightUtil {
                     final UpdateGraph ug = table.getUpdateGraph();
                     try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
-                        // always manage; we do not want the BMP to be destroyed prematurely
-                        manage(bmp);
+                        if (bmp.isRefreshing()) {
+                            manage(bmp);
+                        }
                     }
                 } else if (export instanceof HierarchicalTableView) {
                     final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
@@ -615,8 +616,9 @@ public class ArrowFlightUtil {
                     try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(ug).open()) {
                         htvs = htvsFactory.create(hierarchicalTableView, listener,
                                 subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
-                        // always manage; we do not want the HTVS to be destroyed prematurely
-                        manage(htvs);
+                        if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
+                            manage(htvs);
+                        }
                     }
                 } else {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
