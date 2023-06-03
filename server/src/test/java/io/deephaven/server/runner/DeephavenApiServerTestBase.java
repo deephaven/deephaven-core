@@ -31,6 +31,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -85,6 +86,11 @@ public abstract class DeephavenApiServerTestBase {
     @Before
     public void setUp() throws Exception {
         logBuffer = new LogBuffer(128);
+        {
+            // Prevent previous failures from cascading
+            final Optional<LogBuffer> maybeOldLogBuffer = LogBufferGlobal.getInstance();
+            maybeOldLogBuffer.ifPresent(LogBufferGlobal::clear);
+        }
         LogBufferGlobal.setInstance(logBuffer);
 
         final DeephavenApiServerTestConfig config = DeephavenApiServerTestConfig.builder()

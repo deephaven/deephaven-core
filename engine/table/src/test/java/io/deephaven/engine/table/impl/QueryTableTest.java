@@ -11,10 +11,12 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
@@ -33,16 +35,22 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.io.log.LogEntry;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.MustBeInvokedByOverriders;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
@@ -67,10 +75,10 @@ import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test of QueryTable functionality.
- *
+ * <p>
  * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
  * some specific classes of tests have been broken out.
- *
+ * <p>
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
  * {@link QueryTableFlattenTest}, and {@link QueryTableSortTest}.
  */
@@ -3369,6 +3377,144 @@ public class QueryTableTest extends QueryTableTestBase {
         @Override
         protected MockUncoalescedTable copy() {
             return new MockUncoalescedTable(supplier);
+        }
+    }
+
+    public void testMultipleUpdateGraphs() {
+        final QueryTable r1, s1, r2, s2;
+        final UpdateGraph g1 = new DummyUpdateGraph("one");
+        final UpdateGraph g2 = new DummyUpdateGraph("two");
+
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(g1).open()) {
+            r1 = testRefreshingTable(i().toTracking(), intCol("T"));
+            s1 = testTable(i().toTracking(), intCol("T"));
+        }
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(g2).open()) {
+            r2 = testRefreshingTable(i().toTracking(), intCol("T"));
+            s2 = testTable(i().toTracking(), intCol("T"));
+        }
+
+        try {
+            g1.sharedLock().computeLocked(() -> g2.sharedLock().computeLocked(() -> merge(r1, r2)));
+            fail("Expected conflict");
+        } catch (UpdateGraphConflictException expected) {
+        }
+
+        try {
+            g1.sharedLock().computeLocked(() -> g2.sharedLock().computeLocked(() -> merge(s1, r1, s2, r2)));
+            fail("Expected conflict");
+        } catch (UpdateGraphConflictException expected) {
+        }
+
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(r1, s2).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(s2, r1).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(r1, s1, s2).getUpdateGraph()));
+        assertEquals(g1, g1.sharedLock().computeLocked(() -> merge(s2, s1, r1).getUpdateGraph()));
+
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(r2, s1).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, r2).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(r2, s2, s1).getUpdateGraph()));
+        assertEquals(g2, g2.sharedLock().computeLocked(() -> merge(s1, s2, r2).getUpdateGraph()));
+    }
+
+    private static final class DummyUpdateGraph implements UpdateGraph {
+
+        private final String name;
+        private final UpdateGraphLock lock;
+
+        private final ThreadLocal<Boolean> serialTableOperationsSafe = ThreadLocal.withInitial(() -> false);
+
+        private DummyUpdateGraph(@NotNull final String name) {
+            this.name = name;
+            lock = UpdateGraphLock.create(this, true);
+        }
+
+        @Override
+        public LogOutput append(LogOutput logOutput) {
+            return logOutput.append(getClass().getName());
+        }
+
+        @Override
+        public boolean satisfied(long step) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public UpdateGraph getUpdateGraph() {
+            return this;
+        }
+
+        @Override
+        public void addNotification(@NotNull Notification notification) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void addNotifications(@NotNull Collection<? extends Notification> notifications) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean maybeAddNotification(@NotNull Notification notification, long deliveryStep) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AwareFunctionalLock sharedLock() {
+            return lock.sharedLock();
+        }
+
+        @Override
+        public AwareFunctionalLock exclusiveLock() {
+            return lock.exclusiveLock();
+        }
+
+        @Override
+        public LogicalClock clock() {
+            return () -> 1;
+        }
+
+        @Override
+        public int parallelismFactor() {
+            return 1;
+        }
+
+        @Override
+        public LogEntry logDependencies() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean currentThreadProcessesUpdates() {
+            return false;
+        }
+
+        @Override
+        public boolean serialTableOperationsSafe() {
+            return serialTableOperationsSafe.get();
+        }
+
+        @Override
+        public boolean setSerialTableOperationsSafe(final boolean newValue) {
+            final boolean oldValue = serialTableOperationsSafe.get();
+            serialTableOperationsSafe.set(newValue);
+            return oldValue;
+        }
+
+        @Override
+        public boolean supportsRefreshing() {
+            return true;
+        }
+
+        @Override
+        public void addSource(@NotNull Runnable updateSource) {}
+
+        @Override
+        public void removeSource(@NotNull Runnable updateSource) {}
+
+        @Override
+        public void requestRefresh() {
+            throw new UnsupportedOperationException();
         }
     }
 }

@@ -192,19 +192,19 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
                     setFlat();
                 }
             };
-        }
 
-        for (final Table constituent : constituentsToUse) {
-            table.addParentReference(constituent);
-        }
+            for (final Table constituent : constituentsToUse) {
+                table.addParentReference(constituent);
+            }
 
-        return new PartitionedTableImpl(
-                table,
-                Collections.emptyList(),
-                false,
-                CONSTITUENT.name(),
-                constituentDefinitionToUse,
-                false,
-                true);
+            return new PartitionedTableImpl(
+                    table,
+                    Collections.emptyList(),
+                    false,
+                    CONSTITUENT.name(),
+                    constituentDefinitionToUse,
+                    false,
+                    true);
+        }
     }
 }

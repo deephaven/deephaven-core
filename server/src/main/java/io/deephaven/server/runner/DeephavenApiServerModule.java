@@ -151,7 +151,7 @@ public class DeephavenApiServerModule {
     public static UpdateGraph provideUpdateGraph() {
         return PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
                 .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
-                .build();
+                .existingOrBuild();
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

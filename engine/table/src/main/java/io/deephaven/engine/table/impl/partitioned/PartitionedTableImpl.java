@@ -156,8 +156,12 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             if (table.isRefreshing()) {
                 table.getUpdateGraph().checkInitiateSerialTableOperation();
             }
-            final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
-            merged = unionSourceManager.getResult();
+
+            try (final SafeCloseable ignored =
+                    ExecutionContext.getContext().withUpdateGraph(table.getUpdateGraph()).open()) {
+                final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
+                merged = unionSourceManager.getResult();
+            }
 
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
             if (!constituentChangesPermitted) {

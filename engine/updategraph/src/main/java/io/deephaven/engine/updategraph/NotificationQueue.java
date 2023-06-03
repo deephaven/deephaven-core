@@ -65,7 +65,6 @@ public interface NotificationQueue {
          */
         boolean satisfied(long step);
 
-
         /**
          * @return the update graph that this dependency is a part of
          */

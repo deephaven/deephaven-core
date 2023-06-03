@@ -17,6 +17,8 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.hotspot.JvmIntrospectionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
@@ -63,6 +65,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     public static final String DEFAULT_UPDATE_GRAPH_NAME = "DEFAULT";
     public static final int NUM_THREADS_DEFAULT_UPDATE_GRAPH =
             Configuration.getInstance().getIntegerWithDefault("PeriodicUpdateGraph.updateThreads", -1);
+
+    private static final KeyedObjectHashMap<String, PeriodicUpdateGraph> INSTANCES = new KeyedObjectHashMap<>(
+            new KeyedObjectKey.BasicAdapter<>(PeriodicUpdateGraph::getName));
 
     public static Builder newBuilder(final String name) {
         return new Builder(name);
@@ -1891,11 +1896,33 @@ public class PeriodicUpdateGraph implements UpdateGraph {
         }
 
         /**
-         * Constructs and returns a PeriodicUpdateGraph.
+         * Constructs and returns a PeriodicUpdateGraph. It is an error to do so an instance already exists with the
+         * name provided to this builder.
          *
          * @return the new PeriodicUpdateGraph
+         * @throws IllegalStateException if a PeriodicUpdateGraph with the provided name already exists
          */
         public PeriodicUpdateGraph build() {
+            synchronized (INSTANCES) {
+                if (INSTANCES.containsKey(name)) {
+                    throw new IllegalStateException(
+                            String.format("PeriodicUpdateGraph with name %s already exists", name));
+                }
+                return INSTANCES.put(name, construct());
+            }
+        }
+
+        /**
+         * Returns an existing PeriodicUpdateGraph with the name provided to this Builder, if one exists, else returns a
+         * new PeriodicUpdateGraph.
+         *
+         * @return the PeriodicUpdateGraph
+         */
+        public PeriodicUpdateGraph existingOrBuild() {
+            return INSTANCES.putIfAbsent(name, n -> construct());
+        }
+
+        private PeriodicUpdateGraph construct() {
             return new PeriodicUpdateGraph(
                     name,
                     allowUnitTestMode,

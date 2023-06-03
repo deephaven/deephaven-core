@@ -16,7 +16,7 @@ public class ExecutionContextUnitTestModule {
     public ExecutionContext provideExecutionContext() {
         final UpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder("TEST")
                 .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
-                .build();
+                .existingOrBuild();
         return TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);
     }
 }
