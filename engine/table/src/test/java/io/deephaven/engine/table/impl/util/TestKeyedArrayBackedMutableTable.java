@@ -302,10 +302,10 @@ public class TestKeyedArrayBackedMutableTable {
 
         table.setOnPendingChange(gate::countDown);
         try {
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             refreshThread = new Thread(() -> {
                 // If this unexpected interruption happens, the test thread may hang in action.run()
                 // indefinitely. Best to hope it's already queued the pending action and proceed with run.
-                final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                 updateGraph.runWithinUnitTestCycle(() -> {
                     try {
                         gate.await();
