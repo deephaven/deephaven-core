@@ -1908,7 +1908,9 @@ public class PeriodicUpdateGraph implements UpdateGraph {
                     throw new IllegalStateException(
                             String.format("PeriodicUpdateGraph with name %s already exists", name));
                 }
-                return INSTANCES.put(name, construct());
+                final PeriodicUpdateGraph newUpdateGraph = construct();
+                INSTANCES.put(name, newUpdateGraph);
+                return newUpdateGraph;
             }
         }
 
