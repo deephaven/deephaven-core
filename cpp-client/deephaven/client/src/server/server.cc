@@ -45,6 +45,8 @@ using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
 using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
 using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
+using io::deephaven::proto::backplane::grpc::ReleaseRequest;
+using io::deephaven::proto::backplane::grpc::ReleaseResponse;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
 using io::deephaven::proto::backplane::grpc::SortTableRequest;
 using io::deephaven::proto::backplane::grpc::TimeTableRequest;
@@ -457,6 +459,12 @@ Server::bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std:
   *req.mutable_table_id() = tableId;
 
   sendRpc(req, std::move(callback), consoleStub(), &ConsoleService::Stub::AsyncBindTableToVariable);
+}
+
+void Server::releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback) {
+  ReleaseRequest req;
+  *req.mutable_id() = std::move(ticket);
+  sendRpc(req, std::move(callback), sessionStub(), &SessionService::Stub::AsyncRelease);
 }
 
 std::pair<std::string, std::string> Server::getAuthHeader() const {

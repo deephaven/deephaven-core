@@ -79,6 +79,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::grpc::ConfigService ConfigService;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::HandshakeResponse HandshakeResponse;
+  typedef io::deephaven::proto::backplane::grpc::ReleaseResponse ReleaseResponse;
   typedef io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest SelectOrUpdateRequest;
   typedef io::deephaven::proto::backplane::grpc::SessionService SessionService;
   typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
@@ -210,6 +211,8 @@ public:
 
   void bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);
+
+  void releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback);
 
   Ticket fetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback> callback);
 

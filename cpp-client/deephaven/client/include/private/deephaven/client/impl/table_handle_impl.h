@@ -147,9 +147,9 @@ public:
   static std::pair<std::shared_ptr<internal::ExportedTableCreationCallback>, std::shared_ptr<internal::LazyState>>
   createEtcCallback(const TableHandleManagerImpl *thm);
 
-  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<TableHandleManagerImpl> thm,
-      Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
-  TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl> &&thm,
+  static std::shared_ptr<TableHandleImpl> create(std::shared_ptr<const TableHandleImpl> parent,
+      std::shared_ptr<TableHandleManagerImpl> thm, Ticket ticket, std::shared_ptr<internal::LazyState> lazyState);
+  TableHandleImpl(Private, std::shared_ptr<const TableHandleImpl> &&parent, std::shared_ptr<TableHandleManagerImpl> &&thm,
       Ticket &&ticket, std::shared_ptr<internal::LazyState> &&lazyState);
   ~TableHandleImpl();
 
@@ -241,6 +241,10 @@ private:
   std::shared_ptr<TableHandleImpl> headOrTailByHelper(int64_t n, bool head,
       std::vector<std::string> columnSpecs);
 
+  /**
+   * This TableHandleImpl holds a dependency on its parent so that the parent's lifetime is as least as long as this.
+   */
+  std::shared_ptr<const TableHandleImpl> parent_;
   std::shared_ptr<TableHandleManagerImpl> managerImpl_;
   Ticket ticket_;
   std::shared_ptr<internal::LazyState> lazyState_;
