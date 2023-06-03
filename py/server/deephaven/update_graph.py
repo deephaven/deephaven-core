@@ -7,7 +7,6 @@ the data between table operations.
 """
 
 import contextlib
-from collections import abc
 from functools import wraps
 from typing import Callable, Union
 

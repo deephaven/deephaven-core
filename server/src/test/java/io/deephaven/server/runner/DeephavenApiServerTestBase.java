@@ -10,6 +10,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -83,13 +84,6 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        if (updateGraph.isUnitTestModeAllowed()) {
-            updateGraph.enableUnitTestMode();
-            updateGraph.resetForUnitTests(false);
-        }
-
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
@@ -107,6 +101,14 @@ public abstract class DeephavenApiServerTestBase {
                 .build();
 
         server = serverComponent.getServer();
+
+        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(server.getUpdateGraph()).open();
+        final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        if (updateGraph.isUnitTestModeAllowed()) {
+            updateGraph.enableUnitTestMode();
+            updateGraph.resetForUnitTests(false);
+        }
+
         server.startForUnitTests();
     }
 
@@ -120,7 +122,7 @@ public abstract class DeephavenApiServerTestBase {
             LogBufferGlobal.clear(logBuffer);
         }
 
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.resetForUnitTests(true);
         }
