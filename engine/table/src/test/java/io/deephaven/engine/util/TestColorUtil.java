@@ -5,6 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
@@ -290,7 +291,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testRowFormatWhere(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn(ColumnFormatting.getRowStyleFormatColumn())
+                DataAccessHelpers.getColumn(colorTable, ColumnFormatting.getRowStyleFormatColumn())
                         .getLongs(0, size);
 
         for (int i = 0; i < 6; i++) {
@@ -303,7 +304,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testFormatColumns(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn(ColumnFormatting.getStyleFormatColumn("X")).getLongs(0, size);
+                DataAccessHelpers.getColumn(colorTable, ColumnFormatting.getStyleFormatColumn("X")).getLongs(0, size);
         for (long aColorTableCol : colorTableCol) {
             assertEquals(ColorUtil.toLong(color), aColorTableCol);
         }

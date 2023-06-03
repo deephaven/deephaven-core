@@ -110,7 +110,7 @@ TableMakerForTests TableMakerForTests::create() {
   maker.addColumn(cn.close(), cd.close());
   maker.addColumn(cn.volume(), cd.volume());
 
-  auto testTable = maker.makeTable(manager);
+  auto testTable = maker.makeTable(manager, (int64_t)cd.importDate().size(), true);
   return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
 }
 

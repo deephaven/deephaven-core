@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.PlottingConvenience;
 import io.deephaven.util.QueryConstants;
@@ -84,7 +85,7 @@ public class PerformanceQueriesGeneral {
                 .where("Id = `" + processInfoId + "`", "Type = `" + type + "`", "Key = `" + key + "`")
                 .select("Value");
         try {
-            return (String) processInfo.getColumn(0).get(0);
+            return (String) DataAccessHelpers.getColumn(processInfo, 0).get(0);
         } catch (Exception e) {
             return null;
         }
@@ -269,7 +270,7 @@ public class PerformanceQueriesGeneral {
         final Table pm = serverState(pml);
         resultMap.put("ServerState", pm);
 
-        int maxMemMiB = pm.getColumn("MaxMemMiB").getInt(0);
+        int maxMemMiB = DataAccessHelpers.getColumn(pm, "MaxMemMiB").getInt(0);
         if (maxMemMiB == QueryConstants.NULL_INT) {
             maxMemMiB = 4096;
         }

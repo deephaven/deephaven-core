@@ -127,21 +127,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default DataColumn[] getColumns() {
-        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
-    }
-
-    @Override
-    @FinalDefault
-    default DataColumn getColumn(final int columnIndex) {
-        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
 

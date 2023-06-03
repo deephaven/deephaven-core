@@ -6,6 +6,7 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -149,8 +150,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -161,8 +162,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -184,8 +185,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
                         .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -196,8 +197,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -219,8 +220,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
                         .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -231,8 +232,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -255,8 +256,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -267,8 +268,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
