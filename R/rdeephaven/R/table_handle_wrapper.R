@@ -1,3 +1,6 @@
+# TODO: Document this guy
+
+
 TableHandle <- R6Class("TableHandle",
     public = list(
 
@@ -12,7 +15,7 @@ TableHandle <- R6Class("TableHandle",
 
         bind_to_variable = function(name) {
             if (class(name)[[1]] != "character") {
-                stop("'name' should be a character or a string.")
+                stop(paste("'name' should be a character or a string. Got object of type ", class(name)[[1]], " instead."))
             }
             private$internal_table_handle$bind_to_variable(name)
         },
@@ -37,7 +40,7 @@ TableHandle <- R6Class("TableHandle",
 
         to_data_frame = function() {
             arrow_tbl = self$to_arrow_table()
-            return(as.data.frame(as.data.frame(arrow_tbl))) # for some reason as.data.frame on arrow table returns a tibble, not a dataframe
+            return(as.data.frame(as.data.frame(arrow_tbl))) # TODO: for some reason as.data.frame on arrow table returns a tibble, not a dataframe
         }
 
     ),

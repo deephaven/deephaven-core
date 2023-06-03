@@ -22,7 +22,7 @@ class TableHandleWrapper {
 public:
     TableHandleWrapper(deephaven::client::TableHandle ref_table) : internal_tbl_hdl(std::move(ref_table)) {};
 
-    // DEEPHAVEN QUERY METHODS WILL GO HERE
+    // TODO: DEEPHAVEN QUERY METHODS WILL GO HERE
 
     /**
      * Binds the table referenced by this table handle to a variable on the server called tableName.
@@ -42,7 +42,7 @@ public:
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.getFlightStreamReader();
 
         std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // need to add OK or throw
+        DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&empty_record_batches)); // TODO: need to add OK or throw
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
@@ -57,38 +57,29 @@ private:
 };
 
 
-
+// TODO: Document this guy
 class ClientOptionsWrapper {
 public:
 
     ClientOptionsWrapper() {
         internal_options = new deephaven::client::ClientOptions();
-        bool authentication_set = false;
-        bool session_set = false;
     };
 
     void setDefaultAuthentication() {
         internal_options->setDefaultAuthentication();
-        authentication_set = true;
     };
 
     void setBasicAuthentication(const std::string &username, const std::string &password) {
         internal_options->setBasicAuthentication(username, password);
-        authentication_set = true;
     };
 
     void setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
         internal_options->setCustomAuthentication(authenticationKey, authenticationValue);
-        authentication_set = true;
-    };
-    
-    void setSessionType(const std::string &sessionType) {
-        internal_options->setSessionType(sessionType);
-        session_set = true;
     };
 
-    bool authentication_set;
-    bool session_set;
+    void setSessionType(const std::string &sessionType) {
+        internal_options->setSessionType(sessionType);
+    };
 
 private:
 

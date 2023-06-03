@@ -1,36 +1,22 @@
-######################################## INCOMPLETE DOCS ########################################
-
 #' @title The Deephaven Client
 #' @description The Deephaven Client class is responsible for establishing and maintaining
-#' a connection to a running Deephaven server and facilitating basic server requests. This is
-#' the primary interface for interacting with the Deephaven server from R.
+#' a connection to a running Deephaven server and facilitating basic server requests.
 #' 
-#' @section Connecting to the Server via Client
-#' 
-#' To connect to a Deephaven server, you must create a new DeephavenClient object via `Client$new(...)`,
-#' with the following arguments:
-#' 
-#' - `target`: The URL that the Deephaven server is running on.
-#' - `client_options`: A `ClientOptions` instance that contains the relevant information for connecting to your server.
-#'   Check the documentation on client options via `?ClientOptions`
+#' @usage NULL
+#' @format NULL
+#' @docType class
 #' 
 #' @section Methods
 #' 
-#' - `$open_table(name)`: Looks for a table named 'name' on the server, and returns a Deephaven TableHandle reference
-#'    reference to that table if it exists. See the documentation on table handles via `?TableHandle` for more information.
-#' - `$import_table(table_object)`: Imports a new table to the Deephaven server and returns a Deephaven TableHandle
-#'    reference to the new table. Here, `table_object` can be an R Data Frame, an R Tibble, an Arrow Table, or an Arrow
-#'    RecordBatchReader. Note that this new table is not automatically bound to a variable name on the server.
-#'    See `?TableHandle` for more information.
-#' - `run_script(script)`: Runs a script on the server. The script must be in the language that the server console was
-#'    started with, and should be passed as a string to this method.
-#' 
+#' - `$open_table(name)`
+#' - `$import_table(table_object)`
+#' - `$run_script(script)`
+#'
 #' @examples
 #' 
+#' # connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
 #' client_options <- ClientOptions$new()
 #' client_options$set_default_authentication()
-#' 
-#' # connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
 #' client <- Client$new(target="localhost:10000", client_options=client_options)
 #' 
 #' # open a table that already exists on the server
@@ -40,28 +26,41 @@
 #' new_data_frame <- data.frame(matrix(rnorm(10 * 1000), nrow = 10))
 #' new_table_handle2 <- client$import_table(new_data_frame)
 #' 
-#' # run a python script, since default client options specify a Python console
+#' # run a python script on the server (default client options specify a Python console)
 #' client$run_script("print([i for i in range(10)])")
-
-#################################################################################################
 
 
 Client <- R6Class("Client",
     public = list(
 
+        #' @description
+        #' Connect to a running Deephaven server.
+        #' @param target The address of the Deephaven server.
+        #' @param client_options ClientOptions instance with the parameters needed to connect to the server.
+        #' See ?ClientOptions for more information.
         initialize = function(target, client_options) {
             private$internal_client <- new(INTERNAL_Client, target=target,
                                            client_options=client_options$internal_client_options)
         },
 
+        #' @description
+        #' Opens a table named 'name' from the server if it exists.
+        #' @param name Name of the table to open from the server as a string.
+        #' @return TableHandle reference to the requested table.
         open_table = function(name) {
             private$verify_string(name, "name")
             if (!private$check_for_table(name)) {
-                stop("The table you're trying to pull does not exist on the server.")
+                stop(paste0("The table '", name, "' you're trying to pull does not exist on the server."))
             }
             return(TableHandle$new(private$internal_client$open_table(name)))
         },
 
+        #' @description
+        #' Imports a new table to the Deephaven server. Note that this new table is not automatically bound to
+        #' a variable name on the server. See `?TableHandle` for more information.
+        #' @param table_object An R Data Frame, an R Tibble, an Arrow Table, or an Arrow RecordBatchReader
+        #' containing the data to import to the server.
+        #' @return TableHandle reference to the new table.
         import_table = function(table_object) {
             table_object_class = class(table_object)
             if (table_object_class[[1]] == "data.frame") {
@@ -79,10 +78,14 @@ Client <- R6Class("Client",
                 return(TableHandle$new(private$arrow_to_dh_table(table_object)))
             }
             else {
-                stop("'table_object' must be either an R Data Frame, an R Tibble, an Arrow Table, or an Arrow Record Batch Reader.")
+                stop(paste0("'table_object' must be either an R Data Frame, an R Tibble, an Arrow Table, or an Arrow Record Batch Reader.
+                Got object of class ", table_object_class[[1]], " instead."))
             }
         },
 
+        #' @description
+        #' Runs a script on the server. The script must be in the language that the server console was started with.
+        #' @param script Code to be executed on the server as a string.
         run_script = function(script) {
             private$verify_string(script, "script")
             private$internal_client$run_script(script)
@@ -96,9 +99,9 @@ Client <- R6Class("Client",
             return(private$internal_client$check_for_table(name))
         },
 
-        verify_string = function(stringCandidate, arg_name) {
-            if (class(stringCandidate) != "character") {
-                stop(paste0("'", arg_name, "' must be passed as a string."))
+        verify_string = function(string_candidate, arg_name) {
+            if (class(string_candidate) != "character") {
+                stop(paste0("'", arg_name, "' must be passed as a string. Got object of class ", class(string_candidate)[[1]], " instead."))
             }
         },
 
