@@ -12,8 +12,8 @@ from typing import Dict
 
 from deephaven_internal import jvm
 
-
 py_dh_session = None
+
 
 def start_jvm(jvm_props: Dict[str, str] = None):
     jvm.preload_jvm_dll()
@@ -56,7 +56,6 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         }
         jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
 
-
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
@@ -70,7 +69,8 @@ def start_jvm(jvm_props: Dict[str, str] = None):
         global py_dh_session
         _JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
         test_update_graph = _JUpdateGraph.newBuilder("PYTHON_TEST").build()
-        py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(test_update_graph, py_scope_jpy)
+        _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+        py_dh_session = _JPythonScriptSession(test_update_graph, py_scope_jpy)
 
 
 def _expandWildcardsInList(elements):

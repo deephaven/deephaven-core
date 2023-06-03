@@ -103,7 +103,10 @@ jvm.init_jvm(
 
 import jpy
 py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
-py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph")
+docs_update_graph = _JUpdateGraph.newBuilder("PYTHON_DOCS").build()
+_JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
+py_dh_session = _JPythonScriptSession(docs_update_graph, py_scope_jpy)
 py_dh_session.getExecutionContext().open()
 
 
