@@ -185,6 +185,11 @@ public interface UpdateGraph extends UpdateSourceRegistrar, NotificationQueue, N
     // region refresh control
 
     /**
+     * @return Whether this UpdateGraph has a mechanism that supports refreshing
+     */
+    boolean supportsRefreshing();
+
+    /**
      * Request that this UpdateGraph process any pending updates as soon as practicable. Updates "hurried" in this way
      * are otherwise processed as normal.
      */

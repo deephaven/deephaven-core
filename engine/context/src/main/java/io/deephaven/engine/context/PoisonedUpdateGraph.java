@@ -2,6 +2,7 @@ package io.deephaven.engine.context;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.util.ExecutionContextRegistrationException;
@@ -13,6 +14,9 @@ import java.util.Collection;
 public class PoisonedUpdateGraph implements UpdateGraph {
 
     public static final PoisonedUpdateGraph INSTANCE = new PoisonedUpdateGraph();
+
+    // this frozen clock is always Idle
+    private final LogicalClock frozenClock = () -> 1;
 
     private PoisonedUpdateGraph() {}
 
@@ -62,7 +66,7 @@ public class PoisonedUpdateGraph implements UpdateGraph {
 
     @Override
     public LogicalClock clock() {
-        return fail();
+        return frozenClock;
     }
 
     @Override
@@ -98,6 +102,11 @@ public class PoisonedUpdateGraph implements UpdateGraph {
     @Override
     public void removeSource(@NotNull Runnable updateSource) {
         fail();
+    }
+
+    @Override
+    public boolean supportsRefreshing() {
+        return false;
     }
 
     @Override

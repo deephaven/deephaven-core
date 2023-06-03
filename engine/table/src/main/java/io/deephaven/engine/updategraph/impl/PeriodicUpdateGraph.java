@@ -732,6 +732,14 @@ public class PeriodicUpdateGraph implements UpdateGraph {
     }
 
     /**
+     * @return Whether this UpdateGraph has a mechanism that supports refreshing
+     */
+    @Override
+    public boolean supportsRefreshing() {
+        return true;
+    }
+
+    /**
      * Clear all monitored tables and enqueued notifications to support {@link #enableUnitTestMode() unit-tests}.
      *
      * @param after Whether this is *after* a unit test completed. If true, held locks should result in an exception and
