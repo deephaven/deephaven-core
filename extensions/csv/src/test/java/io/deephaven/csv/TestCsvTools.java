@@ -7,6 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.test.types.OutOfBandTest;
@@ -58,9 +59,9 @@ public class TestCsvTools {
         Table tableDividends = CsvTools.readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
         Assert.assertEquals(3, tableDividends.size());
         Assert.assertEquals(4, tableDividends.meta().size());
-        Assert.assertEquals(0.15, tableDividends.getColumn(2).getDouble(1), 0.000001);
-        Assert.assertEquals(300, tableDividends.getColumn(3).getInt(1));
-        Assert.assertEquals("Z", tableDividends.getColumn(0).get(2));
+        Assert.assertEquals(0.15, DataAccessHelpers.getColumn(tableDividends, 2).getDouble(1), 0.000001);
+        Assert.assertEquals(300, DataAccessHelpers.getColumn(tableDividends, 3).getInt(1));
+        Assert.assertEquals("Z", DataAccessHelpers.getColumn(tableDividends, 0).get(2));
     }
 
     @Test
@@ -73,9 +74,9 @@ public class TestCsvTools {
                 .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
         Assert.assertEquals(3, tableDividends.size());
         Assert.assertEquals(4, tableDividends.meta().size());
-        Assert.assertEquals(0.15, tableDividends.getColumn(2).get(1));
-        Assert.assertEquals(300, tableDividends.getColumn(3).get(1));
-        Assert.assertEquals(" Z", tableDividends.getColumn(0).get(2));
+        Assert.assertEquals(0.15, DataAccessHelpers.getColumn(tableDividends, 2).get(1));
+        Assert.assertEquals(300, DataAccessHelpers.getColumn(tableDividends, 3).get(1));
+        Assert.assertEquals(" Z", DataAccessHelpers.getColumn(tableDividends, 0).get(2));
     }
 
     @Test
@@ -179,21 +180,23 @@ public class TestCsvTools {
             Assert.assertEquals("colG", definition.getColumns().get(6).getName());
             Assert.assertEquals(Boolean.class, definition.getColumns().get(6).getDataType());
 
-            Assert.assertEquals(String.format("mark1%smark2", separator), table.getColumn("colA").get(0));
-            Assert.assertEquals(1, table.getColumn("colB").getInt(0));
-            Assert.assertEquals(1.0, table.getColumn("colC").getDouble(0), 0.000001);
-            Assert.assertEquals("1", table.getColumn("colD").get(0));
-            Assert.assertNull(table.getColumn("colE").get(0));
-            Assert.assertNull(table.getColumn("colF").get(0));
-            Assert.assertEquals(Boolean.TRUE, table.getColumn("colG").getBoolean(0));
+            Assert.assertEquals(String.format("mark1%smark2", separator),
+                    DataAccessHelpers.getColumn(table, "colA").get(0));
+            Assert.assertEquals(1, DataAccessHelpers.getColumn(table, "colB").getInt(0));
+            Assert.assertEquals(1.0, DataAccessHelpers.getColumn(table, "colC").getDouble(0), 0.000001);
+            Assert.assertEquals("1", DataAccessHelpers.getColumn(table, "colD").get(0));
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colE").get(0));
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colF").get(0));
+            Assert.assertEquals(Boolean.TRUE, DataAccessHelpers.getColumn(table, "colG").getBoolean(0));
 
-            Assert.assertNull(table.getColumn("colA").get(2));
-            Assert.assertEquals(QueryConstants.NULL_INT, table.getColumn("colB").getInt(2));
-            Assert.assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2), 0.0000001);
-            Assert.assertNull(table.getColumn("colD").get(2));
-            Assert.assertNull(table.getColumn("colE").get(2));
-            Assert.assertNull(table.getColumn("colF").get(2));
-            Assert.assertEquals(QueryConstants.NULL_BOOLEAN, table.getColumn("colG").getBoolean(2));
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colA").get(2));
+            Assert.assertEquals(QueryConstants.NULL_INT, DataAccessHelpers.getColumn(table, "colB").getInt(2));
+            Assert.assertEquals(QueryConstants.NULL_DOUBLE, DataAccessHelpers.getColumn(table, "colC").getDouble(2),
+                    0.0000001);
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colD").get(2));
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colE").get(2));
+            Assert.assertNull(DataAccessHelpers.getColumn(table, "colF").get(2));
+            Assert.assertEquals(QueryConstants.NULL_BOOLEAN, DataAccessHelpers.getColumn(table, "colG").getBoolean(2));
         }
     }
 

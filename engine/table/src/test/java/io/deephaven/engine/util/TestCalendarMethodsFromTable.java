@@ -7,6 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.BusinessCalendar;
 import io.deephaven.time.calendar.Calendars;
@@ -353,6 +354,6 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
     }
 
     private Object getVal(final Table t, final String column) {
-        return t.getColumn(column).get(0);
+        return DataAccessHelpers.getColumn(t, column).get(0);
     }
 }

@@ -42,7 +42,12 @@ public:
   std::shared_ptr<TableHandleImpl> timeTable(int64_t startTimeNanos, int64_t periodNanos);
   void runScriptAsync(std::string code, std::shared_ptr<SFCallback<>> callback);
 
-  std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket() const;
+  /**
+   * For locally creating a new ticket, e.g. when making a table with Arrow. numRows and isStatic are needed
+   * so that TableHandleImpl has something to report for TableHandleImpl::numRows() and TableHandleImpl::isStatic().
+   */
+  std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket(int64_t numRows,
+      bool isStatic) const;
 
   const std::optional<Ticket> &consoleId() const { return consoleId_; }
   const std::shared_ptr<Server> &server() const { return server_; }

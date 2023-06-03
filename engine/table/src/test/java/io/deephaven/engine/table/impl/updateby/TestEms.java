@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -94,29 +95,31 @@ public class TestEms extends BaseUpdateByTest {
         final Table actualReset = t.updateBy(UpdateByOperation.Ems(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmsTicks(skipControl, 100, t.getColumn(col).getDirect(), actualSkip.getColumn(col).getDirect(),
+            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
+            assertWithEmsTicks(skipControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
                     colType);
-            assertWithEmsTicks(resetControl, 100, t.getColumn(col).getDirect(), actualReset.getColumn(col).getDirect(),
+            assertWithEmsTicks(resetControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
                     colType);
         }
 
         final Table actualSkipTime = t.updateBy(UpdateByOperation.Ems(skipControl, "ts", 10 * MINUTE, columns));
         final Table actualResetTime = t.updateBy(UpdateByOperation.Ems(resetControl, "ts", 10 * MINUTE, columns));
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmsTime(skipControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualSkipTime.getColumn(col).getDirect(),
+            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
+            assertWithEmsTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
                     colType);
-            assertWithEmsTime(resetControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualResetTime.getColumn(col).getDirect(),
+            assertWithEmsTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
                     colType);
         }
     }
@@ -158,9 +161,9 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmsTicks(skipControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmsTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -168,9 +171,9 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmsTicks(resetControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmsTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -185,15 +188,16 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmsTime(skipControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmsTime(skipControl, 10 * MINUTE, timestamps,
+                        DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -201,15 +205,16 @@ public class TestEms extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmsTime(resetControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmsTime(resetControl, 10 * MINUTE, timestamps,
+                        DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -673,7 +678,7 @@ public class TestEms extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);

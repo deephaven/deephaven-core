@@ -241,16 +241,6 @@ public interface Table extends
     Collection<? extends ColumnSource<?>> getColumnSources();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    DataColumn[] getColumns();
-
-    DataColumn getColumn(int columnIndex);
-
-    DataColumn getColumn(String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -271,12 +261,6 @@ public interface Table extends
     CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName);
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Convenience data fetching; highly inefficient
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Object[] getRecord(long rowNo, String... columnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations

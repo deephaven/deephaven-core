@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
@@ -212,14 +213,14 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(mon, t.getColumn(0).get(idx.firstRowKey()));
+        assertEquals(mon, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
         // match one of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
+        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
 
         // match two of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + thurs + "'");
@@ -227,8 +228,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(tues, t.getColumn(0).get(idx.firstRowKey()));
-        assertEquals(thurs, t.getColumn(0).get(idx.lastRowKey()));
+        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(thurs, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("Timestamp in '" + wed + "'");

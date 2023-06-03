@@ -28,7 +28,7 @@ add_executable(tests
     view_test.cc
 
     third_party/catch.hpp
-    )
+        attributes_test.cc)
 
 target_compile_options(tests PRIVATE -Wall -Werror)
 target_include_directories(tests PUBLIC "..")
