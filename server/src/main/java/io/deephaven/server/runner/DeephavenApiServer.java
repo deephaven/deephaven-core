@@ -182,4 +182,7 @@ public class DeephavenApiServer {
         server.start();
     }
 
+    public UpdateGraph getUpdateGraph() {
+        return ug;
+    }
 }

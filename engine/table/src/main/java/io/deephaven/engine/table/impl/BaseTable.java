@@ -13,6 +13,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.PoisonedUpdateGraph;
+import io.deephaven.engine.exceptions.UpdateGraphConflictException;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.exceptions.NotSortableException;
@@ -582,6 +584,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
     @Override
     public final boolean setRefreshing(boolean refreshing) {
+        if (refreshing && !updateGraph.supportsRefreshing()) {
+            throw new UpdateGraphConflictException("Attempt to setRefreshing(true) but Table was constructed with a " +
+                    "static-only UpdateGraph.");
+        }
         return this.refreshing = refreshing;
     }
 

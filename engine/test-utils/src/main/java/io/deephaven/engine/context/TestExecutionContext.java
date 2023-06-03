@@ -9,6 +9,8 @@ public class TestExecutionContext {
         UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
         if (!(updateGraph instanceof ControlledUpdateGraph)) {
             updateGraph = new ControlledUpdateGraph();
+            // noinspection resource
+            ExecutionContext.getContext().withUpdateGraph(updateGraph).open();
         }
         return new ExecutionContext.Builder(new AuthContext.SuperUser())
                 .markSystemic()

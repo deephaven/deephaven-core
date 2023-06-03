@@ -6,11 +6,10 @@ package io.deephaven.server.runner;
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
@@ -85,13 +84,6 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        executionContext = TestExecutionContext.createForUnitTests().open();
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        if (updateGraph.isUnitTestModeAllowed()) {
-            updateGraph.enableUnitTestMode();
-            updateGraph.resetForUnitTests(false);
-        }
-
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
@@ -109,6 +101,14 @@ public abstract class DeephavenApiServerTestBase {
                 .build();
 
         server = serverComponent.getServer();
+
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
+        executionContext = TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph).open();
+        if (updateGraph.isUnitTestModeAllowed()) {
+            updateGraph.enableUnitTestMode();
+            updateGraph.resetForUnitTests(false);
+        }
+
         server.startForUnitTests();
 
         scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
@@ -125,7 +125,7 @@ public abstract class DeephavenApiServerTestBase {
             LogBufferGlobal.clear(logBuffer);
         }
 
-        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        final PeriodicUpdateGraph updateGraph = server.getUpdateGraph().cast();
         if (updateGraph.isUnitTestModeAllowed()) {
             updateGraph.resetForUnitTests(true);
         }
