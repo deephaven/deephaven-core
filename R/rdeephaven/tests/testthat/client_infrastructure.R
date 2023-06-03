@@ -16,13 +16,16 @@ generate_dataframes <- function() {
     return(list(df1, df2, df3, df4))
 }
 
-setup_client <- function(client_args, dataframes=NULL) {
+setup_client <- function(target, dataframes=NULL) {
 
-    client <- new(Client, target=client_args[1], session_type=client_args[2], auth_type=client_args[3], key=client_args[4], value=client_args[5])
+    client_options <- ClientOptions$new()
+    client_options$set_default_authentication()
+    client <- Client$new(target=target, client_options=client_options))
 
     if (!is.null(dataframes)) {
         for (i in 1:length(dataframes)) {
-            df_to_dh_table(client=client, data_frame=dataframes[[i]], name=paste0("table", i))
+            th = client$import_table(dataframes[i])
+            th$bind_to_variable(paste0("table", i))
         }
     }
     return(client)

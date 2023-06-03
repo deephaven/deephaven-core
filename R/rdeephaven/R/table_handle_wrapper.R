@@ -3,7 +3,6 @@ TableHandle <- R6Class("TableHandle",
 
         initialize = function(table_handle) {
 
-            # first, type checking
             if (class(table_handle)[[1]] != "Rcpp_INTERNAL_TableHandle") {
                 stop("'table_handle' should be an internal Deephaven TableHandle. If you're seeing this,
                 you are trying to call the constructor of TableHandle directly, which is not advised.")
@@ -38,7 +37,7 @@ TableHandle <- R6Class("TableHandle",
 
         to_data_frame = function() {
             arrow_tbl = self$to_arrow_table()
-            return(as.data.frame(as.data.frame(arrow_tbl))) # for some reason as.data.frame on arrow table returns a tibble, not what I want
+            return(as.data.frame(as.data.frame(arrow_tbl))) # for some reason as.data.frame on arrow table returns a tibble, not a dataframe
         }
 
     ),

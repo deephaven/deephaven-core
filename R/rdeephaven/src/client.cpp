@@ -12,6 +12,9 @@
 
 #include <Rcpp.h>
 
+// forward declaration of classes
+class ClientOptionsWrapper;
+class ClientWrapper;
 
 // ######################### DH WRAPPERS #########################
 
@@ -52,6 +55,47 @@ public:
 private:
     deephaven::client::TableHandle internal_tbl_hdl;
 };
+
+
+
+class ClientOptionsWrapper {
+public:
+
+    ClientOptionsWrapper() {
+        internal_options = new deephaven::client::ClientOptions();
+        bool authentication_set = false;
+        bool session_set = false;
+    };
+
+    void setDefaultAuthentication() {
+        internal_options->setDefaultAuthentication();
+        authentication_set = true;
+    };
+
+    void setBasicAuthentication(const std::string &username, const std::string &password) {
+        internal_options->setBasicAuthentication(username, password);
+        authentication_set = true;
+    };
+
+    void setCustomAuthentication(const std::string &authenticationKey, const std::string &authenticationValue) {
+        internal_options->setCustomAuthentication(authenticationKey, authenticationValue);
+        authentication_set = true;
+    };
+    
+    void setSessionType(const std::string &sessionType) {
+        internal_options->setSessionType(sessionType);
+        session_set = true;
+    };
+
+    bool authentication_set;
+    bool session_set;
+
+private:
+
+    deephaven::client::ClientOptions* internal_options;
+    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
+};
+
 
 
 class ClientWrapper {
@@ -133,15 +177,12 @@ public:
     };
 
 private:
-    ClientWrapper(deephaven::client::Client ref, const std::string &sessionType) : session_type(sessionType),
-                                                                                   internal_client(std::move(ref)) {};
+    ClientWrapper(deephaven::client::Client ref) : internal_client(std::move(ref)) {};
 
-    const std::string session_type;
     const deephaven::client::Client internal_client;
     const deephaven::client::TableHandleManager internal_tbl_hdl_mngr = internal_client.getManager();
 
-    friend ClientWrapper* newClientWrapper(const std::string &target, const std::string &sessionType,
-                                           const std::string &authType, const std::string &key, const std::string &value);
+    friend ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options);
 };
 
 // factory method for calling private constructor, Rcpp does not like <const std::string &target> in constructor
@@ -150,39 +191,19 @@ private:
 /**
  * Factory method for creating a new ClientWrapper, which is responsible for maintaining a connection to the client.
  * @param target URL that the server is running on.
- * @param sessionType Type of console to start with this client connection, can be "none", "python", or "groovy". The ClientWrapper::runScript() method will only work
- *                    with the language specified here.
- * @param authType Type of authentication to use, can be "default", "basic", or "custom". "basic" uses username/password auth, "custom" uses general key/value auth.
- * @param key Key credential for authentication, can be a username if authType is "basic", or a general key if authType is "custom". Set to "" if authType is "default".
- * @param value Value credential for authentication, can be a password if authType is "basic", or a general value if authType is "custom". Set to "" if authType is "default".
+ * @param client_options A ClientOptionsWrapper containing the server connection information. See deephaven::client::ClientOptions for more information.
  */
-ClientWrapper* newClientWrapper(const std::string &target, const std::string &sessionType,
-                                const std::string &authType, const std::string &key, const std::string &value) {
-
-    deephaven::client::ClientOptions client_options = deephaven::client::ClientOptions();
-
-    if (authType == "default") {
-        client_options.setDefaultAuthentication();
-    } else if (authType == "basic") {
-        client_options.setBasicAuthentication(key, value);
-    } else if (authType == "custom") {
-        client_options.setCustomAuthentication(key, value);
-    } else {
-        client_options.setDefaultAuthentication();
-    }
-
-    if (sessionType == "python" || sessionType == "groovy") {
-        client_options.setSessionType(sessionType);
-    }
-
-    return new ClientWrapper(deephaven::client::Client::connect(target, client_options), sessionType);
+ClientWrapper* newClientWrapper(const std::string &target, const ClientOptionsWrapper &client_options) {
+    return new ClientWrapper(deephaven::client::Client::connect(target, *client_options.internal_options));
 };
+
 
 
 // ######################### RCPP GLUE #########################
 
 using namespace Rcpp;
 
+RCPP_EXPOSED_CLASS(ClientOptionsWrapper)
 RCPP_EXPOSED_CLASS(TableHandleWrapper)
 RCPP_EXPOSED_CLASS(ArrowArrayStream)
 
@@ -193,8 +214,16 @@ RCPP_MODULE(DeephavenInternalModule) {
     .method("get_arrow_array_stream_ptr", &TableHandleWrapper::getArrowArrayStreamPtr)
     ;
 
+    class_<ClientOptionsWrapper>("INTERNAL_ClientOptions")
+    .constructor()
+    .method("set_default_authentication", &ClientOptionsWrapper::setDefaultAuthentication)
+    .method("set_basic_authentication", &ClientOptionsWrapper::setBasicAuthentication)
+    .method("set_custom_authentication", &ClientOptionsWrapper::setCustomAuthentication)
+    .method("set_session_type", &ClientOptionsWrapper::setSessionType)
+    ;
+
     class_<ClientWrapper>("INTERNAL_Client")
-    .factory<const std::string&, const std::string&, const std::string&, const std::string&, const std::string&>(newClientWrapper)
+    .factory<const std::string&, const ClientOptionsWrapper&>(newClientWrapper)
     .method("open_table", &ClientWrapper::openTable)
     .method("check_for_table", &ClientWrapper::checkForTable)
     .method("run_script", &ClientWrapper::runScript)

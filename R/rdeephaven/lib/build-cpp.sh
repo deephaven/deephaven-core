@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# This script calls build-dependencies.sh to build all the C++ client dependencies, then downloads and builds the C++ client from source.
+# The R client is entirely dependent on the C++ client, so this script must be run for a successful install from source.
+
 export SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 export CLIENT=$SCRIPT_DIR/cpp-client
 
