@@ -41,8 +41,8 @@ public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private static final ControlledUpdateGraph updateGraph =
-            ExecutionContext.getContext().getUpdateGraph().cast();
+    private SafeCloseable executionContext;
+    private ControlledUpdateGraph updateGraph;
 
     private TestControlledScheduler scheduler;
     private TestSessionState session;
@@ -50,6 +50,8 @@ public class ExportTableUpdateListenerTest {
 
     @Before
     public void setup() {
+        executionContext = TestExecutionContext.createForUnitTests().open();
+        updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.enableUnitTestMode();
         updateGraph.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
@@ -66,6 +68,8 @@ public class ExportTableUpdateListenerTest {
         scheduler = null;
         session = null;
         observer = null;
+
+        executionContext.close();
     }
 
     @Test

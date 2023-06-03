@@ -17,16 +17,20 @@ public class TestAssociativeData extends RefreshingTableTestCase {
     private final String[] cats = {"A", "B"};
     private final int[] values = {1, 2};
     private final Integer x = values[0];
-    private final Table t = TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
-    private final TableHandle tableHandle = new TableHandle(t, "Cat", "Values");
-    private final AssociativeDataTable<String, Integer, Integer> associativeDataTable =
-            new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
+
     private final AssociativeDataHashMap<String, Integer> dataHashMap = new AssociativeDataHashMap<>(null);
+
+    private Table t;
+    private TableHandle tableHandle;
+    private AssociativeDataTable<String, Integer, Integer> associativeDataTable;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
+        t = TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
+        tableHandle = new TableHandle(t, "Cat", "Values");
+        associativeDataTable =
+                new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
         // prime the listeners
         associativeDataTable.get(null);
     }

@@ -51,7 +51,7 @@ public class ApplicationTest {
     @Test
     public void app01() throws IOException {
         session = new GroovyDeephavenSession(
-                ExecutionContext.getDefaultContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
                 GroovyDeephavenSession.RunScripts.none());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app01(),
                 session, new NoopStateListener());

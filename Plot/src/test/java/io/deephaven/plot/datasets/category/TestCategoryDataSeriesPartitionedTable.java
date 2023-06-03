@@ -3,15 +3,24 @@
  */
 package io.deephaven.plot.datasets.category;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.plot.*;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
+import org.junit.Rule;
+import org.junit.Test;
 
-public class TestCategoryDataSeriesPartitionedTable extends BaseArrayTestCase {
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNull;
 
+public class TestCategoryDataSeriesPartitionedTable {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
+
+    @Test
     public void testCopy() {
         final BaseFigureImpl figure = new BaseFigureImpl();
         final ChartImpl chart = figure.newChart();
