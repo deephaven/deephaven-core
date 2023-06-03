@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion
 
-
+import io.deephaven.engine.context.TestExecutionContext
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider

@@ -1,7 +1,9 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -36,12 +38,14 @@ public class DataAccessHelpers {
     // -----------------------------------------------------------------------------------------------------------------
 
     public static Object[] getRecord(Table table, long rowNo, String... columnNames) {
-        final Table t = table.coalesce();
-        final long key = t.getRowSet().get(rowNo);
-        return (columnNames.length > 0
-                ? Arrays.stream(columnNames).map(t::getColumnSource)
-                : t.getColumnSources().stream())
-                .map(columnSource -> columnSource.get(key))
-                .toArray(Object[]::new);
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            final Table t = table.coalesce();
+            final long key = t.getRowSet().get(rowNo);
+            return (columnNames.length > 0
+                    ? Arrays.stream(columnNames).map(t::getColumnSource)
+                    : t.getColumnSources().stream())
+                    .map(columnSource -> columnSource.get(key))
+                    .toArray(Object[]::new);
+        }
     }
 }
