@@ -38,6 +38,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -873,7 +874,7 @@ public class CsvTools {
         }
         final DataColumn[] cols = new DataColumn[colNames.length];
         for (int c = 0; c < colNames.length; ++c) {
-            cols[c] = source.getColumn(colNames[c]);
+            cols[c] = DataAccessHelpers.getColumn(source, colNames[c]);
         }
         final long size = cols[0].size();
         writeCsvContentsSeq(out, timeZone, cols, size, nullsAsEmpty, separator, progress);

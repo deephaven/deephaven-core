@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -203,8 +204,8 @@ public class TestEmStd extends BaseUpdateByTest {
                 UpdateByOperation.EmStd(10, "emstd10=value"),
                 UpdateByOperation.EmStd(50, "emstd50=value")));
 
-        assertBDArrayEquals(bdStd10, (BigDecimal[]) bdResult.getColumn("emstd10").getDirect());
-        assertBDArrayEquals(bdStd50, (BigDecimal[]) bdResult.getColumn("emstd50").getDirect());
+        assertBDArrayEquals(bdStd10, (BigDecimal[]) DataAccessHelpers.getColumn(bdResult, "emstd10").getDirect());
+        assertBDArrayEquals(bdStd50, (BigDecimal[]) DataAccessHelpers.getColumn(bdResult, "emstd50").getDirect());
     }
 
     // region Zero Key Tests
@@ -231,31 +232,31 @@ public class TestEmStd extends BaseUpdateByTest {
         final Table actualReset = t.updateBy(UpdateByOperation.EmStd(resetControl, ticks, columns));
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmStdTicks(skipControl, ticks, t.getColumn(col).getDirect(),
-                    actualSkip.getColumn(col).getDirect(),
+            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
+            assertWithEmStdTicks(skipControl, ticks, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
                     colType);
-            assertWithEmStdTicks(resetControl, ticks, t.getColumn(col).getDirect(),
-                    actualReset.getColumn(col).getDirect(),
+            assertWithEmStdTicks(resetControl, ticks, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
                     colType);
         }
 
         final Table actualSkipTime = t.updateBy(UpdateByOperation.EmStd(skipControl, "ts", 10 * MINUTE, columns));
         final Table actualResetTime = t.updateBy(UpdateByOperation.EmStd(resetControl, "ts", 10 * MINUTE, columns));
 
-        final Instant[] ts = (Instant[]) t.getColumn("ts").getDirect();
+        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
         }
 
         for (String col : columns) {
-            final Class colType = t.getColumn(col).getType();
-            assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualSkipTime.getColumn(col).getDirect(),
+            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
+            assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
                     colType);
-            assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps, t.getColumn(col).getDirect(),
-                    actualResetTime.getColumn(col).getDirect(),
+            assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
                     colType);
         }
     }
@@ -297,9 +298,9 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmStdTicks(skipControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmStdTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -307,9 +308,9 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmStdTicks(resetControl, 100, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmStdTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -325,15 +326,16 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmStdTime(skipControl, 10 * MINUTE, timestamps,
+                        DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -341,15 +343,16 @@ public class TestEmStd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) source.getColumn("ts").getDirect();
+            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = source.getColumn(col).getType();
-                assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps, source.getColumn(col).getDirect(),
-                        actual.getColumn(col).getDirect(),
+                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                assertWithEmStdTime(resetControl, 10 * MINUTE, timestamps,
+                        DataAccessHelpers.getColumn(source, col).getDirect(),
+                        DataAccessHelpers.getColumn(actual, col).getDirect(),
                         colType);
             });
             return source;
@@ -570,13 +573,13 @@ public class TestEmStd extends BaseUpdateByTest {
         result = input.updateBy(UpdateByOperation.EmStd(dataResetControl, 10));
 
         // Extract the BD result and fuzzy-validate against expectations
-        BigDecimal[] actualBD = (BigDecimal[]) result.getColumn("col").getDirect();
+        BigDecimal[] actualBD = (BigDecimal[]) DataAccessHelpers.getColumn(result, "col").getDirect();
         assertBDArrayEquals(actualBD, expectedBD);
 
         input = testTable(RowSetFactory.flat(6).toTracking(),
                 col("col", inputBD));
         result = input.updateBy(UpdateByOperation.EmStd(dataResetControl, 10));
-        actualBD = (BigDecimal[]) result.getColumn("col").getDirect();
+        actualBD = (BigDecimal[]) DataAccessHelpers.getColumn(result, "col").getDirect();
         assertBDArrayEquals(actualBD, expectedBD);
 
         // Test reset for NaN values
@@ -918,7 +921,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 runningVariance = 0.0;
                 outputVal = Double.NaN;
             } else {
-                // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                 runningVariance = alpha * (runningVariance + oneMinusAlpha * Math.pow(values[i] - runningEma, 2.0));
 
                 final double decayedEmaVal = runningEma * alpha;
@@ -962,7 +965,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 runningVariance = BigDecimal.ZERO;
                 outputVal = null;
             } else {
-                // incremental variance = alpha * (prevVariance + (1 − alpha) * (x − prevEma)^2)
+                // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                 runningVariance = alpha.multiply(
                         runningVariance.add(
                                 oneMinusAlpha.multiply(values[i].subtract(runningEma).pow(2, mathContextDefault)),
@@ -1028,7 +1031,7 @@ public class TestEmStd extends BaseUpdateByTest {
                 final double alpha = Math.exp(-dt / (double) nanos);
                 final double oneMinusAlpha = 1.0 - alpha;
 
-                // incremental variance = (1 − alpha)(prevVariance + alpha * (x − prevEma)^2)
+                // incremental variance = (1 - alpha)(prevVariance + alpha * (x - prevEma)^2)
                 runningVariance = alpha * (runningVariance + oneMinusAlpha * Math.pow(values[i] - runningEma, 2.0));
 
                 final double decayedEmaVal = runningEma * alpha;

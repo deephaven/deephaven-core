@@ -39,7 +39,7 @@ public interface DupExpandKernel {
      * keyRunLengths chunk is parallel to the original chunkToExpand; it is never modified.
      *
      * @param expandedSize the sum of all entries in keyRunLengths
-     * @param chunkToExpand the values to expand in-place (this writable chunk must have capacity >= expandedSize)
+     * @param chunkToExpand the values to expand in-place (this writable chunk must have capacity &gt;= expandedSize)
      * @param keyRunLengths the key run-lengths parallel to chunkToExpand
      */
     void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand,

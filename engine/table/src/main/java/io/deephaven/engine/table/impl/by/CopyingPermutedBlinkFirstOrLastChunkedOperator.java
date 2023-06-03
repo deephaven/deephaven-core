@@ -58,7 +58,7 @@ public abstract class CopyingPermutedBlinkFirstOrLastChunkedOperator extends Bas
      * <p>
      * This implementation proceeds chunk-wise in the following manner:
      * <ol>
-     * <li>Get a chunk of destination slots</l1>
+     * <li>Get a chunk of destination slots</li>
      * <li>Fill a chunk of source indices</li>
      * <li>Sort the chunk of source indices</li>
      * <lI>For each input column: get a chunk of input values, permute it into a chunk of destination values, and then

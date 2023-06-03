@@ -122,9 +122,11 @@ public:
    * This is used when the caller wants to do an Arrow DoPut operation.
    * The object returned is only forward-referenced in this file. If you want to use it, you will
    * also need to include deephaven/client/flight.h.
+   * @param numRows The number of table rows (reflected back when you call TableHandle::numRows())
+   * @param isStatic Whether the table is static (reflected back when youcall TableHandle::isStatic())
    * @return A TableHandle and Arrow FlightDescriptor referring to the new table.
    */
-  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor() const;
+  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor(int64_t numRows, bool isStatic) const;
   /**
    * Execute a script on the server. This assumes that the Client was created with a sessionType corresponding to
    * the language of the script (typically either "python" or "groovy") and that the code matches that language.
@@ -1357,6 +1359,16 @@ public:
    * Used internally, for debugging.
    */
   void observe() const;
+
+  /**
+   * Number of rows in the table at the time this TableHandle was created.
+   */
+  int64_t numRows();
+
+  /**
+   * Whether the table was static at the time this TableHandle was created.
+   */
+  bool isStatic();
 
   /**
    * Used internally. Returns the underlying impl object.

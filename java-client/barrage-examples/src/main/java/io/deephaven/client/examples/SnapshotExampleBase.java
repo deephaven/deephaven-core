@@ -6,6 +6,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -180,7 +181,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
             final BarrageTable table = subscription.snapshotEntireTable();
 
             System.out.println(
-                    "Table info: rows = " + table.size() + ", cols = " + table.getColumns().length);
+                    "Table info: rows = " + table.size() + ", cols = " + DataAccessHelpers.getColumns(table).length);
             TableTools.show(table);
             System.out.println("");
         }

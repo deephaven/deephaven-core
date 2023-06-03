@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.UpdateErrorReporter;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
@@ -158,7 +159,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TableTools.show(t_all);
 
         assertEquals(t_all.size(), 3);
-        assertArrayEquals((Object[]) t_all.getColumn("Col").getDirect(), new String[] {"A", "B", "D"});
+        assertArrayEquals((Object[]) DataAccessHelpers.getColumn(t_all, "Col").getDirect(),
+                new String[] {"A", "B", "D"});
     }
 
     public void testDiff() {
@@ -234,42 +236,45 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // Test whether we're rounding all columns properly
         Table roundedColumns = TableTools.roundDecimalColumns(table);
-        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) table.getColumn("String").getDirect());
-        assertArrayEquals((int[]) roundedColumns.getColumn("Int").getDirect(),
-                (int[]) table.getColumn("Int").getDirect());
-        assertEquals(Math.round((double) table.getColumn("Double").get(0)), roundedColumns.getColumn("Double").get(0));
-        assertEquals(Math.round((double) table.getColumn("Double").get(1)), roundedColumns.getColumn("Double").get(1));
-        assertEquals(Math.round((double) table.getColumn("Double").get(2)), roundedColumns.getColumn("Double").get(2));
+        assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
+                (String[]) DataAccessHelpers.getColumn(table, "String").getDirect());
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(roundedColumns, "Int").getDirect(),
+                (int[]) DataAccessHelpers.getColumn(table, "Int").getDirect());
+        assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(0)),
+                DataAccessHelpers.getColumn(roundedColumns, "Double").get(0));
+        assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(1)),
+                DataAccessHelpers.getColumn(roundedColumns, "Double").get(1));
+        assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(2)),
+                DataAccessHelpers.getColumn(roundedColumns, "Double").get(2));
         // Cast these cause the DB rounds floats to longs
-        assertEquals((long) Math.round((float) table.getColumn("Float").get(0)),
-                roundedColumns.getColumn("Float").get(0));
-        assertEquals((long) Math.round((float) table.getColumn("Float").get(1)),
-                roundedColumns.getColumn("Float").get(1));
-        assertEquals((long) Math.round((float) table.getColumn("Float").get(2)),
-                roundedColumns.getColumn("Float").get(2));
+        assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(0)),
+                DataAccessHelpers.getColumn(roundedColumns, "Float").get(0));
+        assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(1)),
+                DataAccessHelpers.getColumn(roundedColumns, "Float").get(1));
+        assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(2)),
+                DataAccessHelpers.getColumn(roundedColumns, "Float").get(2));
 
         // Test whether it works when we specify the columns, by comparing to the validated results from before
         Table specificRoundedColums = TableTools.roundDecimalColumns(table, "Double", "Float");
-        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) specificRoundedColums.getColumn("String").getDirect());
-        assertArrayEquals((int[]) roundedColumns.getColumn("Int").getDirect(),
-                (int[]) specificRoundedColums.getColumn("Int").getDirect());
-        assertArrayEquals((long[]) roundedColumns.getColumn("Double").getDirect(),
-                (long[]) specificRoundedColums.getColumn("Double").getDirect());
-        assertArrayEquals((long[]) roundedColumns.getColumn("Float").getDirect(),
-                (long[]) specificRoundedColums.getColumn("Float").getDirect());
+        assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
+                (String[]) DataAccessHelpers.getColumn(specificRoundedColums, "String").getDirect());
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(roundedColumns, "Int").getDirect(),
+                (int[]) DataAccessHelpers.getColumn(specificRoundedColums, "Int").getDirect());
+        assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Double").getDirect(),
+                (long[]) DataAccessHelpers.getColumn(specificRoundedColums, "Double").getDirect());
+        assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Float").getDirect(),
+                (long[]) DataAccessHelpers.getColumn(specificRoundedColums, "Float").getDirect());
 
         // Test whether it works properly when we specify what NOT to round
         Table onlyOneRoundedColumn = TableTools.roundDecimalColumnsExcept(table, "Float");
-        assertArrayEquals((String[]) roundedColumns.getColumn("String").getDirect(),
-                (String[]) onlyOneRoundedColumn.getColumn("String").getDirect());
-        assertArrayEquals((int[]) table.getColumn("Int").getDirect(),
-                (int[]) onlyOneRoundedColumn.getColumn("Int").getDirect());
-        assertArrayEquals((long[]) roundedColumns.getColumn("Double").getDirect(),
-                (long[]) onlyOneRoundedColumn.getColumn("Double").getDirect());
-        assertArrayEquals((float[]) table.getColumn("Float").getDirect(),
-                (float[]) onlyOneRoundedColumn.getColumn("Float").getDirect(), 0.0f);
+        assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
+                (String[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "String").getDirect());
+        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, "Int").getDirect(),
+                (int[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Int").getDirect());
+        assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Double").getDirect(),
+                (long[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Double").getDirect());
+        assertArrayEquals((float[]) DataAccessHelpers.getColumn(table, "Float").getDirect(),
+                (float[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Float").getDirect(), 0.0f);
 
 
         try { // Make sure we complain if you try to round the unroundable
@@ -295,24 +300,24 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         // make sure both columns are in fact Instant columns
         final Table meta = table.meta();
-        Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(0));
-        Assert.assertEquals(Instant.class.getCanonicalName(), meta.getColumn("DataType").get(1));
+        Assert.assertEquals(Instant.class.getCanonicalName(), DataAccessHelpers.getColumn(meta, "DataType").get(0));
+        Assert.assertEquals(Instant.class.getCanonicalName(), DataAccessHelpers.getColumn(meta, "DataType").get(1));
 
         // make sure this doesn't crash
         showWithRowSet(table);
 
         // validate column1 (backed with Instant objects)
-        Assert.assertEquals(data[0], table.getColumn(0).get(0));
-        Assert.assertEquals(data[1], table.getColumn(0).get(1));
-        Assert.assertEquals(data[2], table.getColumn(0).get(2));
+        Assert.assertEquals(data[0], DataAccessHelpers.getColumn(table, 0).get(0));
+        Assert.assertEquals(data[1], DataAccessHelpers.getColumn(table, 0).get(1));
+        Assert.assertEquals(data[2], DataAccessHelpers.getColumn(table, 0).get(2));
 
         // validate column2 (backed with longs, but should be get-able as Instants as well)
-        Assert.assertEquals(data[0], table.getColumn(1).get(0));
-        Assert.assertEquals(data[1], table.getColumn(1).get(1));
-        Assert.assertEquals(data[2], table.getColumn(1).get(2));
-        Assert.assertEquals(longData[0], table.getColumn(1).getLong(0));
-        Assert.assertEquals(longData[1], table.getColumn(1).getLong(1));
-        Assert.assertEquals(longData[2], table.getColumn(1).getLong(2));
+        Assert.assertEquals(data[0], DataAccessHelpers.getColumn(table, 1).get(0));
+        Assert.assertEquals(data[1], DataAccessHelpers.getColumn(table, 1).get(1));
+        Assert.assertEquals(data[2], DataAccessHelpers.getColumn(table, 1).get(2));
+        Assert.assertEquals(longData[0], DataAccessHelpers.getColumn(table, 1).getLong(0));
+        Assert.assertEquals(longData[1], DataAccessHelpers.getColumn(table, 1).getLong(1));
+        Assert.assertEquals(longData[2], DataAccessHelpers.getColumn(table, 1).getLong(2));
     }
 
     public void testSimpleDiffRegression() {
@@ -918,7 +923,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         Table emptyTable2 = TableTools.emptyTable(2).update("col=1");
         TestCase.assertEquals(2, emptyTable2.size());
-        DataColumn<?> dataColumn = emptyTable2.getColumn("col");
+        DataColumn<?> dataColumn = DataAccessHelpers.getColumn(emptyTable2, "col");
         TestCase.assertEquals(2, dataColumn.size());
         TestCase.assertEquals(1, dataColumn.get(0));
         TestCase.assertEquals(1, dataColumn.get(1));
@@ -927,7 +932,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         Table emptyTable3 = TableTools.emptyTable(2).updateView("col=1");
         TestCase.assertEquals(2, emptyTable3.size());
-        dataColumn = emptyTable3.getColumn("col");
+        dataColumn = DataAccessHelpers.getColumn(emptyTable3, "col");
         TestCase.assertEquals(2, dataColumn.size());
         TestCase.assertEquals(1, dataColumn.get(0));
         TestCase.assertEquals(1, dataColumn.get(1));

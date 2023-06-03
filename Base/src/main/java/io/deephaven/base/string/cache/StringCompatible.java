@@ -59,7 +59,7 @@ public interface StringCompatible extends CharSequence, Comparable<CharSequence>
     /**
      * Implementations MUST compare StringCompatibles and Strings char-by-char.
      * 
-     * @return 0, <0, or >0 if that compares equal-to, less-than, or greater-than this.
+     * @return 0, &lt;0, or &gt;0 if that compares equal-to, less-than, or greater-than this.
      */
     @Override
     int compareTo(@NotNull final CharSequence that);

@@ -27,6 +27,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -730,12 +731,13 @@ public abstract class FlightMessageRoundTripTest {
                     org.apache.arrow.vector.IntVector iv =
                             (org.apache.arrow.vector.IntVector) root.getVector(0);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("int match:", table.getColumn(0).get(offset + i), iv.get(i));
+                        assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
                     }
                     org.apache.arrow.vector.Float8Vector dv =
                             (org.apache.arrow.vector.Float8Vector) root.getVector(1);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("double match: ", table.getColumn(1).get(offset + i), dv.get(i));
+                        assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
+                                dv.get(i));
                     }
                 }
                 assertEquals(table.size(), totalRowCount);

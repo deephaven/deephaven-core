@@ -216,9 +216,9 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Retrieves a {@code ColumnSource}. It is conveniently cast to @{code ColumnSource<T>} using the type that caller
-     * expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class} object
-     * to verify that the data type is a subclass of the expected class.
+     * Retrieves a {@code ColumnSource}. It is conveniently cast to {@code ColumnSource<Object>} using the type that
+     * caller expects. This differs from {@link #getColumnSource(String, Class)} which uses the provided {@link Class}
+     * object to verify that the data type is a subclass of the expected class.
      *
      * @param sourceName The name of the column
      * @param <T> The target type, as a type parameter. Inferred from context.
@@ -241,16 +241,6 @@ public interface Table extends
     Collection<? extends ColumnSource<?>> getColumnSources();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    DataColumn[] getColumns();
-
-    DataColumn getColumn(int columnIndex);
-
-    DataColumn getColumn(String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Column Iterators
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -271,12 +261,6 @@ public interface Table extends
     CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName);
 
     <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Convenience data fetching; highly inefficient
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Object[] getRecord(long rowNo, String... columnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
@@ -447,12 +431,6 @@ public interface Table extends
     Table removeBlink();
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    Table ungroupAllBut(String... columnsNotToUngroup);
-
-    // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -612,36 +590,6 @@ public interface Table extends
      */
     @ConcurrentMethod
     TreeTable tree(String idColumn, String parentColumn);
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear before all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeBefore(Table... others);
-
-    /**
-     * Merge this Table with {@code others}. All rows in this Table will appear after all rows in {@code others}. If
-     * Tables in {@code others} are the result of a prior merge operation, they <em>may</em> be expanded in an attempt
-     * to avoid deeply nested structures.
-     *
-     * @apiNote It's best to avoid many chained calls to {@link #mergeBefore(Table...)} and
-     *          {@link #mergeAfter(Table...)}, as this may result in deeply-nested data structures. See
-     *          TableTools.merge(Table...).
-     * @param others The Tables to merge with
-     * @return The merged Table
-     */
-    Table mergeAfter(Table... others);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Miscellaneous Operations

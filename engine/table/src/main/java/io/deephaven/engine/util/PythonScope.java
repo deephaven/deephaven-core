@@ -86,7 +86,7 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getValueRaw(String)}.map({@link #convertValue(PyObj)})
+     * Equivalent to {@link #getValueRaw(String)}.map({@link #convertValue(Object)})
      *
      * @param name the name of the python variable
      * @return the converted object value, or empty
@@ -110,7 +110,7 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getValue(String)}.map(x -> (T)x);
+     * Equivalent to {@link #getValue(String)}.map(x -&gt; (T)x);
      *
      * @param name the name of the python variable
      * @param <T> the return type
@@ -123,7 +123,7 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getKeysRaw()}.map({@link #convertStringKey(PyObj)})
+     * Equivalent to {@link #getKeysRaw()}.map({@link #convertStringKey(Object)})
      *
      * @return the string keys
      */
@@ -133,8 +133,8 @@ public interface PythonScope<PyObj> {
     }
 
     /**
-     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(PyObj)}
-     * and the values via {@link #convertValue(PyObj)}
+     * Equivalent to {@link #getEntriesRaw()}, where the keys have been converted via {@link #convertStringKey(Object)}
+     * and the values via {@link #convertValue(Object)}.
      *
      * @return the string keys and converted values
      */

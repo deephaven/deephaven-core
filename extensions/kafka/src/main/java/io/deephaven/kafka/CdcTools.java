@@ -204,7 +204,7 @@ public class CdcTools {
      * @param topic The Kafka topic for the CDC events associated to the desired table data.
      * @param keySchemaName The schema name for the Key Kafka field in the CDC events for the topic. This schema should
      *        include definitions for the columns forming the PRIMARY KEY of the underlying table.
-     * @parar keySchemaVersion The version for the Key schema to look up in schema server.
+     * @param keySchemaVersion The version for the Key schema to look up in schema server.
      * @param valueSchemaName The schema name for the Value Kafka field in the CDC events for the topic. This schema
      *        should include definitions for all the columns of the underlying table.
      * @param valueSchemaVersion The version for the Value schema to look up in schema server.

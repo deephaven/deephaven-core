@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
@@ -804,7 +805,7 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createIndexableData(final Table t, final String column, final PlotInfo plotInfo) {
-        final DataColumn<T> dataColumn = t.getColumn(column);
+        final DataColumn<T> dataColumn = DataAccessHelpers.getColumn(t, column);
         final Object o = dataColumn.getDirect();
 
         return new IndexableDataArray((T[]) o, plotInfo);

@@ -374,8 +374,9 @@ public class TestConditionFilter extends PythonTest {
             QueryScope currentScope = currentContext.getQueryScope();
             try {
                 if (pythonScope == null) {
-                    final ExecutionContext context = new PythonDeephavenSession(new PythonScopeJpyImpl(
-                            getMainGlobals().asDict())).getExecutionContext();
+                    final ExecutionContext context = new PythonDeephavenSession(
+                            ExecutionContext.getDefaultContext().getUpdateGraph(),
+                            new PythonScopeJpyImpl(getMainGlobals().asDict())).getExecutionContext();
                     pythonScope = context.getQueryScope();
                     context.open();
                 }

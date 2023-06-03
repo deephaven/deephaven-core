@@ -127,21 +127,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // DataColumns for fetching data by row position; generally much less efficient than ColumnSource
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    default DataColumn[] getColumns() {
-        return getDefinition().getColumnStream().map(c -> getColumn(c.getName())).toArray(DataColumn[]::new);
-    }
-
-    @Override
-    @FinalDefault
-    default DataColumn getColumn(final int columnIndex) {
-        return getColumn(this.getDefinition().getColumns().get(columnIndex).getName());
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -313,20 +298,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    // Disaggregation Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table ungroupAllBut(String... columnsNotToUngroup) {
-        final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
-        return ungroup(getDefinition().getColumnStream()
-                .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType())))
-                .map(ColumnDefinition::getName).toArray(String[]::new));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
     // PartitionBy Operations
     // -----------------------------------------------------------------------------------------------------------------
 
@@ -392,28 +363,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default Table snapshotWhen(Table trigger, Collection<Flag> features, String... stampColumns) {
         return snapshotWhen(trigger, SnapshotWhenOptions.of(features, stampColumns));
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // Merge Operations
-    // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @FinalDefault
-    default Table mergeBefore(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.add(this);
-        tables.addAll(List.of(others));
-        return TableTools.merge(tables);
-    }
-
-    @Override
-    @FinalDefault
-    default Table mergeAfter(final Table... others) {
-        final List<Table> tables = new ArrayList<>(others.length + 1);
-        tables.addAll(List.of(others));
-        tables.add(this);
-        return TableTools.merge(tables);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

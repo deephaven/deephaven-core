@@ -58,7 +58,7 @@ import java.util.function.Consumer;
  * <p>
  * Naming Rationale:
  * <ul>
- * <li>eq, neq, lt, leq, gt, get correspond to ==, !=, <, <=, >, >=, e.g.,
+ * <li>eq, neq, lt, leq, gt, get correspond to ==, !=, &lt;, &lt;=, &gt;, &gt;=, e.g.,
  * <ul>
  * <li>For Object a and b, Require.eq(a, "a", b, "b") corresponds to require (a == b)
  * <li>For Object o, Require.neqNull(o, "o") corresponds to require (o != null)
@@ -66,8 +66,9 @@ import java.util.function.Consumer;
  * </ul>
  * <li>equals corresponds to Object.equals (preceded by necessary null checks), e.g.,
  * <ul>
- * <li>For Object a and b, Require.equals(a, "a", b, "b") corresponds to require (a!= null && b != null && a.equals(b))
- * <li>for String s, Require.nonempty(s, "s") corresponds to require (s != null && s.length() != 0)
+ * <li>For Object a and b, Require.equals(a, "a", b, "b") corresponds to require (a!= null &amp;&amp; b != null
+ * &amp;&amp; a.equals(b))
+ * <li>for String s, Require.nonempty(s, "s") corresponds to require (s != null &amp;&amp; s.length() != 0)
  * </ul>
  * </ul>
  */
@@ -517,7 +518,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (o != null && (current thread holds o's lock))
+     * require (o != null &amp;&amp; (current thread holds o's lock))
      */
     public static void holdsLock(Object o, String name, int numCallsBelowRequirer) {
         neqNull(o, "o");
@@ -532,7 +533,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (o != null && !(current thread holds o's lock))
+     * require (o != null &amp;&amp; !(current thread holds o's lock))
      */
     public static void notHoldsLock(Object o, String name, int numCallsBelowRequirer) {
         neqNull(o, "o");
@@ -1026,7 +1027,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (c0 < c1)
+     * require (c0 &lt; c1)
      */
     public static char lt(char c0, String name0, char c1, String name1, int numCallsBelowRequirer) {
         if (!(c0 < c1)) {
@@ -1054,7 +1055,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b0 < b1)
+     * require (b0 &lt; b1)
      */
     public static byte lt(byte b0, String name0, byte b1, String name1, int numCallsBelowRequirer) {
         if (!(b0 < b1)) {
@@ -1081,7 +1082,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s0 < s1)
+     * require (s0 &lt; s1)
      */
     public static short lt(short s0, String name0, short s1, String name1, int numCallsBelowRequirer) {
         if (!(s0 < s1)) {
@@ -1108,7 +1109,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i0 < i1)
+     * require (i0 &lt; i1)
      */
     public static int lt(int i0, String name0, int i1, String name1, int numCallsBelowRequirer) {
         if (!(i0 < i1)) {
@@ -1135,7 +1136,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l0 < l1)
+     * require (l0 &lt; l1)
      */
     public static long lt(long l0, String name0, long l1, String name1, int numCallsBelowRequirer) {
         if (!(l0 < l1)) {
@@ -1162,7 +1163,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f0 < f1)
+     * require (f0 &lt; f1)
      */
     public static float lt(float f0, String name0, float f1, String name1, int numCallsBelowRequirer) {
         if (!(f0 < f1)) {
@@ -1189,7 +1190,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d0 < d1)
+     * require (d0 &lt; d1)
      */
     public static double lt(double d0, String name0, double d1, String name1, int numCallsBelowRequirer) {
         if (!(d0 < d1)) {
@@ -1219,7 +1220,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (c0 <= c1)
+     * require (c0 &lt;= c1)
      */
     public static char leq(char c0, String name0, char c1, String name1, int numCallsBelowRequirer) {
         if (!(c0 <= c1)) {
@@ -1247,7 +1248,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b0 <= b1)
+     * require (b0 &lt;= b1)
      */
     public static byte leq(byte b0, String name0, byte b1, String name1, int numCallsBelowRequirer) {
         if (!(b0 <= b1)) {
@@ -1274,7 +1275,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s0 <= s1)
+     * require (s0 &lt;= s1)
      */
     public static short leq(short s0, String name0, short s1, String name1, int numCallsBelowRequirer) {
         if (!(s0 <= s1)) {
@@ -1301,7 +1302,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i0 <= i1)
+     * require (i0 &lt;= i1)
      */
     public static int leq(int i0, String name0, int i1, String name1, int numCallsBelowRequirer) {
         if (!(i0 <= i1)) {
@@ -1328,7 +1329,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l0 <= l1)
+     * require (l0 &lt;= l1)
      */
     public static long leq(long l0, String name0, long l1, String name1, int numCallsBelowRequirer) {
         if (!(l0 <= l1)) {
@@ -1355,7 +1356,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f0 <= f1)
+     * require (f0 &lt;= f1)
      */
     public static float leq(float f0, String name0, float f1, String name1, int numCallsBelowRequirer) {
         if (!(f0 <= f1)) {
@@ -1382,7 +1383,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d0 <= d1)
+     * require (d0 &lt;= d1)
      */
     public static double leq(double d0, String name0, double d1, String name1, int numCallsBelowRequirer) {
         if (!(d0 <= d1)) {
@@ -1412,7 +1413,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (c0 > c1)
+     * require (c0 &gt; c1)
      */
     public static char gt(char c0, String name0, char c1, String name1, int numCallsBelowRequirer) {
         if (!(c0 > c1)) {
@@ -1440,7 +1441,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b0 > b1)
+     * require (b0 &gt; b1)
      */
     public static byte gt(byte b0, String name0, byte b1, String name1, int numCallsBelowRequirer) {
         if (!(b0 > b1)) {
@@ -1467,7 +1468,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s0 > s1)
+     * require (s0 &gt; s1)
      */
     public static short gt(short s0, String name0, short s1, String name1, int numCallsBelowRequirer) {
         if (!(s0 > s1)) {
@@ -1494,7 +1495,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i0 > i1)
+     * require (i0 &gt; i1)
      */
     public static int gt(int i0, String name0, int i1, String name1, int numCallsBelowRequirer) {
         if (!(i0 > i1)) {
@@ -1521,7 +1522,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l0 > l1)
+     * require (l0 &gt; l1)
      */
     public static long gt(long l0, String name0, long l1, String name1, int numCallsBelowRequirer) {
         if (!(l0 > l1)) {
@@ -1548,7 +1549,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f0 > f1)
+     * require (f0 &gt; f1)
      */
     public static float gt(float f0, String name0, float f1, String name1, int numCallsBelowRequirer) {
         if (!(f0 > f1)) {
@@ -1575,7 +1576,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d0 > d1)
+     * require (d0 &gt; d1)
      */
     public static double gt(double d0, String name0, double d1, String name1, int numCallsBelowRequirer) {
         if (!(d0 > d1)) {
@@ -1605,7 +1606,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (c0 >= c1)
+     * require (c0 &gt;= c1)
      */
     public static char geq(char c0, String name0, char c1, String name1, int numCallsBelowRequirer) {
         if (!(c0 >= c1)) {
@@ -1633,7 +1634,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b0 >= b1)
+     * require (b0 &gt;= b1)
      */
     public static byte geq(byte b0, String name0, byte b1, String name1, int numCallsBelowRequirer) {
         if (!(b0 >= b1)) {
@@ -1660,7 +1661,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s0 >= s1)
+     * require (s0 &gt;= s1)
      */
     public static short geq(short s0, String name0, short s1, String name1, int numCallsBelowRequirer) {
         if (!(s0 >= s1)) {
@@ -1687,7 +1688,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i0 >= i1)
+     * require (i0 &gt;= i1)
      */
     public static int geq(int i0, String name0, int i1, String name1, int numCallsBelowRequirer) {
         if (!(i0 >= i1)) {
@@ -1714,7 +1715,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l0 >= l1)
+     * require (l0 &gt;= l1)
      */
     public static long geq(long l0, String name0, long l1, String name1, int numCallsBelowRequirer) {
         if (!(l0 >= l1)) {
@@ -1741,7 +1742,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f0 >= f1)
+     * require (f0 &gt;= f1)
      */
     public static float geq(float f0, String name0, float f1, String name1, int numCallsBelowRequirer) {
         if (!(f0 >= f1)) {
@@ -1768,7 +1769,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d0 >= d1)
+     * require (d0 &gt;= d1)
      */
     public static double geq(double d0, String name0, double d1, String name1, int numCallsBelowRequirer) {
         if (!(d0 >= d1)) {
@@ -2067,7 +2068,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b < 0)
+     * require (b &lt; 0)
      */
     public static byte ltZero(byte b, String name, int numCallsBelowRequirer) {
         if (!(b < 0)) {
@@ -2082,7 +2083,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s < 0)
+     * require (s &lt; 0)
      */
     public static short ltZero(short s, String name, int numCallsBelowRequirer) {
         if (!(s < 0)) {
@@ -2097,7 +2098,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i < 0)
+     * require (i &lt; 0)
      */
     public static int ltZero(int i, String name, int numCallsBelowRequirer) {
         if (!(i < 0)) {
@@ -2112,7 +2113,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l < 0)
+     * require (l &lt; 0)
      */
     public static long ltZero(long l, String name, int numCallsBelowRequirer) {
         if (!(l < 0)) {
@@ -2127,7 +2128,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f < 0)
+     * require (f &lt; 0)
      */
     public static float ltZero(float f, String name, int numCallsBelowRequirer) {
         if (!(f < 0)) {
@@ -2142,7 +2143,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d < 0)
+     * require (d &lt; 0)
      */
     public static double ltZero(double d, String name, int numCallsBelowRequirer) {
         if (!(d < 0)) {
@@ -2160,7 +2161,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b <= 0)
+     * require (b &lt;= 0)
      */
     public static byte leqZero(byte b, String name, int numCallsBelowRequirer) {
         if (!(b <= 0)) {
@@ -2175,7 +2176,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s <= 0)
+     * require (s &lt;= 0)
      */
     public static short leqZero(short s, String name, int numCallsBelowRequirer) {
         if (!(s <= 0)) {
@@ -2190,7 +2191,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i <= 0)
+     * require (i &lt;= 0)
      */
     public static int leqZero(int i, String name, int numCallsBelowRequirer) {
         if (!(i <= 0)) {
@@ -2205,7 +2206,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l <= 0)
+     * require (l &lt;= 0)
      */
     public static long leqZero(long l, String name, int numCallsBelowRequirer) {
         if (!(l <= 0)) {
@@ -2220,7 +2221,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f <= 0)
+     * require (f &lt;= 0)
      */
     public static float leqZero(float f, String name, int numCallsBelowRequirer) {
         if (!(f <= 0)) {
@@ -2235,7 +2236,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d <= 0)
+     * require (d &lt;= 0)
      */
     public static double leqZero(double d, String name, int numCallsBelowRequirer) {
         if (!(d <= 0)) {
@@ -2253,7 +2254,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b > 0)
+     * require (b &gt; 0)
      */
     public static byte gtZero(byte b, String name, int numCallsBelowRequirer) {
         if (!(b > 0)) {
@@ -2268,7 +2269,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s > 0)
+     * require (s &gt; 0)
      */
     public static short gtZero(short s, String name, int numCallsBelowRequirer) {
         if (!(s > 0)) {
@@ -2283,7 +2284,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i > 0)
+     * require (i &gt; 0)
      */
     public static int gtZero(int i, String name, int numCallsBelowRequirer) {
         if (!(i > 0)) {
@@ -2298,7 +2299,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l > 0)
+     * require (l &gt; 0)
      */
     public static long gtZero(long l, String name, int numCallsBelowRequirer) {
         if (!(l > 0)) {
@@ -2313,7 +2314,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f > 0)
+     * require (f &gt; 0)
      */
     public static float gtZero(float f, String name, int numCallsBelowRequirer) {
         if (!(f > 0)) {
@@ -2346,7 +2347,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (b >= 0)
+     * require (b &gt;= 0)
      */
     public static byte geqZero(byte b, String name, int numCallsBelowRequirer) {
         if (!(b >= 0)) {
@@ -2361,7 +2362,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s >= 0)
+     * require (s &gt;= 0)
      */
     public static short geqZero(short s, String name, int numCallsBelowRequirer) {
         if (!(s >= 0)) {
@@ -2376,7 +2377,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (i >= 0)
+     * require (i &gt;= 0)
      */
     public static int geqZero(int i, String name, int numCallsBelowRequirer) {
         if (!(i >= 0)) {
@@ -2391,7 +2392,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (l >= 0)
+     * require (l &gt;= 0)
      */
     public static long geqZero(long l, String name, int numCallsBelowRequirer) {
         if (!(l >= 0)) {
@@ -2406,7 +2407,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (f >= 0)
+     * require (f &gt;= 0)
      */
     public static float geqZero(float f, String name, int numCallsBelowRequirer) {
         if (!(f >= 0)) {
@@ -2421,7 +2422,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (d >= 0)
+     * require (d &gt;= 0)
      */
     public static double geqZero(double d, String name, int numCallsBelowRequirer) {
         if (!(d >= 0)) {
@@ -2560,7 +2561,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (o0 != null && o1 != null && o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; o0.equals(o1))
      */
     public static void equals(Object o0, String name0, Object o1, String name1, int numCallsBelowRequirer) {
         neqNull(o0, name0, numCallsBelowRequirer + 1);
@@ -2572,14 +2573,14 @@ public final class Require {
     }
 
     /**
-     * require (o0 != null && o1 != null && o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; o0.equals(o1))
      */
     public static void equals(Object o0, String name0, Object o1, String name1) {
         equals(o0, name0, o1, name1, 1);
     }
 
     /**
-     * require (o0 != null && o1 != null && o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; o0.equals(o1))
      */
     public static void equals(Object o0, String name0, Object o1, int numCallsBelowRequirer) {
         neqNull(o0, name0, numCallsBelowRequirer + 1);
@@ -2591,7 +2592,7 @@ public final class Require {
     }
 
     /**
-     * require (o0 != null && o1 != null && o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; o0.equals(o1))
      */
     public static void equals(Object o0, String name0, Object o1) {
         equals(o0, name0, o1, 1);
@@ -2599,7 +2600,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (o0 != null && o1 != null && !o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; !o0.equals(o1))
      */
     public static void notEquals(Object o0, String name0, Object o1, String name1, int numCallsBelowRequirer) {
         neqNull(o0, name0, numCallsBelowRequirer + 1);
@@ -2611,14 +2612,14 @@ public final class Require {
     }
 
     /**
-     * require (o0 != null && o1 != null && !o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; !o0.equals(o1))
      */
     public static void notEquals(Object o0, String name0, Object o1, String name1) {
         notEquals(o0, name0, o1, name1, 1);
     }
 
     /**
-     * require (o0 != null && o1 != null && !o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; !o0.equals(o1))
      */
     public static void notEquals(Object o0, String name0, Object o1, int numCallsBelowRequirer) {
         neqNull(o0, name0, numCallsBelowRequirer + 1);
@@ -2630,7 +2631,7 @@ public final class Require {
     }
 
     /**
-     * require (o0 != null && o1 != null && !o0.equals(o1))
+     * require (o0 != null &amp;&amp; o1 != null &amp;&amp; !o0.equals(o1))
      */
     public static void notEquals(Object o0, String name0, Object o1) {
         notEquals(o0, name0, o1, 1);
@@ -2641,7 +2642,7 @@ public final class Require {
 
     // ----------------------------------------------------------------
     /**
-     * require (s != null && s.length() > 0)
+     * require (s != null &amp;&amp; s.length() &gt; 0)
      */
     public static String nonempty(String s, String name, int numCallsBelowRequirer) {
         neqNull(s, name, numCallsBelowRequirer + 1);
@@ -2658,7 +2659,7 @@ public final class Require {
     // ################################################################
 
     // ----------------------------------------------------------------
-    /** require (collection != null && collection.contains(element)) */
+    /** require (collection != null &amp;&amp; collection.contains(element)) */
     public static <C extends Collection<T>, T> C contains(C collection, String collectionName, T element,
             String elementName, int numCallsBelowRequirer) {
         neqNull(collection, collectionName, numCallsBelowRequirer + 1);
@@ -2675,7 +2676,7 @@ public final class Require {
     }
 
     // ----------------------------------------------------------------
-    /** require (collection != null && !collection.contains(element)) */
+    /** require (collection != null &amp;&amp; !collection.contains(element)) */
     public static <C extends Collection<T>, T> C notContains(C collection, String collectionName, T element,
             String elementName, int numCallsBelowRequirer) {
         neqNull(collection, collectionName, numCallsBelowRequirer + 1);
@@ -2692,7 +2693,7 @@ public final class Require {
     }
 
     // ----------------------------------------------------------------
-    /** require (collection != null && !collection.stream().anyMatch(Objects::isNull) */
+    /** require (collection != null &amp;&amp; !collection.stream().anyMatch(Objects::isNull) */
     public static <C extends Collection<T>, T> C notContainsNull(C collection, String collectionName,
             int numCallsBelowRequirer) {
         neqNull(collection, collectionName, numCallsBelowRequirer + 1);
@@ -2707,7 +2708,7 @@ public final class Require {
     }
 
     // ----------------------------------------------------------------
-    /** require (map != null && map.containsKey(key)) */
+    /** require (map != null &amp;&amp; map.containsKey(key)) */
     public static <M extends Map<K, V>, K, V> M containsKey(M map, String mapName, K key, String keyName,
             int numCallsBelowRequirer) {
         neqNull(map, mapName, numCallsBelowRequirer + 1);
@@ -2723,7 +2724,7 @@ public final class Require {
     }
 
     // ----------------------------------------------------------------
-    /** require (map != null && !map.containsKey(element)) */
+    /** require (map != null &amp;&amp; !map.containsKey(element)) */
     public static <M extends Map<K, V>, K, V> M notContainsKey(M map, String mapName, K key, String keyName,
             int numCallsBelowRequirer) {
         neqNull(map, mapName, numCallsBelowRequirer + 1);
@@ -2739,7 +2740,7 @@ public final class Require {
     }
 
     // ----------------------------------------------------------------
-    /** require (offset >= 0 && offset < length) */
+    /** require (offset &gt;= 0 &amp;&amp; offset &lt; length) */
     public static int inRange(int offset, String offsetName, int length, String lengthName, int numCallsBelowRequirer) {
         if (!(offset >= 0)) {
             fail(offsetName + " >= 0", ExceptionMessageUtil.valueAndName(offset, offsetName),
@@ -2752,13 +2753,13 @@ public final class Require {
         return offset;
     }
 
-    /** require (offset >= 0 && offset < length) */
+    /** require (offset &gt;= 0 &amp;&amp; offset &lt; length) */
     public static int inRange(int offset, String offsetName, int length, String lengthName) {
         return inRange(offset, offsetName, length, lengthName, 1);
     }
 
     // ----------------------------------------------------------------
-    /** require (offset >= start && offset < end) */
+    /** require (offset &gt;= start &amp;&amp; offset &lt; end) */
     public static int inRange(int offset, String offsetName, int start, String startName, int end, String endName,
             int numCallsBelowRequirer) {
         if (!(offset >= start)) {
@@ -2771,13 +2772,13 @@ public final class Require {
         return offset;
     }
 
-    /** require (offset >= start && offset < end) */
+    /** require (offset &gt;= start &amp;&amp; offset &lt; end) */
     public static int inRange(int offset, String offsetName, int start, String startName, int end, String endName) {
         return inRange(offset, offsetName, start, startName, end, endName, 1);
     }
 
     // ----------------------------------------------------------------
-    /** require (offset >= 0 && offset < length) */
+    /** require (offset &gt;= 0 &amp;&amp; offset &lt; length) */
     public static long inRange(long offset, String offsetName, long length, String lengthName,
             int numCallsBelowRequirer) {
         if (!(offset >= 0L)) {
@@ -2791,13 +2792,13 @@ public final class Require {
         return offset;
     }
 
-    /** require (offset >= 0 && offset < length) */
+    /** require (offset &gt;= 0 &amp;&amp; offset &lt; length) */
     public static long inRange(long offset, String offsetName, long length, String lengthName) {
         return inRange(offset, offsetName, length, lengthName, 1);
     }
 
     // ----------------------------------------------------------------
-    /** require (offset >= start && offset < end) */
+    /** require (offset &gt;= start &amp;&amp; offset &lt; end) */
     public static long inRange(long offset, String offsetName, long start, String startName, long end, String endName,
             int numCallsBelowRequirer) {
         if (!(offset >= start)) {
@@ -2810,7 +2811,7 @@ public final class Require {
         return offset;
     }
 
-    /** require (offset >= start && offset < end) */
+    /** require (offset &gt;= start &amp;&amp; offset &lt; end) */
     public static long inRange(long offset, String offsetName, long start, String startName, long end, String endName) {
         return inRange(offset, offsetName, start, startName, end, endName, 1);
     }

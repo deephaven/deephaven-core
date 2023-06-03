@@ -71,7 +71,7 @@ public class Item<V extends Value> {
     }
 
     /**
-     * Update the history intervals for this item's value, logging updated intervals >= logInterval
+     * Update the history intervals for this item's value, logging updated intervals &gt;= logInterval
      */
     public void update(ItemUpdateListener listener, long logInterval, long now, long appNow) {
         value.update(this, listener, logInterval, now, appNow);
