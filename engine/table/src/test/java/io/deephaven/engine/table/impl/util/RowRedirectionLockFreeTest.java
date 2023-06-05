@@ -5,23 +5,32 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;
+import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.base.ArrayUtil.swap;
 
 @Category(OutOfBandTest.class)
-public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
+public class RowRedirectionLockFreeTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 
+    @Test
     public void testRowRedirection() throws InterruptedException {
         final WritableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
@@ -46,8 +55,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         }
         for (int ii = 0; ii < threads.length; ++ii) {
             threads[ii].join();
-            if (!participants[ii].cleanExit) {
-                fail("Thread " + participants[ii].name + " unexpectedly exited.");
+            if (participants[ii].caughtException != null) {
+                throw participants[ii].caughtException;
             }
         }
         boolean failed = false;
@@ -56,7 +65,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             failed |= rwb.hasFailed();
         }
         if (failed) {
-            fail("WritableRowRedirection had some corrupt values");
+            TestCase.fail("WritableRowRedirection had some corrupt values");
         }
     }
 
@@ -70,7 +79,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final WritableRowRedirectionLockFree index;
         protected int numIterations;
         protected volatile boolean cancelled;
-        protected volatile boolean cleanExit = false;
+        protected volatile RuntimeException caughtException;
 
         protected RWBase(String name, long initialStep, WritableRowRedirectionLockFree index) {
             this.name = name;
@@ -81,11 +90,14 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         }
 
         public final void run() {
-            while (!cancelled) {
-                doOneIteration();
-                ++numIterations;
+            try {
+                while (!cancelled) {
+                    doOneIteration();
+                    ++numIterations;
+                }
+            } catch (RuntimeException e) {
+                caughtException = e;
             }
-            cleanExit = true;
         }
 
         public final void cancel() {
