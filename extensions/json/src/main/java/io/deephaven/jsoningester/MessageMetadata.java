@@ -1,6 +1,6 @@
 package io.deephaven.jsoningester;
 
-import io.deephaven.time.DateTime;
+import java.time.Instant;
 
 /**
  * Interface for providers of message metadata (e.g. timestamps, a {@link #getMsgNo() sequence number}, and a
@@ -13,21 +13,21 @@ public interface MessageMetadata {
      *
      * @return the time (if available) when this message was published.
      */
-    DateTime getSentTime();
+    Instant getSentTime();
 
     /**
      * Gets the time (reported by subscriber) when this message was received.
      *
      * @return the time (reported by subscriber) when this message was received.
      */
-    DateTime getReceiveTime();
+    Instant getReceiveTime();
 
     /**
      * Gets the time when this message was finished processing by its ingester and was ready to be flushed.
      *
      * @return the time when this message was finished processing by its ingester and was ready to be flushed.
      */
-    DateTime getIngestTime();
+    Instant getIngestTime();
 
     /**
      * Gets the ID for this message.

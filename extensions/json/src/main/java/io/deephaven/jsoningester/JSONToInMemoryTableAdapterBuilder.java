@@ -51,6 +51,14 @@ public class JSONToInMemoryTableAdapterBuilder {
             this.tableWriters = Collections.unmodifiableMap(tableWriters);
             this.tableWriterAdapter = tableWriterAdapter;
         }
+
+        /**
+         * Calls {@link JSONToTableWriterAdapter#shutdown() shutdown()} on the table writer adapter, which
+         * will also {@link TableWriter#close() close()} the TableWriters.
+         */
+        public void shutdown() {
+            tableWriterAdapter.shutdown();
+        }
     }
 
     public JSONToInMemoryTableAdapterBuilder() {

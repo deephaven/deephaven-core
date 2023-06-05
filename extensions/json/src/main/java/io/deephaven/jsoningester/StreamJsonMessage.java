@@ -1,11 +1,11 @@
 package io.deephaven.jsoningester;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.deephaven.time.DateTime;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 
 /**
  * Created by rbasralian on 10/19/22
@@ -27,8 +27,8 @@ public class StreamJsonMessage extends BaseMessageMetadata implements JsonMessag
      * @param afterParseAction Operation to run after parsing the JSON and closing the input stream (e.g. to close an
      *        HTTP response).
      */
-    public StreamJsonMessage(DateTime sentTime, DateTime receiveTime, DateTime ingestTime, String messageId,
-            long messageNumber, InputStream inputStream, Runnable afterParseAction) {
+    public StreamJsonMessage(Instant sentTime, Instant receiveTime, Instant ingestTime, String messageId,
+                             long messageNumber, InputStream inputStream, Runnable afterParseAction) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber);
         this.inputStream = inputStream;
         this.afterParseAction = afterParseAction;

@@ -15,7 +15,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
 import io.deephaven.util.type.TypeUtils;
@@ -28,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1059,15 +1059,15 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                                     .set(JsonNodeUtil.getString(record, fieldName, allowMissingKeys, allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
-        } else if (setterType == DateTime.class) {
-            // Note that the preferred way to handle DateTimes is to store them as longs, not DateTimes,
-            // but if someone explicitly made a column of type DateTime, this will handle it.
-            // If they want to provide a DateTime in an import file but convert it to a long, they have to
+        } else if (setterType == Instant.class) {
+            // Note that the preferred way to handle Instants is to store them as longs, not Instants,
+            // but if someone explicitly made a column of type Instant, this will handle it.
+            // If they want to provide a Instant in an import file but convert it to a long, they have to
             // provide that as an explicit function.
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber).set(
-                                    JsonNodeUtil.getDateTime(record, fieldName, allowMissingKeys, allowNullValues));
+                                    JsonNodeUtil.getInstant(record, fieldName, allowMissingKeys, allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
         } else {
@@ -1124,13 +1124,13 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                     setterType, position, holderNumber).set(JsonNodeUtil.getString(node));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
-        } else if (setterType == DateTime.class) {
-            // Note that the preferred way to handle DateTimes is to store them as longs, not DateTimes,
-            // but if someone explicitly made a column of type DateTime, this will handle it.
-            // If they want to provide a DateTime in an import file but convert it to a long, they have to
+        } else if (setterType == Instant.class) {
+            // Note that the preferred way to handle Instants is to store them as longs, not Instants,
+            // but if someone explicitly made a column of type Instant, this will handle it.
+            // If they want to provide a Instant in an import file but convert it to a long, they have to
             // provide that as an explicit function.
             fieldConsumer = (JsonNode node, int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName,
-                    setterType, position, holderNumber).set(JsonNodeUtil.getDateTime(node));
+                    setterType, position, holderNumber).set(JsonNodeUtil.getInstant(node));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
         } else {
@@ -1209,15 +1209,15 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
                                             allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
-        } else if (setterType == DateTime.class) {
-            // Note that the preferred way to handle DateTimes is to store them as longs, not DateTimes,
-            // but if someone explicitly made a column of type DateTime, this will handle it.
-            // If they want to provide a DateTime in an import file but convert it to a long, they have to
+        } else if (setterType == Instant.class) {
+            // Note that the preferred way to handle Instants is to store them as longs, not Instants,
+            // but if someone explicitly made a column of type Instant, this will handle it.
+            // If they want to provide a Instant in an import file but convert it to a long, they have to
             // provide that as an explicit function.
             fieldConsumer = (JsonNode record,
                     int holderNumber) -> getSingleRowSetterAndCapturePosition(columnName, setterType, position,
                             holderNumber).set(
-                                    JsonNodeUtil.getDateTime(record, jsonPointer, allowMissingKeys, allowNullValues));
+                                    JsonNodeUtil.getInstant(record, jsonPointer, allowMissingKeys, allowNullValues));
             // noinspection unchecked
             fieldSetter = (InMemoryRowHolder holder) -> setter.set(holder.getObject(position.intValue()));
         } else {
@@ -1280,7 +1280,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     public synchronized long consumeString(final String json) {
         long msgId = messagesQueued.get();
-        final DateTime now = DateTime.now();
+        final Instant now = Instant.now();
         final TextJsonMessage msg = new TextJsonMessage(now, now, now, null, msgId, json);
         consumeJson(msg);
         return msgId;
@@ -1295,7 +1295,7 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
      */
     public synchronized long consumeStream(final InputStream json, final Runnable afterParse) {
         long msgId = messagesQueued.get();
-        final DateTime now = DateTime.now();
+        final Instant now = Instant.now();
         final StreamJsonMessage msg = new StreamJsonMessage(now, now, now, null, msgId, json, afterParse);
         consumeJson(msg);
         return msgId;
@@ -1316,17 +1316,17 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             }
 
             @Override
-            public DateTime getSentTime() {
+            public Instant getSentTime() {
                 return msg.getSentTime();
             }
 
             @Override
-            public DateTime getReceiveTime() {
+            public Instant getReceiveTime() {
                 return msg.getReceiveTime();
             }
 
             @Override
-            public DateTime getIngestTime() {
+            public Instant getIngestTime() {
                 return msg.getIngestTime();
             }
 
@@ -1507,17 +1507,17 @@ public class JSONToTableWriterAdapter implements StringToTableWriterAdapter {
             if (messageIdSetter != null) {
                 messageIdSetter.set((String) holder.getObject(owner.getMessageIdColumn()));
             }
-            final RowSetter<DateTime> sendTimeSetter = owner.getSendTimeSetter();
+            final RowSetter<Instant> sendTimeSetter = owner.getSendTimeSetter();
             if (sendTimeSetter != null) {
-                sendTimeSetter.set((DateTime) holder.getObject(owner.getSendTimeColumn()));
+                sendTimeSetter.set((Instant) holder.getObject(owner.getSendTimeColumn()));
             }
-            final RowSetter<DateTime> receiveTimeSetter = owner.getReceiveTimeSetter();
+            final RowSetter<Instant> receiveTimeSetter = owner.getReceiveTimeSetter();
             if (receiveTimeSetter != null) {
-                receiveTimeSetter.set((DateTime) holder.getObject(owner.getReceiveTimeColumn()));
+                receiveTimeSetter.set((Instant) holder.getObject(owner.getReceiveTimeColumn()));
             }
-            final RowSetter<DateTime> nowSetter = owner.getNowSetter();
+            final RowSetter<Instant> nowSetter = owner.getNowSetter();
             if (nowSetter != null) {
-                nowSetter.set(DateTime.now());
+                nowSetter.set(Instant.now());
             }
         }
     }

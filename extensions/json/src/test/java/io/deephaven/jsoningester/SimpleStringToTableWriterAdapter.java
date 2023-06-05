@@ -7,10 +7,10 @@ package io.deephaven.jsoningester;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.time.Instant;
 
 /**
  * Converts String messages directly into a string column of data in the output table.
@@ -34,7 +34,7 @@ public class SimpleStringToTableWriterAdapter implements StringToTableWriterAdap
 
         owner.setSendTime(msg.getSentTime());
         owner.setReceiveTime(msg.getReceiveTime());
-        owner.setNow(DateTime.now());
+        owner.setNow(Instant.now());
         owner.setMessageId(msg.getMessageId());
 
         writer.writeRow();

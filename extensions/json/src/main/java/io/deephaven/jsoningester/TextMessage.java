@@ -4,7 +4,7 @@
 
 package io.deephaven.jsoningester;
 
-import io.deephaven.time.DateTime;
+import java.time.Instant;
 
 /**
  * An internal storage for text message contents plus metadata in a standardized format for this plugin to further
@@ -23,9 +23,9 @@ public class TextMessage extends BaseMessageMetadata {
      * @param messageNumber The monotonically-increasing sequence number for the message.
      * @param text The String message body.
      */
-    public TextMessage(final DateTime sentTime,
-            final DateTime receiveTime,
-            final DateTime ingestTime,
+    public TextMessage(final Instant sentTime,
+            final Instant receiveTime,
+            final Instant ingestTime,
             final String messageId,
             final long messageNumber,
             final String text) {

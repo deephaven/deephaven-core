@@ -1,15 +1,15 @@
 package io.deephaven.jsoningester.example;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.ProcessStreamLoggerImpl;
 import io.deephaven.jsoningester.JSONToInMemoryTableAdapterBuilder;
 import io.deephaven.jsoningester.JSONToTableWriterAdapter;
 import io.deephaven.qst.column.header.ColumnHeader;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.type.TypeUtils;
@@ -49,8 +49,7 @@ public class ComplexJsonImportTest2 {
         JSONToInMemoryTableAdapterBuilder propertiesBuilder = new JSONToInMemoryTableAdapterBuilder();
 
         propertiesBuilder.addColumnFromField("Station", "station", String.class);
-        propertiesBuilder.addColumnFromFunction("Timestamp", DateTime.class, value -> DateTimeUtils.instantToTime(
-                Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue()))));
+        propertiesBuilder.addColumnFromFunction("Timestamp", Instant.class, value -> Instant.from(DateTimeFormatter.ISO_DATE_TIME.parse(value.get("timestamp").textValue())));
         // propertiesBuilder.addColumnFromField("timestamp", "Timestamp");
         propertiesBuilder.addColumnFromField("Description", "textDescription", String.class);
         propertiesBuilder.addColumnFromField("RawMessage", "rawMessage", String.class);
@@ -161,13 +160,14 @@ public class ComplexJsonImportTest2 {
 
         System.out.println("Cleaned up");
 
-        UpdateGraphProcessor.DEFAULT.requestRefresh();
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        updateGraph.requestRefresh();
         try {
             Thread.sleep(50);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> {
+        updateGraph.sharedLock().doLocked(() -> {
             System.out.println("observationsTable");
             TableTools.show(observationsTable);
             System.out.println("featuresTable");

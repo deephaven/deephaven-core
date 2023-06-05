@@ -74,23 +74,23 @@ public class StreamPublisherImpl implements StreamPublisher {
     }
 
     /**
-     * Create a StreamToTableAdapter from this StreamPublisher, {@link #register} the adapter rwith this publisher, and
+     * Create a StreamToTableAdapter from this StreamPublisher, {@link #register} the adapter with this publisher, and
      * set this publisher's chunk factory to create the appropriate chunks for the result table.
      * 
-     * @param tableDefinition Table definition for destiniation table.
+     * @param tableDefinition Table definition for destination table.
      * @param updateSourceRegistrar Update source registrar (e.g.
-     *        {@link io.deephaven.engine.updategraph.UpdateGraphProcessor#DEFAULT}).
+     *        {@link io.deephaven.engine.updategraph.UpdateGraph}).
      * @param name The name of the StreamToTableAdapter.
      * @return A StreamToTableAdapter to which this StreamPublisher will publish data.
      */
-    public StreamToTableAdapter createStreamToTableAdapter(TableDefinition tableDefinition,
+    public StreamToBlinkTableAdapter createStreamToTableAdapter(TableDefinition tableDefinition,
             UpdateSourceRegistrar updateSourceRegistrar, String name) {
-        final StreamToTableAdapter streamToTableAdapter =
-                new StreamToTableAdapter(tableDefinition, this, updateSourceRegistrar, name);
+        final StreamToBlinkTableAdapter streamToBlinkTableAdapter =
+                new StreamToBlinkTableAdapter(tableDefinition, this, updateSourceRegistrar, name);
 
-        setChunkFactory(() -> streamToTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
-                streamToTableAdapter::chunkTypeForIndex);
+        setChunkFactory(() -> streamToBlinkTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
+                streamToBlinkTableAdapter::chunkTypeForIndex);
 
-        return streamToTableAdapter;
+        return streamToBlinkTableAdapter;
     }
 }

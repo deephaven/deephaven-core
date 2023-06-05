@@ -1,7 +1,8 @@
 package io.deephaven.jsoningester;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.deephaven.time.DateTime;
+
+import java.time.Instant;
 
 /**
  * Created by rbasralian on 10/19/22
@@ -18,8 +19,8 @@ public class TextJsonMessage extends TextMessage implements JsonMessage {
      * @param messageNumber The monotonically-increasing sequence number for the message.
      * @param text The String message body.
      */
-    public TextJsonMessage(DateTime sentTime, DateTime receiveTime, DateTime ingestTime, String messageId,
-            long messageNumber, String text) {
+    public TextJsonMessage(Instant sentTime, Instant receiveTime, Instant ingestTime, String messageId,
+                           long messageNumber, String text) {
         super(sentTime, receiveTime, ingestTime, messageId, messageNumber, text);
     }
 

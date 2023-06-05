@@ -7,11 +7,12 @@ package io.deephaven.jsoningester;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,9 +31,9 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
     private final String receiveTimeColumn;
     private final String nowTimeColumn;
     private final RowSetter<String> messageIdSetter;
-    private final RowSetter<DateTime> nowSetter;
-    private final RowSetter<DateTime> sendTimeSetter;
-    private final RowSetter<DateTime> receiveTimeSetter;
+    private final RowSetter<Instant> nowSetter;
+    private final RowSetter<Instant> sendTimeSetter;
+    private final RowSetter<Instant> receiveTimeSetter;
     private final AtomicLong messageNumber = new AtomicLong(0);
 
     private final Function<M, String> messageToText;
@@ -55,17 +56,17 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         this.receiveTimeColumn = receiveTimeColumn;
         this.nowTimeColumn = nowTimeColumn;
         if (sendTimeColumn != null) {
-            sendTimeSetter = tableWriter.getSetter(sendTimeColumn, DateTime.class);
+            sendTimeSetter = tableWriter.getSetter(sendTimeColumn, Instant.class);
         } else {
             sendTimeSetter = null;
         }
         if (receiveTimeColumn != null) {
-            receiveTimeSetter = tableWriter.getSetter(receiveTimeColumn, DateTime.class);
+            receiveTimeSetter = tableWriter.getSetter(receiveTimeColumn, Instant.class);
         } else {
             receiveTimeSetter = null;
         }
         if (nowTimeColumn != null) {
-            nowSetter = tableWriter.getSetter(nowTimeColumn, DateTime.class);
+            nowSetter = tableWriter.getSetter(nowTimeColumn, Instant.class);
         } else {
             nowSetter = null;
         }
@@ -88,16 +89,16 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
     @Override
     public void consumeMessage(final String msgId, final M msg) throws IOException {
         final String msgText = messageToText.apply(msg);
-        DateTime sentTime = null;
-        DateTime receiveTime = null;
-        DateTime ingestTime = null;
+        Instant sentTime = null;
+        Instant receiveTime = null;
+        Instant ingestTime = null;
 
         if (sendTimeSetter != null) {
             final long sendTimeMicros = messageToSendTimeMicros.applyAsLong(msg);
             // Ignore non-positive timestamps. In practice, NULL_LONG or 0 may occur here to indicate "nothing".
             // Any other negative value is nonsense.
             if (sendTimeMicros > 0) {
-                sentTime = new DateTime(sendTimeMicros * 1000L);
+                sentTime = DateTimeUtils.epochMicrosToInstant(sendTimeMicros);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
             // threads
@@ -107,14 +108,14 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
             // Ignore non-positive timestamps. In practice, NULL_LONG or 0 may occur here to indicate "nothing".
             // Any other negative value is nonsense.
             if (recvTimeMicros > 0) {
-                receiveTime = new DateTime(recvTimeMicros * 1000L);
+                receiveTime = DateTimeUtils.epochMicrosToInstant(recvTimeMicros);
             }
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
             // threads
 
         }
         if (nowSetter != null) {
-            ingestTime = DateTime.now();
+            ingestTime = Instant.now();
             // do not set the value here; let the StringToTableWriterAdapter handle it, in case there are multiple
             // threads
         }
@@ -146,31 +147,31 @@ public class StringMessageToTableAdapter<M> implements MessageToTableWriterAdapt
         return nowTimeColumn;
     }
 
-    public RowSetter<DateTime> getSendTimeSetter() {
+    public RowSetter<Instant> getSendTimeSetter() {
         return sendTimeSetter;
     }
 
-    public void setSendTime(DateTime sendTime) {
+    public void setSendTime(Instant sendTime) {
         if (sendTimeSetter != null) {
             sendTimeSetter.set(sendTime);
         }
     }
 
-    public RowSetter<DateTime> getReceiveTimeSetter() {
+    public RowSetter<Instant> getReceiveTimeSetter() {
         return receiveTimeSetter;
     }
 
-    public void setReceiveTime(DateTime receiveTime) {
+    public void setReceiveTime(Instant receiveTime) {
         if (receiveTimeSetter != null) {
             receiveTimeSetter.set(receiveTime);
         }
     }
 
-    public RowSetter<DateTime> getNowSetter() {
+    public RowSetter<Instant> getNowSetter() {
         return nowSetter;
     }
 
-    public void setNow(DateTime getNow) {
+    public void setNow(Instant getNow) {
         if (nowSetter != null) {
             nowSetter.set(getNow);
         }

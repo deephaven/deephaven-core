@@ -4,16 +4,16 @@
 
 package io.deephaven.jsoningester;
 
-import io.deephaven.time.DateTime;
+import java.time.Instant;
 
 abstract class BaseMessageMetadata implements MessageMetadata {
 
     // The number of metadata fields that need separate setters.
     protected static final int NUM_METADATA_FIELDS = 3;
 
-    private final DateTime sentTime;
-    private final DateTime receiveTime;
-    private final DateTime ingestTime;
+    private final Instant sentTime;
+    private final Instant receiveTime;
+    private final Instant ingestTime;
     private final String messageId;
     private final long msgNo;
 
@@ -27,9 +27,9 @@ abstract class BaseMessageMetadata implements MessageMetadata {
      * @param messageNumber The unique, monotonically-increasing sequential number for this message.
      */
     public BaseMessageMetadata(
-            final DateTime sentTime,
-            final DateTime receiveTime,
-            final DateTime ingestTime,
+            final Instant sentTime,
+            final Instant receiveTime,
+            final Instant ingestTime,
             final String messageId,
             final long messageNumber) {
         this.sentTime = sentTime;
@@ -40,17 +40,17 @@ abstract class BaseMessageMetadata implements MessageMetadata {
     }
 
     @Override
-    public DateTime getSentTime() {
+    public Instant getSentTime() {
         return sentTime;
     }
 
     @Override
-    public DateTime getReceiveTime() {
+    public Instant getReceiveTime() {
         return receiveTime;
     }
 
     @Override
-    public DateTime getIngestTime() {
+    public Instant getIngestTime() {
         return ingestTime;
     }
 
