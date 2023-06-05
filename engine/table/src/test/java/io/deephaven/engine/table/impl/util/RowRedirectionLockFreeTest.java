@@ -47,7 +47,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         for (int ii = 0; ii < threads.length; ++ii) {
             threads[ii].join();
             if (!participants[ii].cleanExit) {
-               fail("Thread " + participants[ii].name + " unexpectedly exited.");
+                fail("Thread " + participants[ii].name + " unexpectedly exited.");
             }
         }
         boolean failed = false;
