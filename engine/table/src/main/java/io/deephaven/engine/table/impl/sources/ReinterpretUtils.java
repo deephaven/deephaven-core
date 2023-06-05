@@ -15,21 +15,6 @@ import java.util.function.Consumer;
 public class ReinterpretUtils {
 
     /**
-     * Given a long column source turn it into a Instant column source, either via reinterpretation or wrapping.
-     *
-     * @param source the source to turn into a Instant source
-     *
-     * @return the long source
-     */
-    public static ColumnSource<Instant> longToInstantSource(ColumnSource<Long> source) {
-        if (source.allowsReinterpret(Instant.class)) {
-            return source.reinterpret(Instant.class);
-        } else {
-            return new LongAsInstantColumnSource(source);
-        }
-    }
-
-    /**
      * Given a Boolean column source turn it into a byte column source, either via reinterpretation or wrapping.
      *
      * @param source the source to turn into a byte source
@@ -41,6 +26,36 @@ public class ReinterpretUtils {
             return source.reinterpret(byte.class);
         } else {
             return new BooleanAsByteColumnSource(source);
+        }
+    }
+
+    /**
+     * Given a writable Boolean column source turn it into a writable byte column source via reinterpretation if
+     * possible.
+     *
+     * @param source the source to turn into a byte source
+     *
+     * @return the byte source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Byte> writableBooleanToByteSource(WritableColumnSource<Boolean> source) {
+        if (source.allowsReinterpret(byte.class)) {
+            return (WritableColumnSource<Byte>) source.reinterpret(byte.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a long column source turn it into a Instant column source, either via reinterpretation or wrapping.
+     *
+     * @param source the source to turn into a Instant source
+     *
+     * @return the long source
+     */
+    public static ColumnSource<Instant> longToInstantSource(ColumnSource<Long> source) {
+        if (source.allowsReinterpret(Instant.class)) {
+            return source.reinterpret(Instant.class);
+        } else {
+            return new LongAsInstantColumnSource(source);
         }
     }
 
@@ -62,6 +77,22 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Given a writable {@link Instant} column source turn it into a writable long column source via reinterpretation if
+     * possible.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpreted
+     */
+    public static WritableColumnSource<Long> writableInstantToLongSource(
+            final @NotNull WritableColumnSource<Instant> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
      * Given a {@link ZonedDateTime} column source turn it into a long column source, either via reinterpretation or
      * wrapping.
      *
@@ -76,37 +107,6 @@ public class ReinterpretUtils {
         } else {
             return new ZonedDateTimeAsLongSource(source);
         }
-    }
-
-    /**
-     * Given a writable Boolean column source turn it into a writable byte column source via reinterpretation if
-     * possible.
-     *
-     * @param source the source to turn into a byte source
-     *
-     * @return the byte source or null if it could not be reinterpreted
-     */
-    public static WritableColumnSource<Byte> writableBooleanToByteSource(WritableColumnSource<Boolean> source) {
-        if (source.allowsReinterpret(byte.class)) {
-            return (WritableColumnSource<Byte>) source.reinterpret(byte.class);
-        }
-        return null;
-    }
-
-    /**
-     * Given a writable {@link Instant} column source turn it into a writable long column source via reinterpretation if
-     * possible.
-     *
-     * @param source the source to turn into a long source
-     *
-     * @return the long source or null if it could not be reinterpreted
-     */
-    public static WritableColumnSource<Long> writableInstantToLongSource(
-            final @NotNull WritableColumnSource<Instant> source) {
-        if (source.allowsReinterpret(long.class)) {
-            return (WritableColumnSource<Long>) source.reinterpret(long.class);
-        }
-        return null;
     }
 
     /**
