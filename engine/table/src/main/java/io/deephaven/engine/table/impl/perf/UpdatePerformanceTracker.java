@@ -82,7 +82,8 @@ public class UpdatePerformanceTracker {
     }
 
     private void startThread() {
-        Thread driverThread = new Thread(new Driver(ExecutionContext.getContext().getUpdateGraph()), "UpdatePerformanceTracker.Driver");
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        Thread driverThread = new Thread(new Driver(updateGraph), "UpdatePerformanceTracker.Driver");
         driverThread.setDaemon(true);
         driverThread.start();
     }

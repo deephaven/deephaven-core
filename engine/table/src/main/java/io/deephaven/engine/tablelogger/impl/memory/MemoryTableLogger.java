@@ -9,7 +9,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.TableLoggerImpl2;
 import io.deephaven.tablelogger.WritableRowContainer;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
