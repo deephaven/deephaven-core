@@ -14,9 +14,8 @@
 #'
 #' @examples
 #' 
-#' # connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
+#' # connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
 #' client_options <- ClientOptions$new()
-#' client_options$set_default_authentication()
 #' client <- Client$new(target="localhost:10000", client_options=client_options)
 #' 
 #' # open a table that already exists on the server
@@ -45,7 +44,7 @@ Client <- R6Class("Client",
 
         #' @description
         #' Opens a table named 'name' from the server if it exists.
-        #' @param name Name of the table to open from the server as a string.
+        #' @param name Name of the table to open from the server, passed as a string.
         #' @return TableHandle reference to the requested table.
         open_table = function(name) {
             private$verify_string(name, "name")
@@ -85,7 +84,7 @@ Client <- R6Class("Client",
 
         #' @description
         #' Runs a script on the server. The script must be in the language that the server console was started with.
-        #' @param script Code to be executed on the server as a string.
+        #' @param script Code to be executed on the server, passed as a string.
         run_script = function(script) {
             private$verify_string(script, "script")
             private$internal_client$run_script(script)

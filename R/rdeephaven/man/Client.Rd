@@ -10,9 +10,8 @@ a connection to a running Deephaven server and facilitating basic server request
 }
 \examples{
 
-# connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
+# connect to the Deephaven server running on "localhost:10000" using anonymous 'default' authentication
 client_options <- ClientOptions$new()
-client_options$set_default_authentication()
 client <- Client$new(target="localhost:10000", client_options=client_options)
 
 # open a table that already exists on the server
@@ -67,7 +66,7 @@ Opens a table named 'name' from the server if it exists.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{name}}{Name of the table to open from the server as a string.}
+\item{\code{name}}{Name of the table to open from the server, passed as a string.}
 }
 \if{html}{\out{</div>}}
 }
@@ -109,7 +108,7 @@ Runs a script on the server. The script must be in the language that the server 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{script}}{Code to be executed on the server as a string.}
+\item{\code{script}}{Code to be executed on the server, passed as a string.}
 }
 \if{html}{\out{</div>}}
 }
