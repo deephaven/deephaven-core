@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The Deephaven SQL parser'
+
+
+dependencies {
+    api project(':qst')
+    implementation 'org.apache.calcite:calcite-core:1.34.0'
+
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+test {
+    useJUnitPlatform()
+}

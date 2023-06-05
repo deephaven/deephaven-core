@@ -44,8 +44,8 @@ public class ReplicateOperators {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java");
         charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
-        replicateObjectAddOnlyAndStreamSortedFirstLast();
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharBlinkSortedFirstOrLastChunkedOperator.java");
+        replicateObjectAddOnlyAndBlinkSortedFirstLast();
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/alternatingcolumnsource/CharAlternatingColumnSourceUnorderedMergeKernel.java");
         replicateObjectUnorderedMergeKernel();
@@ -67,10 +67,7 @@ public class ReplicateOperators {
     }
 
     private static final String resultInitReplacementForLong = "" +
-            "        if (type == DateTime.class) {\n" +
-            "            actualResult = new DateTimeArraySource();\n" +
-            "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
-            "        } else if (type == Instant.class) {\n" +
+            "        if (type == Instant.class) {\n" +
             "            actualResult = new InstantArraySource();\n" +
             "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
             "        } else {\n" +
@@ -89,11 +86,7 @@ public class ReplicateOperators {
                 Collections.singletonList("            Class<?> type,"));
         lines = ReplicationUtils.addImport(lines,
                 "import java.time.Instant;",
-                "import io.deephaven.time.DateTime;",
-                "import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;",
-                "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
                 "import io.deephaven.engine.table.impl.sources.InstantArraySource;",
-                "import io.deephaven.engine.table.impl.sources.LongArraySource;",
                 "import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;");
         lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization",
                 Collections.singletonList(resultInitReplacementForLong));
@@ -102,10 +95,10 @@ public class ReplicateOperators {
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 
-    private static void replicateObjectAddOnlyAndStreamSortedFirstLast() throws IOException {
+    private static void replicateObjectAddOnlyAndBlinkSortedFirstLast() throws IOException {
         for (final String charClassJavaPath : new String[] {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java"}) {
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharBlinkSortedFirstOrLastChunkedOperator.java"}) {
             final String objectClassName =
                     charToObject(charClassJavaPath);
             final File objectClassFile = new File(objectClassName);

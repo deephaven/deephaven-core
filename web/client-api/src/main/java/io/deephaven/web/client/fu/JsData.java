@@ -23,7 +23,6 @@ public class JsData {
                 return Js.uncheckedCast(new float[0]);
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
-            case "io.deephaven.time.DateTime":
             case "long":
                 return Js.uncheckedCast(new long[0]);
             case "int":

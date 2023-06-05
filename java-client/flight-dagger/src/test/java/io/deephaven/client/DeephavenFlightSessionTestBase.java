@@ -5,14 +5,14 @@ package io.deephaven.client;
 
 import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.server.runner.DeephavenApiServerTestBase;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,9 +23,6 @@ public abstract class DeephavenFlightSessionTestBase extends DeephavenApiServerT
     BufferAllocator bufferAllocator;
     ScheduledExecutorService sessionScheduler;
     FlightSession flightSession;
-
-    @Rule
-    public final EngineCleanup framework = new EngineCleanup();
 
     @Override
     @Before

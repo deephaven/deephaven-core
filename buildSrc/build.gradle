@@ -22,7 +22,7 @@ dependencies {
         because('needed for GwtTools')
     }
 
-    implementation('com.bmuschko:gradle-docker-plugin:7.1.0') {
+    implementation('com.bmuschko:gradle-docker-plugin:9.3.1') {
         because('needed by plugin com.bmuschko.docker-remote-api')
     }
 

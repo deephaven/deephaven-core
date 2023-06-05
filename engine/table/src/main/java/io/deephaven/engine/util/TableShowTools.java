@@ -7,14 +7,15 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeZone;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.ArrayTypeUtils;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.Set;
  */
 class TableShowTools {
 
-    static void showInternal(Table source, long firstRow, long lastRowExclusive, TimeZone timeZone, String delimiter,
+    static void showInternal(Table source, long firstRow, long lastRowExclusive, ZoneId timeZone, String delimiter,
             PrintStream out, boolean showRowSet, String[] columns) {
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
@@ -119,7 +120,7 @@ class TableShowTools {
             len = Math.max(len, 20);
         } else if (columnSource.getType() == double.class || columnSource.getType() == Double.class) {
             len = Math.max(len, 20);
-        } else if (columnSource.getType() == DateTime.class) {
+        } else if (columnSource.getType() == Instant.class) {
             len = Math.max(len, 33);
         } else if (columnSource.getType() == java.util.Date.class) {
             len = Math.max(len, 33);
@@ -144,9 +145,9 @@ class TableShowTools {
         return len;
     }
 
-    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len, TimeZone timeZone) {
-        if (column.getType() == DateTime.class) {
-            return new DateTimePrinter(len, timeZone);
+    private static ColumnPrinter getColumnPrinter(ColumnSource column, int len, ZoneId timeZone) {
+        if (column.getType() == Instant.class) {
+            return new InstantPrinter(len, timeZone);
         } else if (!column.getType().isArray()) {
             return new DefaultPrinter(len);
         } else if (!column.getType().getComponentType().isPrimitive()) {
@@ -242,18 +243,18 @@ class TableShowTools {
         }
     }
 
-    private static class DateTimePrinter extends DefaultPrinter {
+    private static class InstantPrinter extends DefaultPrinter {
 
-        private final TimeZone timeZone;
+        private final ZoneId timeZone;
 
-        private DateTimePrinter(int len, TimeZone timeZone) {
+        private InstantPrinter(int len, ZoneId timeZone) {
             super(len);
             this.timeZone = timeZone;
         }
 
         @Override
         public void print(PrintStream out, Object value) {
-            super.print(out, value == null ? null : ((DateTime) value).toString(timeZone));
+            super.print(out, value == null ? null : DateTimeUtils.formatDateTime((Instant) value, timeZone));
         }
     }
 

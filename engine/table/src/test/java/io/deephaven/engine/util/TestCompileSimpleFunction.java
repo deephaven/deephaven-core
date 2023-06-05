@@ -3,24 +3,10 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.context.TestExecutionContext;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import junit.framework.TestCase;
 
-public class TestCompileSimpleFunction extends TestCase {
-    private SafeCloseable executionContext;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
-    }
+public class TestCompileSimpleFunction extends RefreshingTableTestCase {
 
     public void testString() {
         String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return \"Hello, world\"").get();

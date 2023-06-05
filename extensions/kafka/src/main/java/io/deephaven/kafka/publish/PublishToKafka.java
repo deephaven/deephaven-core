@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.table.impl.*;
@@ -54,12 +54,11 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * The new publisher will produce records for existing {@code table} data at construction.
      * <p>
      * If {@code table} is a dynamic, refreshing table ({@link Table#isRefreshing()}), the calling thread must block the
-     * {@link UpdateGraphProcessor#DEFAULT UpdateGraphProcessor} by holding either its
-     * {@link UpdateGraphProcessor#exclusiveLock() exclusive lock} or its {@link UpdateGraphProcessor#sharedLock()
-     * shared lock}. The publisher will install a listener in order to produce new records as updates become available.
-     * Callers must be sure to maintain a reference to the publisher and ensure that it remains
-     * {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to construct the
-     * publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
+     * {@link UpdateGraph update graph} by holding either its {@link UpdateGraph#exclusiveLock() exclusive lock} or its
+     * {@link UpdateGraph#sharedLock() shared lock}. The publisher will install a listener in order to produce new
+     * records as updates become available. Callers must be sure to maintain a reference to the publisher and ensure
+     * that it remains {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to
+     * construct the publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
      * {@code enforceStrongReachability} specified as {@code true}, and {@link LivenessScope#release() release} the
      * scope when publication is no longer needed. For example:
      * 
@@ -234,7 +233,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
 
         private final ModifiedColumnSet keysModified;
         private final ModifiedColumnSet valuesModified;
-        private final boolean isStream;
+        private final boolean isBlink;
 
         private final PublicationGuard guard = new PublicationGuard();
 
@@ -244,21 +243,18 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             super("PublishToKafka", table, false);
             this.keysModified = keysModified;
             this.valuesModified = valuesModified;
-            this.isStream = StreamTableTools.isStream(table);
+            this.isBlink = BlinkTableTools.isBlink(table);
         }
 
         @Override
         public void onUpdate(TableUpdate upstream) {
-            if (keySerializer != null || isStream) {
-                Assert.assertion(upstream.shifted().empty(), "upstream.shifted.empty()");
-            }
             Assert.assertion(!keysModified.containsAny(upstream.modifiedColumnSet()),
                     "!keysModified.containsAny(upstream.modifiedColumnSet())", "Key columns should never be modified");
 
             try (final SafeCloseable ignored = guard) {
-                if (isStream) {
-                    // noinspection resource
+                if (isBlink) {
                     Assert.assertion(upstream.modified().isEmpty(), "upstream.modified.empty()");
+                    Assert.assertion(upstream.shifted().empty(), "upstream.shifted.empty()");
                     // We always ignore removes on streams, and expect no modifies or shifts
                     publishMessages(upstream.added(), false, true, guard);
                     return;
@@ -267,7 +263,6 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
                 // Regular table, either keyless, add-only, or aggregated
                 publishMessages(upstream.removed(), true, false, guard);
                 if (valuesModified.containsAny(upstream.modifiedColumnSet())) {
-                    // noinspection resource
                     try (final RowSet addedAndModified = upstream.added().union(upstream.modified())) {
                         publishMessages(addedAndModified, false, true, guard);
                     }

@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
@@ -19,6 +18,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -57,7 +57,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
         setRefreshing = setTable.isRefreshing();
         if (setRefreshing) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            updateGraph.checkInitiateSerialTableOperation();
         }
 
         this.matchPairs = setColumnsNames;
@@ -137,6 +137,11 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             setInclusionKernel = null;
             setUpdateListener = null;
         }
+    }
+
+    @Override
+    public UpdateGraph getUpdateGraph() {
+        return updateGraph;
     }
 
     private Object makeKey(long index) {

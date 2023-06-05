@@ -5,16 +5,14 @@ package io.deephaven.jdbc;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeFormatter;
+import io.deephaven.time.DateTimeFormatters;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.function.ThrowingRunnable;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -22,9 +20,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.util.InputMismatchException;
 import java.util.Set;
 import java.util.TimeZone;
@@ -32,6 +28,11 @@ import java.util.TimeZone;
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY;
 
 public class JdbcToTableAdapterTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
+    private static final ZoneId TZ_UTC = ZoneId.of("UTC");
 
     private Connection conn;
     private Statement stmt;
@@ -54,7 +55,7 @@ public class JdbcToTableAdapterTest {
                 "   \"DateTime Type\" DATETIME NULL" +
                 ");");
 
-        final DateTimeFormatter dateTimeFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS");
+        final DateTimeFormatter dtf = DateTimeFormatters.NONISO9.getFormatter();
 
         for (long ii = 0; ii < numRows; ++ii) {
             stmt.executeUpdate("INSERT INTO TestTable VALUES (" +
@@ -65,7 +66,10 @@ public class JdbcToTableAdapterTest {
                     ", " + (ii % 256 == 3 ? "NULL" : ii - numRows / 2) + // long
                     ", " + (ii % 256 == 4 ? "NULL" : (ii - numRows / 2) / 256.0) + // float
                     ", " + (ii % 256 == 5 ? "NULL" : "'" + ii + "'") + // string
-                    ", " + (ii % 256 == 6 ? "NULL" : "'" + dateTimeFormat.print(ii * 100_000L) + "'") + // date
+                    ", " + (ii % 256 == 6
+                            ? "NULL"
+                            : "'" + dtf.format(DateTimeUtils.epochNanosToInstant(ii * 100_000L), TZ_UTC) + "Z'")
+                    + // date
                     ");");
         }
     }
@@ -186,7 +190,7 @@ public class JdbcToTableAdapterTest {
         final ColumnSource<Long> big_int_type = result.getColumnSource("big_int_type");
         final ColumnSource<Double> decimal_type = result.getColumnSource("decimal_type");
         final ColumnSource<String> string_type = result.getColumnSource("string_type");
-        final ColumnSource<DateTime> datetime_type = result.getColumnSource("datetime_type");
+        final ColumnSource<Instant> instant_type = result.getColumnSource("datetime_type");
 
         // check expected column sources types
         Assert.assertEquals(Boolean.class, bool_type.getType());
@@ -196,7 +200,7 @@ public class JdbcToTableAdapterTest {
         Assert.assertEquals(long.class, big_int_type.getType());
         Assert.assertEquals(double.class, decimal_type.getType());
         Assert.assertEquals(String.class, string_type.getType());
-        Assert.assertEquals(DateTime.class, datetime_type.getType());
+        Assert.assertEquals(Instant.class, instant_type.getType());
 
         // Check table values
         for (long ii = 0; ii < result.size(); ++ii) {
@@ -246,11 +250,11 @@ public class JdbcToTableAdapterTest {
             }
 
             if (ii % 256 == 6) {
-                Assert.assertNull(datetime_type.get(ii));
+                Assert.assertNull(instant_type.get(ii));
             } else {
-                final DateTime dt = datetime_type.get(ii);
+                final Instant dt = instant_type.get(ii);
                 // is only accurate
-                Assert.assertEquals(ii * 100_000L, dt.getMillis());
+                Assert.assertEquals(ii * 100_000L, DateTimeUtils.epochNanos(dt));
             }
         }
     }
@@ -566,14 +570,14 @@ public class JdbcToTableAdapterTest {
         Assert.assertEquals(expectedDate, ldcs.get(0));
         Assert.assertNull(ldcs.get(1));
 
-        // Convert to DateTime
-        options.columnTargetType("DateCol", DateTime.class);
+        // Convert to Instant
+        options.columnTargetType("DateCol", Instant.class);
         options.sourceTimeZone(TimeZone.getTimeZone("UTC"));
         result = JdbcToTableAdapter.readJdbc(stmt.executeQuery("SELECT * FROM SingleTestTable"), options);
-        ColumnSource<DateTime> dtcs = result.getColumnSource("DateCol");
+        ColumnSource<Instant> dtcs = result.getColumnSource("DateCol");
 
         final long epochTm = expectedDate.atStartOfDay().toEpochSecond(ZoneOffset.UTC);
-        Assert.assertEquals(epochTm, dtcs.get(0).getMillis() / 1000);
+        Assert.assertEquals(epochTm, dtcs.get(0).toEpochMilli() / 1000);
         Assert.assertNull(dtcs.get(1));
     }
 

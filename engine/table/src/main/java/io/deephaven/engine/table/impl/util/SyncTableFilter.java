@@ -14,10 +14,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -106,8 +106,10 @@ public class SyncTableFilter {
             throw new IllegalArgumentException("No tables specified!");
         }
 
+        final Table[] engineTables = tables.stream().map(t -> t.table).toArray(Table[]::new);
+        final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(null, engineTables);
         if (tables.stream().anyMatch(t -> t.table.isRefreshing())) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            updateGraph.checkInitiateSerialTableOperation();
         }
 
         // through the builder only
@@ -183,7 +185,7 @@ public class SyncTableFilter {
 
         @Override
         protected void process() {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = getUpdateGraph().clock().currentStep();
 
             for (int rr = 0; rr < recorders.size(); ++rr) {
                 final ListenerRecorder recorder = recorders.get(rr);
@@ -261,7 +263,7 @@ public class SyncTableFilter {
         protected void propagateErrorDownstream(
                 final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
             if (fromProcess) {
-                final long currentStep = LogicalClock.DEFAULT.currentStep();
+                final long currentStep = getUpdateGraph().clock().currentStep();
                 final Collection<BaseTable> resultsNeedingDelayedNotification = new ArrayList<>();
                 for (final QueryTable result : results) {
                     if (result.getLastNotificationStep() == currentStep) {
@@ -562,7 +564,7 @@ public class SyncTableFilter {
         /**
          * Instantiate the map of synchronized tables.
          *
-         * This must be called under the UpdateGraphProcessor lock.
+         * This must be called under the PeriodicUpdateGraph lock.
          *
          * @return a map with one entry for each input table
          */

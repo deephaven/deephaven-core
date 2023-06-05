@@ -41,6 +41,11 @@ public abstract class ClientConfig {
     public abstract Optional<String> userAgent();
 
     /**
+     * The overridden authority.
+     */
+    public abstract Optional<String> overrideAuthority();
+
+    /**
      * The extra headers.
      */
     public abstract Map<String, String> extraHeaders();
@@ -60,6 +65,8 @@ public abstract class ClientConfig {
         Builder ssl(SSLConfig ssl);
 
         Builder userAgent(String userAgent);
+
+        Builder overrideAuthority(String overrideAuthority);
 
         Builder putExtraHeaders(String key, String value);
 

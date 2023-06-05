@@ -23,6 +23,11 @@ public abstract class IntType extends PrimitiveTypeBase<Integer> {
     }
 
     @Override
+    public final Class<Integer> boxedClass() {
+        return Integer.class;
+    }
+
+    @Override
     public final NativeArrayType<int[], Integer> arrayType() {
         return NativeArrayType.of(int[].class, this);
     }

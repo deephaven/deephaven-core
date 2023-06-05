@@ -3,14 +3,12 @@
  */
 package io.deephaven.qst.table;
 
-import java.io.Serializable;
-
 /**
  * The time provider for a {@link TimeTable}.
  *
  * @see ClockSystem
  */
-public interface Clock extends Serializable {
+public interface Clock {
 
     <V extends Visitor> V walk(V visitor);
 

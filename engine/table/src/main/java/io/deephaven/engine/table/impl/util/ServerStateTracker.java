@@ -8,7 +8,7 @@ import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
 
@@ -38,12 +38,12 @@ public class ServerStateTracker {
     private final Logger logger;
 
     private final ServerStateLogLogger processMemLogger;
-    private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
+    private final PeriodicUpdateGraph.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
         processMemLogger = EngineTableLoggers.get().serverStateLogLogger();
-        ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
+        ugpAccumCycleStats = new PeriodicUpdateGraph.AccumulatedCycleStats();
     }
 
     private void startThread() {
@@ -126,7 +126,8 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.take(ugpAccumCycleStats);
+                PeriodicUpdateGraph updateGraph = getQueryTable().getUpdateGraph().cast();
+                updateGraph.takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(
                         intervalStartTimeMillis,

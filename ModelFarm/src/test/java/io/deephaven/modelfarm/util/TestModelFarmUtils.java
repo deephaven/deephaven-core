@@ -3,35 +3,16 @@
  */
 package io.deephaven.modelfarm.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.*;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
-import org.junit.After;
-import org.junit.Before;
 
-public class TestModelFarmUtils extends BaseArrayTestCase {
+import java.time.Instant;
 
-    private SafeCloseable executionContext;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
-    }
+public class TestModelFarmUtils extends RefreshingTableTestCase {
 
     public void testRequireTable() {
         final Table t = TableTools.emptyTable(5).updateView("A=(int)i", "B=(long)i", "C=(double)i");
@@ -63,13 +44,14 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
         assertNull(ModelFarmUtils.arrayString(null));
     }
 
-    public void testArrayDateTime() {
-        final DateTime[] target = {DateTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
-                DateTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
-                DateTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
-        final DateTime[] result = ModelFarmUtils.arrayDateTime(new ObjectVectorDirect<>(target));
+    public void testArrayInstant() {
+        final Instant[] target = {
+                DateTimeUtils.parseInstant("2018-01-11T01:01:01 NY"),
+                DateTimeUtils.parseInstant("2018-02-11T01:01:01 NY"),
+                DateTimeUtils.parseInstant("2018-03-11T01:01:01 NY")};
+        final Instant[] result = ModelFarmUtils.arrayInstant(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
-        assertNull(ModelFarmUtils.arrayDateTime(null));
+        assertNull(ModelFarmUtils.arrayInstant(null));
     }
 
     public void testArrayFloat() {

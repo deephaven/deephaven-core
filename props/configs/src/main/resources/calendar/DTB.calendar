@@ -4,7 +4,7 @@
 
 <calendar>
     <name>DTB</name>
-    <timeZone>TZ_CE</timeZone>
+    <timeZone>Europe/Berlin</timeZone>
     <default>
         <businessPeriod>09:00,20:00</businessPeriod>
         <weekend>Saturday</weekend>

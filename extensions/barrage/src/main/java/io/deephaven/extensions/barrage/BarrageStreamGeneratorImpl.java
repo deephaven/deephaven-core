@@ -24,7 +24,6 @@ import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
@@ -771,7 +770,7 @@ public class BarrageStreamGeneratorImpl implements
         final int maxMessageSize =
                 view.clientMaxMessageSize() > 0 ? view.clientMaxMessageSize() : DEFAULT_MESSAGE_SIZE_LIMIT;
 
-        // TODO: remove this when JS API can accept multiple batches
+        // TODO (deephaven-core#188): remove this when JS API can accept multiple batches
         boolean sendAllowed = numRows <= batchSize;
 
         while (offset < numRows) {

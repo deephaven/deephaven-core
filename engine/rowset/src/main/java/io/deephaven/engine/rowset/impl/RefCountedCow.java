@@ -27,7 +27,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
  * </p>
  *
  * <pre>
- * {@Code
+ * {@code
  *
  *   class MyType extends RefCountedCow<MyType> {
  *       &#64;Override protected MyType self() { return this; }

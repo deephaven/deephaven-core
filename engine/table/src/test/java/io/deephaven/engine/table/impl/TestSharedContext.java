@@ -5,12 +5,12 @@ package io.deephaven.engine.table.impl;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,16 +99,16 @@ public class TestSharedContext {
         final String condition = String.join(" && ", conditions);
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i").reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol);
             final Table t2Filtered = t2.where(condition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) t2Filtered.getColumn(col).getDirect();
+                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
                 assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) t1Filtered.getColumn(col).getDirect();
+                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
                 assertEquals(t1Filtered.size(), t1fcs.length);
                 assertArrayEquals(t1fcs, t2fcs);
             };
@@ -145,16 +145,16 @@ public class TestSharedContext {
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
         final String formulaCol = "F";
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+        ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, String.join(",", joinColumnsToAdd));
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) t2Filtered.getColumn(col).getDirect();
+                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
                 assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) t1Filtered.getColumn(col).getDirect();
+                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
                 assertEquals(t1Filtered.size(), t1fcs.length);
                 assertArrayEquals(t1fcs, t2fcs);
             };

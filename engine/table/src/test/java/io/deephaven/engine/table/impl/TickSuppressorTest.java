@@ -3,22 +3,20 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.testutil.ColumnInfo;
-import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.testutil.EvalNugget;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.engine.rowset.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
+
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.intCol;
@@ -136,11 +134,12 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
         assertEquals(0, listener.getCount());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> input.notifyListeners(i(), i(), i(5)));
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> input.notifyListeners(i(), i(), i(5)));
 
         assertEquals(0, listener.getCount());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(input, i(2, 5), intCol("SentinelA", 2, 5), intCol("SentinelB", 8, 11));
             input.notifyListeners(i(2), i(), i(5));
         });
@@ -153,7 +152,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertTrue(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(input, i(10, 15), intCol("SentinelA", 12, 15), intCol("SentinelB", 30, 40));
             removeRows(input, i(5));
             input.notifyListeners(i(), i(5), i(10, 15));
@@ -167,7 +166,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
         assertTrue(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelA")));
         assertFalse(listener.update.modifiedColumnSet().containsAny(suppressed.newModifiedColumnSet("SentinelB")));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(input, i(20), intCol("SentinelA", 20), intCol("SentinelB", 50));
             input.notifyListeners(i(20), i(), i());
         });

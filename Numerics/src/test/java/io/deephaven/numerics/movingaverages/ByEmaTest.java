@@ -4,9 +4,11 @@
 package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.testing.RecordingMockObject;
-import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
+
+import java.time.Instant;
 
 /**
  * Test ByEma.
@@ -79,70 +81,70 @@ public class ByEmaTest extends TestCase {
 
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts0 = new DateTime(DAY * 1000000);
+        Instant ts0 = DateTimeUtils.epochNanosToInstant(DAY * 1000000);
         ByEma.Key k0 = new ByEma.Key("A", "B");
         MA ma0 = new MA(target, k0);
-        ma0.processDoubleLocal(ts0.getNanos(), 1);
+        ma0.processDoubleLocal(DateTimeUtils.epochNanos(ts0), 1);
         ma0.getCurrent();
         emaActual.update(ts0, 1, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts1 = new DateTime(2 * DAY * 1000000);
-        ma0.processDoubleLocal(ts1.getNanos(), 2);
+        Instant ts1 = DateTimeUtils.epochNanosToInstant(2 * DAY * 1000000);
+        ma0.processDoubleLocal(DateTimeUtils.epochNanos(ts1), 2);
         ma0.getCurrent();
         emaActual.update(ts1, 2, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts2 = new DateTime(3 * DAY * 1000000);
+        Instant ts2 = DateTimeUtils.epochNanosToInstant(3 * DAY * 1000000);
         ByEma.Key k1 = new ByEma.Key("A", "C");
         MA ma1 = new MA(target, k1);
-        ma1.processDoubleLocal(ts2.getNanos(), 3);
+        ma1.processDoubleLocal(DateTimeUtils.epochNanos(ts2), 3);
         ma1.getCurrent();
         emaActual.update(ts2, 3, "A", "C");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts3 = new DateTime(4 * DAY * 1000000);
-        ma0.processDoubleLocal(ts3.getNanos(), 4);
+        Instant ts3 = DateTimeUtils.epochNanosToInstant(4 * DAY * 1000000);
+        ma0.processDoubleLocal(DateTimeUtils.epochNanos(ts3), 4);
         ma0.getCurrent();
         emaActual.update(ts3, 4, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts4 = new DateTime(5 * DAY * 1000000);
+        Instant ts4 = DateTimeUtils.epochNanosToInstant(5 * DAY * 1000000);
         MA ma2 = new MA(target, k0);
         emaActual.update(ts4, NULL, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts5 = new DateTime(6 * DAY * 1000000);
-        ma1.processDoubleLocal(ts5.getNanos(), 6);
+        Instant ts5 = DateTimeUtils.epochNanosToInstant(6 * DAY * 1000000);
+        ma1.processDoubleLocal(DateTimeUtils.epochNanos(ts5), 6);
         ma1.getCurrent();
         emaActual.update(ts5, 6, "A", "C");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts6 = new DateTime(5 * DAY * 1000000);
-        ma2.processDoubleLocal(ts6.getNanos(), 7);
+        Instant ts6 = DateTimeUtils.epochNanosToInstant(5 * DAY * 1000000);
+        ma2.processDoubleLocal(DateTimeUtils.epochNanos(ts6), 7);
         ma2.getCurrent();
         emaActual.update(ts6, 7, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts7 = new DateTime(6 * DAY * 1000000);
+        Instant ts7 = DateTimeUtils.epochNanosToInstant(6 * DAY * 1000000);
         MA ma3 = new MA(target, k0);
         emaActual.update(ts7, NAN, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts8 = new DateTime(7 * DAY * 1000000);
-        ma3.processDoubleLocal(ts8.getNanos(), 8);
+        Instant ts8 = DateTimeUtils.epochNanosToInstant(7 * DAY * 1000000);
+        ma3.processDoubleLocal(DateTimeUtils.epochNanos(ts8), 8);
         ma3.getCurrent();
         emaActual.update(ts8, 8, "A", "B");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
-        DateTime ts9 = new DateTime(8 * DAY * 1000000);
-        ma1.processDoubleLocal(ts9.getNanos(), 8);
+        Instant ts9 = DateTimeUtils.epochNanosToInstant(8 * DAY * 1000000);
+        ma1.processDoubleLocal(DateTimeUtils.epochNanos(ts9), 8);
         ma1.getCurrent();
         emaActual.update(ts9, 8, "A", "C");
         assertEquals(target.getActivityRecordAndReset(), emaActual.logger.getActivityRecordAndReset());
 
         // test no time version
-        DateTime ts10 = new DateTime(9 * DAY * 1000000);
+        Instant ts10 = DateTimeUtils.epochNanosToInstant(9 * DAY * 1000000);
         ma1.processDoubleLocal(Long.MIN_VALUE, 9);
         ma1.getCurrent();
         emaActual.update(9, "A", "C");

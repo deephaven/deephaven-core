@@ -3,22 +3,24 @@
  */
 package io.deephaven.engine.util.scripts;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.IOException;
 
 public class TestGroovyDeephavenSession {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     private LivenessScope livenessScope;
     private GroovyDeephavenSession session;
@@ -27,7 +29,9 @@ public class TestGroovyDeephavenSession {
     public void setup() throws IOException {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
-        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none());
+        session = new GroovyDeephavenSession(
+                ExecutionContext.getContext().getUpdateGraph(), NoOp.INSTANCE, null,
+                GroovyDeephavenSession.RunScripts.none());
     }
 
     @After
@@ -54,7 +58,7 @@ public class TestGroovyDeephavenSession {
 
     @Test
     public void testNullCast() {
-        session.evaluateScript("x = null; y = emptyTable(0).update(\"X = (java.util.List)x\")");
+        session.evaluateScript("x = null; y = emptyTable(0).update(\"X = (java.util.List)x\")").throwIfError();
         final Table y = fetchTable("y");
         final TableDefinition definition = y.getDefinition();
         final Class<?> colClass = definition.getColumn("X").getDataType();
@@ -70,7 +74,7 @@ public class TestGroovyDeephavenSession {
                 "    }\n" +
                 "}\n" +
                 "obj = new MyObj(1)\n" +
-                "result = emptyTable(1).select(\"A = obj.a\")");
+                "result = emptyTable(1).select(\"A = obj.a\")").throwIfError();
         Assert.assertNotNull(fetch("obj", Object.class));
         final Table result = fetchTable("result");
         Assert.assertFalse(result.isFailed());
@@ -82,6 +86,7 @@ public class TestGroovyDeephavenSession {
                 "z=emptyTable(10)\n" +
                 "y=emptyTable(10)\n" +
                 "u=emptyTable(10)");
+        changes.throwIfError();
         final String[] names = new String[] {"x", "z", "y", "u"};
         final MutableInt offset = new MutableInt();
         changes.created.forEach((name, type) -> {
@@ -97,7 +102,7 @@ public class TestGroovyDeephavenSession {
         if (this.getClass().getClassLoader().getDefinedPackage(packageString) != null) {
             Assert.fail("Package '" + packageString + "' is already loaded, test with a more obscure package.");
         }
-        session.evaluateScript("import " + packageString + ".*");
+        session.evaluateScript("import " + packageString + ".*").throwIfError();
     }
 }
 

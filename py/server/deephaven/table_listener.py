@@ -14,7 +14,7 @@ import jpy
 import numpy
 
 from deephaven import DHError
-from deephaven import ugp
+from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.jcompat import to_sequence
@@ -25,6 +25,7 @@ _JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonL
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
+_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
 
 
 def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
@@ -237,25 +238,29 @@ class TableUpdate(JObjectWrapper):
         return list(cols) if cols else []
 
 
-def _do_locked(f: Callable, lock_type="shared") -> None:
-    """Executes a function while holding the UpdateGraphProcessor (UGP) lock.  Holding the UGP lock
+def _do_locked(ug: Union[_JUpdateGraph, Table], f: Callable, lock_type="shared") -> None:
+    """Executes a function while holding the UpdateGraph (UG) lock.  Holding the UG lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
     time as possible.
 
     Args:
-        f (Callable): callable to execute while holding the UGP lock, could be function or an object with an 'apply'
+        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        f (Callable): callable to execute while holding the UG lock, could be function or an object with an 'apply'
             attribute which is callable
-        lock_type (str): UGP lock type, valid values are "exclusive" and "shared".  "exclusive" allows only a single
+        lock_type (str): UG lock type, valid values are "exclusive" and "shared".  "exclusive" allows only a single
             reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
     Raises:
         ValueError
     """
+    if isinstance(ug, Table):
+        ug = ug.update_graph
+
     if lock_type == "exclusive":
-        with ugp.exclusive_lock():
+        with update_graph.exclusive_lock(ug):
             f()
     elif lock_type == "shared":
-        with ugp.shared_lock():
+        with update_graph.shared_lock(ug):
             f()
     else:
         raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
@@ -388,7 +393,7 @@ class TableListenerHandle:
                 self.t.j_table.addUpdateListener(self.listener)
 
             if do_replay:
-                _do_locked(_start, lock_type=replay_lock)
+                _do_locked(self.t, _start, lock_type=replay_lock)
             else:
                 _start()
         except Exception as e:

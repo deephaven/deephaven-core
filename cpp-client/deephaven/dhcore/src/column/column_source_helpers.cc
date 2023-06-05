@@ -2,6 +2,7 @@
 
 namespace deephaven::dhcore::column {
 namespace internal {
+const char HumanReadableTypeNames::charName[] = "char";
 const char HumanReadableTypeNames::int8Name[] = "int8_t";
 const char HumanReadableTypeNames::int16Name[] = "int16_t";
 const char HumanReadableTypeNames::int32Name[] = "int32_t";

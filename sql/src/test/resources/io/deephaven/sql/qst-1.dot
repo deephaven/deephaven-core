@@ -1,0 +1,13 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/books)"]
+"op_1" ["label"="ticketTable(scan/authors)"]
+"op_2" ["label"="view(__p_0_0=Id,__p_0_1=Title,__p_0_2=AuthorId)"]
+"op_3" ["label"="view(__p_0_3=Id,__p_0_4=Name)"]
+"op_4" ["label"="join([__p_0_2==__p_0_3],[])"]
+"op_5" ["label"="view(Id=__p_0_0,Title=__p_0_1,AuthorId=__p_0_2,Id0=__p_0_3,Name=__p_0_4)"]
+"op_2" -> "op_0"
+"op_3" -> "op_1"
+"op_4" -> "op_2" ["label"="left"]
+"op_4" -> "op_3" ["label"="right"]
+"op_5" -> "op_4"
+}

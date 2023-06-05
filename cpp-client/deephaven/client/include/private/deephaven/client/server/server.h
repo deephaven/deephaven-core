@@ -79,6 +79,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::grpc::ConfigService ConfigService;
   typedef io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse ExportedTableCreationResponse;
   typedef io::deephaven::proto::backplane::grpc::HandshakeResponse HandshakeResponse;
+  typedef io::deephaven::proto::backplane::grpc::ReleaseResponse ReleaseResponse;
   typedef io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest SelectOrUpdateRequest;
   typedef io::deephaven::proto::backplane::grpc::SessionService SessionService;
   typedef io::deephaven::proto::backplane::grpc::SortDescriptor SortDescriptor;
@@ -87,6 +88,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse BindTableToVariableResponse;
   typedef io::deephaven::proto::backplane::script::grpc::ConsoleService ConsoleService;
   typedef io::deephaven::proto::backplane::script::grpc::StartConsoleResponse StartConsoleResponse;
+  typedef io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse ExecuteCommandResponse;
 
   typedef deephaven::client::utility::Executor Executor;
 
@@ -95,7 +97,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:
-  static std::shared_ptr<Server> createFromTarget(const std::string &target);
+  static std::shared_ptr<Server> createFromTarget(const std::string &target, const std::string &authorizationValue);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
@@ -129,7 +131,10 @@ public:
   void getConfigurationConstantsAsync(
       std::shared_ptr<SFCallback<ConfigurationConstantsResponse>> callback);
 
-  void startConsoleAsync(std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
+  void startConsoleAsync(std::string sessionType, std::shared_ptr<SFCallback<StartConsoleResponse>> callback);
+
+  void executeCommandAsync(Ticket consoleId, std::string code,
+      std::shared_ptr<SFCallback<ExecuteCommandResponse>> callback);
 
   Ticket emptyTableAsync(int64_t size, std::shared_ptr<EtcCallback> etcCallback);
 
@@ -206,6 +211,8 @@ public:
 
   void bindToVariableAsync(const Ticket &consoleId, const Ticket &tableId, std::string variable,
       std::shared_ptr<SFCallback<BindTableToVariableResponse>> callback);
+
+  void releaseAsync(Ticket ticket, std::shared_ptr<SFCallback<ReleaseResponse>> callback);
 
   Ticket fetchTableAsync(std::string tableName, std::shared_ptr<EtcCallback> callback);
 

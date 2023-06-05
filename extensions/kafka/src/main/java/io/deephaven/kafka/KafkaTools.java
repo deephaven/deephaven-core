@@ -17,36 +17,35 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.BlinkTableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ring.RingTableTools;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.jsoningester.JsonNodeUtil;
 import io.deephaven.kafka.KafkaTools.TableType.Append;
+import io.deephaven.kafka.KafkaTools.TableType.Blink;
 import io.deephaven.kafka.KafkaTools.TableType.Ring;
-import io.deephaven.kafka.KafkaTools.TableType.Stream;
 import io.deephaven.kafka.KafkaTools.TableType.Visitor;
-import io.deephaven.stream.StreamPublisherImpl;
-import io.deephaven.time.DateTime;
+import io.deephaven.stream.StreamToBlinkTableAdapter;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.impl.StreamTableTools;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.kafka.ingest.*;
 import io.deephaven.kafka.publish.*;
-import io.deephaven.stream.StreamToTableAdapter;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
@@ -74,6 +73,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.*;
@@ -240,7 +240,7 @@ public class KafkaTools {
             fass = base.doubleType().noDefault();
         } else if (type == String.class) {
             fass = base.stringType().noDefault();
-        } else if (type == DateTime.class) {
+        } else if (type == Instant.class) {
             fass = base.longBuilder().prop(logicalTypeName, "timestamp-micros").endLong().noDefault();
         } else if (type == BigDecimal.class) {
             final BigDecimalUtils.PropertyNames propertyNames =
@@ -376,7 +376,7 @@ public class KafkaTools {
                         final LogicalType logicalType = getEffectiveLogicalType(fieldName, elementTypeSchema);
                         if (LogicalTypes.timestampMicros().equals(logicalType) ||
                                 LogicalTypes.timestampMillis().equals(logicalType)) {
-                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, DateTime[].class));
+                            columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Instant[].class));
                         } else {
                             columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, long[].class));
                         }
@@ -996,8 +996,8 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A set specifying column names to ommit; can only be used when {@columnNames} is null.
-         *        In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A set specifying column names to omit; can only be used when {@code columnNames} is
+         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1040,8 +1040,9 @@ public class KafkaTools {
          * @param includeColumns An array with an entry for each column intended to be included in the JSON output. If
          *        null, include all columns except those specified in {@code excludeColumns}. If {@code includeColumns}
          *        is not null, {@code excludeColumns} should be null.
-         * @param excludeColumns A predicate specifying column names to ommit; can only be used when {@columnNames} is
-         *        null. In this case all table columns except for the ones in {@code excludeColumns} will be included.
+         * @param excludeColumns A predicate specifying column names to omit; can only be used when {@code columnNames}
+         *        is null. In this case all table columns except for the ones in {@code excludeColumns} will be
+         *        included.
          * @param columnToFieldMapping A map from column name to JSON field name to use for that column. Any column
          *        names implied by earlier arguments not included as a key in the map will be mapped to JSON fields of
          *        the same name. If null, map all columns to fields of the same name.
@@ -1129,8 +1130,8 @@ public class KafkaTools {
      */
     public interface TableType {
 
-        static Stream stream() {
-            return Stream.of();
+        static Blink blink() {
+            return Blink.of();
         }
 
         static Append append() {
@@ -1144,7 +1145,7 @@ public class KafkaTools {
         <T, V extends Visitor<T>> T walk(V visitor);
 
         interface Visitor<T> {
-            T visit(Stream stream);
+            T visit(Blink blink);
 
             T visit(Append append);
 
@@ -1153,18 +1154,18 @@ public class KafkaTools {
 
         /**
          * <p>
-         * Consume data into an in-memory stream table, which will present only newly-available rows to downstream
+         * Consume data into an in-memory blink table, which will present only newly-available rows to downstream
          * operations and visualizations.
          * <p>
-         * See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
-         * {@link io.deephaven.engine.table.impl.StreamTableTools} for related tooling.
+         * See {@link Table#BLINK_TABLE_ATTRIBUTE} for a detailed explanation of blink table semantics, and
+         * {@link BlinkTableTools} for related tooling.
          */
         @Immutable
         @SimpleStyle
-        abstract class Stream implements TableType {
+        abstract class Blink implements TableType {
 
-            public static Stream of() {
-                return ImmutableStream.of();
+            public static Blink of() {
+                return ImmutableBlink.of();
             }
 
             @Override
@@ -1176,7 +1177,7 @@ public class KafkaTools {
         /**
          * Consume data into an in-memory append-only table.
          *
-         * @see StreamTableTools#streamToAppendOnlyTable(Table)
+         * @see BlinkTableTools#blinkToAppendOnly(Table)
          */
         @Immutable
         @SimpleStyle
@@ -1218,7 +1219,8 @@ public class KafkaTools {
     /**
      * Map "Python-friendly" table type name to a {@link TableType}. Supported values are:
      * <ol>
-     * <li>{@code "stream"}</li>
+     * <li>{@code "blink"}</li>
+     * <li>{@code "stream"} (deprecated; use {@code "blink"})</li>
      * <li>{@code "append"}</li>
      * <li>{@code "ring:<capacity>"} where capacity is a integer number specifying the maximum number of trailing rows
      * to include in the result</li>
@@ -1231,11 +1233,12 @@ public class KafkaTools {
     public static TableType friendlyNameToTableType(@NotNull final String typeName) {
         final String[] split = typeName.split(":");
         switch (split[0].trim()) {
-            case "stream":
+            case "blink":
+            case "stream": // TODO (https://github.com/deephaven/deephaven-core/issues/3853): Delete this
                 if (split.length != 1) {
                     throw unexpectedType(typeName, null);
                 }
-                return TableType.stream();
+                return TableType.blink();
             case "append":
                 if (split.length != 1) {
                     throw unexpectedType(typeName, null);
@@ -1257,7 +1260,7 @@ public class KafkaTools {
 
     private static IllegalArgumentException unexpectedType(@NotNull final String typeName, @Nullable Exception cause) {
         return new IllegalArgumentException("Unexpected type format \"" + typeName
-                + "\", expected \"stream\", \"append\", or \"ring:<capacity>\"", cause);
+                + "\", expected \"blink\", \"append\", or \"ring:<capacity>\"", cause);
     }
 
     /**
@@ -1322,7 +1325,7 @@ public class KafkaTools {
         Pair<TYPE, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull TableDefinition tableDefinition,
                 @NotNull TableType tableType,
-                @NotNull Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
                 @NotNull MutableObject<KafkaIngester> kafkaIngesterHolder);
     }
 
@@ -1330,19 +1333,19 @@ public class KafkaTools {
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
-            return UpdateGraphProcessor.DEFAULT;
+            return ExecutionContext.getContext().getUpdateGraph();
         }
 
         @Override
         public Pair<Table, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull final TableDefinition tableDefinition,
                 @NotNull final TableType tableType,
-                @NotNull final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
                 @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
-            final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
+            final Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter> singleAdapterPair =
                     adapterFactory.get();
-            final Table streamTable = singleAdapterPair.getFirst().table();
-            final Table result = tableType.walk(new StreamTableOperation(streamTable));
+            final Table blinkTable = singleAdapterPair.getFirst().table();
+            final Table result = tableType.walk(new BlinkTableOperation(blinkTable));
             final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
                 singleAdapterPair.getFirst().setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdown());
                 return new SimpleKafkaStreamConsumer(singleAdapterPair.getSecond(), singleAdapterPair.getFirst());
@@ -1353,7 +1356,8 @@ public class KafkaTools {
 
     private static class PartitionedTableResultFactory implements ResultFactory<PartitionedTable> {
 
-        private final UpdateSourceCombiner refreshCombiner = new UpdateSourceCombiner();
+        private final UpdateSourceCombiner refreshCombiner =
+                new UpdateSourceCombiner(ExecutionContext.getContext().getUpdateGraph());
 
         @Override
         public UpdateSourceRegistrar getSourceRegistrar() {
@@ -1364,16 +1368,16 @@ public class KafkaTools {
         public Pair<PartitionedTable, IntFunction<KafkaStreamConsumer>> makeResultAndConsumerFactoryPair(
                 @NotNull final TableDefinition tableDefinition,
                 @NotNull final TableType tableType,
-                @NotNull final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
+                @NotNull final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory,
                 @NotNull final MutableObject<KafkaIngester> kafkaIngesterHolder) {
             final StreamPartitionedTable result = new StreamPartitionedTable(tableDefinition, refreshCombiner);
             final IntFunction<KafkaStreamConsumer> consumerFactory = (final int partition) -> {
-                final Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
+                final Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter> partitionAdapterPair =
                         adapterFactory.get();
                 partitionAdapterPair.getFirst()
                         .setShutdownCallback(() -> kafkaIngesterHolder.getValue().shutdownPartition(partition));
-                final Table streamTable = partitionAdapterPair.getFirst().table();
-                final Table partitionTable = tableType.walk(new StreamTableOperation(streamTable));
+                final Table blinkTable = partitionAdapterPair.getFirst().table();
+                final Table partitionTable = tableType.walk(new BlinkTableOperation(blinkTable));
                 result.enqueueAdd(partition, partitionTable);
                 return new SimpleKafkaStreamConsumer(partitionAdapterPair.getSecond(), partitionAdapterPair.getFirst());
             };
@@ -1441,18 +1445,21 @@ public class KafkaTools {
         final TableDefinition tableDefinition = TableDefinition.of(columnDefinitions);
         final UpdateSourceRegistrar updateSourceRegistrar = resultFactory.getSourceRegistrar();
 
-        final Supplier<Pair<StreamToTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
+        final Supplier<Pair<StreamToBlinkTableAdapter, ConsumerRecordToStreamPublisherAdapter>> adapterFactory = () -> {
             final StreamPublisherImpl streamPublisher = new StreamPublisherImpl();
-            final StreamToTableAdapter streamToTableAdapter = streamPublisher.createStreamToTableAdapter(
-                    tableDefinition, updateSourceRegistrar, "Kafka-" + topic + '-' + partitionFilter);
+            final StreamToBlinkTableAdapter streamToBlinkTableAdapter =
+                    new StreamToBlinkTableAdapter(tableDefinition, streamPublisher, updateSourceRegistrar,
+                            "Kafka-" + topic + '-' + partitionFilter);
+            streamPublisher.setChunkFactory(() -> streamToBlinkTableAdapter.makeChunksForDefinition(CHUNK_SIZE),
+                    streamToBlinkTableAdapter::chunkTypeForIndex);
 
             final KeyOrValueProcessor keyProcessor =
-                    getProcessor(keySpec, tableDefinition, streamToTableAdapter, keyIngestData);
+                    getProcessor(keySpec, tableDefinition, streamToBlinkTableAdapter, keyIngestData);
             final KeyOrValueProcessor valueProcessor =
-                    getProcessor(valueSpec, tableDefinition, streamToTableAdapter, valueIngestData);
+                    getProcessor(valueSpec, tableDefinition, streamToBlinkTableAdapter, valueIngestData);
 
             return new Pair<>(
-                    streamToTableAdapter,
+                    streamToBlinkTableAdapter,
                     KafkaStreamPublisher.make(
                             streamPublisher,
                             commonColumnIndices[0],
@@ -1504,26 +1511,26 @@ public class KafkaTools {
                 jsonSpec.timestampFieldName, jsonSpec.nestedObjectDelimiter, jsonSpec.outputNulls);
     }
 
-    private static class StreamTableOperation implements Visitor<Table> {
-        private final Table streamTable;
+    private static class BlinkTableOperation implements Visitor<Table> {
+        private final Table blinkTable;
 
-        public StreamTableOperation(Table streamTable) {
-            this.streamTable = Objects.requireNonNull(streamTable);
+        public BlinkTableOperation(Table blinkTable) {
+            this.blinkTable = Objects.requireNonNull(blinkTable);
         }
 
         @Override
-        public Table visit(Stream stream) {
-            return streamTable;
+        public Table visit(Blink blink) {
+            return blinkTable;
         }
 
         @Override
         public Table visit(Append append) {
-            return StreamTableTools.streamToAppendOnlyTable(streamTable);
+            return BlinkTableTools.blinkToAppendOnly(blinkTable);
         }
 
         @Override
         public Table visit(Ring ring) {
-            return RingTableTools.of(streamTable, ring.capacity());
+            return RingTableTools.of(blinkTable, ring.capacity());
         }
     }
 
@@ -1584,7 +1591,7 @@ public class KafkaTools {
      * are any key columns. Note that specifying {@code lastByKeyColumns=true} can make it easy to satisfy this
      * constraint if the input data is not already aggregated.</li>
      * <li><b>A stream of independent log records.</b> In this case, the input table should either be a
-     * {@link Table#STREAM_TABLE_ATTRIBUTE stream table} or should only ever add rows (regardless of whether the
+     * {@link Table#BLINK_TABLE_ATTRIBUTE blink table} or should only ever add rows (regardless of whether the
      * {@link Table#ADD_ONLY_TABLE_ATTRIBUTE attribute} is specified).</li>
      * </ol>
      * <p>
@@ -1614,10 +1621,10 @@ public class KafkaTools {
             @NotNull final Produce.KeyOrValueSpec valueSpec,
             final boolean lastByKeyColumns) {
         if (table.isRefreshing()
-                && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()
-                && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()) {
+                && !table.getUpdateGraph().exclusiveLock().isHeldByCurrentThread()
+                && !table.getUpdateGraph().sharedLock().isHeldByCurrentThread()) {
             throw new KafkaPublisherException(
-                    "Calling thread must hold an exclusive or shared UpdateGraphProcessor lock to publish live sources");
+                    "Calling thread must hold an exclusive or shared UpdateGraph lock to publish live sources");
         }
 
         final boolean ignoreKey = keySpec.dataFormat() == DataFormat.IGNORE;
@@ -1709,7 +1716,7 @@ public class KafkaTools {
     }
 
     /**
-     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraph} and cannot be subclassed.
      */
     private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 
@@ -1736,12 +1743,12 @@ public class KafkaTools {
                     (WritableColumnSource<Table>) table().getColumnSource(CONSTITUENT_COLUMN_NAME, Table.class);
             manage(refreshCombiner);
             refreshCombiner.addSource(this);
-            UpdateGraphProcessor.DEFAULT.addSource(refreshCombiner);
+            UpdateGraph updateGraph = table().getUpdateGraph();
+            updateGraph.addSource(refreshCombiner);
         }
 
         @Override
         public void run() {
-            // noinspection resource
             final WritableRowSet rowSet = table().getRowSet().writableCast();
 
             final long newLastRowKey = lastAddedPartitionRowKey;
@@ -1750,7 +1757,7 @@ public class KafkaTools {
             if (newLastRowKey != oldLastRowKey) {
                 final RowSet added = RowSetFactory.fromRange(oldLastRowKey + 1, newLastRowKey);
                 rowSet.insert(added);
-                ((BaseTable) table()).notifyListeners(new TableUpdateImpl(added,
+                ((BaseTable<?>) table()).notifyListeners(new TableUpdateImpl(added,
                         RowSetFactory.empty(), RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
             }
         }
@@ -1786,7 +1793,7 @@ public class KafkaTools {
     private static KeyOrValueProcessor getProcessor(
             final Consume.KeyOrValueSpec spec,
             final TableDefinition tableDef,
-            final StreamToTableAdapter streamToTableAdapter,
+            final StreamToBlinkTableAdapter streamToBlinkTableAdapter,
             final KeyOrValueIngestData data) {
         switch (spec.dataFormat()) {
             case IGNORE:
@@ -1795,14 +1802,14 @@ public class KafkaTools {
             case AVRO:
                 return GenericRecordChunkAdapter.make(
                         tableDef,
-                        streamToTableAdapter::chunkTypeForIndex,
+                        streamToBlinkTableAdapter::chunkTypeForIndex,
                         data.fieldPathToColumnName,
                         NESTED_FIELD_NAME_SEPARATOR_PATTERN,
                         (Schema) data.extra,
                         true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldPathToColumnName, true);
+                        tableDef, streamToBlinkTableAdapter::chunkTypeForIndex, data.fieldPathToColumnName, true);
             default:
                 throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
         }
@@ -2009,7 +2016,7 @@ public class KafkaTools {
                 consumerProperties,
                 TIMESTAMP_COLUMN_NAME_PROPERTY,
                 TIMESTAMP_COLUMN_NAME_DEFAULT,
-                (final String colName) -> ColumnDefinition.fromGenericType(colName, DateTime.class));
+                (final String colName) -> ColumnDefinition.fromGenericType(colName, Instant.class));
         return c;
     }
 
@@ -2164,12 +2171,12 @@ public class KafkaTools {
 
     private static class SimpleKafkaStreamConsumer implements KafkaStreamConsumer {
         private final ConsumerRecordToStreamPublisherAdapter adapter;
-        private final StreamToTableAdapter streamToTableAdapter;
+        private final StreamToBlinkTableAdapter streamToBlinkTableAdapter;
 
         public SimpleKafkaStreamConsumer(ConsumerRecordToStreamPublisherAdapter adapter,
-                StreamToTableAdapter streamToTableAdapter) {
+                StreamToBlinkTableAdapter streamToBlinkTableAdapter) {
             this.adapter = adapter;
-            this.streamToTableAdapter = streamToTableAdapter;
+            this.streamToBlinkTableAdapter = streamToBlinkTableAdapter;
         }
 
         @Override
@@ -2184,7 +2191,7 @@ public class KafkaTools {
 
         @Override
         public void acceptFailure(@NotNull Throwable cause) {
-            streamToTableAdapter.acceptFailure(cause);
+            streamToBlinkTableAdapter.acceptFailure(cause);
         }
     }
 

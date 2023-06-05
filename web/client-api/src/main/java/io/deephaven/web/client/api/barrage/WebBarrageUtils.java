@@ -100,12 +100,12 @@ public class WebBarrageUtils {
             cols[i].setStyleColumnName(fieldMetadata.get("styleColumn"));
 
             if (fieldMetadata.containsKey("inputtable.isKey")) {
-                cols[i].setInputTableKeyColumn(Boolean.parseBoolean(fieldMetadata.get("inputtable.isKey")));
+                cols[i].setInputTableKeyColumn("true".equals(fieldMetadata.get("inputtable.isKey")));
             }
 
             cols[i].setDescription(fieldMetadata.get("description"));
 
-            cols[i].setPartitionColumn(fieldMetadata.get("isPartitioning").equals("true"));
+            cols[i].setPartitionColumn("true".equals(fieldMetadata.get("isPartitioning")));
 
             cols[i].setHierarchicalExpandByColumn(
                     "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));
@@ -429,7 +429,6 @@ public class WebBarrageUtils {
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
-            case "io.deephaven.time.DateTime":
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
                 assert positions.length().toFloat64() >= size * 8;

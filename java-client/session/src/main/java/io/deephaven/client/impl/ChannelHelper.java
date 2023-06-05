@@ -7,6 +7,7 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -38,6 +39,17 @@ public final class ChannelHelper {
      * @return the channel
      */
     public static ManagedChannel channel(ClientConfig clientConfig) {
+        return channelBuilder(clientConfig).build();
+    }
+
+    /**
+     * Initializes a {@link ManagedChannelBuilder} in the same fashion as {@link #channel(ClientConfig)}, but does not
+     * {@link ManagedChannelBuilder#build()} it.
+     *
+     * @param clientConfig the Deephaven client configuration
+     * @return the channel builder
+     */
+    public static ManagedChannelBuilder<?> channelBuilder(ClientConfig clientConfig) {
         final NettyChannelBuilder channelBuilder = NettyChannelBuilder
                 .forTarget(clientConfig.target().toString())
                 .maxInboundMessageSize(clientConfig.maxInboundMessageSize());
@@ -65,10 +77,11 @@ public final class ChannelHelper {
             channelBuilder.usePlaintext();
         }
         clientConfig.userAgent().ifPresent(channelBuilder::userAgent);
+        clientConfig.overrideAuthority().ifPresent(channelBuilder::overrideAuthority);
         if (!clientConfig.extraHeaders().isEmpty()) {
             channelBuilder.intercept(MetadataUtils.newAttachHeadersInterceptor(of(clientConfig.extraHeaders())));
         }
-        return channelBuilder.build();
+        return channelBuilder;
     }
 
     private static Metadata of(Map<String, String> map) {

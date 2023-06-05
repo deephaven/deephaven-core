@@ -49,8 +49,7 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
     }
 
     public static Field booleanField(String name) {
-        // TODO(deephaven-core#43): Do not reinterpret bool as byte
-        return field(name, MinorType.TINYINT.getType(), "boolean");
+        return field(name, MinorType.BIT.getType(), "boolean");
     }
 
     public static Field charField(String name) {
@@ -82,8 +81,7 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
     }
 
     public static Field instantField(String name) {
-        return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"),
-                "io.deephaven.time.DateTime");
+        return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"), "java.time.Instant");
     }
 
     private static Field field(String name, ArrowType arrowType, String deephavenType) {

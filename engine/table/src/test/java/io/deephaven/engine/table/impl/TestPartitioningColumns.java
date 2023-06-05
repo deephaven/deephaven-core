@@ -3,13 +3,13 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.filter.Filter;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -50,8 +51,8 @@ public class TestPartitioningColumns {
                 longCol("Lo", 1L << 36, 2L << 36, 3L << 36),
                 floatCol("Fl", 0.1f, 0.2f, 0.3f),
                 doubleCol("Do", 0.1, 0.2, 0.3),
-                dateTimeCol("DT", DateTime.now(), DateTimeUtils.plus(DateTime.now(), 1),
-                        DateTimeUtils.plus(DateTime.now(), 2)),
+                instantCol("DT", DateTimeUtils.now(), DateTimeUtils.plus(DateTimeUtils.now(), 1),
+                        DateTimeUtils.plus(DateTimeUtils.now(), 2)),
                 stringCol("St", "ABC", "DEF", "GHI"),
                 col("Bo", Boolean.TRUE, Boolean.FALSE, Boolean.TRUE));
 
@@ -89,9 +90,9 @@ public class TestPartitioningColumns {
 
         TstUtils.assertTableEquals(expected, result);
 
-        final WhereFilter[] filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).toArray(WhereFilter[]::new);
-        TstUtils.assertTableEquals(expected.where(filters), result.where(filters));
+        final List<WhereFilter> filters = input.getDefinition().getColumnStream()
+                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).collect(Collectors.toList());
+        TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
     }

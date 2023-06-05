@@ -425,7 +425,7 @@ public class JsFigure extends HasLifecycle {
         }
         for (int i = 0; i < s.getSources().length; i++) {
             SeriesDataSource source = s.getSources()[i];
-            if (!source.getColumnType().equals("io.deephaven.time.DateTime")) {
+            if (!source.getColumnType().equals("java.time.Instant")) {
                 continue;
             }
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());

@@ -19,16 +19,9 @@ public interface FilterOperationsRecorder<IFACE_TYPE extends FilterOperationsRec
     IFACE_TYPE where(String... filters);
 
     /**
-     * See {@link Table#where(Collection)}.
+     * See {@link Table#where(Filter)}.
      *
      * @return A new recorder with this operation recorded to apply to node {@link Table tables}.
      */
-    IFACE_TYPE where(Collection<? extends Filter> filters);
-
-    /**
-     * See {@link Table#where(Filter...)}.
-     *
-     * @return A new recorder with this operation recorded to apply to node {@link Table tables}.
-     */
-    IFACE_TYPE where(Filter... filters);
+    IFACE_TYPE where(Filter filter);
 }

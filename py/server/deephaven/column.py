@@ -201,7 +201,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
     Returns:
         a new input column
     """
-    return InputColumn(name=name, data_type=dtypes.DateTime, input_data=data)
+    return InputColumn(name=name, data_type=dtypes.Instant, input_data=data)
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:

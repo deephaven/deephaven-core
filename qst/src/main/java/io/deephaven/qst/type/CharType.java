@@ -23,6 +23,11 @@ public abstract class CharType extends PrimitiveTypeBase<Character> {
     }
 
     @Override
+    public final Class<Character> boxedClass() {
+        return Character.class;
+    }
+
+    @Override
     public final NativeArrayType<char[], Character> arrayType() {
         return NativeArrayType.of(char[].class, this);
     }

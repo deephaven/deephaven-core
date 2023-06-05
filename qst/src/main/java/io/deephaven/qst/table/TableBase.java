@@ -65,8 +65,8 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final TableSpec where(Collection<? extends Filter> filters) {
-        return WhereTable.builder().parent(this).addAllFilters(filters).build();
+    public final TableSpec where(Filter filter) {
+        return WhereTable.of(this, filter);
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public JoinTable join(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
+    public final TableSpec join(TableSpec rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return JoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
                 .addAllAdditions(columnsToAdd).build();
@@ -121,24 +121,19 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final TableSpec aj(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return AsOfJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .addAllAdditions(columnsToAdd).rule(asOfJoinRule).build();
-    }
-
-    @Override
-    public final TableSpec raj(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return ReverseAsOfJoinTable.builder().left(this).right(rightTable)
-                .addAllMatches(columnsToMatch).addAllAdditions(columnsToAdd).rule(reverseAsOfJoinRule)
+    public final TableSpec asOfJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,
+            AsOfJoinMatch asOfMatch, Collection<? extends JoinAddition> columnsToAdd) {
+        return AsOfJoinTable.builder()
+                .left(this)
+                .right(rightTable)
+                .addAllMatches(exactMatches)
+                .joinMatch(asOfMatch)
+                .addAllAdditions(columnsToAdd)
                 .build();
     }
 
     @Override
-    public TableSpec rangeJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,
+    public final TableSpec rangeJoin(TableSpec rightTable, Collection<? extends JoinMatch> exactMatches,
             RangeJoinMatch rangeMatch, Collection<? extends Aggregation> aggregations) {
         return RangeJoinTable.builder().left(this).right(rightTable).addAllExactMatches(exactMatches)
                 .rangeMatch(rangeMatch).addAllAggregations(aggregations).build();
@@ -162,6 +157,11 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final TableSpec lazyUpdate(Collection<? extends Selectable> columns) {
         return LazyUpdateTable.builder().parent(this).addAllColumns(columns).build();
+    }
+
+    @Override
+    public final TableSpec select() {
+        return SelectTable.builder().parent(this).build();
     }
 
     @Override

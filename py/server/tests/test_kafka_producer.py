@@ -25,7 +25,7 @@ def table_helper():
 
 class KafkaProducerTestCase(BaseTestCase):
     """
-    Test cases for the deephaven.ConsumeKafka  module (performed locally) -
+    Test cases for the deephaven.kafka_producer module (performed locally) -
     """
 
     def test_basic_constants(self):
@@ -36,7 +36,7 @@ class KafkaProducerTestCase(BaseTestCase):
 
     def test_simple_spec(self):
         """
-        Check a simple Kafka subscription creates the right table.
+        Check a simple Kafka producer works without errors
         """
         t = new_table(cols=[double_col('Price', [10.0, 10.5, 11.0, 11.5])])
         cleanup = pk.produce(

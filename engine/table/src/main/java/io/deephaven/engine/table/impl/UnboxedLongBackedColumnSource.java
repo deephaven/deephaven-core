@@ -4,14 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
 
 /**
  * Reinterpret result for many {@link ColumnSource} implementations that internally represent time values, such as
- * {@link DateTime} and {@link Instant}, as {@code long} values.
+ * {@link Instant}, as {@code long} values.
  */
 public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong {

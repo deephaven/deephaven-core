@@ -3,33 +3,38 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.testing.BaseCachedJMockTestCase;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.tuple.ArrayTuple;
 
 import static io.deephaven.engine.util.TableTools.*;
 
-public class TestKeyedTableListener extends BaseCachedJMockTestCase {
+public class TestKeyedTableListener extends RefreshingTableTestCase {
 
     private QueryTable table;
     private KeyedTableListener keyedTableListener;
     private KeyedTableListener.KeyUpdateListener mockListener;
 
-    private final RowSet noAdded = RowSetFactory.empty();
-    private final RowSet noRemoved = RowSetFactory.empty();
-    private final RowSet noModified = RowSetFactory.empty();
+    private RowSet noAdded;
+    private RowSet noRemoved;
+    private RowSet noModified;
 
     private ArrayTuple aKey;
     private ArrayTuple bKey;
     private ArrayTuple cKey;
 
     @Override
-    public void setUp() {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+    public void setUp() throws Exception {
+        super.setUp();
+
+        this.noAdded = RowSetFactory.empty();
+        this.noRemoved = RowSetFactory.empty();
+        this.noModified = RowSetFactory.empty();
+
         this.mockListener = mock(KeyedTableListener.KeyUpdateListener.class);
         this.table = TstUtils.testRefreshingTable(TstUtils.i(0, 1, 2).toTracking(),
                 col("Key1", "A", "B", "C"),
@@ -40,13 +45,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         this.cKey = new ArrayTuple("C", 3);
         this.keyedTableListener = new KeyedTableListener(table, "Key1", "Key2");
         // enable immediately
-        UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(() -> this.keyedTableListener.addUpdateListener());
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        ExecutionContext.getContext().getUpdateGraph().sharedLock()
+                .doLocked(() -> this.keyedTableListener.addUpdateListener());
     }
 
     public void testGetRow() {
@@ -77,7 +77,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(
                 () -> table.notifyListeners(noAdded.copy(), noRemoved.copy(), noModified.copy()));
 
         keyedTableListener.unsubscribe(aKey, mockListener);
@@ -95,7 +96,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         });
         keyedTableListener.subscribe(newKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newAdd = TstUtils.i(3);
             TstUtils.addToTable(table, newAdd, col("Key1", "D"), col("Key2", 4), col("Data", 4.0));
             table.notifyListeners(newAdd, noRemoved.copy(), noModified.copy());
@@ -117,7 +119,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         });
         keyedTableListener.subscribe(cKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newRemove = TstUtils.i(2);
             TstUtils.removeRows(table, newRemove);
             table.notifyListeners(noAdded.copy(), newRemove, noModified.copy());
@@ -143,7 +146,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         assertEquals(3.0, vals[2]);
 
         keyedTableListener.subscribe(cKey, mockListener);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(2);
             TstUtils.addToTable(table, newModified, col("Key1", "C"), col("Key2", 3),
                     col("Data", 6.0));
@@ -172,7 +176,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // Add to table on an existing row key is a modify
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(2);
             // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, col("Key1", "C"), col("Key2", 4),
@@ -213,7 +219,9 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        // Add to table on an existing row key is a modify
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(1, 2);
             // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, col("Key1", "C", "D"), col("Key2", 3, 4),
@@ -254,7 +262,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(bKey, mockListener);
         keyedTableListener.subscribe(cKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(1, 2);
             TstUtils.addToTable(table, newModified, col("Key1", "C", "B"), col("Key2", 3, 2),
                     col("Data", 3.0, 2.0));
@@ -294,7 +303,8 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(cKey, mockListener);
         keyedTableListener.subscribe(newKey, mockListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
 
@@ -346,14 +356,15 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
         keyedTableListener.subscribe(newKey, mockListener);
 
         // Two cycles -- first remove
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newRemoved = TstUtils.i(2);
             TstUtils.removeRows(table, newRemoved);
             table.notifyListeners(noAdded.copy(), newRemoved, noModified.copy());
         });
 
         // Now add
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             final RowSet newAdded = TstUtils.i(2);
             TstUtils.addToTable(table, newAdded, col("Key1", "D"), col("Key2", 4),
                     col("Data", 4.0));

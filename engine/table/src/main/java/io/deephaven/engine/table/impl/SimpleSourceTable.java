@@ -9,9 +9,6 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 
-import java.util.Map;
-import java.util.Set;
-
 /**
  * Simple source table with no partitioning support.
  */
@@ -61,7 +58,7 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
 
     @Override
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());

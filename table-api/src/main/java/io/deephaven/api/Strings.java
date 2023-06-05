@@ -5,7 +5,6 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationDescriptions;
-import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
@@ -23,7 +22,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -145,6 +143,10 @@ public class Strings {
 
     public static String ofJoinAdditions(Collection<? extends JoinAddition> additions) {
         return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    public static String of(final AsOfJoinMatch joinMatch) {
+        return joinMatch.leftColumn().name() + joinMatch.joinRule().operatorString() + joinMatch.rightColumn().name();
     }
 
     public static String of(final RangeJoinMatch rangeMatch) {

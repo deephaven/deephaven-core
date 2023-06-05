@@ -3,11 +3,11 @@
  */
 package io.deephaven.engine.table.impl.ssa;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.SortedDoubleGenerator;
 import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import org.jetbrains.annotations.NotNull;
 
@@ -82,8 +82,8 @@ public class SsaTestHelpers {
 
     public static Table prepareTestTableForObject(QueryTable table) {
         // an update might be faster, but updateView ensures we break when object equality is not the same as ==
-        return UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> table.updateView("Value=String.format(`%06d`, Value)"));
+        return ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> table.updateView("Value=String.format(`%06d`, Value)"));
     }
 
     public static final class TestDescriptor {

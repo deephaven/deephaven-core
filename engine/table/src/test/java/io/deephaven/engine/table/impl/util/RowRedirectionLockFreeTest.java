@@ -3,7 +3,8 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
@@ -24,7 +25,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     public void testRowRedirection() throws InterruptedException {
         final WritableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
-        final long initialStep = LogicalClock.DEFAULT.currentStep();
+        final long initialStep = ExecutionContext.getContext().getUpdateGraph().clock().currentStep();
         Writer writer = new Writer("writer", initialStep, index);
         Reader r0 = new Reader("reader0", initialStep, index);
         Reader r1 = new Reader("reader1", initialStep, index);
@@ -111,7 +112,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             // Figure out what step we're in and what step to read from (current or prev).
-            final long logicalClockStartValue = LogicalClock.DEFAULT.currentValue();
+            final long logicalClockStartValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             final long stepFromCycle = LogicalClock.getStep(logicalClockStartValue);
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
             final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
@@ -152,7 +153,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             }
 
 
-            final long logicalClockEndValue = LogicalClock.DEFAULT.currentValue();
+            final long logicalClockEndValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
             if (logicalClockStartValue != logicalClockEndValue) {
                 ++incoherentCycles;
                 return;
@@ -194,21 +195,23 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                final long step = LogicalClock.DEFAULT.currentStep();
+            // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
+            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final long step = updateGraph.clock().currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
                 // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
                 long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
                 final WritableRowRedirectionLockFree ix = index;
-                for (int ii = 0; ii < numKeysToInsert; ++ii) {
-                    final long key = keys[ii];
-                    final long value = step * oneBillion + ii;
+                for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
+                    final long key = keys[ii1];
+                    final long value = step * oneBillion + ii1;
                     ix.put(key, value);
                 }
-                for (int ii = numKeysToInsert; ii < keys.length; ++ii) {
-                    final long key = keys[ii];
+                for (int ii1 = numKeysToInsert; ii1 < keys.length; ++ii1) {
+                    final long key = keys[ii1];
                     ix.remove(key);
                 }
             });

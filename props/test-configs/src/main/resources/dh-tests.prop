@@ -35,6 +35,9 @@ TrackedFileHandleFactory.maxOpenFiles=1024
 TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
 
+###### Time Zone & Calendars #####
+user.timezone=America/New_York
+timezone.aliases=/test_time_zone_aliases.csv
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
 
@@ -49,8 +52,7 @@ jpy.jdlLib=/usr/local/lib/python2.7/dist-packages/jdl.so,/Library/Python/2.7/sit
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
 
-UpdateGraphProcessor.checkTableOperations=true
-UpdateGraphProcessor.allowUnitTestMode=true
+PeriodicUpdateGraph.allowUnitTestMode=true
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
@@ -59,9 +61,6 @@ QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
-
-###### Server's timezone #####
-server.timezone=America/New_York
 
 ###### Measurement Options ######
 statsdriver.enabled=false

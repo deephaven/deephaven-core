@@ -4,6 +4,7 @@
 package io.deephaven.python.server;
 
 import dagger.Component;
+import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PyLogOutputStream;
@@ -54,6 +55,7 @@ public class EmbeddedServer {
             GroovyConsoleSessionModule.class,
             SessionToExecutionStateModule.class,
             CommunityAuthorizationModule.class,
+            ClientDefaultsModule.class,
     })
     public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder

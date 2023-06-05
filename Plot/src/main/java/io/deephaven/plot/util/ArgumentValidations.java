@@ -9,14 +9,12 @@ import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.errors.*;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.qst.column.Column;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ClassUtils;
 
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -348,15 +346,15 @@ public class ArgumentValidations {
     }
 
     /**
-     * Whether the class is equal to Date.class or DateTime.class
+     * Whether the class is equal to Date.class or Instant.class
      *
      * @param c class
      * @param plotInfo source of the exception
-     * @return true if {@code c} equals Date.class or DateTime.class, false otherwise
+     * @return true if {@code c} equals Date.class or Instant.class, false otherwise
      */
     public static boolean isTime(final Class c, final PlotInfo plotInfo) {
         assertNotNull(c, "c", plotInfo);
-        return c.equals(Date.class) || c.equals(DateTime.class);
+        return c == Date.class || c == Instant.class;
     }
 
     /**
@@ -381,36 +379,36 @@ public class ArgumentValidations {
     }
 
     /**
-     * Whether the column's data type equals Date.class or DateTime.class
+     * Whether the column's data type equals Date.class or Instant.class
      *
      * @param t table
      * @param column column
      * @param plotInfo source of the exception
-     * @return true if the column's data type equals Date.class or DateTime.class, false otherwise
+     * @return true if the column's data type equals Date.class or Instant.class, false otherwise
      */
     public static boolean isTime(final Table t, final String column, final PlotInfo plotInfo) {
         return isTime(getColumnType(t, column, plotInfo), plotInfo);
     }
 
     /**
-     * Whether the column's data type equals Date.class or DateTime.class
+     * Whether the column's data type equals Date.class or Instant.class
      *
      * @param t table
      * @param column column
      * @param plotInfo source of the exception
-     * @return true if the column's data type equals Date.class or DateTime.class, false otherwise
+     * @return true if the column's data type equals Date.class or Instant.class, false otherwise
      */
     public static boolean isTime(final TableDefinition t, final String column, final PlotInfo plotInfo) {
         return isTime(getColumnType(t, column, plotInfo), plotInfo);
     }
 
     /**
-     * Whether the column's data type equals Date.class or DateTime.class
+     * Whether the column's data type equals Date.class or Instant.class
      *
      * @param sds selectable dataset
      * @param column column
      * @param plotInfo source of the exception
-     * @return true if the column's data type equals Date.class or DateTime.class, false otherwise
+     * @return true if the column's data type equals Date.class or Instant.class, false otherwise
      */
     public static boolean isTime(final SelectableDataSet sds, final String column, final PlotInfo plotInfo) {
         return isTime(getColumnType(sds, column, plotInfo), plotInfo);

@@ -9,11 +9,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import java.time.Instant;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
 import io.deephaven.engine.table.impl.sources.InstantArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -49,10 +45,7 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        if (type == DateTime.class) {
-            actualResult = new DateTimeArraySource();
-            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();
-        } else if (type == Instant.class) {
+        if (type == Instant.class) {
             actualResult = new InstantArraySource();
             resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();
         } else {

@@ -171,7 +171,11 @@ public class IdeSession extends HasEventHandling {
         });
         runCodePromise.then(response -> {
             JsVariableChanges changes = JsVariableChanges.from(response.getChanges());
-            promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
+            if (response.getErrorMessage() == null || response.getErrorMessage().isEmpty()) {
+                promise.succeed(new JsCommandResult(changes, null));
+            } else {
+                promise.succeed(new JsCommandResult(changes, response.getErrorMessage()));
+            }
             return null;
         }, err -> {
             promise.fail(err);

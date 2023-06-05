@@ -23,7 +23,7 @@ public class LongAsLocalDateColumnSource extends BoxedLongAsTimeSource<LocalDate
 
     @Override
     protected LocalDate makeValue(long val) {
-        final ZonedDateTime zdt = DateTimeUtils.makeZonedDateTime(val, zone);
+        final ZonedDateTime zdt = DateTimeUtils.epochNanosToZonedDateTime(val, zone);
         return zdt == null ? null : zdt.toLocalDate();
     }
 }

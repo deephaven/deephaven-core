@@ -3,33 +3,34 @@
  */
 package io.deephaven.plot.datasets.data;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class TestAssociativeData extends BaseArrayTestCase {
+public class TestAssociativeData extends RefreshingTableTestCase {
     private final String[] cats = {"A", "B"};
     private final int[] values = {1, 2};
     private final Integer x = values[0];
-    private final Table t = TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
-    private final TableHandle tableHandle = new TableHandle(t, "Cat", "Values");
-    private final AssociativeDataTable<String, Integer, Integer> associativeDataTable =
-            new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
+
     private final AssociativeDataHashMap<String, Integer> dataHashMap = new AssociativeDataHashMap<>(null);
+
+    private Table t;
+    private TableHandle tableHandle;
+    private AssociativeDataTable<String, Integer, Integer> associativeDataTable;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-
+        t = TableTools.newTable(TableTools.col("Cat", cats), TableTools.intCol("Values", values));
+        tableHandle = new TableHandle(t, "Cat", "Values");
+        associativeDataTable =
+                new AssociativeDataTable<>(tableHandle, "Cat", "Values", String.class, Integer.class, null);
         // prime the listeners
         associativeDataTable.get(null);
     }
@@ -37,7 +38,6 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testAssociativeDataHashMap() {

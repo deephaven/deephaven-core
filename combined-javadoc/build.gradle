@@ -26,19 +26,11 @@ def writeJavadocVersion = tasks.register 'writeJavadocVersion', {
 
 def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
     Javadoc jdoc ->
-        // TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
-        jdoc.javadocTool = javaToolchains.javadocToolFor{it ->
-            // Javadoc version >=11 is needed for search
-            // Javadoc version >12 is needed to avoid javadoc bugs in linking with modules
-            languageVersion = JavaLanguageVersion.of(15)
-        }
         jdoc.inputs.file javaDocOverviewLocation
-        jdoc.options.encoding = 'UTF-8'
-        jdoc.options.tags = ['apiNote', 'implNote']
-        // include a note on the front Javadoc page telling us what version the Javadoc was generated from.
         jdoc.options.overview = new File(javaDocOverviewLocation)
-        jdoc.options.links = ['https://docs.oracle.com/en/java/javase/11/docs/api/']
-        jdoc.options.addStringOption('Xdoclint:none', '-quiet')
+
+        // Fail on warnings to ensure correctness for our published docs
+        jdoc.options.addBooleanOption('Xwerror', true)
 
         def isForJavadocs = { Project p -> return io.deephaven.project.util.CombinedJavadoc.includeProject(p) }
 
@@ -60,6 +52,8 @@ def allJavadoc = tasks.register 'allJavadoc', Javadoc, {
         jdoc.destinationDir = file("${buildDir}/docs/javadoc")
         jdoc.dependsOn(writeJavadocVersion)
 }
+
+apply plugin: 'io.deephaven.javadoc-conventions'
 
 artifacts {
     combinedJavadoc allJavadoc

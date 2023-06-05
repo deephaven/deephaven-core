@@ -3,32 +3,16 @@
  */
 package io.deephaven.plot;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.plot.datasets.xy.XYDataSeriesArray;
-import io.deephaven.util.SafeCloseable;
 
 /**
  * Test SeriesLocation.
  */
-public class TestSeriesLocation extends BaseArrayTestCase {
-
-    private SafeCloseable executionContext;
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        executionContext = TestExecutionContext.createForUnitTests().open();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        executionContext.close();
-    }
+public class TestSeriesLocation extends RefreshingTableTestCase {
 
     public void testLocation() {
         final Table t = TableTools.emptyTable(100).update("A=i%2==0?`A`:`B`", "X=1.0*i", "Y=1.0*i*i");

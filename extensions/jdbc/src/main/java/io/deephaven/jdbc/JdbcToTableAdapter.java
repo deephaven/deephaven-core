@@ -20,6 +20,9 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,10 +40,11 @@ import java.util.TimeZone;
 /**
  * The JdbcToTableAdapter class provides a simple interface to convert a Java Database Connectivity (JDBC)
  * {@link ResultSet} to a Deephaven {@link Table}.
- * <p/>
  *
+ * <p>
  * To use, first create a result set using your provided JDBC driver of choice:
- * 
+ * </p>
+ *
  * <pre>
  * Connection connection = DriverManager.getConnection("jdbc:sqlite:/path/to/db.sqlite");
  * Statement statement = connection.createStatement();
@@ -85,7 +89,7 @@ public class JdbcToTableAdapter {
         private String replacement = "_";
         private int maxRows = -1;
         private boolean strict = true;
-        private TimeZone sourceTimeZone = TimeZone.getDefault();
+        private TimeZone sourceTimeZone = TimeZone.getTimeZone(DateTimeUtils.timeZone());
         private String arrayDelimiter = ",";
         private final Map<String, Class<?>> targetTypeMap = new HashMap<>();
 
@@ -219,55 +223,51 @@ public class JdbcToTableAdapter {
         final SourceFiller[] sourceFillers = new SourceFiller[numColumns];
 
         final HashMap<String, ColumnSource<?>> columnMap = new LinkedHashMap<>();
-        for (int ii = 0; ii < numColumns; ++ii) {
-            final int columnIndex = rs.findColumn(origColumnNames[ii]);
-            final String columnName = columnNames[ii];
-            final Class<?> destType = options.targetTypeMap.get(columnName);
-
-            final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
-                    JdbcTypeMapper.getColumnTypeMapping(rs, columnIndex, destType);
-
-            final Class<?> deephavenType = typeMapping.getDeephavenType();
-            final Class<?> componentType = deephavenType.getComponentType();
-            final WritableColumnSource<?> cs = numRows == 0
-                    ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
-                    : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType, componentType);
-
-            if (numRows > 0) {
-                cs.ensureCapacity(numRows, false);
-            }
-
-            if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(cs)) {
-                sourceFillers[ii] = new BackingStoreSourceFiller(columnIndex, typeMapping, cs);
-            } else {
-                sourceFillers[ii] = new ChunkFlushingSourceFiller(columnIndex, typeMapping, cs);
-            }
-
-            columnMap.put(columnName, cs);
-        }
-
-        final JdbcTypeMapper.Context context = JdbcTypeMapper.Context.of(
-                options.sourceTimeZone, options.arrayDelimiter, options.strict);
-
         long numRowsRead = 0;
-        while (rs.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
-            for (SourceFiller filler : sourceFillers) {
-                filler.readRow(rs, context, numRowsRead);
-            }
-            ++numRowsRead;
-        }
+        try (final SafeCloseableList toClose = new SafeCloseableList()) {
+            for (int ii = 0; ii < numColumns; ++ii) {
+                final int columnIndex = rs.findColumn(origColumnNames[ii]);
+                final String columnName = columnNames[ii];
+                final Class<?> destType = options.targetTypeMap.get(columnName);
 
-        for (SourceFiller filler : sourceFillers) {
-            filler.close();
+                final JdbcTypeMapper.DataTypeMapping<?> typeMapping =
+                        JdbcTypeMapper.getColumnTypeMapping(rs, columnIndex, destType);
+
+                final Class<?> deephavenType = typeMapping.getDeephavenType();
+                final Class<?> componentType = deephavenType.getComponentType();
+                final WritableColumnSource<?> cs = numRows == 0
+                        ? ArrayBackedColumnSource.getMemoryColumnSource(0, deephavenType, componentType)
+                        : InMemoryColumnSource.getImmutableMemoryColumnSource(numRows, deephavenType, componentType);
+
+                if (numRows > 0) {
+                    cs.ensureCapacity(numRows, false);
+                }
+
+                if (ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(cs)) {
+                    sourceFillers[ii] = toClose.add(new BackingStoreSourceFiller(columnIndex, typeMapping, cs));
+                } else {
+                    sourceFillers[ii] = toClose.add(new ChunkFlushingSourceFiller(columnIndex, typeMapping, cs));
+                }
+
+                columnMap.put(columnName, cs);
+            }
+
+            final JdbcTypeMapper.Context context = JdbcTypeMapper.Context.of(
+                    options.sourceTimeZone, options.arrayDelimiter, options.strict);
+
+            while (rs.next() && (options.maxRows == -1 || numRowsRead < options.maxRows)) {
+                for (SourceFiller filler : sourceFillers) {
+                    filler.readRow(rs, context, numRowsRead);
+                }
+                ++numRowsRead;
+            }
         }
 
         return new QueryTable(RowSetFactory.flat(numRowsRead).toTracking(), columnMap);
     }
 
-    private interface SourceFiller {
+    private interface SourceFiller extends SafeCloseable {
         void readRow(ResultSet rs, JdbcTypeMapper.Context context, long destRowKey) throws SQLException;
-
-        void close();
     }
 
     private static class BackingStoreSourceFiller implements SourceFiller {

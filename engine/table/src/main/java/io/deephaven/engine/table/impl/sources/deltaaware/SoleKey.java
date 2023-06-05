@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -114,6 +115,11 @@ class SoleKey implements RowSequence {
     @Override
     public boolean forEachRowKeyRange(LongRangeAbortableConsumer larc) {
         return larc.accept(key, key);
+    }
+
+    @Override
+    public void close() {
+        SafeCloseable.closeAll(keyIndicesChunk, keyRangesChunk);
     }
 
     static class SoleKeyIterator implements Iterator {

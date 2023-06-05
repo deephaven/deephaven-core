@@ -595,6 +595,35 @@ public class TestCharChunk {
         TestCase.assertEquals(value1, reverseActual2D1);
     }
 
+    // region testArray
+    @Test
+    public void testArray() {
+        final char[] underlyingData = new char[100];
+        for (int ii = 0; ii < underlyingData.length; ++ii) {
+            underlyingData[ii] = (char) ii;
+        }
+        final char[] array;
+        final int offset;
+        // noinspection rawtypes
+        try (WritableCharChunk chunk = WritableCharChunk.writableChunkWrap(underlyingData, 10, 20)) {
+            array = chunk.array();
+            offset = chunk.arrayOffset();
+            TestCase.assertSame(underlyingData, array);
+            TestCase.assertEquals(10, offset);
+
+            final int lastOffset = offset + chunk.size();
+            for (int ii = offset; ii < lastOffset; ++ii) {
+                TestCase.assertEquals((char) ii, array[ii]);
+            }
+
+            array[offset] = 42;
+            TestCase.assertEquals((char) 42, chunk.get(0));
+            chunk.set(1, (char) 97);
+            TestCase.assertEquals((char) 97, array[offset + 1]);
+        }
+    }
+    // endregion testArray
+
     private static <ATTR extends Values> void verifyChunkEqualsArray(CharChunk<ATTR> chunk, char[] data, int offset, int size) {
         for (int ii = 0; ii < size; ++ii) {
             TestCase.assertEquals(String.format("At rowSet %d", ii), data[ii + offset], chunk.get(ii));

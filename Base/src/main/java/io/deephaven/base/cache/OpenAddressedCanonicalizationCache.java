@@ -48,7 +48,7 @@ public class OpenAddressedCanonicalizationCache {
         int hashCode(@NotNull final INPUT_TYPE inputItem);
 
         /**
-         * Note: The following must be true: hashCode(inputItem) == outputItem.hashCode() && equals(inputItem,
+         * Note: The following must be true: hashCode(inputItem) == outputItem.hashCode() &amp;&amp; equals(inputItem,
          * outputItem)
          * 
          * @param inputItem The input item

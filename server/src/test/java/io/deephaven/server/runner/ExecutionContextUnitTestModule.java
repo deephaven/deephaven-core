@@ -4,6 +4,8 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 
 import javax.inject.Singleton;
 
@@ -12,6 +14,9 @@ public class ExecutionContextUnitTestModule {
     @Provides
     @Singleton
     public ExecutionContext provideExecutionContext() {
-        return TestExecutionContext.createForUnitTests();
+        final UpdateGraph updateGraph = PeriodicUpdateGraph.newBuilder("TEST")
+                .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
+                .existingOrBuild();
+        return TestExecutionContext.createForUnitTests().withUpdateGraph(updateGraph);
     }
 }

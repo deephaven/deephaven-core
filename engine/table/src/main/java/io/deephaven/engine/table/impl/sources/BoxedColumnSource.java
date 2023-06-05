@@ -8,7 +8,6 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.chunk.*;
@@ -17,11 +16,10 @@ import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 
 /**
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type, e.g. {@code byte} as
- * {@link Boolean} or {@code long} as {@link DateTime}.
+ * {@link Boolean} or {@code long} as {@link Instant}.
  */
 public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
         implements MutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
@@ -126,38 +124,6 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
     }
 
-    public static final class OfDateTime extends BoxedColumnSource<DateTime> {
-
-        public OfDateTime(@NotNull final ColumnSource<Long> originalSource) {
-            super(DateTime.class, originalSource);
-            Assert.eq(originalSource.getType(), "originalSource.getType()", long.class);
-        }
-
-        @Override
-        public DateTime get(final long rowKey) {
-            return DateTimeUtils.nanosToTime(originalSource.getLong(rowKey));
-        }
-
-        @Override
-        public DateTime getPrev(final long rowKey) {
-            return DateTimeUtils.nanosToTime(originalSource.getPrevLong(rowKey));
-        }
-
-        @Override
-        void transformChunk(@NotNull final Chunk<? extends Values> source,
-                @NotNull final WritableChunk<? super Values> destination) {
-            final LongChunk<? extends Values> typedSource = source.asLongChunk();
-            final WritableObjectChunk<DateTime, ? super Values> typedDestination =
-                    destination.asWritableObjectChunk();
-
-            final int sourceSize = typedSource.size();
-            for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DateTimeUtils.nanosToTime(typedSource.get(pi)));
-            }
-            typedDestination.setSize(sourceSize);
-        }
-    }
-
     public static final class OfInstant extends BoxedColumnSource<Instant> {
 
         public OfInstant(@NotNull final ColumnSource<Long> originalSource) {
@@ -167,12 +133,12 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
         @Override
         public Instant get(final long rowKey) {
-            return DateTimeUtils.makeInstant(originalSource.getLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(originalSource.getLong(rowKey));
         }
 
         @Override
         public Instant getPrev(final long rowKey) {
-            return DateTimeUtils.makeInstant(originalSource.getPrevLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(originalSource.getPrevLong(rowKey));
         }
 
         @Override
@@ -184,7 +150,7 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DateTimeUtils.makeInstant(typedSource.get(pi)));
+                typedDestination.set(pi, DateTimeUtils.epochNanosToInstant(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

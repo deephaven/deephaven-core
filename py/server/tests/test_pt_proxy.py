@@ -4,11 +4,12 @@
 
 import unittest
 
-from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, ugp
+from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, update_graph
 from deephaven.agg import sum_, avg, pct, weighted_avg, formula, group, first, last, max_, median, min_, std, abs_sum, \
     var
 from deephaven.table import PartitionedTableProxy
 from tests.testbase import BaseTestCase
+from deephaven.execution_context import get_exec_ctx
 
 
 class PartitionedTableProxyTestCase(BaseTestCase):
@@ -17,6 +18,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
+        self.test_update_graph = get_exec_ctx().update_graph
 
     def tearDown(self):
         self.partitioned_table = None
@@ -27,8 +29,8 @@ class PartitionedTableProxyTestCase(BaseTestCase):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
 
     def test_is_refreshing(self):
-        with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
+        with update_graph.shared_lock(self.test_update_graph):
+            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=i%13", "Z=X*Y"])
 
         pt = test_table.partition_by("Y")
         proxy = pt.proxy()
@@ -64,7 +66,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
 
     def test_snapshot_when(self):
         with self.subTest("snapshot_when with a Table"):
-            trigger_proxy = time_table("00:00:01")
+            trigger_proxy = time_table("PT00:00:01")
             result_proxy = self.pt_proxy.snapshot_when(trigger_proxy)
             self.assertEqual(6, len(result_proxy.target.constituent_table_columns))
             self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
@@ -72,7 +74,7 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             self.assertEqual(len(result_proxy.target.constituent_tables), len(self.pt_proxy.target.constituent_tables))
 
         with self.subTest("snapshot_when with another Proxy"):
-            trigger_proxy = time_table("00:00:00.001").update_view(["c = (int)(ii % 1000)"]).partition_by("c", drop_keys=True).proxy()
+            trigger_proxy = time_table("PT00:00:00.001").update_view(["c = (int)(ii % 1000)"]).partition_by("c", drop_keys=True).proxy()
             lenient_proxy = self.partitioned_table.proxy(require_matching_keys=False)
             result_proxy = lenient_proxy.snapshot_when(trigger_proxy)
             self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
@@ -209,14 +211,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 joined_pt_proxy = pt_proxy.aj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.aj(right_table, on=["a < a"], joins="e")
+                joined_pt_proxy = pt_proxy.aj(right_table, on=["a > a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
             with self.subTest("reverse as-of join"):
                 joined_pt_proxy = pt_proxy.raj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.raj(right_table, on=["a > a"], joins="e")
+                joined_pt_proxy = pt_proxy.raj(right_table, on=["a < a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
         with self.subTest("Join with another Proxy"):

@@ -2,10 +2,6 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 
-/*
- * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
- */
-
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.clock.Clock;
@@ -18,10 +14,9 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,7 +30,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
 
     @SuppressWarnings("UnusedDeclaration")
     public TimeSeriesFilter(String columnName, String period) {
-        this(columnName, DateTimeUtils.expressionToNanos(period));
+        this(columnName, DateTimeUtils.parseDurationNanos(period));
     }
 
     public TimeSeriesFilter(String columnName, long nanos) {
@@ -64,9 +59,9 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         }
 
         @SuppressWarnings("unchecked")
-        ColumnSource<DateTime> dateColumn = table.getColumnSource(columnName);
-        if (!DateTime.class.isAssignableFrom(dateColumn.getType())) {
-            throw new RuntimeException(columnName + " is not a DateTime column!");
+        ColumnSource<Instant> dateColumn = table.getColumnSource(columnName);
+        if (!Instant.class.isAssignableFrom(dateColumn.getType())) {
+            throw new RuntimeException(columnName + " is not an Instant column!");
         }
 
         long nanoBoundary = getNowNanos() - nanos;
@@ -74,7 +69,8 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
         for (RowSet.Iterator it = selection.iterator(); it.hasNext();) {
             long row = it.nextLong();
-            long nanoValue = dateColumn.get(row).getNanos();
+            Instant instant = dateColumn.get(row);
+            long nanoValue = DateTimeUtils.epochNanos(instant);
             if (nanoValue >= nanoBoundary) {
                 indexBuilder.appendKey(row);
             }
@@ -98,7 +94,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
-        UpdateGraphProcessor.DEFAULT.addSource(this);
+        updateGraph.addSource(this);
     }
 
     @Override
@@ -119,6 +115,6 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateGraph.removeSource(this);
     }
 }

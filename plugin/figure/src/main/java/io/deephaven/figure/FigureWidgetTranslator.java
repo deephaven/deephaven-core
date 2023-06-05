@@ -58,8 +58,7 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceType;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.StringMapWithDefault;
 import io.deephaven.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatter;
 
 import java.awt.*;
 import java.time.DayOfWeek;
@@ -79,7 +78,7 @@ import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 public class FigureWidgetTranslator {
-    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
+    private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
@@ -544,7 +543,7 @@ public class FigureWidgetTranslator {
         final BusinessCalendar businessCalendar = axisTransform.getBusinessCalendar();
         final BusinessCalendarDescriptor.Builder businessCalendarDescriptor = BusinessCalendarDescriptor.newBuilder();
         businessCalendarDescriptor.setName(businessCalendar.name());
-        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getTimeZone().getID());
+        businessCalendarDescriptor.setTimeZone(businessCalendar.timeZone().getId());
         Arrays.stream(BusinessCalendarDescriptor.DayOfWeek.values()).filter(dayOfWeek -> {
             if (dayOfWeek == BusinessCalendarDescriptor.DayOfWeek.UNRECOGNIZED) {
                 return false;
@@ -568,10 +567,12 @@ public class FigureWidgetTranslator {
                     localDate.setDay(entry.getKey().getDayOfMonth());
                     final Holiday.Builder holiday = Holiday.newBuilder();
                     Arrays.stream(entry.getValue().getBusinessPeriods()).map(bp -> {
-                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getStartTime().getMillis());
-                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone().getTimeZone())
-                                .print(bp.getEndTime().getMillis());
+                        // noinspection ConstantConditions
+                        final String open = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
+                                .format(bp.getStartTime());
+                        // noinspection ConstantConditions
+                        final String close = HOLIDAY_TIME_FORMAT.withZone(businessCalendar.timeZone())
+                                .format(bp.getEndTime());
                         final BusinessPeriod.Builder businessPeriod = BusinessPeriod.newBuilder();
                         businessPeriod.setOpen(open);
                         businessPeriod.setClose(close);

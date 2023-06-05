@@ -41,7 +41,7 @@ public interface BuiltinsModule extends AutoCloseable {
      * Create a new dictionary.
      *
      * @return the dictionary
-     * @see <a href="https://docs.python.org/3/library/functions.html#func-dict>dict</a>
+     * @see <a href="https://docs.python.org/3/library/functions.html#func-dict">dict</a>
      */
     PyObject dict();
 

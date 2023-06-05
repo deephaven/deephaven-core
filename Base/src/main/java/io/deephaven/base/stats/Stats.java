@@ -161,7 +161,7 @@ public class Stats {
     }
 
     /**
-     * Update the histories of all items in all groups, logging all updated intervals >= logInterval.
+     * Update the histories of all items in all groups, logging all updated intervals &gt;= logInterval.
      */
     public synchronized static void update(ItemUpdateListener listener, long now, long appNow, long logInterval) {
         for (Group g : groups) {

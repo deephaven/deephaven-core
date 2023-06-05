@@ -54,8 +54,8 @@ import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
  *
  * <ul>
  * <li>A "block" is a particular interval [n*2^16, (n+1)*2^16 - 1] of the long domain.</li>
- * <li>A "span" is a partition of the domain consisting of one or more consecutive blocks;</li> a span is a subset of
- * the domain represented by an interval [n*2^16, (n+m)*2^16 - 1], m >= 1.
+ * <li>A "span" is a partition of the domain consisting of one or more consecutive blocks; a span is a subset of the
+ * domain represented by an interval [n*2^16, (n+m)*2^16 - 1], m &gt;= 1.
  * <li>Full blocks are blocks whose domain are fully contained in the set, ie, the set contains every possible value in
  * the block's interval (as a bitmap, it would be "all ones").</li>
  * <li>Spans of full blocks are represented by a single "full blocks span" object (just a Long) which knows how many
@@ -89,8 +89,8 @@ import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
  * </p>
  *
  * <p>
- * There are two basic cases for a span: it is either a full blocks span, containing a >=1 number of full blocks, or it
- * is a container, containing individual values in the particular 2^16 block corresponding to the span's key.
+ * There are two basic cases for a span: it is either a full blocks span, containing a &gt;=1 number of full blocks, or
+ * it is a container, containing individual values in the particular 2^16 block corresponding to the span's key.
  * </p>
  *
  * <p>
@@ -1163,7 +1163,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         /**
          * Advances the pointer forward to the last span in the sequence whose interval range has a value v such that
-         * comp.directionToTargetFrom(v) >= 0.
+         * comp.directionToTargetFrom(v) &gt;= 0.
          *
          * This operation is O(log(cardinality)).
          *

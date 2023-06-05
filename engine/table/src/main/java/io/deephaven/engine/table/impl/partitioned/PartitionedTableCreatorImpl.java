@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.partitioned;
 
 import com.google.auto.service.AutoService;
 import io.deephaven.api.ColumnName;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
@@ -13,6 +15,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -87,6 +90,13 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
 
     @Override
     public PartitionedTable of(@NotNull final Table table) {
+        final UpdateGraph updateGraph = table.getUpdateGraph();
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return internalOf(table);
+        }
+    }
+
+    private PartitionedTable internalOf(@NotNull final Table table) {
         final Map<Boolean, List<ColumnDefinition<?>>> splitColumns = table.getDefinition().getColumnStream().collect(
                 Collectors.partitioningBy(cd -> Table.class.isAssignableFrom(cd.getDataType())));
         final List<ColumnDefinition<?>> tableColumns = splitColumns.get(true);
@@ -169,25 +179,32 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         final TrackingRowSet rowSet = RowSetFactory.flat(constituentsToUse.length).toTracking();
         final Map<String, ColumnSource<?>> columnSources =
                 Map.of(CONSTITUENT.name(), InMemoryColumnSource.getImmutableMemoryColumnSource(constituentsToUse));
-        final Table table = new QueryTable(
-                CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
-                rowSet,
-                columnSources) {
-            {
-                setFlat();
-            }
-        };
-        for (final Table constituent : constituentsToUse) {
-            table.addParentReference(constituent);
-        }
 
-        return new PartitionedTableImpl(
-                table,
-                Collections.emptyList(),
-                false,
-                CONSTITUENT.name(),
-                constituentDefinitionToUse,
-                false,
-                true);
+        final Table table;
+        // validate that the update graph is consistent
+        final UpdateGraph updateGraph = constituents[0].getUpdateGraph(constituents);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            table = new QueryTable(
+                    CONSTRUCTED_PARTITIONED_TABLE_DEFINITION,
+                    rowSet,
+                    columnSources) {
+                {
+                    setFlat();
+                }
+            };
+
+            for (final Table constituent : constituentsToUse) {
+                table.addParentReference(constituent);
+            }
+
+            return new PartitionedTableImpl(
+                    table,
+                    Collections.emptyList(),
+                    false,
+                    CONSTITUENT.name(),
+                    constituentDefinitionToUse,
+                    false,
+                    true);
+        }
     }
 }

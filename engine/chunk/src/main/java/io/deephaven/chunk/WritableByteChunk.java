@@ -68,7 +68,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return new WritableByteChunk<>(data, offset, size);
     }
 
-    WritableByteChunk(byte[] data, int offset, int capacity) {
+    protected WritableByteChunk(byte[] data, int offset, int capacity) {
         super(data, offset, capacity);
     }
 
@@ -83,6 +83,31 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new WritableByteChunk<>(data, this.offset + offset, capacity);
     }
+
+    // region array
+    /**
+     * Get the data array backing this WritableByteChunk. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     * <p>
+     * This WritableByteChunk must never be {@link #close() closed} while the array <em>may</em> be in use externally,
+     * because it must not be returned to any pool for re-use until that re-use is guaranteed to be exclusive.
+     *
+     * @return The backing data array
+     */
+    public final byte[] array() {
+        return data;
+    }
+
+    /**
+     * Get this WritableByteChunk's offset into the backing data array. The first element of this chunk corresponds to
+     * {@code array()[arrayOffset()]}.
+     *
+     * @return The offset into the backing data array
+     */
+    public final int arrayOffset() {
+        return offset;
+    }
+    // endregion array
 
     // region FillWithNullValueImpl
     @Override

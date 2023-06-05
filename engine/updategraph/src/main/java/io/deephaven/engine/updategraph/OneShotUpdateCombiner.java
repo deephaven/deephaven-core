@@ -15,6 +15,11 @@ import java.util.Queue;
 public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
 
     private final Queue<Runnable> sources = new ArrayDeque<>();
+    private final UpdateGraph updateGraph;
+
+    public OneShotUpdateCombiner(final UpdateGraph updateGraph) {
+        this.updateGraph = updateGraph;
+    }
 
     @Override
     public void run() {
@@ -45,10 +50,10 @@ public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
     }
 
     /**
-     * Passes through to the {@link UpdateGraphProcessor#DEFAULT update graph processor}.
+     * Passes through to the {@link UpdateGraph update graph} associated with the current update context.
      */
     @Override
     public void requestRefresh() {
-        UpdateGraphProcessor.DEFAULT.requestRefresh();
+        updateGraph.requestRefresh();
     }
 }

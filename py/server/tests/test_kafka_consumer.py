@@ -5,7 +5,7 @@
 import os
 import unittest
 
-from deephaven import kafka_consumer as ck, ugp
+from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven import dtypes
@@ -19,7 +19,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("KafkaOffset", cols[1].name)
         self.assertEqual(dtypes.long, cols[1].data_type)
         self.assertEqual("KafkaTimestamp", cols[2].name)
-        self.assertEqual(dtypes.DateTime, cols[2].data_type)
+        self.assertEqual(dtypes.Instant, cols[2].data_type)
 
     def test_basic_constants(self):
         """
@@ -62,7 +62,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
                  ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                 ('Tstamp', dtypes.Instant)],
                 mapping={
                     'jsymbol': 'Symbol',
                     'jside': 'Side',
@@ -87,7 +87,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Qty", cols[6].name)
         self.assertEqual(dtypes.int_, cols[6].data_type)
         self.assertEqual("Tstamp", cols[7].name)
-        self.assertEqual(dtypes.DateTime, cols[7].data_type)
+        self.assertEqual(dtypes.Instant, cols[7].data_type)
 
     def test_avro_spec(self):
         """
@@ -195,20 +195,20 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
 
-    @unittest.skip("https://github.com/deephaven/deephaven-core/pull/2277")
     def test_deprecated_table_types(self):
         """
         Tests to make sure deprecated TableTypes are equivalent
         """
         self.assertEqual(TableType.append(), TableType.Append)
-        self.assertEqual(TableType.stream(), TableType.Stream)
+        self.assertEqual(TableType.blink(), TableType.Stream)
+        self.assertEqual(TableType.blink(), TableType.stream())
 
     def test_table_types(self):
         """
         Tests TableType construction
         """
         _ = TableType.append()
-        _ = TableType.stream()
+        _ = TableType.blink()
         _ = TableType.ring(4096)
 
     def test_json_spec_partitioned_table(self):
@@ -221,7 +221,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
                  ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                 ('Tstamp', dtypes.Instant)],
                 mapping={
                     'jsymbol': 'Symbol',
                     'jside': 'Side',
@@ -246,7 +246,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         self.assertEqual("Qty", cols[6].name)
         self.assertEqual(dtypes.int_, cols[6].data_type)
         self.assertEqual("Tstamp", cols[7].name)
-        self.assertEqual(dtypes.DateTime, cols[7].data_type)
+        self.assertEqual(dtypes.Instant, cols[7].data_type)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ package io.deephaven.server.table.ops;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.server.grpc.Common;
@@ -18,23 +17,17 @@ import io.grpc.StatusRuntimeException;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
-import java.util.Objects;
 
 @Singleton
 public final class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTableRequest> {
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
-    public SnapshotTableGrpcImpl(
-            final TableServiceContextualAuthWiring auth,
-            final UpdateGraphProcessor updateGraphProcessor) {
+    public SnapshotTableGrpcImpl(final TableServiceContextualAuthWiring auth) {
         super(
                 auth::checkPermissionSnapshot,
                 Operation::getSnapshot,
                 SnapshotTableRequest::getResultId,
                 SnapshotTableRequest::getSourceId);
-        this.updateGraphProcessor = Objects.requireNonNull(updateGraphProcessor);
     }
 
     @Override
@@ -50,12 +43,16 @@ public final class SnapshotTableGrpcImpl extends GrpcTableOperation<SnapshotTabl
             final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table base = sourceTables.get(0).get();
-        try (final SafeCloseable _lock = lock(base)) {
+        try (final SafeCloseable ignored = lock(base)) {
             return base.snapshot();
         }
     }
 
     private SafeCloseable lock(Table base) {
-        return base.isRefreshing() ? updateGraphProcessor.sharedLock().lockCloseable() : null;
+        if (base.isRefreshing()) {
+            return base.getUpdateGraph().sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 }

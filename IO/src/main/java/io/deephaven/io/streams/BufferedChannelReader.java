@@ -20,8 +20,8 @@ public class BufferedChannelReader {
     private int limit;
 
     /**
-     * Guarantees that each buffer from readNext() will have remaining() >= blockSize [that is, until it starts winding
-     * down on the end of the file] When it needs to refresh, it will read <= readSize from the channel
+     * Guarantees that each buffer from readNext() will have remaining() &gt;= blockSize [that is, until it starts
+     * winding down on the end of the file] When it needs to refresh, it will read &lt;= readSize from the channel
      */
     public BufferedChannelReader(final String filename, int blockSize, int readSize) {
         Require.leq(blockSize, "blockSize", readSize, "readSize");

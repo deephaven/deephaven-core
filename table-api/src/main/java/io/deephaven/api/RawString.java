@@ -10,15 +10,13 @@ import io.deephaven.api.filter.FilterNot;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.io.Serializable;
-
 /**
  * An un-parsed string; used for cases where the server has string-parsing that hasn't been structurally represented at
  * the api layer yet.
  */
 @Immutable
 @SimpleStyle
-public abstract class RawString implements Expression, Filter, Serializable {
+public abstract class RawString implements Expression, Filter {
 
     public static RawString of(String x) {
         return ImmutableRawString.of(x);
