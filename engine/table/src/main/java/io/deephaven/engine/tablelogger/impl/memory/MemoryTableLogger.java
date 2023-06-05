@@ -8,6 +8,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.tablelogger.TableLoggerImpl2;
 import io.deephaven.tablelogger.WritableRowContainer;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,6 +17,7 @@ import java.io.UncheckedIOException;
  * Base class for memory table loggers that create and initialize a {@link DynamicTableWriter}.
  */
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
+    @NotNull
     public static QueryTable maybeGetQueryTable(final Object maybeMemoryTableLogger) {
         if (maybeMemoryTableLogger instanceof MemoryTableLogger) {
             return ((MemoryTableLogger) maybeMemoryTableLogger).getQueryTable();

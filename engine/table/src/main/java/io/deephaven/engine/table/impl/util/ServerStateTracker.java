@@ -4,13 +4,16 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
-import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -47,8 +50,9 @@ public class ServerStateTracker {
     }
 
     private void startThread() {
+        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
         Thread driverThread = new Thread(
-                new ServerStateTracker.Driver(),
+                new ServerStateTracker.Driver(updateGraph),
                 ServerStateTracker.class.getSimpleName() + ".Driver");
         driverThread.setDaemon(true);
         driverThread.start();
@@ -110,6 +114,12 @@ public class ServerStateTracker {
     }
 
     private class Driver implements Runnable {
+        private final PeriodicUpdateGraph updateGraph;
+
+        public Driver(@NotNull final UpdateGraph updateGraph) {
+            this.updateGraph = updateGraph.cast();
+        }
+
         @Override
         public void run() {
             final RuntimeMemory.Sample memSample = new RuntimeMemory.Sample();
@@ -126,7 +136,6 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                PeriodicUpdateGraph updateGraph = getQueryTable().getUpdateGraph().cast();
                 updateGraph.takeAccumulatedCycleStats(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(
