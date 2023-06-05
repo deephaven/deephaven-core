@@ -44,8 +44,11 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         for (RWBase rwb : participants) {
             rwb.cancel();
         }
-        for (Thread thread : threads) {
-            thread.join();
+        for (int ii = 0; ii < threads.length; ++ii) {
+            threads[ii].join();
+            if (!participants[ii].cleanExit) {
+               fail("Thread " + participants[ii].name + " unexpectedly exited.");
+            }
         }
         boolean failed = false;
         for (RWBase rwb : participants) {
@@ -67,6 +70,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final WritableRowRedirectionLockFree index;
         protected int numIterations;
         protected volatile boolean cancelled;
+        protected volatile boolean cleanExit = false;
 
         protected RWBase(String name, long initialStep, WritableRowRedirectionLockFree index) {
             this.name = name;
@@ -81,6 +85,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
                 doOneIteration();
                 ++numIterations;
             }
+            cleanExit = true;
         }
 
         public final void cancel() {
@@ -100,6 +105,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         private int badUpdateCycles;
         private int incoherentCycles;
 
+        protected final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         Reader(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
             goodIdleCycles = 0;
@@ -112,7 +119,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             // Figure out what step we're in and what step to read from (current or prev).
-            final long logicalClockStartValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+            final long logicalClockStartValue = updateGraph.clock().currentValue();
             final long stepFromCycle = LogicalClock.getStep(logicalClockStartValue);
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
             final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
@@ -153,7 +160,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             }
 
 
-            final long logicalClockEndValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+            final long logicalClockEndValue = updateGraph.clock().currentValue();
             if (logicalClockStartValue != logicalClockEndValue) {
                 ++incoherentCycles;
                 return;
@@ -188,6 +195,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     }
 
     private static class Writer extends RWBase {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         Writer(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
         }
@@ -196,7 +205,6 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
                 final long step = updateGraph.clock().currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
