@@ -885,61 +885,63 @@ public class SessionState {
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final SafeCloseable ignored1 = LivenessScopeStack.open();
-                    final SafeCloseable ignored2 = session.executionContext.open()) {
-                queryProcessingResults = new QueryProcessingResults(
-                        QueryPerformanceRecorder.getInstance());
+            try (final SafeCloseable ignored1 = session.executionContext.open()) {
+                try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
+                    queryProcessingResults = new QueryProcessingResults(
+                            QueryPerformanceRecorder.getInstance());
 
-                evaluationNumber = QueryPerformanceRecorder.getInstance()
-                        .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
-                try {
-                    setResult(capturedExport.call());
+                    evaluationNumber = QueryPerformanceRecorder.getInstance()
+                            .startQuery("session=" + session.sessionId + ",exportId=" + logIdentity);
+
+                    try {
+                        setResult(capturedExport.call());
+                    } finally {
+                        shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
+                    }
+                } catch (final Exception err) {
+                    caughtException = err;
+                    synchronized (this) {
+                        if (!isExportStateTerminal(state)) {
+                            assignErrorId();
+                            if (!(caughtException instanceof StatusRuntimeException)) {
+                                log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                            }
+                            setState(ExportNotification.State.FAILED);
+                        }
+                    }
                 } finally {
-                    shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
-                }
-            } catch (final Exception err) {
-                caughtException = err;
-                synchronized (this) {
-                    if (!isExportStateTerminal(state)) {
-                        assignErrorId();
-                        if (!(caughtException instanceof StatusRuntimeException)) {
-                            log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
-                        }
-                        setState(ExportNotification.State.FAILED);
+                    if (caughtException != null && queryProcessingResults != null) {
+                        queryProcessingResults.setException(caughtException.toString());
                     }
+                    QueryPerformanceRecorder.resetInstance();
                 }
-            } finally {
-                if (caughtException != null && queryProcessingResults != null) {
-                    queryProcessingResults.setException(caughtException.toString());
-                }
-                QueryPerformanceRecorder.resetInstance();
-            }
-            if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
-                final EngineMetrics memLoggers = EngineMetrics.getInstance();
-                final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
-                final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
-                try {
-                    final QueryPerformanceNugget nugget = Require.neqNull(
-                            queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
-                            "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
+                if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
+                    final EngineMetrics memLoggers = EngineMetrics.getInstance();
+                    final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
+                    final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
+                    try {
+                        final QueryPerformanceNugget nugget = Require.neqNull(
+                                queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),
+                                "queryProcessingResults.getRecorder().getQueryLevelPerformanceData()");
 
-                    // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized (qplLogger) {
-                        qplLogger.log(evaluationNumber,
-                                queryProcessingResults,
-                                nugget);
-                    }
-                    final List<QueryPerformanceNugget> nuggets =
-                            queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
-                    // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                    synchronized (qoplLogger) {
-                        int opNo = 0;
-                        for (QueryPerformanceNugget n : nuggets) {
-                            qoplLogger.log(opNo++, n);
+                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        synchronized (qplLogger) {
+                            qplLogger.log(evaluationNumber,
+                                    queryProcessingResults,
+                                    nugget);
                         }
+                        final List<QueryPerformanceNugget> nuggets =
+                                queryProcessingResults.getRecorder().getOperationLevelPerformanceData();
+                        // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                        synchronized (qoplLogger) {
+                            int opNo = 0;
+                            for (QueryPerformanceNugget n : nuggets) {
+                                qoplLogger.log(opNo++, n);
+                            }
+                        }
+                    } catch (final Exception e) {
+                        log.error().append("Failed to log query performance data: ").append(e).endl();
                     }
-                } catch (final Exception e) {
-                    log.error().append("Failed to log query performance data: ").append(e).endl();
                 }
             }
         }
