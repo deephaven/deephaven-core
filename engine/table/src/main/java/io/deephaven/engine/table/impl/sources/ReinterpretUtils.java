@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.function.Consumer;
 
@@ -118,6 +119,25 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Given a {@code long} column source turn it into a {@link ZonedDateTime} column source, either via
+     * reinterpretation or wrapping.
+     *
+     * @param source the source to turn into a {@link ZonedDateTime} source
+     * @param wrapperTimeZone the {@link ZoneId} to use if and only if we can't apply a simple reinterpret
+     *
+     * @return the {@code long} source
+     */
+    public static ColumnSource<ZonedDateTime> longToZonedDateTimeSource(
+            @NotNull final ColumnSource<Long> source,
+            @NotNull final ZoneId wrapperTimeZone) {
+        if (source.allowsReinterpret(ZonedDateTime.class)) {
+            return source.reinterpret(ZonedDateTime.class);
+        } else {
+            return new LongAsZonedDateTimeColumnSource(source, wrapperTimeZone);
+        }
+    }
+
+    /**
      * Given a {@link ZonedDateTime} column source turn it into a {@code long} column source, either via
      * reinterpretation or wrapping.
      *
@@ -171,7 +191,6 @@ public class ReinterpretUtils {
         }
         return source;
     }
-
 
     /**
      * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
