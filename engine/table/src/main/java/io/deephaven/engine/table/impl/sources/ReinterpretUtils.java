@@ -15,11 +15,12 @@ import java.util.function.Consumer;
 public class ReinterpretUtils {
 
     /**
-     * Given a Boolean column source turn it into a byte column source, either via reinterpretation or wrapping.
+     * Given a {@link Boolean} column source turn it into a {@code byte} column source, either via reinterpretation or
+     * wrapping.
      *
-     * @param source the source to turn into a byte source
+     * @param source the source to turn into a {@code byte} source
      *
-     * @return the byte source
+     * @return the {@code byte} source
      */
     public static ColumnSource<Byte> booleanToByteSource(ColumnSource<Boolean> source) {
         if (source.allowsReinterpret(byte.class)) {
@@ -30,12 +31,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given a writable Boolean column source turn it into a writable byte column source via reinterpretation if
-     * possible.
+     * Given a writable {@link Boolean} column source turn it into a writable {@code byte} column source via
+     * reinterpretation if possible.
      *
-     * @param source the source to turn into a byte source
+     * @param source the source to turn into a {@code byte} source
      *
-     * @return the byte source or null if it could not be reinterpreted
+     * @return the {@code byte} source or null if it could not be reinterpreted
      */
     public static WritableColumnSource<Byte> writableBooleanToByteSource(WritableColumnSource<Boolean> source) {
         if (source.allowsReinterpret(byte.class)) {
@@ -45,11 +46,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given a long column source turn it into a Instant column source, either via reinterpretation or wrapping.
+     * Given a {@code long} column source turn it into an {@link Instant} column source, either via reinterpretation or
+     * wrapping.
      *
-     * @param source the source to turn into a Instant source
+     * @param source the source to turn into an {@link Instant} source
      *
-     * @return the long source
+     * @return the {@code long} source
      */
     public static ColumnSource<Instant> longToInstantSource(ColumnSource<Long> source) {
         if (source.allowsReinterpret(Instant.class)) {
@@ -60,12 +62,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given an {@link Instant} column source turn it into a long column source, either via reinterpretation or
+     * Given an {@link Instant} column source turn it into a {@code long} column source, either via reinterpretation or
      * wrapping.
      *
-     * @param source the source to turn into a long source
+     * @param source the source to turn into a {@code long} source
      *
-     * @return the long source
+     * @return the {@code long} source
      */
     @NotNull
     public static ColumnSource<Long> instantToLongSource(final @NotNull ColumnSource<Instant> source) {
@@ -77,12 +79,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given a writable {@link Instant} column source turn it into a writable long column source via reinterpretation if
-     * possible.
+     * Given a writable {@link Instant} column source turn it into a writable {@code long} column source via
+     * reinterpretation if possible.
      *
-     * @param source the source to turn into a long source
+     * @param source the source to turn into a {@code long} source
      *
-     * @return the long source or null if it could not be reinterpreted
+     * @return the {@code long} source or null if it could not be reinterpreted
      */
     public static WritableColumnSource<Long> writableInstantToLongSource(
             final @NotNull WritableColumnSource<Instant> source) {
@@ -93,12 +95,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given a {@link ZonedDateTime} column source turn it into a long column source, either via reinterpretation or
-     * wrapping.
+     * Given a {@link ZonedDateTime} column source turn it into a {@code long} column source, either via
+     * reinterpretation or wrapping.
      *
-     * @param source the source to turn into a long source
+     * @param source the source to turn into a {@code long} source
      *
-     * @return the long source
+     * @return the {@code long} source
      */
     @NotNull
     public static ColumnSource<Long> zonedDateTimeToLongSource(final @NotNull ColumnSource<ZonedDateTime> source) {
@@ -110,12 +112,12 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Given a writable {@link ZonedDateTime} column source turn it into a writable long column source via
+     * Given a writable {@link ZonedDateTime} column source turn it into a writable {@code long} column source via
      * reinterpretation if possible.
      *
-     * @param source the source to turn into a long source
+     * @param source the source to turn into a {@code long} source
      *
-     * @return the long source or null if it could not be reinterpreted
+     * @return the {@code long} source or null if it could not be reinterpreted
      */
     public static WritableColumnSource<Long> writableZonedDateTimeToLongSource(
             final @NotNull WritableColumnSource<ZonedDateTime> source) {
@@ -129,7 +131,7 @@ public class ReinterpretUtils {
      * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source The source to convert
-     * @return If possible, the source converted to a primitive, otherwise the source
+     * @return if possible, the source converted to a primitive, otherwise the source
      */
     @SuppressWarnings("unchecked")
     public static ColumnSource<?> maybeConvertToPrimitive(ColumnSource<?> source) {
@@ -150,7 +152,7 @@ public class ReinterpretUtils {
      * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source The source to convert
-     * @return If possible, the source converted to a writable primitive, otherwise the source
+     * @return if possible, the source converted to a writable primitive, otherwise the source
      */
     @SuppressWarnings("unchecked")
     public static WritableColumnSource<?> maybeConvertToWritablePrimitive(WritableColumnSource<?> source) {
@@ -170,7 +172,7 @@ public class ReinterpretUtils {
      * else the normal ChunkType for the data type.
      *
      * @param dataType The data type to convert to a {@link ChunkType}
-     * @return The appropriate {@link ChunkType} to use when extracting primitives from the source
+     * @return the appropriate {@link ChunkType} to use when extracting primitives from the source
      */
     public static ChunkType maybeConvertToPrimitiveChunkType(@NotNull final Class<?> dataType) {
         if (dataType == Boolean.class || dataType == boolean.class) {
@@ -187,7 +189,7 @@ public class ReinterpretUtils {
      * type to use}, else return {@code dataType}.
      *
      * @param dataType The data type to examine
-     * @return The appropriate data type to use when extracting primitives from the source
+     * @return the appropriate data type to use when extracting primitives from the source
      */
     public static Class<?> maybeConvertToPrimitiveDataType(@NotNull final Class<?> dataType) {
         if (dataType == Boolean.class || dataType == boolean.class) {
@@ -204,7 +206,7 @@ public class ReinterpretUtils {
      *
      * @param originalType The type to convert to
      * @param source The source to convert
-     * @return Reinterpret or box source back to the original type if possible
+     * @return reinterpret or box source back to the original type if possible
      */
     public static ColumnSource<?> convertToOriginal(
             @NotNull final Class<?> originalType,
