@@ -25,6 +25,7 @@ import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -50,10 +51,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Unit tests for {@link TableTools}.
  */
 @Category(OutOfBandTest.class)
-public class TestTableTools extends TestCase implements UpdateErrorReporter {
-
-    @Rule
-    public final EngineCleanup framework = new EngineCleanup();
+public class TestTableTools extends RefreshingTableTestCase implements UpdateErrorReporter {
 
     private Table table1;
     private Table table2;
@@ -845,24 +843,26 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int numElements = origRowSet.intSize();
 
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
-            final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
-            final IntChunk<? extends Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, origRowSet).asIntChunk()
-                    : origCol.getChunk(origContext, origRowSet).asIntChunk();
+            try (final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements)) {
+                final IntChunk<? extends Values> origContent = usePrev
+                        ? origCol.getPrevChunk(origContext, origRowSet).asIntChunk()
+                        : origCol.getChunk(origContext, origRowSet).asIntChunk();
 
-            final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
-            final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
-            final IntChunk<? extends Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, resRowSet).asIntChunk()
-                    : resCol.getChunk(resContext, resRowSet).asIntChunk();
+                final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
+                try (final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3)) {
+                    final IntChunk<? extends Values> resContent = usePrev
+                            ? resCol.getPrevChunk(resContext, resRowSet).asIntChunk()
+                            : resCol.getChunk(resContext, resRowSet).asIntChunk();
 
-            Assert.assertEquals(numElements, origContent.size());
-            Assert.assertEquals(3 * numElements, resContent.size());
+                    Assert.assertEquals(numElements, origContent.size());
+                    Assert.assertEquals(3 * numElements, resContent.size());
 
-            for (int ii = 0; ii < numElements; ++ii) {
-                Assert.assertEquals(origContent.get(ii), resContent.get(ii));
-                Assert.assertEquals(origContent.get(ii), resContent.get(ii + numElements) - 1);
-                Assert.assertEquals(origContent.get(ii), resContent.get(ii + 2 * numElements) - 1);
+                    for (int ii = 0; ii < numElements; ++ii) {
+                        Assert.assertEquals(origContent.get(ii), resContent.get(ii));
+                        Assert.assertEquals(origContent.get(ii), resContent.get(ii + numElements) - 1);
+                        Assert.assertEquals(origContent.get(ii), resContent.get(ii + 2 * numElements) - 1);
+                    }
+                }
             }
         };
 
@@ -898,19 +898,21 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             final int numElements = 1024;
 
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
-            final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
-            final IntChunk<? extends Values> origContent = usePrev
-                    ? origCol.getPrevChunk(origContext, rowSet).asIntChunk()
-                    : origCol.getChunk(origContext, rowSet).asIntChunk();
+            try (final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements)) {
+                final IntChunk<? extends Values> origContent = usePrev
+                        ? origCol.getPrevChunk(origContext, rowSet).asIntChunk()
+                        : origCol.getChunk(origContext, rowSet).asIntChunk();
 
-            final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
-            final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
-            final IntChunk<? extends Values> resContent = usePrev
-                    ? resCol.getPrevChunk(resContext, rowSet).asIntChunk()
-                    : resCol.getChunk(resContext, rowSet).asIntChunk();
+                final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
+                try (final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3)) {
+                    final IntChunk<? extends Values> resContent = usePrev
+                            ? resCol.getPrevChunk(resContext, rowSet).asIntChunk()
+                            : resCol.getChunk(resContext, rowSet).asIntChunk();
 
-            Assert.assertEquals(0, origContent.size());
-            Assert.assertEquals(0, resContent.size());
+                    Assert.assertEquals(0, origContent.size());
+                    Assert.assertEquals(0, resContent.size());
+                }
+            }
         };
 
         validate.accept(false);
