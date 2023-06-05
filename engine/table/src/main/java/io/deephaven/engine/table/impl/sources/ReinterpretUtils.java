@@ -15,6 +15,22 @@ import java.util.function.Consumer;
 public class ReinterpretUtils {
 
     /**
+     * Given a {@code byte} column source turn it into a {@link Boolean} column source, either via reinterpretation or
+     * wrapping.
+     *
+     * @param source the source to turn into a {@link Boolean} source
+     *
+     * @return the {@link Boolean} source
+     */
+    public static ColumnSource<Boolean> byteToBooleanSource(ColumnSource<Byte> source) {
+        if (source.allowsReinterpret(Boolean.class)) {
+            return source.reinterpret(Boolean.class);
+        } else {
+            return new ByteAsBooleanColumnSource(source);
+        }
+    }
+
+    /**
      * Given a {@link Boolean} column source turn it into a {@code byte} column source, either via reinterpretation or
      * wrapping.
      *
