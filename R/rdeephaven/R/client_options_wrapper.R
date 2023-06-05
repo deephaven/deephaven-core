@@ -17,39 +17,65 @@
 #' want start a console upon client connection, you must ensure that the server you're connecting to was
 #' started with support for the language you want to use.
 #' 
+#' @usage NULL
+#' @format NULL
+#' @docType class
+#' 
 #' @section Methods
 #' 
 #' - `$set_default_authentication()`
-#' - `$set_basic_authentication()`
-#' - `$set_custom_authentication()`
+#' - `$set_basic_authentication(username, password)`
+#' - `$set_custom_authentication(auth_key, auth_value)`
+#' - `$set_session_type(session_type)`
 #' 
 #' @examples
 #' 
-#' # connect to the Deephaven server running on "localhost:10000" with anonymous 'default' authentication
+#' # connect to a Deephaven server with a Python console running on "localhost:10000" using anonymous 'default' authentication
 #' client_options <- ClientOptions$new()
-#' client_options$set_default_authentication()
 #' client <- Client$new(target="localhost:10000", client_options=client_options)
+#' 
+#' # connect to a secure Deephaven server with a Groovy console using username/password authentication
+#' client_options <- ClientOptions$new()
+#' client_options$set_basic_authentication(username="user", password="p@ssw0rd123")
+#' client_options$set_session_type("groovy")
+#' client <- Client$new(target="url/to/secure/server", client_options=client_options)
 
 
 ClientOptions <- R6Class("ClientOptions",
     public = list(
 
+        #' @description
+        #' Create a ClientOptions instance. This will default to using default (anonymous) authentication and a Python console.
         initialize = function() {
             self$internal_client_options <- new(INTERNAL_ClientOptions)
         },
 
+        #' @description
+        #' Use default (anonymous) authentication. If you're running a Deephaven server locally, this is likely the kind of authentication it requires.
         set_default_authentication = function() {
             self$internal_client_options$set_default_authentication()
         },
 
+        #' @description
+        #' Use basic (username/password based) authentication.
+        #' @param username Username of the account to use for authentication, supplied as a string.
+        #' @param password Password of the account, supplied as a string.
         set_basic_authentication = function(username, password) {
             self$internal_client_options$set_basic_authentication(username, password)
         },
 
+        #' @description
+        #' Use custom (general key/value based) authentication.
+        #' @param auth_key Key to use for authentication, supplied as a string.
+        #' @param auth_value Value to use for authentication, supplied as a string.
         set_custom_authentication = function(auth_key, auth_value) {
             self$internal_client_options$set_custom_authentication(auth_key, auth_value)
         },
 
+        #' @description
+        #' Set the session type of the console. Note that this will only work if the running server was already started
+        #' with support for the console you want to use.
+        #' @param session_type Desired language of the console. We currently support "python" or "groovy".
         set_session_type = function(session_type) {
             self$internal_client_options$set_session_type(session_type)
         },
