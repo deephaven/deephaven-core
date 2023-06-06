@@ -5,23 +5,32 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;
+import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Random;
+
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.base.ArrayUtil.swap;
 
 @Category(OutOfBandTest.class)
-public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
+public class RowRedirectionLockFreeTest {
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
     private static final long oneBillion = 1000000000L;
     private static final int testDurationInSeconds = 15;
 
+    @Test
     public void testRowRedirection() throws InterruptedException {
         final WritableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
@@ -44,8 +53,11 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         for (RWBase rwb : participants) {
             rwb.cancel();
         }
-        for (Thread thread : threads) {
-            thread.join();
+        for (int ii = 0; ii < threads.length; ++ii) {
+            threads[ii].join();
+            if (participants[ii].caughtException != null) {
+                throw participants[ii].caughtException;
+            }
         }
         boolean failed = false;
         for (RWBase rwb : participants) {
@@ -53,7 +65,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             failed |= rwb.hasFailed();
         }
         if (failed) {
-            fail("WritableRowRedirection had some corrupt values");
+            TestCase.fail("WritableRowRedirection had some corrupt values");
         }
     }
 
@@ -67,6 +79,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final WritableRowRedirectionLockFree index;
         protected int numIterations;
         protected volatile boolean cancelled;
+        protected volatile RuntimeException caughtException;
 
         protected RWBase(String name, long initialStep, WritableRowRedirectionLockFree index) {
             this.name = name;
@@ -77,9 +90,13 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         }
 
         public final void run() {
-            while (!cancelled) {
-                doOneIteration();
-                ++numIterations;
+            try {
+                while (!cancelled) {
+                    doOneIteration();
+                    ++numIterations;
+                }
+            } catch (RuntimeException e) {
+                caughtException = e;
             }
         }
 
@@ -100,6 +117,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         private int badUpdateCycles;
         private int incoherentCycles;
 
+        protected final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         Reader(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
             goodIdleCycles = 0;
@@ -112,7 +131,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         @Override
         protected final void doOneIteration() {
             // Figure out what step we're in and what step to read from (current or prev).
-            final long logicalClockStartValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+            final long logicalClockStartValue = updateGraph.clock().currentValue();
             final long stepFromCycle = LogicalClock.getStep(logicalClockStartValue);
             final LogicalClock.State state = LogicalClock.getState(logicalClockStartValue);
             final long step = state == LogicalClock.State.Updating ? stepFromCycle - 1 : stepFromCycle;
@@ -153,7 +172,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             }
 
 
-            final long logicalClockEndValue = ExecutionContext.getContext().getUpdateGraph().clock().currentValue();
+            final long logicalClockEndValue = updateGraph.clock().currentValue();
             if (logicalClockStartValue != logicalClockEndValue) {
                 ++incoherentCycles;
                 return;
@@ -188,6 +207,8 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     }
 
     private static class Writer extends RWBase {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         Writer(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
         }
@@ -196,7 +217,6 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         protected final void doOneIteration() {
             final MutableInt keysInThisGeneration = new MutableInt();
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-            final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
             updateGraph.runWithinUnitTestCycle(() -> {
                 final long step = updateGraph.clock().currentStep();
                 keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));

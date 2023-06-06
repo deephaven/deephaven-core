@@ -29,4 +29,4 @@ from ._table_interface import SortDirection
 from .query import Query
 
 __all__ = ["Session", "DHError", "SortDirection"]
-__version__ = "0.25.0"
+__version__ = "0.26.0"
