@@ -300,6 +300,6 @@ public class ReinterpretUtils {
                     originalSource.getClass()));
         }
 
-        throw new UnsupportedOperationException((String.format("Unsupported original type %s", originalType));
+        throw new UnsupportedOperationException((String.format("Unsupported original type %s", originalType)));
     }
 }

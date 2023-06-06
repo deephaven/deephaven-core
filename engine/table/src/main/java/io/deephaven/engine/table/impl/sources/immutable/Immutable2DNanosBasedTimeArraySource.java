@@ -7,14 +7,12 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.engine.table.impl.sources.*;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -230,12 +228,12 @@ public abstract class Immutable2DNanosBasedTimeArraySource<TIME_TYPE>
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(nanoSource, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(nanoSource, zone);
     }
 
     @Override

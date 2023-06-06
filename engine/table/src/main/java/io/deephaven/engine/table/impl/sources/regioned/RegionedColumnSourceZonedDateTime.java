@@ -8,9 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
-import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
-import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -30,11 +28,11 @@ final class RegionedColumnSourceZonedDateTime
     private final ZoneId zone;
 
     public static ColumnSource<LocalDate> asLocalDate(ZoneId zone, RegionedColumnSourceLong<Values> inner) {
-        return new LocalDateWrapperSource(new RegionedColumnSourceZonedDateTime(zone, inner), zone);
+        return new LongAsLocalDateColumnSource(inner, zone);
     }
 
     public static ColumnSource<LocalTime> asLocalTime(ZoneId zone, RegionedColumnSourceLong<Values> inner) {
-        return new LocalTimeWrapperSource(new RegionedColumnSourceZonedDateTime(zone, inner), zone);
+        return new LongAsLocalTimeColumnSource(inner, zone);
     }
 
     public RegionedColumnSourceZonedDateTime(

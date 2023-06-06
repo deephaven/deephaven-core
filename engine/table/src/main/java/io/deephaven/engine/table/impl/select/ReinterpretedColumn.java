@@ -197,6 +197,10 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
             return (ColumnSource<D>) result;
         };
 
+        if (sourceDataType == destDataType) {
+            return checkResult.apply(sourceColumnSource);
+        }
+
         if (sourceColumnSource.allowsReinterpret(destDataType)) {
             return checkResult.apply(sourceColumnSource.reinterpret(destDataType));
         }
@@ -222,9 +226,11 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
                 (destDataType == LocalDate.class || destDataType == LocalTime.class)) {
             // We can short circuit some ZDT conversions to try to be less wasteful
             if (destDataType == LocalDate.class) {
+                // noinspection unchecked
                 return checkResult.apply(new LocalDateWrapperSource(
                         (ColumnSource<ZonedDateTime>) sourceColumnSource, zone));
             } else {
+                // noinspection unchecked
                 return checkResult.apply(new LocalTimeWrapperSource(
                         (ColumnSource<ZonedDateTime>) sourceColumnSource, zone));
             }
@@ -234,16 +240,16 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
         // LocalTime these are not linked to nanos of epoch in any way. You could argue that LocalDate is, but then
         // we have to create even more garbage objects just to get the "time at midnight". Users should just do that
         // directly.
-        final ColumnSource<Long> intermediate;
+        final Function<ColumnSource<?>, ColumnSource<Long>> toLong;
         if (sourceDataType == Instant.class) {
             // noinspection unchecked
-            intermediate = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) sourceColumnSource);
+            toLong = s -> ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) s);
         } else if (sourceDataType == ZonedDateTime.class) {
             // noinspection unchecked
-            intermediate = ReinterpretUtils.zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) sourceColumnSource);
+            toLong = s -> ReinterpretUtils.zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) s);
         } else if (sourceDataType == long.class || sourceDataType == Long.class) {
             // noinspection unchecked
-            intermediate = (ColumnSource<Long>) sourceColumnSource;
+            toLong = s -> (ColumnSource<Long>) sourceColumnSource;
         } else {
             throw new IllegalArgumentException("Source column " + sourceName + " (Class="
                     + sourceColumnSource.getClass() + ") - cannot be reinterpreted as " + destDataType);
@@ -251,15 +257,15 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
         // Otherwise we'll have to go from long back to a wrapped typed source.
         if (destDataType == Long.class || destDataType == long.class) {
-            return checkResult.apply(intermediate);
+            return checkResult.apply(toLong.apply(sourceColumnSource));
         } else if (destDataType == ZonedDateTime.class) {
-            return checkResult.apply(new LongAsZonedDateTimeColumnSource(intermediate, zone));
+            return checkResult.apply(new LongAsZonedDateTimeColumnSource(toLong.apply(sourceColumnSource), zone));
         } else if (destDataType == Instant.class) {
-            return checkResult.apply(new LongAsInstantColumnSource(intermediate));
+            return checkResult.apply(new LongAsInstantColumnSource(toLong.apply(sourceColumnSource)));
         } else if (destDataType == LocalDate.class) {
-            return checkResult.apply(new LongAsLocalDateColumnSource(intermediate, zone));
+            return checkResult.apply(new LongAsLocalDateColumnSource(toLong.apply(sourceColumnSource), zone));
         } else if (destDataType == LocalTime.class) {
-            return checkResult.apply(new LongAsLocalTimeColumnSource(intermediate, zone));
+            return checkResult.apply(new LongAsLocalTimeColumnSource(toLong.apply(sourceColumnSource), zone));
         }
 
         throw new IllegalArgumentException("Source column " + sourceName + " (Class=" + sourceColumnSource.getClass()

@@ -1413,12 +1413,12 @@ public class LongSparseArraySource extends SparseArrayColumnSource<Long>
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(this, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(this, zone);
     }
 
     @Override
