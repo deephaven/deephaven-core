@@ -14,9 +14,9 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
+from deephaven.update_graph import UpdateGraph
 
 _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
-_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
 
 
 class ExecutionContext(JObjectWrapper, ContextDecorator):
@@ -38,8 +38,8 @@ class ExecutionContext(JObjectWrapper, ContextDecorator):
         return self.j_exec_ctx
 
     @property
-    def update_graph(self) -> _JUpdateGraph:
-        return self.j_exec_ctx.getUpdateGraph()
+    def update_graph(self) -> UpdateGraph:
+        return UpdateGraph(j_update_graph=self.j_exec_ctx.getUpdateGraph())
 
     def __init__(self, j_exec_ctx):
         self.j_exec_ctx = j_exec_ctx
@@ -92,4 +92,3 @@ def get_exec_ctx() -> ExecutionContext:
         a ExecutionContext
     """
     return ExecutionContext(j_exec_ctx=_JExecutionContext.getContext())
-

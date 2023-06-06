@@ -20,12 +20,12 @@ from deephaven.column import Column
 from deephaven.jcompat import to_sequence
 from deephaven.numpy import column_to_numpy_array
 from deephaven.table import Table
+from deephaven.update_graph import UpdateGraph
 
 _JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
-_JUpdateGraph = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraph")
 
 
 def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
@@ -238,14 +238,14 @@ class TableUpdate(JObjectWrapper):
         return list(cols) if cols else []
 
 
-def _do_locked(ug: Union[_JUpdateGraph, Table], f: Callable, lock_type="shared") -> None:
+def _do_locked(ug: Union[UpdateGraph, Table], f: Callable, lock_type="shared") -> None:
     """Executes a function while holding the UpdateGraph (UG) lock.  Holding the UG lock
     ensures that the contents of a table will not change during a computation, but holding
     the lock also prevents table updates from happening.  The lock should be held for as little
     time as possible.
 
     Args:
-        ug (Union[_JUpdateGraph, Table]): The Update Graph (UG) or a table-like object.
+        ug (Union[UpdateGraph, Table]): The Update Graph (UG) or a table-like object.
         f (Callable): callable to execute while holding the UG lock, could be function or an object with an 'apply'
             attribute which is callable
         lock_type (str): UG lock type, valid values are "exclusive" and "shared".  "exclusive" allows only a single
