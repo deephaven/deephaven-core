@@ -104,15 +104,15 @@ Client <- R6Class("Client",
             }
         },
 
-        rbr_to_dh_table = function(rbr) {
+        rbr_to_dh_table = function(rbr, num_rows) {
             ptr = private$internal_client$new_arrow_array_stream_ptr()
             rbr$export_to_c(ptr)
-            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr))
+            return(private$internal_client$new_table_from_arrow_array_stream_ptr(ptr, num_rows))
         },
 
         arrow_to_dh_table = function(arrow_tbl) {
             rbr = as_record_batch_reader(arrow_tbl)
-            return(private$rbr_to_dh_table(rbr))
+            return(private$rbr_to_dh_table(rbr, dim(arrow_tbl)[1]))
         },
 
         tibble_to_dh_table = function(tibbl) {
