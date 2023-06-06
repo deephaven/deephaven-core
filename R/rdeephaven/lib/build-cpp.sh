@@ -13,7 +13,13 @@ chmod +x ./build-dependencies.sh
 cd $SCRIPT_DIR
 
 # Next, we download, build, and install the Deephaven C++ client
-svn checkout https://github.com/deephaven/deephaven-core/trunk/cpp-client
+git init
+git remote add origin https://github.com/deephaven/deephaven-core.git
+git config core.sparseCheckout true
+git sparse-checkout init
+git sparse-checkout set /cpp-client
+git pull origin main
+
 cd cpp-client/deephaven
 mkdir build && cd build
 
