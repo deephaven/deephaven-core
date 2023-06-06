@@ -187,16 +187,21 @@ public class ReinterpretUtils {
             return instantToLongSource((ColumnSource<Instant>) source);
         }
         if (source.getType() == ZonedDateTime.class) {
-            return zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) source);
+            // We require this to be symmetrical with convertToOriginalType. This means we must restrict conversion to
+            // sources where we can find the time zone when we need to convert back.
+            // TODO (https://github.com/deephaven/deephaven-core/issues/3455): Do better with richer types
+            if (source instanceof ConvertibleTimeSource.Zoned) {
+                return zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) source);
+            }
         }
         return source;
     }
 
     /**
-     * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
+     * If {@code source} is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
-     * @param source The source to convert
-     * @return if possible, the source converted to a writable primitive, otherwise the source
+     * @param source the source to convert
+     * @return if possible, {@code source} converted to a writable primitive, otherwise {@code source}
      */
     @SuppressWarnings("unchecked")
     @NotNull
@@ -250,39 +255,51 @@ public class ReinterpretUtils {
     }
 
     /**
-     * Reinterpret or box {@link ColumnSource} back to its original type.
+     * Reinterpret or box {@code sourceToConvert} back to its original type.
      *
-     * @param originalType The type to convert to
-     * @param source The source to convert
-     * @return reinterpret or box source back to the original type if possible
+     * @param originalSource The source that was reinterpreted to produce {@code sourceToConvert}, or a similarly-typed
+     *        source for type information
+     * @param sourceToConvert The source to convert
+     * @return reinterpret or box {@code sourceToConvert} back to the original type if possible
      * @throws UnsupportedOperationException for unsupported conversions
      */
     @NotNull
-    public static ColumnSource<?> convertToOriginal(
-            @NotNull final Class<?> originalType,
-            @NotNull final ColumnSource<?> source) {
+    public static ColumnSource<?> convertToOriginalType(
+            @NotNull final ColumnSource<?> originalSource,
+            @NotNull final ColumnSource<?> sourceToConvert) {
 
+        final Class<?> originalType = originalSource.getType();
         final Consumer<Class<?>> validateSourceType = expectedType -> {
-            if (source.getType() != expectedType) {
-                throw new UnsupportedOperationException(
-                        "Cannot convert column of type " + source.getType() + " to " + originalType);
+            if (sourceToConvert.getType() != expectedType) {
+                throw new UnsupportedOperationException(String.format(
+                        "Cannot convert column of type %s to %s", sourceToConvert.getType(), originalType));
             }
         };
 
         if (originalType == Boolean.class) {
             validateSourceType.accept(byte.class);
             // noinspection unchecked
-            return source.allowsReinterpret(Boolean.class)
-                    ? source.reinterpret(Boolean.class)
-                    : new BoxedColumnSource.OfBoolean((ColumnSource<Byte>) source);
+            return booleanToByteSource((ColumnSource<Boolean>) sourceToConvert);
         }
+
         if (originalType == Instant.class) {
             validateSourceType.accept(long.class);
             // noinspection unchecked
-            return source.allowsReinterpret(Instant.class)
-                    ? source.reinterpret(Instant.class)
-                    : new BoxedColumnSource.OfInstant((ColumnSource<Long>) source);
+            return longToInstantSource((ColumnSource<Long>) sourceToConvert);
         }
-        throw new UnsupportedOperationException("Unsupported original type " + originalType);
+
+        if (originalType == ZonedDateTime.class) {
+            validateSourceType.accept(long.class);
+            if (originalSource instanceof ConvertibleTimeSource.Zoned) {
+                final ConvertibleTimeSource.Zoned zonedOriginal = (ConvertibleTimeSource.Zoned) originalSource;
+                // noinspection unchecked
+                return longToZonedDateTimeSource((ColumnSource<Long>) sourceToConvert, zonedOriginal.getZone());
+            }
+            throw new UnsupportedOperationException(String.format(
+                    "Unsupported original source class %s for converting long to ZonedDateTime",
+                    originalSource.getClass()));
+        }
+
+        throw new UnsupportedOperationException((String.format("Unsupported original type %s", originalType));
     }
 }
