@@ -9,7 +9,7 @@ from pyarrow import csv
 
 from pydeephaven import DHError
 from pydeephaven import SortDirection
-from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition, median, unique, count_distinct, distinct
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -293,6 +293,35 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table).drop_columns(["e"])
         self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
+
+    def test_agg_with_options(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table).update(["b = a % 10 > 5 ? null : b", "c = c % 10"])
+        aggs = [
+            median(cols=["ma = a", "mb = b"], average_evenly_divided=False),
+            pct(0.20, cols=["pa = a", "pb = b"], average_evenly_divided=True),
+            unique(cols=["ua = a", "ub = b"], include_nulls=True, non_unique_sentinel=-1),
+            count_distinct(cols=["csa = a", "csb = b"], count_nulls=True),
+            distinct(cols=["da = a", "db = b"], include_nulls=True),
+            ]
+        rt = test_table.agg_by(aggs=aggs, by=["c"])
+        self.assertEqual(rt.size, test_table.select_distinct(["c"]).size)
+
+        aggs_default = [
+            median(cols=["ma = a", "mb = b"]),
+            pct(0.20, cols=["pa = a", "pb = b"]),
+            unique(cols=["ua = a", "ub = b"]),
+            count_distinct(cols=["csa = a", "csb = b"]),
+            distinct(cols=["da = a", "db = b"]),
+        ]
+
+        for agg_option, agg_default in zip(aggs, aggs_default):
+            with self.subTest(agg_option):
+                rt_option = test_table.agg_by(aggs=agg_option, by=["c"])
+                rt_default = test_table.agg_by(aggs=agg_default, by=["c"])
+                pa_table1 = rt_option.to_arrow()
+                pa_table2 = rt_default.to_arrow()
+                self.assertNotEqual(pa_table2, pa_table1)
 
 
 if __name__ == '__main__':
