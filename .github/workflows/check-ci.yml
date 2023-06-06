@@ -51,19 +51,14 @@ jobs:
           name: check-ci-results
           path: |
             **/build/test-results/**
-            !**/build/test-results/**/binary/**
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: check-ci-reports
-          path: '**/build/reports/tests/**'
+            **/build/reports/tests/**
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: check-ci-jvm-err
-          path: '**/*_pid*.log'
+          path: |
+            **/*_pid*.log
+            **/core.*
           if-no-files-found: ignore
