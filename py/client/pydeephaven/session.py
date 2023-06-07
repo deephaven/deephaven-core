@@ -88,7 +88,7 @@ class Session:
     """
 
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
-                 never_timeout: bool = True, session_type: str = 'python'):
+                 never_timeout: bool = True, session_type: str = 'python', pem: bytes = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -102,6 +102,8 @@ class Session:
                 authenticator, it must conform to the specific requirement of the authenticator
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
+            pem (bytes, optional): PEM encoded certificate to use for TLS connection. If not None implies use a TLS
+                 connection. Defaults to None
 
         Raises:
             DHError
@@ -117,6 +119,8 @@ class Session:
         self.port = port
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
+
+        self.pem = pem
 
         self.is_connected = False
 
@@ -240,8 +244,17 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                self._flight_client = paflight.connect(location=(self.host, self.port), middleware=[
-                    _DhClientAuthMiddlewareFactory(self)])
+                if self.pem is None:
+                    self._flight_client = paflight.FlightClient(
+                        location=(self.host, self.port),
+                        middleware=[_DhClientAuthMiddlewareFactory(self)]
+                    )
+                else:
+                    self._flight_client = paflight.FlightClient(
+                        location=f"grpc+tls://{self.host}:{self.port}",
+                        middleware=[_DhClientAuthMiddlewareFactory(self)],
+                        tls_root_certs = pem
+                    )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
             except Exception as e:

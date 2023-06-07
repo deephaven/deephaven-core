@@ -97,7 +97,7 @@ class Server : public std::enable_shared_from_this<Server> {
   typedef SFCallback<ExportedTableCreationResponse> EtcCallback;
 
 public:
-  static std::shared_ptr<Server> createFromTarget(const std::string &target, const std::string &authorizationValue);
+  static std::shared_ptr<Server> createFromTarget(const std::string &target, const std::string &authorizationValue, const std::string pem = "");
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,

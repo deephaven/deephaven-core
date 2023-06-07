@@ -75,7 +75,11 @@ const char *timeoutKey = "http.session.durationMs";
 const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
-std::shared_ptr<Server> Server::createFromTarget(const std::string &target, const std::string &authorizationValue) {
+std::shared_ptr<Server> Server::createFromTarget(
+      const std::string &target,
+      const std::string &authorizationValue,
+      const std::string pem
+) {
   auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
@@ -84,7 +88,7 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
   auto cfs = ConfigService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = "grpc://" + target;
+  auto flightTarget = ((pem == "") ? "grpc://" : "grpc+tls://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
@@ -93,8 +97,13 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target, cons
     throw std::runtime_error(message);
   }
 
+  arrow::flight::FlightClientOptions options = arrow::flight::FlightClientOptions::Defaults();
+  if (pem != "") {
+    options.tls_root_certs = pem;
+  }
+
   std::unique_ptr<arrow::flight::FlightClient> fc;
-  auto rc2 = arrow::flight::FlightClient::Connect(location, &fc);
+  auto rc2 = arrow::flight::FlightClient::Connect(location, options, &fc);
   if (!rc2.ok()) {
     auto message = stringf("FlightClient::Connect() failed, error = %o", rc2.ToString());
     throw std::runtime_error(message);
