@@ -4,7 +4,9 @@
 package io.deephaven.stats;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.net.CommBase;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.formatters.ISO8601;
 import io.deephaven.base.stats.*;
 import io.deephaven.base.text.TimestampBuffer;
@@ -69,6 +71,7 @@ public class StatsDriver extends TimedJob {
     private final Clock clock;
     private final StatsIntradayLogger intraday;
     private final Value clockValue;
+    private final ExecutionContext executionContext;
 
     private final StatsMemoryCollector memStats;
     private final StatsCPUCollector cpuStats;
@@ -159,6 +162,8 @@ public class StatsDriver extends TimedJob {
         if (Configuration.getInstance().getBoolean("statsdriver.enabled")) {
             schedule();
         }
+
+        executionContext = ExecutionContext.getContext();
     }
 
     public void timedOut() {
@@ -181,7 +186,9 @@ public class StatsDriver extends TimedJob {
         }
 
         if (this.entries == null) {
-            Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            try (final SafeCloseable ignored = executionContext.open()) {
+                Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            }
         } else {
             for (int i = 0; i < History.INTERVALS.length; ++i) {
                 entries[i] = entryPool.take().start(sink, LogLevel.INFO, now * 1000);
@@ -189,7 +196,9 @@ public class StatsDriver extends TimedJob {
                     entriesHisto[i] = entryPoolHisto.take().start(sinkHisto, LogLevel.INFO, now * 1000);
                 }
             }
-            Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            try (final SafeCloseable ignored = executionContext.open()) {
+                Stats.update(LISTENER, now, appNow, REPORT_INTERVAL);
+            }
             for (int i = 0; i < History.INTERVALS.length; ++i) {
                 entries[i].end();
                 if (entriesHisto != null) {
