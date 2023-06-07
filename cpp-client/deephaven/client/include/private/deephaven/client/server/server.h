@@ -101,7 +101,8 @@ public:
       const std::string &target,
       const std::string &authorizationValue,
       bool use_tls = false,
-      const std::string &pem = "");
+      const std::string &pem = "",
+      const std::string &target_name_override = "");
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,

@@ -75,22 +75,48 @@ const char *timeoutKey = "http.session.durationMs";
 const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
+namespace {
+std::shared_ptr<grpc::ChannelCredentials> get_credentials(const bool use_tls, const std::string &pem) {
+  if (!use_tls) {
+    return grpc::InsecureChannelCredentials();
+  }
+  grpc::SslCredentialsOptions options;
+  if (pem != "") {
+    options.pem_root_certs = pem;
+  }
+  return grpc::SslCredentials(options);
+}
+}  // namespace
+
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const std::string &authorizationValue,
       const bool use_tls,
-      const std::string &pem
+      const std::string &pem,
+      const std::string &target_name_override
 ) {
-  auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
+  if (!use_tls && pem != "") {
+    throw std::runtime_error(
+        "Server::createFromTarget: use_tls is false but pem provided");
+  }
+
+  if (!use_tls && target_name_override != "") {
+    throw std::runtime_error(
+       "Server::createFromTarget: use_tls is false but target_name_override provided");
+  }
+
+  grpc::ChannelArguments channel_args;
+  if (target_name_override != "") {
+    channel_args.SetSslTargetNameOverride(target_name_override);
+  }
+
+  auto channel = grpc::CreateCustomChannel(
+      target, get_credentials(use_tls, pem), channel_args);
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
   auto ts = TableService::NewStub(channel);
   auto cfs = ConfigService::NewStub(channel);
-
-  if (!use_tls && pem != "") {
-    throw std::runtime_error("Server::createFromTarget: use_tls is false but pem provided");
-  }
 
   // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = ((use_tls) ? "grpc+tls://" : "grpc://") + target;
