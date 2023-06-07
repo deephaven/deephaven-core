@@ -100,7 +100,7 @@ public:
   static std::shared_ptr<Server> createFromTarget(
       const std::string &target,
       const std::string &authorizationValue,
-      bool use_ssl = false,
+      bool use_tls = false,
       const std::string &pem = "");
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;

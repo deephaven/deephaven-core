@@ -78,7 +78,7 @@ const size_t handshakeResendIntervalMillis = 5 * 1000;
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const std::string &authorizationValue,
-      const bool use_ssl,
+      const bool use_tls,
       const std::string &pem
 ) {
   auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
@@ -88,12 +88,12 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto ts = TableService::NewStub(channel);
   auto cfs = ConfigService::NewStub(channel);
 
-  if (!use_ssl && pem != "") {
-    throw std::runtime_error("Server::createFromTarget: use_ssl is false but pem provided");
+  if (!use_tls && pem != "") {
+    throw std::runtime_error("Server::createFromTarget: use_tls is false but pem provided");
   }
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = ((use_ssl) ? "grpc+tls://" : "grpc://") + target;
+  auto flightTarget = ((use_tls) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
