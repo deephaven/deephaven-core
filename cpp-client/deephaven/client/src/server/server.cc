@@ -78,7 +78,8 @@ const size_t handshakeResendIntervalMillis = 5 * 1000;
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
       const std::string &authorizationValue,
-      const std::string pem
+      const bool use_ssl,
+      const std::string &pem
 ) {
   auto channel = grpc::CreateChannel(target, grpc::InsecureChannelCredentials());
   auto as = ApplicationService::NewStub(channel);
@@ -88,7 +89,7 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto cfs = ConfigService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = ((pem == "") ? "grpc://" : "grpc+tls://") + target;
+  auto flightTarget = ((use_ssl) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);

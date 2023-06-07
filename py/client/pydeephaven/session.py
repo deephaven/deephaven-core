@@ -88,7 +88,7 @@ class Session:
     """
 
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
-                 never_timeout: bool = True, session_type: str = 'python', pem: bytes = None):
+                 never_timeout: bool = True, session_type: str = 'python', use_ssl: bool = False, pem: bytes = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -102,8 +102,9 @@ class Session:
                 authenticator, it must conform to the specific requirement of the authenticator
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
+            use_ssl (bool, optional): if True, use an SSL connection.  Defaults to None
             pem (bytes, optional): PEM encoded certificate to use for TLS connection. If not None implies use a TLS
-                 connection. Defaults to None
+                 connection and the use_ssl argument should have been passed as True. Defaults to None
 
         Raises:
             DHError
@@ -120,7 +121,11 @@ class Session:
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
+        self.use_ssl = use_ssl
         self.pem = pem
+        if self.pem is not None and not self.use_ssl:
+            raise DHError("use_ssl is false but pem is not None")
+
 
         self.is_connected = False
 
@@ -244,16 +249,16 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                if self.pem is None:
-                    self._flight_client = paflight.FlightClient(
-                        location=(self.host, self.port),
-                        middleware=[_DhClientAuthMiddlewareFactory(self)]
-                    )
-                else:
+                if self.use_ssl:
                     self._flight_client = paflight.FlightClient(
                         location=f"grpc+tls://{self.host}:{self.port}",
                         middleware=[_DhClientAuthMiddlewareFactory(self)],
                         tls_root_certs = pem
+                    )
+                else:
+                    self._flight_client = paflight.FlightClient(
+                        location=(self.host, self.port),
+                        middleware=[_DhClientAuthMiddlewareFactory(self)]
                     )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
