@@ -197,10 +197,6 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
             return (ColumnSource<D>) result;
         };
 
-        if (sourceDataType == destDataType) {
-            return checkResult.apply(sourceColumnSource);
-        }
-
         if (sourceColumnSource.allowsReinterpret(destDataType)) {
             return checkResult.apply(sourceColumnSource.reinterpret(destDataType));
         }
