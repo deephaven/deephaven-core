@@ -88,6 +88,10 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto ts = TableService::NewStub(channel);
   auto cfs = ConfigService::NewStub(channel);
 
+  if (!use_ssl && pem != "") {
+    throw std::runtime_error("Server::createFromTarget: use_ssl is false but pem provided");
+  }
+
   // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = ((use_ssl) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
