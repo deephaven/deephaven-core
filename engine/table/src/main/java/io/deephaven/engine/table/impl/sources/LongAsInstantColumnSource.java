@@ -11,7 +11,8 @@ import java.time.Instant;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@code long} to {@link Instant} values.
  */
-public class LongAsInstantColumnSource extends BoxedLongAsTimeSource<Instant> {
+public class LongAsInstantColumnSource extends LongAsTimeSource<Instant> {
+
     public LongAsInstantColumnSource(ColumnSource<Long> alternateColumnSource) {
         super(Instant.class, alternateColumnSource);
     }
@@ -19,5 +20,10 @@ public class LongAsInstantColumnSource extends BoxedLongAsTimeSource<Instant> {
     @Override
     protected Instant makeValue(long val) {
         return DateTimeUtils.epochNanosToInstant(val);
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return this;
     }
 }

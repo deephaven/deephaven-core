@@ -122,8 +122,8 @@ public class ReplicateRegionsAndRegionedSources {
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
         lines = addImport(lines,
                 "import io.deephaven.engine.table.ColumnSource;",
-                "import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;",
-                "import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;",
+                "import io.deephaven.engine.table.impl.sources.LongAsLocalDateColumnSource;",
+                "import io.deephaven.engine.table.impl.sources.LongAsLocalTimeColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;");
         lines = addImport(lines, Instant.class, ZonedDateTime.class, LocalDate.class, LocalTime.class, ZoneId.class);
         lines = globalReplacements(lines, "/\\*\\s+MIXIN_INTERFACES\\s+\\*/", ", ConvertibleTimeSource");
@@ -165,12 +165,12 @@ public class ReplicateRegionsAndRegionedSources {
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {",
-                "        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalTimeColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",
                 "    public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {",
-                "        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);",
+                "        return new LongAsLocalDateColumnSource(this, zone);",
                 "    }",
                 "",
                 "    @Override",

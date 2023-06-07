@@ -61,7 +61,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
 
             // Re-interpret back to the original type
             final ColumnSource<?> output =
-                    source == original ? ring : ReinterpretUtils.convertToOriginal(original.getType(), ring);
+                    source == original ? ring : ReinterpretUtils.convertToOriginalType(original, ring);
 
             sources[ix] = source;
             sourceHasUnboundedFillContexts[ix] = sourceSupportsUnboundedFill;

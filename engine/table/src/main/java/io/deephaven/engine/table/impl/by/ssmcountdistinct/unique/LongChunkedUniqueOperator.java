@@ -10,7 +10,7 @@ package io.deephaven.engine.table.impl.by.ssmcountdistinct.unique;
 
 import java.time.Instant;
 
-import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;
 
 import io.deephaven.engine.context.ExecutionContext;
@@ -79,7 +79,7 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
         // endregion ResultCreation
         // region ResultAssignment
         if(type == Instant.class) {
-            externalResult = new BoxedColumnSource.OfInstant(internalResult);
+            externalResult = new LongAsInstantColumnSource(internalResult);
         } else {
             externalResult = internalResult;
         }
