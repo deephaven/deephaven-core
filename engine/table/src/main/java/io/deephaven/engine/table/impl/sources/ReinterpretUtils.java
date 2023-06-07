@@ -279,7 +279,7 @@ public class ReinterpretUtils {
         if (originalType == Boolean.class) {
             validateSourceType.accept(byte.class);
             // noinspection unchecked
-            return booleanToByteSource((ColumnSource<Boolean>) sourceToConvert);
+            return byteToBooleanSource((ColumnSource<Byte>) sourceToConvert);
         }
 
         if (originalType == Instant.class) {
