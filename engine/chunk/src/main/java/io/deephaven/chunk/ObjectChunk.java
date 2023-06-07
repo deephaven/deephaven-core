@@ -158,7 +158,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
      *
      * @param key The key to search for
      * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
-     *         {@link Arrays#binarySearch(Object[], Object)}
+     *         {@link Arrays#binarySearch}
      */
     public final int binarySearch(final Object key) {
         return Arrays.binarySearch(data, offset, offset + size, key);
@@ -175,7 +175,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
      * @param toIndexExclusive The index after the last index to be searched
      * @param key The key to search for
      * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
-     *         {@link Arrays#binarySearch(Object[], int, int, Object)}
+     *         {@link Arrays#binarySearch(T[], int, int, Object)}
      */
     public final int binarySearch(final int fromIndexInclusive, final int toIndexExclusive, final Object key) {
         return Arrays.binarySearch(data, offset + fromIndexInclusive, offset + toIndexExclusive, key);

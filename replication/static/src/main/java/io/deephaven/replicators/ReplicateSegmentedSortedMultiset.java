@@ -83,7 +83,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
-                "    externalResult = new BoxedColumnSource.OfInstant(internalResult);");
+                "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
@@ -111,7 +111,7 @@ public class ReplicateSegmentedSortedMultiset {
         fixupLongKernelOperator(
                 charToLong(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
-                "    externalResult = new BoxedColumnSource.OfInstant(internalResult);");
+                "    externalResult = new LongAsInstantColumnSource(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
@@ -122,7 +122,7 @@ public class ReplicateSegmentedSortedMultiset {
         final File longFile = new File(longPath);
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
         lines = addImport(lines,
-                "import io.deephaven.engine.table.impl.sources.BoxedColumnSource;",
+                "import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;",
                 "import io.deephaven.engine.table.impl.by.ssmcountdistinct.InstantSsmSourceWrapper;");
         lines = addImport(lines, Instant.class);
         lines = replaceRegion(lines, "Constructor",

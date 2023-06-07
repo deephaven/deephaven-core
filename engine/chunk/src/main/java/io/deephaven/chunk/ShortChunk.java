@@ -179,7 +179,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
      *
      * @param key The key to search for
      * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
-     *         {@link Arrays#binarySearch(short[], short)}
+     *         {@link Arrays#binarySearch}
      */
     public final int binarySearch(final short key) {
         return Arrays.binarySearch(data, offset, offset + size, key);
