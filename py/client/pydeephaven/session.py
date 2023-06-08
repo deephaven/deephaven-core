@@ -390,7 +390,7 @@ class Session:
 
         Args:
             period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
-            start_time (int, optional): the start time for the time table in nano seconds, default is None (meaning now)
+            start_time (int): the start time for the time table in nano seconds, default is None (meaning now)
 
         Returns:
             a Table object
