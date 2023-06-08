@@ -606,14 +606,14 @@ public class TotalsTableBuilder {
 
         final Set<AggType> defaultOperations = EnumSet.of(builder.defaultOperation);
         final Map<AggType, List<String>> columnsByType = new LinkedHashMap<>();
-        for (final Map.Entry<String, ? extends ColumnSource> entry : source.getColumnSourceMap().entrySet()) {
+        for (final Map.Entry<String, ? extends ColumnSource<?>> entry : source.getColumnSourceMap().entrySet()) {
             final String columnName = entry.getKey();
             if (ColumnFormatting.isFormattingColumn(columnName)) {
                 continue;
             }
 
             final Set<AggType> operations = builder.operationMap.getOrDefault(columnName, defaultOperations);
-            final Class type = entry.getValue().getType();
+            final Class<?> type = entry.getValue().getType();
 
             for (final AggType op : operations) {
                 if (operationApplies(type, op)) {

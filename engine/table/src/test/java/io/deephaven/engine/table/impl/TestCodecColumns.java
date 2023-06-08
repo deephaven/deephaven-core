@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.parquet.table.BigIntegerParquetBytesCodec;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -16,6 +16,8 @@ import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.codec.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -75,20 +77,28 @@ public class TestCodecColumns {
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION,
             VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S);
 
-    private static final Table TABLE = TableTools.newTable(TABLE_DEFINITION,
-            TableTools.col("VWBA", new byte[] {0, 1, 2}, null, new byte[] {3, 4, 5, 6}),
-            TableTools.col("VWCD", null, new ArrayTuple(0, 2, 4, 6), new ArrayTuple(1, 3, 5, 7)),
-            TableTools.col("FWBA", new byte[] {7, 8, 9, 10, 11, 12, 13, 14, 15},
-                    new byte[] {16, 17, 18, 19, 20, 21, 22, 23, 24}, new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0}),
-            TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null),
-            TableTools.col("VWBIS", BigInteger.valueOf(94), null, BigInteger.valueOf(111111111111112L)));
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
+    private Table table;
+
+    @Before
+    public void setUp() {
+        table = TableTools.newTable(TABLE_DEFINITION,
+                TableTools.col("VWBA", new byte[] {0, 1, 2}, null, new byte[] {3, 4, 5, 6}),
+                TableTools.col("VWCD", null, new ArrayTuple(0, 2, 4, 6), new ArrayTuple(1, 3, 5, 7)),
+                TableTools.col("FWBA", new byte[] {7, 8, 9, 10, 11, 12, 13, 14, 15},
+                        new byte[] {16, 17, 18, 19, 20, 21, 22, 23, 24}, new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0}),
+                TableTools.col("VWBI", BigInteger.valueOf(91), BigInteger.valueOf(111111111111111L), null),
+                TableTools.col("VWBIS", BigInteger.valueOf(94), null, BigInteger.valueOf(111111111111112L)));
+    }
 
     @Test
     public void doColumnsTest() throws IOException {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         final File dest = new File(dir, "Test.parquet");
         try {
-            ParquetTools.writeTable(TABLE, dest, TABLE.getDefinition(), writeInstructions);
+            ParquetTools.writeTable(table, dest, table.getDefinition(), writeInstructions);
             final MutableObject<ParquetInstructions> instructionsOut = new MutableObject<>();
             final Table result =
                     ParquetTools.readParquetSchemaAndTable(dest, ParquetInstructions.EMPTY, instructionsOut);
@@ -97,7 +107,7 @@ public class TestCodecColumns {
             final ParquetInstructions readInstructions = instructionsOut.getValue();
             TestCase.assertTrue(
                     ParquetInstructions.sameColumnNamesAndCodecMappings(expectedReadInstructions, readInstructions));
-            TstUtils.assertTableEquals(TABLE, result);
+            TstUtils.assertTableEquals(table, result);
         } finally {
             FileUtils.deleteRecursively(dir);
         }

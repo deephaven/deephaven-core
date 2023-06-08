@@ -7,7 +7,7 @@ def demo_app(app: ApplicationState):
   print("Running Strict App Demo.")
   size = 42
   app.setField("hello", TableTools.emptyTable(size))
-  app.setField("world", TableTools.timeTable("00:00:01"))
+  app.setField("world", TableTools.timeTable("PT00:00:01"))
 
 def initialize(func: Callable[[ApplicationState], None]):
   app = jpy.get_type("io.deephaven.appmode.ApplicationContext").get()
@@ -20,7 +20,7 @@ def demo_implicit():
   print("Running Implicit Demo.")
   size_imp = 42
   global hello_imp; hello_imp = TableTools.emptyTable(size_imp)
-  global world_imp; world_imp = TableTools.timeTable("00:00:01")
+  global world_imp; world_imp = TableTools.timeTable("PT00:00:01")
 
 def initialize_implicitly(func: Callable[[], None]):
   app = jpy.get_type("io.deephaven.appmode.ApplicationContext").get()

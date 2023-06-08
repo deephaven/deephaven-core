@@ -4,7 +4,6 @@ UpdatePerformanceTracker.reportIntervalMillis=60000
 measurement.per_thread_cpu=false
 allocation.stats.enabled=false
 statsdriver.enabled=true
-UpdateGraphProcessor.checkTableOperations=true
 
 #
 # NIO driver thread pool
@@ -27,6 +26,9 @@ StringUtils.cacheSize=0
 
 TrackedFileHandleFactory.maxOpenFiles=1024
 
+###### Time Zone & Calendars #####
+user.timezone=America/New_York
+timezone.aliases=/default_time_zone_aliases.csv
 Calendar.default=USNYSE
 Calendar.importPath=/default_calendar_imports.txt
 
@@ -37,9 +39,6 @@ QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 GroovyDeephavenSession.initScripts=core/deephaven_core_utils.groovy
 
 PythonDeephavenSession.initScripts=core/deephaven_jpy_init.py
-
-###### Server's timezone #####
-server.timezone=America/New_York
 
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 

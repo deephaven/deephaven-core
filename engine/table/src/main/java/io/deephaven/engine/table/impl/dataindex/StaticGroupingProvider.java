@@ -115,7 +115,7 @@ public class StaticGroupingProvider extends MemoizingGroupingProvider implements
                 new QueryTable(rowSetOfInterest.copy().toTracking(), Collections.singletonMap(keyColumnName, source));
         final Table rowSetTable = input
                 .aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null, ColumnName.from(keyColumnName))
-                .renameColumns(new MatchPair(INDEX_COL_NAME, EXPOSED_GROUP_ROW_SETS.name()));
+                .renameColumns(INDEX_COL_NAME, EXPOSED_GROUP_ROW_SETS.name());
 
         return new StaticGroupingProvider(rowSetTable, keyColumnName);
     }

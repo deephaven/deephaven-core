@@ -6,9 +6,9 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TimeTable;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.util.Exceptions;
@@ -25,17 +25,14 @@ import java.util.List;
 public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
 
     private final Scheduler scheduler;
-    private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject()
     public TimeTableGrpcImpl(
             final TableServiceContextualAuthWiring authWiring,
-            final Scheduler scheduler,
-            final UpdateGraphProcessor updateGraphProcessor) {
+            final Scheduler scheduler) {
         super(authWiring::checkPermissionTimeTable, BatchTableRequest.Operation::getTimeTable,
                 TimeTableRequest::getResultId);
         this.scheduler = scheduler;
-        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -53,7 +50,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 0);
         final long startTime = request.getStartTimeNanos();
         final long periodValue = request.getPeriodNanos();
-        return new TimeTable(updateGraphProcessor, scheduler,
-                startTime <= 0 ? null : DateTimeUtils.nanosToTime(startTime), periodValue, false);
+        return new TimeTable(ExecutionContext.getContext().getUpdateGraph(), scheduler,
+                startTime <= 0 ? null : DateTimeUtils.epochNanosToInstant(startTime), periodValue, false);
     }
 }

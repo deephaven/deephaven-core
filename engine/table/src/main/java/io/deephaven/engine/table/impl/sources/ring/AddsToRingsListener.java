@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.ring;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -60,7 +61,7 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
 
             // Re-interpret back to the original type
             final ColumnSource<?> output =
-                    source == original ? ring : ReinterpretUtils.convertToOriginal(original.getType(), ring);
+                    source == original ? ring : ReinterpretUtils.convertToOriginalType(original, ring);
 
             sources[ix] = source;
             sourceHasUnboundedFillContexts[ix] = sourceSupportsUnboundedFill;
@@ -142,7 +143,8 @@ final class AddsToRingsListener extends BaseTable.ListenerImpl {
                 throw new IllegalArgumentException();
             }
         }
-        prevFlusher = new UpdateCommitter<>(this, AddsToRingsListener::bringPreviousUpToDate);
+        prevFlusher = new UpdateCommitter<>(this, ExecutionContext.getContext().getUpdateGraph(),
+                AddsToRingsListener::bringPreviousUpToDate);
     }
 
     private WritableRowSet resultRowSet() {

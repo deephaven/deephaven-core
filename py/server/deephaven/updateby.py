@@ -108,17 +108,17 @@ class UpdateByOperation(JObjectWrapper):
         return self.j_updateby_op
 
 
-def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def ema_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         ema_next = a * ema_last + (1 - a) * value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -133,27 +133,27 @@ def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMA UpdateByOperation.") from e
 
 
-def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def ema_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         ema_next = a * ema_last + (1 - a) * value
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -166,28 +166,28 @@ def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.Ema(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EMA UpdateByOperation.") from e
 
 
-def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def ems_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         ems_next = a * ems_last + value
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -202,27 +202,27 @@ def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMS UpdateByOperation.") from e
 
 
-def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def ems_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         eems_next = a * ems_last + value
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -235,28 +235,28 @@ def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ems(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.Ems(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EMS UpdateByOperation.") from e
 
 
-def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def emmin_tick(decay_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         em_val_next = min(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -271,27 +271,27 @@ def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Min UpdateByOperation.") from e
 
 
-def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def emmin_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         em_val_next = min(a * em_val_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -304,28 +304,28 @@ def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMin(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMin(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Min UpdateByOperation.") from e
 
 
-def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
+def emmax_tick(decay_ticks: float, cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
     The formula used is
-        a = e^(-1 / time_scale_ticks)
+        a = e^(-1 / decay_ticks)
         em_val_next = max(a * em_val_last, value)
 
     Args:
-        time_scale_ticks (int): the decay rate in ticks
+        decay_ticks (float): the decay rate in ticks
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
@@ -340,28 +340,28 @@ def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
     try:
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(time_scale_ticks, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(decay_ticks, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, time_scale_ticks, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, decay_ticks, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Max UpdateByOperation.") from e
 
 
-def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
+def emmax_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale)
+        a = e^(-dt / decay_time)
         em_val_next = max(a * em_val_last, value)
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
 
-        time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001"
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
@@ -374,15 +374,87 @@ def emmax_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
         cols = to_sequence(cols)
         if op_control is None:
-            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(ts_col, time_scale, *cols))
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmMax(ts_col, decay_time, *cols))
         else:
             return UpdateByOperation(
-                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, ts_col, time_scale, *cols))
+                j_updateby_op=_JUpdateByOperation.EmMax(op_control.j_op_control, ts_col, decay_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a time-decay EM Max UpdateByOperation.") from e
+
+def emstd_tick(decay_ticks: float, cols: Union[str, List[str]],
+             op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
+    ticks as the decay unit.
+
+    The formula used is
+        a = e^(-1 / decay_ticks)
+        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+        ema = a * prevEma + x
+        std = sqrt(variance)
+
+    Args:
+        decay_ticks (float): the decay rate in ticks
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
+        op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(decay_ticks, *cols))
+        else:
+            return UpdateByOperation(
+                j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, decay_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a tick-decay EM Std UpdateByOperation.") from e
+
+
+def emstd_time(ts_col: str, decay_time: Union[int, str], cols: Union[str, List[str]],
+             op_control: OperationControl = None) -> UpdateByOperation:
+    """Creates an EM Std (exponential moving standard deviation) UpdateByOperation for the supplied column names, using
+    time as the decay unit.
+
+    The formula used is
+        a = e^(-dt / timeDecay)
+        variance = a * (prevVariance + (1 − a) * (x − prevEma)^2)
+        ema = a * prevEma + x
+        std = sqrt(variance)
+
+     Args:
+        ts_col (str): the column in the source table to use for timestamps
+        decay_time (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "PT00:00:00.001"
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ems operation on all columns.
+        op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
+            settings as specified in :meth:`~OperationControl.__init__` will be used
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+     """
+    try:
+        decay_time = _JDateTimeUtils.parseDurationNanos(decay_time) if isinstance(decay_time, str) else decay_time
+        cols = to_sequence(cols)
+        if op_control is None:
+            return UpdateByOperation(j_updateby_op=_JUpdateByOperation.EmStd(ts_col, decay_time, *cols))
+        else:
+            return UpdateByOperation(
+                    j_updateby_op=_JUpdateByOperation.EmStd(op_control.j_op_control, ts_col, decay_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a time-decay EM Std UpdateByOperation.") from e
 
 
 def cum_sum(cols: Union[str, List[str]]) -> UpdateByOperation:
@@ -570,15 +642,15 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -586,9 +658,9 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -598,8 +670,8 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingSum(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling sum (time) UpdateByOperation.") from e
@@ -652,15 +724,15 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -668,9 +740,9 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -680,8 +752,8 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingGroup(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling group (time) UpdateByOperation.") from e
@@ -734,15 +806,15 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -750,9 +822,9 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -762,8 +834,8 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingAvg(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling average (time) UpdateByOperation.") from e
@@ -816,15 +888,15 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -832,9 +904,9 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -844,8 +916,8 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMin(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling minimum (time) UpdateByOperation.") from e
@@ -898,15 +970,15 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -914,9 +986,9 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -926,8 +998,8 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMax(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling maximum (time) UpdateByOperation.") from e
@@ -980,15 +1052,15 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
@@ -996,9 +1068,9 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1008,8 +1080,8 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingProduct(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling product (time) UpdateByOperation.") from e
@@ -1062,15 +1134,15 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1078,9 +1150,9 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling count operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1090,8 +1162,8 @@ def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingCount(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling count (time) UpdateByOperation.") from e
@@ -1144,15 +1216,15 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1160,9 +1232,9 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1172,8 +1244,8 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingStd(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling standard deviation (time) UpdateByOperation.") from e
@@ -1229,15 +1301,15 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+        rev_time = "PT00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+        rev_time = "PT00:10:00", fwd_time = "PT00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+        rev_time = "PT00:10:00", fwd_time = "-PT00:05:00" - contains rows from 10m before through 5m before the
             current row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+        rev_time = "-PT00:05:00", fwd_time = "PT00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
 
     Args:
@@ -1246,9 +1318,9 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
         weight_col (str):  the column containing the weight values
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001"
+            interval string, e.g. "PT00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
-            interval string, e.g. "00:00:00.001", default is 0
+            interval string, e.g. "PT00:00:00.001", default is 0
 
     Returns:
         an UpdateByOperation
@@ -1258,8 +1330,8 @@ def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]],
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseDurationNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseDurationNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingWAvg(ts_col, rev_time, fwd_time, weight_col, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (time) UpdateByOperation.") from e

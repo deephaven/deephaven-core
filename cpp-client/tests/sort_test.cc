@@ -69,7 +69,7 @@ TEST_CASE("Sort temp table", "[sort]") {
   maker.addColumn("IntValue3", intData3);
 
   std::string tableName("sortData");
-  auto tempTable = maker.makeTable(tm.client().getManager());
+  auto tempTable = maker.makeTable(tm.client().getManager(), (int64_t)intData0.size(), true);
 
   auto iv0 = tempTable.getNumCol("IntValue0");
   auto iv1 = tempTable.getNumCol("IntValue1");

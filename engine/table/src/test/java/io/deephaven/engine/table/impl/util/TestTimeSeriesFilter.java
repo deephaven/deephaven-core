@@ -3,22 +3,24 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.table.impl.select.TimeSeriesFilter;
+import io.deephaven.time.DateTimeUtils;
 
 import java.lang.ref.WeakReference;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Random;
@@ -28,23 +30,24 @@ import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTimeSeriesFilter extends RefreshingTableTestCase {
     public void testSimple() {
-        DateTime[] times = new DateTime[10];
+        Instant[] times = new Instant[10];
 
         final long startTime = System.currentTimeMillis() - (10 * times.length);
         for (int ii = 0; ii < times.length; ++ii) {
-            times[ii] = new DateTime((startTime + (ii * 1000)) * 1000000L);
+            times[ii] = DateTimeUtils.epochNanosToInstant((startTime + (ii * 1000)) * 1000000L);
         }
 
         Table source = TableTools.newTable(TableTools.col("Timestamp", times));
         TableTools.show(source);
 
-        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "00:00:05");
+        UnitTestTimeSeriesFilter timeSeriesFilter = new UnitTestTimeSeriesFilter(startTime, "Timestamp", "PT00:00:05");
         Table filtered = source.where(timeSeriesFilter);
 
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -52,7 +55,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(10, filtered.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(5000);
             timeSeriesFilter.run();
         });
@@ -60,7 +63,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
         TableTools.show(filtered);
         assertEquals(5, filtered.size());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             timeSeriesFilter.incrementNow(2000);
             timeSeriesFilter.run();
         });
@@ -83,20 +86,19 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
                 new IntGenerator(1, 100)));
 
         final UnitTestTimeSeriesFilter unitTestTimeSeriesFilter =
-                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "01:00:00");
+                new UnitTestTimeSeriesFilter(startDate.getTime(), "Date", "PT01:00:00");
         final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> filtersToRefresh = new ArrayList<>();
 
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         EvalNugget[] en = new EvalNugget[] {
-                new EvalNugget() {
-                    public Table e() {
-                        UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
-                                new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
-                        filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> table.update("Date=new DateTime(Date.getTime() * 1000000L)")
-                                        .where(unitTestTimeSeriesFilter1));
-                    }
-                },
+                EvalNugget.from(() -> {
+                    UnitTestTimeSeriesFilter unitTestTimeSeriesFilter1 =
+                            new UnitTestTimeSeriesFilter(unitTestTimeSeriesFilter);
+                    filtersToRefresh.add(new WeakReference<>(unitTestTimeSeriesFilter1));
+                    return updateGraph.exclusiveLock().computeLocked(
+                            () -> table.update("Date=DateTimeUtils.epochNanosToInstant(Date.getTime() * 1000000L)")
+                                    .where(unitTestTimeSeriesFilter1));
+                }),
         };
 
 
@@ -105,7 +107,7 @@ public class TestTimeSeriesFilter extends RefreshingTableTestCase {
             if (ii % (updatesPerTick + 1) > 0) {
                 simulateShiftAwareStep(size, random, table, columnInfo, en);
             } else {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                updateGraph.runWithinUnitTestCycle(() -> {
                     unitTestTimeSeriesFilter.incrementNow(3600 * 1000);
 
                     final ArrayList<WeakReference<UnitTestTimeSeriesFilter>> collectedRefs = new ArrayList<>();

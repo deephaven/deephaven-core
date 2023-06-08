@@ -7,10 +7,10 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.SafeCloseable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -20,15 +20,10 @@ import java.util.stream.Collectors;
 @Singleton
 public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
 
-    private final UpdateGraphProcessor updateGraphProcessor;
-
     @Inject
-    public UngroupGrpcImpl(
-            final TableServiceContextualAuthWiring authWiring,
-            final UpdateGraphProcessor updateGraphProcessor) {
+    public UngroupGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
         super(authWiring::checkPermissionUngroup, BatchTableRequest.Operation::getUngroup,
                 UngroupRequest::getResultId, UngroupRequest::getSourceId);
-        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -40,7 +35,16 @@ public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
                 .stream()
                 .map(ColumnName::of)
                 .collect(Collectors.toList());
-        return updateGraphProcessor.sharedLock()
-                .computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
+        try (final SafeCloseable ignored = lock(parent)) {
+            return parent.ungroup(request.getNullFill(), columnsToUngroup);
+        }
+    }
+
+    private static SafeCloseable lock(Table base) {
+        if (base.isRefreshing()) {
+            return base.getUpdateGraph().sharedLock().lockCloseable();
+        } else {
+            return null;
+        }
     }
 }

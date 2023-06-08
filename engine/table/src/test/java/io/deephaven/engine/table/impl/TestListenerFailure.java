@@ -3,10 +3,11 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.rowset.RowSet;
@@ -21,12 +22,13 @@ import static io.deephaven.engine.util.TableTools.col;
 public class TestListenerFailure extends RefreshingTableTestCase {
     public void testListenerFailure() {
         final QueryTable source = TstUtils.testRefreshingTable(col("Str", "A", "B"));
-        final Table updated =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
+        final Table updated = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> source.update("UC=Str.toUpperCase()"));
 
         TableTools.showWithRowSet(updated);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -34,7 +36,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertFalse(updated.isFailed());
 
         allowingError(() -> {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
@@ -84,7 +86,8 @@ public class TestListenerFailure extends RefreshingTableTestCase {
 
         TableTools.showWithRowSet(filtered);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), col("Str", "C", "D"));
             source.notifyListeners(i(2, 3), i(), i());
         });
@@ -95,7 +98,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertSame(filtered, filteredAgain);
 
         allowingError(() -> {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            updateGraph.runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(source, i(4, 5), col("Str", "E", null));
                 source.notifyListeners(i(4, 5), i(), i());
             });
@@ -105,7 +108,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         assertTrue(filtered.isFailed());
         assertTrue(filteredAgain.isFailed());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        updateGraph.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(5));
             source.notifyListeners(i(), i(5), i());
         });

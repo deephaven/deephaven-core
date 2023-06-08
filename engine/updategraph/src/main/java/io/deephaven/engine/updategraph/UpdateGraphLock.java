@@ -27,14 +27,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Lock class to support {@link UpdateGraphProcessor}.
+ * Lock class to support {@link UpdateGraph}.
  */
 public abstract class UpdateGraphLock {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateGraphLock.class);
 
     private static final boolean STACK_DUMP_LOCKS =
-            Configuration.getInstance().getBooleanWithDefault("UpdateGraphProcessor.stackDumpLocks", false);
+            Configuration.getInstance().getBooleanWithDefault("UpdateGraphLock.stackDumpLocks", false);
 
     /**
      * Instrumentation interface for recording lock events.
@@ -66,34 +66,34 @@ public abstract class UpdateGraphLock {
     private static Instrumentation instrumentation = new Instrumentation() {};
 
     /**
-     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
+     * Construct a lock for a new {@link UpdateGraph} instance.
      *
-     * @param logicalClock The {@link LogicalClock} instance to use
+     * @param updateGraph The {@link UpdateGraph} instance to use
      * @param allowUnitTestMode Whether this lock instance is to be used for unit tests only
      */
-    public static UpdateGraphLock create(@NotNull final LogicalClock logicalClock, final boolean allowUnitTestMode) {
+    public static UpdateGraphLock create(@NotNull final UpdateGraph updateGraph, final boolean allowUnitTestMode) {
         return allowUnitTestMode
-                ? new ResettableUpdateGraphLock(logicalClock)
-                : new FinalUpdateGraphLock(logicalClock);
+                ? new ResettableUpdateGraphLock(updateGraph)
+                : new FinalUpdateGraphLock(updateGraph);
     }
 
     /**
-     * The {@link LogicalClock} used for instrumentation and assertions.
+     * The {@link UpdateGraph} used for instrumentation and assertions.
      */
-    protected final LogicalClock logicalClock;
+    protected final UpdateGraph updateGraph;
 
     /**
-     * Construct a lock for a new {@link UpdateGraphProcessor} instance.
+     * Construct a lock for a new {@link UpdateGraph} instance.
      *
-     * @param logicalClock The {@link LogicalClock} instance to use
+     * @param updateGraph The {@link UpdateGraph} instance to use
      */
-    UpdateGraphLock(@NotNull final LogicalClock logicalClock) {
-        this.logicalClock = logicalClock;
+    UpdateGraphLock(@NotNull final UpdateGraph updateGraph) {
+        this.updateGraph = updateGraph;
     }
 
     /**
      * Get the shared lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#readLock()}, but with
-     * UGP-specific instrumentation). See {@link UpdateGraphProcessor#sharedLock()} for user-facing documentation.
+     * UGP-specific instrumentation). See {@link UpdateGraph#sharedLock()} for user-facing documentation.
      *
      * @return The shared lock
      */
@@ -101,7 +101,7 @@ public abstract class UpdateGraphLock {
 
     /**
      * Get the exclusive lock (similar to {@link java.util.concurrent.locks.ReadWriteLock#writeLock()} ()}, but with
-     * UGP-specific instrumentation). See {@link UpdateGraphProcessor#exclusiveLock()} for user-facing documentation.
+     * UGP-specific instrumentation). See {@link UpdateGraph#exclusiveLock()} for user-facing documentation.
      *
      * @return The exclusive lock
      */
@@ -127,11 +127,11 @@ public abstract class UpdateGraphLock {
          */
         private final AwareFunctionalLock exclusiveLock;
 
-        private FinalUpdateGraphLock(@NotNull final LogicalClock logicalClock) {
-            super(logicalClock);
+        private FinalUpdateGraphLock(@NotNull final UpdateGraph updateGraph) {
+            super(updateGraph);
             final ReadWriteLockAccessor lockAccessor = new ReentrantReadWriteLockAccessor();
-            this.sharedLock = new SharedLock(lockAccessor);
-            this.exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
+            this.sharedLock = new SharedLock(updateGraph, lockAccessor);
+            this.exclusiveLock = new ExclusiveLock(updateGraph, lockAccessor);
         }
 
         @Override
@@ -172,15 +172,15 @@ public abstract class UpdateGraphLock {
          */
         private volatile AwareFunctionalLock exclusiveLock;
 
-        private ResettableUpdateGraphLock(@NotNull final LogicalClock logicalClock) {
-            super(logicalClock);
+        private ResettableUpdateGraphLock(@NotNull final UpdateGraph updateGraph) {
+            super(updateGraph);
             initialize();
         }
 
         private synchronized void initialize() {
             lockAccessor = new RecordedReadWriteLockAccessor();
-            sharedLock = new SharedLock(lockAccessor);
-            exclusiveLock = new ExclusiveLock(logicalClock, lockAccessor);
+            sharedLock = new SharedLock(updateGraph, lockAccessor);
+            exclusiveLock = new ExclusiveLock(updateGraph, lockAccessor);
         }
 
         @Override
@@ -267,6 +267,11 @@ public abstract class UpdateGraphLock {
     private static class SharedLock implements AwareFunctionalLock {
 
         /**
+         * Logical clock used for correctness checks.
+         */
+        private final UpdateGraph updateGraph;
+
+        /**
          * Accessor for the underlying lock implementation.
          */
         private final ReadWriteLockAccessor lockAccessor;
@@ -276,7 +281,10 @@ public abstract class UpdateGraphLock {
          */
         private final Lock readLock;
 
-        private SharedLock(ReadWriteLockAccessor lockAccessor) {
+        private SharedLock(
+                @NotNull final UpdateGraph updateGraph,
+                @NotNull final ReadWriteLockAccessor lockAccessor) {
+            this.updateGraph = updateGraph;
             this.lockAccessor = lockAccessor;
             this.readLock = lockAccessor.readLock();
         }
@@ -288,9 +296,10 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lock() {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordAction("Acquire UpdateGraphProcessor readLock", () -> {
+                instrumentation.recordAction("Acquire UpdateGraph readLock", () -> {
                     readLock.lock();
                     lockSucceeded.setValue(true);
                 });
@@ -307,9 +316,10 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lockInterruptibly() throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordActionInterruptibly("Acquire UpdateGraphProcessor readLock interruptibly",
+                instrumentation.recordActionInterruptibly("Acquire UpdateGraph readLock interruptibly",
                         () -> {
                             readLock.lockInterruptibly();
                             lockSucceeded.setValue(true);
@@ -327,6 +337,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock() {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             if (readLock.tryLock()) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -336,6 +347,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             if (readLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (shared)");
                 return true;
@@ -365,7 +377,8 @@ public abstract class UpdateGraphLock {
         /**
          * Logical clock used for correctness checks.
          */
-        private final LogicalClock logicalClock;
+        private final UpdateGraph updateGraph;
+
         /**
          * Accessor for the underlying lock implementation.
          */
@@ -377,9 +390,9 @@ public abstract class UpdateGraphLock {
         private final Lock writeLock;
 
         private ExclusiveLock(
-                @NotNull final LogicalClock logicalClock,
+                @NotNull final UpdateGraph updateGraph,
                 @NotNull final ReadWriteLockAccessor lockAccessor) {
-            this.logicalClock = logicalClock;
+            this.updateGraph = updateGraph;
             this.lockAccessor = lockAccessor;
             this.writeLock = lockAccessor.writeLock();
         }
@@ -391,14 +404,15 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lock() {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordAction("Acquire UpdateGraphProcessor writeLock", () -> {
+                instrumentation.recordAction("Acquire UpdateGraph writeLock", () -> {
                     writeLock.lock();
                     lockSucceeded.setValue(true);
                 });
-                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
+                Assert.eq(updateGraph.clock().currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
                 maybeLogStackTrace("locked (exclusive)");
             } catch (Throwable t) {
                 // If the recorder instrumentation causes us to throw an exception after the writeLock was
@@ -412,15 +426,16 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void lockInterruptibly() throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
             final MutableBoolean lockSucceeded = new MutableBoolean(false);
             try {
-                instrumentation.recordActionInterruptibly("Acquire UpdateGraphProcessor writeLock interruptibly",
+                instrumentation.recordActionInterruptibly("Acquire UpdateGraph writeLock interruptibly",
                         () -> {
                             writeLock.lockInterruptibly();
                             lockSucceeded.setValue(true);
                         });
-                Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
+                Assert.eq(updateGraph.clock().currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
                 maybeLogStackTrace("locked (exclusive)");
             } catch (Throwable t) {
                 // If the recorder instrumentation causes us to throw an exception after the writeLock was
@@ -434,6 +449,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock() {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
             if (writeLock.tryLock()) {
                 maybeLogStackTrace("locked (exclusive)");
@@ -444,6 +460,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final boolean tryLock(final long time, @NotNull final TimeUnit unit) throws InterruptedException {
+            checkForIllegalLockFromRefreshThread(updateGraph);
             checkForUpgradeAttempt();
             if (writeLock.tryLock(time, unit)) {
                 maybeLogStackTrace("locked (exclusive)");
@@ -454,7 +471,7 @@ public abstract class UpdateGraphLock {
 
         @Override
         public final void unlock() {
-            Assert.eq(logicalClock.currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
+            Assert.eq(updateGraph.clock().currentState(), "logicalClock.currentState()", LogicalClock.State.Idle);
             writeLock.unlock();
             maybeLogStackTrace("unlocked (exclusive)");
         }
@@ -473,6 +490,50 @@ public abstract class UpdateGraphLock {
     }
 
     // endregion Exclusive Lock Implementation
+
+    // region Lock Safety Validation Helper
+
+    /**
+     * Check for inappropriate locking from an update thread during the updating phase.
+     * <p>
+     * Under normal conditions we expect only the primary (or singular, in single-threaded update graph processors)
+     * refresh thread to acquire either lock, and that that thread always acquires the exclusive lock during the idle
+     * phase in order to begin the updating phase.
+     * <p>
+     * Were a worker refresh thread to attempt to acquire either lock without a timeout during the updating phase, it
+     * would block forever or until interrupted. Trying to lock with a timeout wouldn't block forever, but would
+     * negatively impact the responsiveness of update graph processing. This behavior would &quot;work&quot; for
+     * misbehaving notifications under a single-threaded update graph processor with the current implementation, but
+     * would immediately become broken upon adding additional update threads. We prefer to proactively prevent
+     * notifications from attempting to do this, rather than leave it for users to debug.
+     * <p>
+     * Note that the worker update threads (if there are any) are never active during the idle phase unless processing
+     * terminal notifications that don't require the exclusive lock. Other terminal notifications are processed by the
+     * primary refresh thread under the exclusive lock.
+     * <p>
+     * Two rules follow from this:
+     * <ol>
+     * <li>It is always safe for an update thread to acquire either lock during the idle phase, as long as other rules
+     * are respected (no inversions, no upgrades, and no attempts to wait for the update graph to do work).</li>
+     * <li>It is never safe for an update thread to acquire either lock during the updating phase.</li>
+     * </ol>
+     * <p>
+     * Note that this validation only prevents lock attempts from threads belonging to the same {@link UpdateGraph} as
+     * this UpdateGraphLock. It may be suitable to lock an UpdateGraph from a thread belonging to a different
+     * UpdateGraph if doing so does not introduce any cycles.
+     *
+     * @param updateGraph The update graph to check for {@link UpdateGraph#clock()#currentState() current state}
+     */
+    private static void checkForIllegalLockFromRefreshThread(@NotNull final UpdateGraph updateGraph) {
+        if (updateGraph.clock().currentState() == LogicalClock.State.Updating
+                && updateGraph.currentThreadProcessesUpdates()) {
+            // This exception message assumes the misbehavior is from a notification (e.g. for a user listener), rather
+            // than an internal programming error.
+            throw new UnsupportedOperationException("Non-terminal notifications must not lock the update graph");
+        }
+    }
+
+    // endregion Lock Safety Validation Helper
 
     // region ReadWriteLockAccessor implementations
 
@@ -662,7 +723,7 @@ public abstract class UpdateGraphLock {
 
     private static void maybeLogStackTrace(final String type) {
         if (STACK_DUMP_LOCKS) {
-            log.info().append("Update Graph Processor ").append(new LockDebugException(type)).endl();
+            log.info().append("Update Graph ").append(new LockDebugException(type)).endl();
         }
     }
 

@@ -102,8 +102,8 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Make an entry for a listener, in order to pass it to {@link #add(Object, Entry)}. May be called without holding
-     * any locks.
+     * Make an entry for a listener, in order to pass it to {@link #add(Object, SubscriptionSet.Entry)}. May be called
+     * without holding any locks.
      *
      * @param listener The listener
      * @return A new entry for the listener

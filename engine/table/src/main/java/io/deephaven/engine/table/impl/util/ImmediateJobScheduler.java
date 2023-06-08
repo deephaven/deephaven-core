@@ -18,6 +18,7 @@ public class ImmediateJobScheduler implements JobScheduler {
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
+        // We do not need to install the update context since we are not changing thread contexts.
         try (SafeCloseable ignored = executionContext != null ? executionContext.open() : null) {
             runnable.run();
         } catch (Exception e) {

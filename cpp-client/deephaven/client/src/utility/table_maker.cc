@@ -37,11 +37,11 @@ void TableMaker::finishAddColumn(std::string name, internal::TypeConverter info)
   columns_.push_back(std::move(info.column()));
 }
 
-TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
+TableHandle TableMaker::makeTable(const TableHandleManager &manager, int64_t numRows, bool isStatic) {
   auto schema = valueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder_.Finish()));
 
   auto wrapper = manager.createFlightWrapper();
-  auto thfd = manager.newTableHandleAndFlightDescriptor();
+  auto thfd = manager.newTableHandleAndFlightDescriptor(numRows, isStatic);
 
   arrow::flight::FlightCallOptions options;
   wrapper.addAuthHeaders(&options);

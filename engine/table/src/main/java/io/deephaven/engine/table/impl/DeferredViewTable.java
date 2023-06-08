@@ -72,17 +72,17 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     @Override
-    public Table where(Collection<? extends Filter> filters) {
-        WhereFilter[] whereFilters = WhereFilter.from(filters);
-        for (WhereFilter filter : whereFilters) {
-            filter.init(definition);
+    public Table where(Filter filter) {
+        final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
+        for (WhereFilter f : whereFilters) {
+            f.init(definition);
         }
         return getResultTableWithWhere(whereFilters);
     }
 
     private Table getResultTableWithWhere(WhereFilter... whereFilters) {
         if (getCoalesced() != null) {
-            return coalesce().where(whereFilters);
+            return coalesce().where(Filter.and(whereFilters));
         }
 
         final WhereFilter[] allFilters = Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(whereFilters))
@@ -93,7 +93,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             tableAndRemainingFilters = tableReference.getWithWhere();
             Table result = tableAndRemainingFilters.table;
             result = applyDeferredViews(result);
-            result = result.where(tableAndRemainingFilters.remainingFilters);
+            result = result.where(Filter.and(tableAndRemainingFilters.remainingFilters));
             copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
             setCoalesced(result);
             return result;
@@ -107,12 +107,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             localResult = ((DeferredViewTable) localResult)
                     .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
         } else {
-            localResult = localResult.where(WhereFilter.copyFrom(tableAndRemainingFilters.remainingFilters));
+            localResult =
+                    localResult.where(Filter.and(WhereFilter.copyFrom(tableAndRemainingFilters.remainingFilters)));
         }
 
         localResult = applyDeferredViews(localResult);
         if (preAndPostFilters.postViewFilters.length > 0) {
-            localResult = localResult.where(preAndPostFilters.postViewFilters);
+            localResult = localResult.where(Filter.and(preAndPostFilters.postViewFilters));
         }
         if (whereFilters.length == 0) {
             copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
@@ -129,7 +130,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result.view(SelectColumn.copyFrom(deferredViewColumns));
+            result = result.view(List.of(SelectColumn.copyFrom(deferredViewColumns)));
         }
         return result;
     }
@@ -229,8 +230,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             TableReference.TableAndRemainingFilters tarf =
                     tableReference.getWithWhere(preAndPostFilters.preViewFilters);
             result = tarf.table;
-            result = result.where(tarf.remainingFilters);
-            result = result.where(preAndPostFilters.postViewFilters);
+            result = result.where(Filter.and(tarf.remainingFilters));
+            result = result.where(Filter.and(preAndPostFilters.postViewFilters));
         } else {
             result = tableReference.get();
             result = applyDeferredViews(result);
@@ -288,7 +289,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
-            SelectColumn[] viewColumns, Map<String, Set<String>> columnDependency) {
+            SelectColumn[] viewColumns) {
         DeferredViewTable deferredViewTable = new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 new SimpleTableReference(this), null, viewColumns, null);
         deferredViewTable.setRefreshing(isRefreshing());

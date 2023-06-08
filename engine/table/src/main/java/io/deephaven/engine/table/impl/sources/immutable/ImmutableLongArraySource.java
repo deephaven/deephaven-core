@@ -19,8 +19,6 @@ import java.time.ZoneId;
 
 import io.deephaven.engine.table.ColumnSource;
 
-import io.deephaven.time.DateTime;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -54,7 +52,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class ImmutableLongArraySource extends AbstractColumnSource<Long>
         implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
-        , ConvertableTimeSource {
+        , ConvertibleTimeSource {
     private long[] data;
 
     // region constructor
@@ -432,7 +430,7 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
     // region reinterpretation
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == long.class || alternateDataType == Instant.class || alternateDataType == DateTime.class;
+        return alternateDataType == long.class || alternateDataType == Instant.class;
     }
 
     @SuppressWarnings("unchecked")
@@ -440,8 +438,6 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (alternateDataType == this.getType()) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) this;
-        } else if(alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         } else if (alternateDataType == Instant.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
         }
@@ -461,17 +457,12 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(final @NotNull ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(this, zone);
     }
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(final @NotNull ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
-    }
-
-    @Override
-    public ColumnSource<DateTime> toDateTime() {
-        return new ImmutableDateTimeArraySource(this);
+        return new LongAsLocalTimeColumnSource(this, zone);
     }
 
     @Override

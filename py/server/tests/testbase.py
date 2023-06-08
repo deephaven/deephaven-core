@@ -3,19 +3,17 @@
 #
 
 import time
-import contextlib
 import unittest
 
 import jpy
 from deephaven import DHError
 
-from deephaven.ugp import exclusive_lock
+from deephaven.update_graph import exclusive_lock
 from deephaven.table import Table, PartitionedTableProxy
 
 from test_helper import py_dh_session
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 
 
 def table_equals(table_a: Table, table_b: Table) -> bool:
@@ -48,7 +46,7 @@ class BaseTestCase(unittest.TestCase):
             row_count (int): the target row count of the table
             timeout (int): the number of seconds to wait
         """
-        with exclusive_lock():
+        with exclusive_lock(table):
             timeout *= 10 ** 9
             while table.size < row_count and timeout > 0:
                 s_time = time.time_ns()

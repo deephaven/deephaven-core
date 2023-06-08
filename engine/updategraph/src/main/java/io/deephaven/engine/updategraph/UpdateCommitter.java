@@ -16,10 +16,12 @@ public class UpdateCommitter<T> extends TerminalNotification {
 
     private final WeakReference<T> targetReference;
     private final Consumer<T> committer;
+    private final UpdateGraph updateGraph;
     private boolean active;
 
-    public UpdateCommitter(T target, Consumer<T> committer) {
+    public UpdateCommitter(T target, UpdateGraph updateGraph, Consumer<T> committer) {
         this.targetReference = new WeakReference<>(target);
+        this.updateGraph = updateGraph;
         this.committer = committer;
         this.active = false;
     }
@@ -38,6 +40,6 @@ public class UpdateCommitter<T> extends TerminalNotification {
             return;
         }
         active = true;
-        UpdateGraphProcessor.DEFAULT.addNotification(this);
+        updateGraph.addNotification(this);
     }
 }

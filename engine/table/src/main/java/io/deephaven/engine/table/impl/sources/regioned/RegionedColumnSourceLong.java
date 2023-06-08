@@ -14,11 +14,10 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
-import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
-import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
+import io.deephaven.engine.table.impl.sources.LongAsLocalDateColumnSource;
+import io.deephaven.engine.table.impl.sources.LongAsLocalTimeColumnSource;
+import io.deephaven.engine.table.impl.sources.ConvertibleTimeSource;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -36,7 +35,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceLong<ATTR extends Values>
         extends RegionedColumnSourceArray<Long, ATTR, ColumnRegionLong<ATTR>>
-        implements ColumnSourceGetDefaults.ForLong ,ConvertableTimeSource  {
+        implements ColumnSourceGetDefaults.ForLong , ConvertibleTimeSource {
 
     RegionedColumnSourceLong(@NotNull final ColumnRegionLong<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
@@ -67,8 +66,7 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
             return true;
         }
 
-        return alternateDataType == Instant.class ||
-                alternateDataType == DateTime.class;
+        return alternateDataType == Instant.class;
     }
 
     @SuppressWarnings("unchecked")
@@ -76,8 +74,6 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if(alternateDataType == Instant.class) {
             return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
-        } else if(alternateDataType == DateTime.class) {
-            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
         }
 
         return super.doReinterpret(alternateDataType);
@@ -93,11 +89,6 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);
     }
 
-    public ColumnSource<DateTime> toDateTime() {
-        //noinspection unchecked
-        return new RegionedColumnSourceDateTime((RegionedColumnSourceLong<Values>) this);
-    }
-
     @Override
     public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
         //noinspection unchecked
@@ -106,12 +97,12 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
 
     @Override
     public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
-        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalTimeColumnSource(this, zone);
     }
 
     @Override
     public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
-        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+        return new LongAsLocalDateColumnSource(this, zone);
     }
 
     @Override

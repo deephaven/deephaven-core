@@ -4,18 +4,21 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.CharGenerator;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.testutil.generator.SortedInstantGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -33,7 +36,6 @@ import java.util.function.Function;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestRollingStd extends BaseUpdateByTest {
@@ -175,8 +177,8 @@ public class TestRollingStd extends BaseUpdateByTest {
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
                 .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -187,8 +189,8 @@ public class TestRollingStd extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -210,8 +212,8 @@ public class TestRollingStd extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
                         .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -222,8 +224,8 @@ public class TestRollingStd extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -245,8 +247,8 @@ public class TestRollingStd extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
                         .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -257,8 +259,8 @@ public class TestRollingStd extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -281,8 +283,8 @@ public class TestRollingStd extends BaseUpdateByTest {
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
                 .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -293,8 +295,8 @@ public class TestRollingStd extends BaseUpdateByTest {
             }
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -405,9 +407,9 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingStd("ts", prevTime, postTime, primitiveColumns));
@@ -527,9 +529,9 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual =
@@ -715,17 +717,17 @@ public class TestRollingStd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -738,8 +740,8 @@ public class TestRollingStd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -875,7 +877,7 @@ public class TestRollingStd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -883,9 +885,9 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
@@ -898,7 +900,7 @@ public class TestRollingStd extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -944,9 +946,9 @@ public class TestRollingStd extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;

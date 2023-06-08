@@ -22,7 +22,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
@@ -33,7 +33,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.config.MutableInputTable;
@@ -112,7 +111,7 @@ public class BarrageUtil {
             BigDecimal.class,
             BigInteger.class,
             String.class,
-            DateTime.class,
+            Instant.class,
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
@@ -314,7 +313,7 @@ public class BarrageUtil {
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if (tz == null || "UTC".equals(tz)) {
                     if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return DateTime.class;
+                        return Instant.class;
                     }
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -344,7 +343,7 @@ public class BarrageUtil {
         public final int nCols;
         public TableDefinition tableDef;
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for DateTime.
+        // to the expected nanos value for Instant.
         public int[] conversionFactors;
         public Map<String, Object> attributes;
 
@@ -575,7 +574,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DateTime.class || type == Instant.class || type == ZonedDateTime.class) {
+                if (type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 
@@ -600,7 +599,7 @@ public class BarrageUtil {
 
     public static void createAndSendStaticSnapshot(
             BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-            BaseTable table,
+            BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
@@ -673,8 +672,9 @@ public class BarrageUtil {
                         // very simplistic logic to take the last snapshot and extrapolate max
                         // number of rows that will not exceed the target UGP processing time
                         // percentage
+                        PeriodicUpdateGraph updateGraph = table.getUpdateGraph().cast();
                         long targetNanos = (long) (TARGET_SNAPSHOT_PERCENTAGE
-                                * UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis()
+                                * updateGraph.getTargetCycleDurationMillis()
                                 * 1000000);
 
                         long nanosPerCell = elapsed / (msg.rowsIncluded.size() * columnCount);
@@ -698,7 +698,7 @@ public class BarrageUtil {
 
     public static void createAndSendSnapshot(
             BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-            BaseTable table,
+            BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
             StreamObserver<BarrageStreamGeneratorImpl.View> listener,

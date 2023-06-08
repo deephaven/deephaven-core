@@ -36,7 +36,6 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.table.util.TrackedSeekableChannelsProvider;
 import io.deephaven.stringset.StringSet;
-import io.deephaven.time.DateTime;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -57,6 +56,7 @@ import java.math.BigInteger;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -331,13 +331,11 @@ public class ParquetTableWriter {
 
         Table transformed = table;
         if (!viewColumnsTransform.isEmpty()) {
-            transformed =
-                    transformed.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
+            transformed = transformed.view(viewColumnsTransform);
         }
 
         if (!updateViewColumnsTransform.isEmpty()) {
-            transformed = transformed
-                    .updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            transformed = transformed.updateView(updateViewColumnsTransform);
         }
         return transformed;
     }
@@ -512,10 +510,10 @@ public class ParquetTableWriter {
         }
 
         Class<DATA_TYPE> columnType = columnSource.getType();
-        if (columnType == DateTime.class) {
+        if (columnType == Instant.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(
-                    (ColumnSource<DateTime>) columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource(
+                    (ColumnSource<Instant>) columnSource);
             columnType = columnSource.getType();
         } else if (columnType == Boolean.class) {
             // noinspection unchecked
@@ -1074,7 +1072,7 @@ public class ParquetTableWriter {
     private static Table groupingAsTable(Table tableToSave, String columnName) {
         final QueryTable coalesced = (QueryTable) tableToSave.coalesce();
         final Table tableToGroup = (coalesced.isRefreshing() ? (QueryTable) coalesced.silent() : coalesced)
-                .withAttributes(Map.of(Table.STREAM_TABLE_ATTRIBUTE, true)); // We want persistent first/last-by
+                .withAttributes(Map.of(Table.BLINK_TABLE_ATTRIBUTE, true)); // We want persistent first/last-by
         final Table grouped = tableToGroup
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
                         Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive

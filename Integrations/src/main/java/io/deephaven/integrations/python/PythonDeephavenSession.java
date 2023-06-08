@@ -6,9 +6,10 @@ package io.deephaven.integrations.python;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
@@ -23,6 +24,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,7 +63,6 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public static String SCRIPT_TYPE = "Python";
 
     private final PythonScriptSessionModule module;
-
     private final ScriptFinder scriptFinder;
     private final PythonEvaluator evaluator;
     private final PythonScope<PyObject> scope;
@@ -69,6 +70,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     /**
      * Create a Python ScriptSession.
      *
+     * @param updateGraph the default update graph to install for the repl
      * @param objectTypeLookup the object type lookup
      * @param listener an optional listener that will be notified whenever the query scope changes
      * @param runInitScripts if init scripts should be executed
@@ -76,10 +78,12 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * @throws IOException if an IO error occurs running initialization scripts
      */
     public PythonDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener listener, boolean runInitScripts,
-            PythonEvaluatorJpy pythonEvaluator)
-            throws IOException {
-        super(objectTypeLookup, listener);
+            final UpdateGraph updateGraph,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener listener,
+            final boolean runInitScripts,
+            final PythonEvaluatorJpy pythonEvaluator) throws IOException {
+        super(updateGraph, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -108,10 +112,14 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(PythonScope<?> scope) {
-        super(NoOp.INSTANCE, null);
+    public PythonDeephavenSession(
+            final UpdateGraph updateGraph, final PythonScope<?> scope) {
+        super(updateGraph, NoOp.INSTANCE, null);
         this.scope = (PythonScope<PyObject>) scope;
-        this.module = null;
+        try (final SafeCloseable ignored = executionContext.open()) {
+            this.module = (PythonScriptSessionModule) PyModule.importModule("deephaven.server.script_session")
+                    .createProxy(CallableKind.FUNCTION, PythonScriptSessionModule.class);
+        }
         this.evaluator = null;
         this.scriptFinder = null;
     }
@@ -164,6 +172,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
                 .orElse(defaultValue);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void pushScope(PyObject pydict) {
         if (!pydict.isDict()) {
             throw new IllegalArgumentException("Expect a Python dict but got a" + pydict.repr());
@@ -171,6 +181,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
         scope.pushScope(pydict);
     }
 
+    @SuppressWarnings("unused")
+    @ScriptApi
     public void popScope() {
         scope.popScope();
     }
@@ -179,9 +191,8 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();
         try {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> {
-                evaluator.evalScript(command);
-            });
+            ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
+                    .doLockedInterruptibly(() -> evaluator.evalScript(command));
         } catch (InterruptedException e) {
             throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }

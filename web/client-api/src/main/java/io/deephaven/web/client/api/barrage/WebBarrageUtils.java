@@ -429,7 +429,6 @@ public class WebBarrageUtils {
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
-            case "io.deephaven.time.DateTime":
             case "java.time.Instant":
             case "java.time.ZonedDateTime":
                 assert positions.length().toFloat64() >= size * 8;

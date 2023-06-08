@@ -50,8 +50,8 @@ public class LocalTimeWrapperSource extends AbstractColumnSource<LocalTime>
         super(LocalTime.class);
         this.inner = inner;
         this.zone = zone;
-        mustInspectZone = !(inner instanceof ConvertableTimeSource.Zoned)
-                || ((ConvertableTimeSource.Zoned) inner).getZone().equals(zone);
+        mustInspectZone = !(inner instanceof ConvertibleTimeSource.Zoned)
+                || ((ConvertibleTimeSource.Zoned) inner).getZone().equals(zone);
     }
 
     @Override

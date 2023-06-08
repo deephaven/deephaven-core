@@ -28,9 +28,6 @@ class FilterTestCase(BaseTestCase):
         filtered_table = new_test_table.where(filters=regex_filter)
         self.assertLessEqual(filtered_table.size, new_test_table.size)
 
-        with self.assertRaises(DHError):
-            filtered_table = new_test_table.where(filters=[regex_filter, "b < 100"])
-
         new_test_table = new_test_table.update("Y = String.valueOf(e)")
         regex_filter1 = pattern(PatternMode.MATCHES, "Y", "(?s).0.")
         filtered_table = new_test_table.where(filters=[regex_filter, regex_filter1])
@@ -51,6 +48,11 @@ class FilterTestCase(BaseTestCase):
         filter_not = not_(filter_or)
         filtered_table_not = self.test_table.where(filter_not)
         self.assertEqual(filtered_table_or.size + filtered_table_not.size, self.test_table.size)
+
+        filtered_table_mixed = self.test_table.where(
+            ["a > 100", "b < 1000", Filter.from_("c < 0")]
+        )
+        self.assert_table_equals(filtered_table_mixed, filtered_table_and)
 
     def test_is_null(self):
         x = new_table([string_col("X", ["a", "b", "c", None, "e", "f"])])

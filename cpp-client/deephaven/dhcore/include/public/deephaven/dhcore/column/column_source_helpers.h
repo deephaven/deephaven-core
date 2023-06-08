@@ -108,6 +108,11 @@ struct HumanReadableStaticTypeName<double> {
 };
 
 template<>
+struct HumanReadableStaticTypeName<uint16_t> {
+  static const char *getName() { return internal::HumanReadableTypeNames::charName; }
+};
+
+template<>
 struct HumanReadableStaticTypeName<bool> {
   static const char *getName() { return internal::HumanReadableTypeNames::boolName; }
 };

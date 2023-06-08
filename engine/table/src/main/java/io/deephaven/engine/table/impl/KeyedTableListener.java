@@ -164,7 +164,7 @@ public class KeyedTableListener {
 
     public Object[] getRowAtIndex(long index, String... columnNames) {
         long tableRow = table.getRowSet().find(index);
-        return (index != -1) ? table.getRecord(tableRow, columnNames) : null;
+        return (index != -1) ? DataAccessHelpers.getRecord(table, tableRow, columnNames) : null;
     }
 
     public long getTableRow(ArrayTuple key) {

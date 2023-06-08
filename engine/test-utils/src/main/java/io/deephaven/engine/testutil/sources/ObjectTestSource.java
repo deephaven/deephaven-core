@@ -14,12 +14,12 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.type.TypeUtils;
@@ -38,12 +38,13 @@ import java.util.function.LongConsumer;
  */
 public class ObjectTestSource<T> extends AbstractColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T>, TestColumnSource<T> {
-    private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
+
+    private long lastAdditionTime;
     protected final Long2ObjectOpenHashMap<T> data = new Long2ObjectOpenHashMap<T>();
     protected Long2ObjectOpenHashMap<T> prevData;
 
     private final UpdateCommitter<ObjectTestSource> prevFlusher =
-            new UpdateCommitter<>(this, ObjectTestSource::flushPrevious);
+            new UpdateCommitter<>(this, updateGraph, ObjectTestSource::flushPrevious);
 
     // region empty constructor
     public ObjectTestSource(Class<T> type) {
@@ -98,7 +99,7 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = LogicalClock.DEFAULT.currentStep();
+        long currentStep = updateGraph.clock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

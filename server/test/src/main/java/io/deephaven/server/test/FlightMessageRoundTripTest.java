@@ -26,7 +26,8 @@ import io.deephaven.client.impl.FlightSessionFactory;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -80,7 +81,6 @@ import org.junit.rules.ExternalResource;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -88,7 +88,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -114,8 +113,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Singleton
         @Provides
-        AbstractScriptSession<?> provideAbstractScriptSession() {
-            return new NoLanguageDeephavenSession("non-script-session");
+        AbstractScriptSession<?> provideAbstractScriptSession(final UpdateGraph updateGraph) {
+            return new NoLanguageDeephavenSession(updateGraph, "non-script-session");
         }
 
         @Provides
@@ -168,8 +167,8 @@ public abstract class FlightMessageRoundTripTest {
 
         @Provides
         @Singleton
-        static UpdateGraphProcessor provideUpdateGraphProcessor() {
-            return UpdateGraphProcessor.DEFAULT;
+        static UpdateGraph provideUpdateGraph() {
+            return ExecutionContext.getContext().getUpdateGraph();
         }
     }
 
@@ -536,7 +535,7 @@ public abstract class FlightMessageRoundTripTest {
 
     @Test
     public void testTimestampColumns() throws Exception {
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTimeUtils.now()"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("instant = java.time.Instant.now()"));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("zonedDateTime = java.time.ZonedDateTime.now()"));
     }
@@ -610,8 +609,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
         scriptSession.setVariable(staticTableName, table);
@@ -641,8 +640,8 @@ public abstract class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
+        final Table tickingTable = ExecutionContext.getContext().getUpdateGraph().sharedLock().computeLocked(
+                () -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
             // stuff table into the scope
@@ -732,12 +731,13 @@ public abstract class FlightMessageRoundTripTest {
                     org.apache.arrow.vector.IntVector iv =
                             (org.apache.arrow.vector.IntVector) root.getVector(0);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("int match:", table.getColumn(0).get(offset + i), iv.get(i));
+                        assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
                     }
                     org.apache.arrow.vector.Float8Vector dv =
                             (org.apache.arrow.vector.Float8Vector) root.getVector(1);
                     for (int i = 0; i < rowCount; ++i) {
-                        assertEquals("double match: ", table.getColumn(1).get(offset + i), dv.get(i));
+                        assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
+                                dv.get(i));
                     }
                 }
                 assertEquals(table.size(), totalRowCount);

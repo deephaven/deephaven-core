@@ -4,16 +4,19 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
@@ -32,7 +35,6 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestRollingWAvg extends BaseUpdateByTest {
@@ -390,8 +392,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                             .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -401,8 +403,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -447,8 +449,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                             .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
@@ -458,8 +460,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
@@ -576,9 +578,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)
                 }).t;
@@ -622,9 +624,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)
                 }).t;
@@ -661,18 +663,18 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         weightCol = "bigIntWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
 
         doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
 
         weightCol = "bigDecWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedInstantGenerator(
+                        DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
 
         doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
@@ -1034,8 +1036,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
 
@@ -1070,8 +1072,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -1081,9 +1083,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1108,8 +1110,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table", nuggets);
         }
 
@@ -1120,9 +1122,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
@@ -1146,8 +1148,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT
-                    .runWithinUnitTestCycle(() -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
+                    () -> generateAppends(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table", nuggets);
         }
     }
@@ -1296,7 +1298,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1330,7 +1332,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1341,9 +1343,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1367,7 +1369,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final Random billy = new Random(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1379,9 +1381,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
@@ -1404,7 +1406,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         billy.setSeed(0xB177B177);
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(
                     () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t2, result2.infos));
             TstUtils.validate("Table - step " + ii, nuggets);
         }
@@ -1497,9 +1499,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
@@ -1534,9 +1536,9 @@ public class TestRollingWAvg extends BaseUpdateByTest {
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
                 new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
-                        new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new SortedInstantGenerator(
+                                DateTimeUtils.parseInstant("2022-03-09T09:00:00.000 NY"),
+                                DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 

@@ -6,7 +6,8 @@ package io.deephaven.plot.example_plots;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
-import io.deephaven.time.DateTime;
+
+import java.time.Instant;
 
 
 public class OHLCChart {
@@ -14,11 +15,11 @@ public class OHLCChart {
 
         final long time = 1491946585000000000L;
 
-        DateTime[] date = {
-                new DateTime(time + DateTimeUtils.DAY * 1),
-                new DateTime(time + DateTimeUtils.DAY * 2),
-                new DateTime(time + DateTimeUtils.DAY * 3),
-                new DateTime(time + DateTimeUtils.DAY * 4)};
+        Instant[] date = {
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 1),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 2),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 3),
+                DateTimeUtils.epochNanosToInstant(time + DateTimeUtils.DAY * 4)};
         final Number[] open = {3, 4, 3, 5};
         final Number[] high = {5, 6, 5, 7};
         final Number[] low = {2, 3, 1, 4};

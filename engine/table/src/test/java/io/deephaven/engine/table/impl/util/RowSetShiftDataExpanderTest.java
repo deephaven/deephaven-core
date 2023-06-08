@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -10,14 +11,20 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.updategraph.LogicalClockImpl;
+import net.bytebuddy.build.Plugin;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 public class RowSetShiftDataExpanderTest {
+
+    @Rule
+    final public EngineCleanup framework = new EngineCleanup();
 
     /**
      * These tests names have a few qualities worth defining: - Major Shift: shift with no overlap in keyspace before
@@ -512,14 +519,17 @@ public class RowSetShiftDataExpanderTest {
         public final WritableRowSet expectRemoved = RowSetFactory.empty();
         public final WritableRowSet expectModified = RowSetFactory.empty();
 
+        private final LogicalClockImpl clock;
+
         public Context() {
-            LogicalClock.DEFAULT.resetForUnitTests();
+            clock = (LogicalClockImpl) ExecutionContext.getContext().getUpdateGraph().clock();
+            clock.resetForUnitTests();
         }
 
         public void validate() {
-            LogicalClock.DEFAULT.startUpdateCycle();
+            clock.startUpdateCycle();
             sourceRowSet.update(expectAdded, expectRemoved);
-            LogicalClock.DEFAULT.completeUpdateCycle();
+            clock.completeUpdateCycle();
 
             final RowSetShiftData shiftData = shifted.build();
             shiftData.validate();

@@ -11,7 +11,6 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralFilter;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * Represents an evaluate-able filter.
  *
- * @see io.deephaven.api.TableOperations#where(Collection)
+ * @see io.deephaven.api.TableOperations#where(Filter)
  * @see FilterIsNull
  * @see FilterComparison
  * @see FilterIn
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * @see LiteralFilter
  * @see RawString
  */
-public interface Filter extends Expression, Serializable {
+public interface Filter extends Expression {
 
     static Collection<? extends Filter> from(String... expressions) {
         return from(Arrays.asList(expressions));
@@ -41,11 +40,6 @@ public interface Filter extends Expression, Serializable {
 
     static Collection<? extends Filter> from(Collection<String> expressions) {
         return expressions.stream().map(RawString::of).collect(Collectors.toList());
-    }
-
-    static Collection<? extends Filter> from_(String... expressions) {
-        // This is for Python to invoke "from" without syntax errors.
-        return from(expressions);
     }
 
     /**

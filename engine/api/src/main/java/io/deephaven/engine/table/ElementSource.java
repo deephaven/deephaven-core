@@ -90,7 +90,7 @@ public interface ElementSource<T> {
 
     /**
      * Get the previous value at the rowKey. Previous values are used during an
-     * {@link io.deephaven.engine.updategraph.UpdateGraphProcessor UGP}
+     * {@link io.deephaven.engine.updategraph.UpdateGraph UG}
      * {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating update} cycle to process changes in data.
      * During {@link io.deephaven.engine.updategraph.LogicalClock.State#Idle normal} operation previous values will be
      * identical to {@link #get(long) current} values. RowKeys that were not present are undefined.

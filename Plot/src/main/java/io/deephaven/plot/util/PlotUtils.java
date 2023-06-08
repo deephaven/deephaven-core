@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
@@ -19,8 +20,8 @@ import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -32,6 +33,7 @@ import io.deephaven.gui.table.filters.Condition;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,7 +51,7 @@ public class PlotUtils {
 
     private PlotUtils() {}
 
-    /** Instances of ColorPaletteArray have some state, so this is kept privat. */
+    /** Instances of ColorPaletteArray have some state, so this is kept private. */
     private static final ColorPaletteArray MATPLOT_COLORS = new ColorPaletteArray(ColorPaletteArray.Palette.MATPLOTLIB);
 
     private static final Random rng = new Random();
@@ -63,7 +65,7 @@ public class PlotUtils {
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     private static final Number[] EMPTY_NUMBER_ARRAY = new Number[0];
     private static final Date[] EMPTY_DATE_ARRAY = new Date[0];
-    private static final DateTime[] EMPTY_DATETIME_ARRAY = new DateTime[0];
+    private static final Instant[] EMPTY_INSTANT_ARRAY = new Instant[0];
 
     private static int randVar() {
         return abs(rng.nextInt());
@@ -750,15 +752,15 @@ public class PlotUtils {
 
         final ColumnSource columnSource = t.getColumnSource(numericCol);
 
-        if (columnSource.getType() == DateTime.class) {
+        if (columnSource.getType() == Instant.class) {
             return key -> {
-                final DateTime dateTime = (DateTime) columnSource.get(key);
-                return dateTime == null ? NULL_LONG : dateTime.getNanos();
+                final Instant instant = (Instant) columnSource.get(key);
+                return instant == null ? NULL_LONG : DateTimeUtils.epochNanos(instant);
             };
         } else if (columnSource.getType() == Date.class) {
             return key -> {
-                final Date dateTime = (Date) columnSource.get(key);
-                return dateTime == null ? NULL_LONG : dateTime.getTime() * 1000000;
+                final Date instant = (Date) columnSource.get(key);
+                return instant == null ? NULL_LONG : instant.getTime() * 1000000;
             };
         } else {
             return key -> (Number) columnSource.get(key);
@@ -803,7 +805,7 @@ public class PlotUtils {
     }
 
     public static <T> IndexableData createIndexableData(final Table t, final String column, final PlotInfo plotInfo) {
-        final DataColumn<T> dataColumn = t.getColumn(column);
+        final DataColumn<T> dataColumn = DataAccessHelpers.getColumn(t, column);
         final Object o = dataColumn.getDirect();
 
         return new IndexableDataArray((T[]) o, plotInfo);
@@ -878,9 +880,9 @@ public class PlotUtils {
             return new IndexableDataCharacter((char[]) data, plotInfo);
         } else if (c.equals(byte.class)) {
             return new IndexableDataByte((byte[]) data, plotInfo);
-        } else if (c.equals(DateTime.class)) {
+        } else if (c.equals(Instant.class)) {
             if (data instanceof long[]) {
-                return new IndexableDataDateTime((long[]) data, plotInfo);
+                return new IndexableDataInstant((long[]) data, plotInfo);
             }
         }
 
@@ -927,8 +929,8 @@ public class PlotUtils {
             return new IndexableNumericDataArrayLong(EMPTY_LONG_ARRAY, plotInfo);
         } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort(EMPTY_SHORT_ARRAY, plotInfo);
-        } else if (dataType == DateTime.class) {
-            return new IndexableNumericDataArrayDateTime(EMPTY_DATETIME_ARRAY, plotInfo);
+        } else if (dataType == Instant.class) {
+            return new IndexableNumericDataArrayInstant(EMPTY_INSTANT_ARRAY, plotInfo);
         } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate(EMPTY_DATE_ARRAY, plotInfo);
         } else if (Number.class.isAssignableFrom(dataType)) {
@@ -950,11 +952,11 @@ public class PlotUtils {
             return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
         } else if (dataType == short.class) {
             return new IndexableNumericDataArrayShort((short[]) data, plotInfo);
-        } else if (dataType == DateTime.class) {
+        } else if (dataType == Instant.class) {
             if (data instanceof long[]) {
                 return new IndexableNumericDataArrayLong((long[]) data, plotInfo);
             } else {
-                return new IndexableNumericDataArrayDateTime((DateTime[]) data, plotInfo);
+                return new IndexableNumericDataArrayInstant((Instant[]) data, plotInfo);
             }
         } else if (dataType == Date.class) {
             return new IndexableNumericDataArrayDate((Date[]) data, plotInfo);

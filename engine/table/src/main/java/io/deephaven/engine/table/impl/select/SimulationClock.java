@@ -6,9 +6,10 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -21,7 +22,7 @@ import java.util.concurrent.locks.Condition;
 @SuppressWarnings({"WeakerAccess", "unused"})
 public class SimulationClock implements Clock {
 
-    private final DateTime endTime;
+    private final Instant endTime;
     private final long stepNanos;
 
     private final Runnable refreshTask = this::advance; // Save this in a reference so we can deregister it.
@@ -31,9 +32,11 @@ public class SimulationClock implements Clock {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
-    private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+    private final PeriodicUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
 
-    private DateTime now;
+    private final Condition ugpCondition = updateGraph.exclusiveLock().newCondition();
+
+    private Instant now;
 
     /**
      * Create a simulation clock for the specified time range and step.
@@ -42,11 +45,12 @@ public class SimulationClock implements Clock {
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepSize The time to "elapse" in each run loop
      */
-    public SimulationClock(@NotNull final String startTime,
+    public SimulationClock(
+            @NotNull final String startTime,
             @NotNull final String endTime,
             @NotNull final String stepSize) {
-        this(DateTimeUtils.convertDateTime(startTime), DateTimeUtils.convertDateTime(endTime),
-                DateTimeUtils.convertTime(stepSize));
+        this(DateTimeUtils.parseInstant(startTime), DateTimeUtils.parseInstant(endTime),
+                DateTimeUtils.parseDurationNanos(stepSize));
     }
 
     /**
@@ -56,8 +60,9 @@ public class SimulationClock implements Clock {
      * @param endTime The final time that will be returned by this clock, when the simulation has completed
      * @param stepNanos The number of nanoseconds to "elapse" in each run loop
      */
-    public SimulationClock(@NotNull final DateTime startTime,
-            @NotNull final DateTime endTime,
+    public SimulationClock(
+            @NotNull final Instant startTime,
+            @NotNull final Instant endTime,
             final long stepNanos) {
         Require.neqNull(startTime, "startTime");
         this.endTime = Require.neqNull(endTime, "endTime");
@@ -68,27 +73,27 @@ public class SimulationClock implements Clock {
 
     @Override
     public long currentTimeMillis() {
-        return now.getMillis();
+        return DateTimeUtils.epochMillis(now);
     }
 
     @Override
     public long currentTimeMicros() {
-        return now.getMicros();
+        return DateTimeUtils.epochMicros(now);
     }
 
     @Override
     public long currentTimeNanos() {
-        return now.getNanos();
+        return DateTimeUtils.epochNanos(now);
     }
 
     @Override
     public Instant instantNanos() {
-        return now.getInstant();
+        return now;
     }
 
     @Override
     public Instant instantMillis() {
-        return now.getInstant();
+        return now;
     }
 
     /**
@@ -105,27 +110,28 @@ public class SimulationClock implements Clock {
      */
     public void start(final boolean maxSpeed) {
         if (maxSpeed) {
-            UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(0);
+            updateGraph.setTargetCycleDurationMillis(0);
         }
         if (!state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
             throw new IllegalStateException(this + " already started");
         }
-        UpdateGraphProcessor.DEFAULT.addSource(refreshTask);
+        updateGraph.addSource(refreshTask);
     }
 
     /**
-     * Advance the simulation. Package access for unit tests.
+     * Advance the simulation. Public access for unit tests.
      */
-    void advance() {
+    @VisibleForTesting
+    public void advance() {
         Assert.eq(state.get(), "state.get()", State.STARTED);
-        if (now.getNanos() == endTime.getNanos()) {
+        if (DateTimeUtils.epochNanos(now) == DateTimeUtils.epochNanos(endTime)) {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
                     "state.compareAndSet(State.STARTED, State.DONE)");
-            UpdateGraphProcessor.DEFAULT.removeSource(refreshTask);
-            UpdateGraphProcessor.DEFAULT.requestSignal(ugpCondition);
+            updateGraph.removeSource(refreshTask);
+            updateGraph.requestSignal(ugpCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
-        final DateTime incremented = DateTimeUtils.plus(now, stepNanos);
+        final Instant incremented = DateTimeUtils.plus(now, stepNanos);
         now = DateTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
     }
 
@@ -143,7 +149,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDoneUninterruptibly() {
         while (!done()) {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ugpCondition::awaitUninterruptibly);
+            updateGraph.exclusiveLock().doLocked(ugpCondition::awaitUninterruptibly);
         }
     }
 
@@ -152,7 +158,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDone() throws InterruptedException {
         while (!done()) {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ugpCondition::await);
+            updateGraph.exclusiveLock().doLocked(ugpCondition::await);
         }
     }
 }

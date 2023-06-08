@@ -3,14 +3,14 @@ package io.deephaven.extensions.arrow;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ResettableContext;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowCharColumnSource;
-import io.deephaven.extensions.arrow.sources.ArrowDateTimeColumnSource;
+import io.deephaven.extensions.arrow.sources.ArrowInstantColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowIntColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowLocalTimeColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowLongColumnSource;
@@ -100,7 +100,7 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigInteger&gt;} - uses {@link UInt8Vector} under the
  * hood, returns BigInteger</li>
  * <li>{@link ArrowLocalTimeColumnSource} - uses {@link TimeMilliVector} under the hood, returns LocalTime</li>
- * <li>{@link ArrowDateTimeColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
+ * <li>{@link ArrowInstantColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
  * <li>{@link ArrowStringColumnSource} - uses {@link VarCharVector} under the hood, returns String</li>
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link FixedSizeBinaryVector} under
  * the hood, returns byte[]</li>
@@ -121,7 +121,8 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * suggested future improvements.
  */
 public class ArrowWrapperTools {
-    private static final int MAX_POOL_SIZE = Math.max(UpdateGraphProcessor.DEFAULT.getUpdateThreads(),
+    private static final int MAX_POOL_SIZE = Math.max(
+            ExecutionContext.getContext().getUpdateGraph().parallelismFactor(),
             Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
 
     private static final BufferAllocator rootAllocator = new RootAllocator();
@@ -249,7 +250,7 @@ public class ArrowWrapperTools {
             case TIMESTAMPNANOTZ:
             case TIMESTAMPSEC:
             case TIMESTAMPSECTZ:
-                return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
+                return new ArrowInstantColumnSource(highBit, field, arrowHelper);
             case NULL:
             case STRUCT:
             case DATEDAY:

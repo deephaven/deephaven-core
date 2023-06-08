@@ -82,7 +82,7 @@ public class AsyncSystem {
     }
 
     /**
-     * Equivalent to {@code exitCaught(thread, throwable, status, out, null).
+     * Equivalent to {@code exitCaught(thread, throwable, status, out, null)}.
      */
     public static void exitCaught(Thread thread, Throwable throwable, int status, PrintStream out) {
         exitCaught(thread, throwable, status, out, null);

@@ -1,22 +1,17 @@
 package io.deephaven.engine.context;
 
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NoExecutionContextRegisteredException;
+import io.deephaven.util.ExecutionContextRegistrationException;
 
 import java.util.Collection;
 
 public class PoisonedQueryLibrary extends QueryLibrary {
-    private static final Logger logger = LoggerFactory.getLogger(PoisonedQueryScope.class);
+
     public static final PoisonedQueryLibrary INSTANCE = new PoisonedQueryLibrary();
 
     private PoisonedQueryLibrary() {}
 
     private <T> T fail() {
-        logger.error().append(
-                "No ExecutionContext provided, cannot use QueryLibrary. If this is being run in a thread, did you specify an ExecutionContext for the thread? Please refer to the documentation on ExecutionContext for details.")
-                .endl();
-        throw new NoExecutionContextRegisteredException();
+        throw ExecutionContextRegistrationException.onFailedComponentAccess("QueryLibrary");
     }
 
     @Override

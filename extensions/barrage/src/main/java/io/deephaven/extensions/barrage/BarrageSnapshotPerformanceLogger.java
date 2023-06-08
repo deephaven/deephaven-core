@@ -9,9 +9,9 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.WritableRowContainer;
-import io.deephaven.time.DateTime;
 
 import java.io.IOException;
+import java.time.Instant;
 
 public class BarrageSnapshotPerformanceLogger
         extends MemoryTableLogger<BarrageSnapshotPerformanceLogger.ISetter> {
@@ -24,7 +24,7 @@ public class BarrageSnapshotPerformanceLogger
 
     @SuppressWarnings("rawtypes")
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, String tableId, String tableKey, DateTime time,
+        void log(Row.Flags flags, String tableId, String tableKey, Instant time,
                 long queueTm, long snapshotTm, long writeTm, long bytesWritten)
                 throws IOException;
     }
@@ -37,7 +37,7 @@ public class BarrageSnapshotPerformanceLogger
     class DirectSetter extends BaseSetter implements ISetter {
         RowSetter<String> TableId;
         RowSetter<String> TableKey;
-        RowSetter<DateTime> RequestTime;
+        RowSetter<Instant> RequestTime;
         RowSetter<Double> QueueMillis;
         RowSetter<Double> SnapshotMillis;
         RowSetter<Double> WriteMillis;
@@ -46,7 +46,7 @@ public class BarrageSnapshotPerformanceLogger
         DirectSetter() {
             TableId = row.getSetter("TableId", String.class);
             TableKey = row.getSetter("TableKey", String.class);
-            RequestTime = row.getSetter("RequestTime", DateTime.class);
+            RequestTime = row.getSetter("RequestTime", Instant.class);
             QueueMillis = row.getSetter("QueueMillis", double.class);
             SnapshotMillis = row.getSetter("SnapshotMillis", double.class);
             WriteMillis = row.getSetter("WriteMillis", double.class);
@@ -54,7 +54,7 @@ public class BarrageSnapshotPerformanceLogger
         }
 
         @Override
-        public void log(Row.Flags flags, String tableId, String tableKey, DateTime requestTime,
+        public void log(Row.Flags flags, String tableId, String tableKey, Instant requestTime,
                 long queueNanos, long snapshotNanos, long writeNanons, long bytesWritten)
                 throws IOException {
             setRowFlags(flags);
@@ -81,7 +81,7 @@ public class BarrageSnapshotPerformanceLogger
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
                 .add("TableId", String.class)
                 .add("TableKey", String.class)
-                .add("RequestTime", DateTime.class)
+                .add("RequestTime", Instant.class)
 
                 .add("QueueMillis", double.class)
                 .add("SnapshotMillis", double.class)
@@ -101,7 +101,7 @@ public class BarrageSnapshotPerformanceLogger
     }
 
     public void log(
-            String tableId, String tableKey, DateTime requestTime,
+            String tableId, String tableKey, Instant requestTime,
             long queueNanos, long snapshotNanos, long writeNanos, long bytesWritten)
             throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, tableId, tableKey, requestTime,
@@ -109,7 +109,7 @@ public class BarrageSnapshotPerformanceLogger
     }
 
     public void log(
-            Row.Flags flags, String tableId, String tableKey, DateTime requestTime,
+            Row.Flags flags, String tableId, String tableKey, Instant requestTime,
             long queueNanos, long snapshotNanos, long writeNanos, long bytesWritten)
             throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");

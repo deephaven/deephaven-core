@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -17,6 +16,7 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.table.impl.util.*;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -42,12 +42,12 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     static class IteratorsAndNextTime implements Comparable<IteratorsAndNextTime> {
 
         private final RowSet.Iterator iterator;
-        private final ColumnSource<DateTime> columnSource;
-        DateTime lastTime;
+        private final ColumnSource<Instant> columnSource;
+        Instant lastTime;
         long lastIndex;
         public final long pos;
 
-        private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<DateTime> columnSource, long pos) {
+        private IteratorsAndNextTime(RowSet.Iterator iterator, ColumnSource<Instant> columnSource, long pos) {
             this.iterator = iterator;
             this.columnSource = columnSource;
             this.pos = pos;
@@ -87,7 +87,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         grouping = RowSetIndexer.of(rowSet).getGrouping(tupleSource);
 
         // noinspection unchecked
-        ColumnSource<DateTime> timeSource = (ColumnSource<DateTime>) input.get(timeColumn);
+        ColumnSource<Instant> timeSource = (ColumnSource<Instant>) input.get(timeColumn);
         int pos = 0;
         for (RowSet groupRowSet : grouping.values()) {
             RowSet.Iterator iterator = groupRowSet.iterator();

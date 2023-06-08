@@ -48,8 +48,9 @@ public class ReplicateSourceAndChunkTests {
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterImmutable2DArraySource.java");
 
-        charToAll("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
+        charToAllButBoolean("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
         fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
+        fixupBooleanChunkTest(charToBoolean("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
 
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
@@ -159,6 +160,14 @@ public class ReplicateSourceAndChunkTests {
                 "String\\[\\]", "byte[]");
         lines = removeRegion(lines, "boxing imports");
         FileUtils.writeLines(objectFile, lines);
+    }
+
+    private static void fixupBooleanChunkTest(String booleanPath) throws IOException {
+        List<String> lines;
+        final File booleanFile = new File(booleanPath);
+        lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
+        lines = removeRegion(lines, "testArray");
+        FileUtils.writeLines(booleanFile, lines);
     }
 
     private static void fixupObjectDeltaAwareColumnSourceTest(String objectPath) throws IOException {

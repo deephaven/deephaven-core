@@ -9,7 +9,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.chunk.attributes.ChunkLengths;

@@ -3,9 +3,8 @@
  */
 package io.deephaven.engine.util;
 
-import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -23,9 +22,8 @@ import org.junit.Ignore;
  * Test various Jpy related overloading methods.
  */
 @Ignore // TODO (deephaven-core#734)
-public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
+public class TestWorkerPythonEnvironment extends RefreshingTableTestCase {
 
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -34,14 +32,6 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
                     TestWorkerPythonEnvironment.class.getCanonicalName(),
                     new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     public void testNumpyImport() {
@@ -49,7 +39,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
     }
 
     public void testTimeTable() throws IOException {
-        WorkerPythonEnvironment.DEFAULT.eval("tt = timeTable(\"00:00:01\")");
+        WorkerPythonEnvironment.DEFAULT.eval("tt = timeTable(\"PT00:00:01\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("tt");
         assertTrue(result instanceof Table);
         Table tt = (Table) result;

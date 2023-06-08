@@ -14,11 +14,11 @@ import java.util.Objects;
 public class LinkDescriber extends TableVisitorGeneric {
 
     public interface LinkConsumer {
-        void link(TableSpec table);
+        void link(TableSpec parent);
 
-        void link(TableSpec table, int linkIndex);
+        void link(TableSpec parent, int linkIndex);
 
-        void link(TableSpec table, String linkLabel);
+        void link(TableSpec parent, String linkLabel);
     }
 
     private final LinkConsumer consumer;
@@ -67,11 +67,6 @@ public class LinkDescriber extends TableVisitorGeneric {
     @Override
     public void visit(AsOfJoinTable aj) {
         join(aj);
-    }
-
-    @Override
-    public void visit(ReverseAsOfJoinTable raj) {
-        join(raj);
     }
 
     @Override

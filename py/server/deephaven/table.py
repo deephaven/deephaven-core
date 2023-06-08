@@ -24,10 +24,10 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
-from deephaven.filters import Filter
+from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
-from deephaven.ugp import auto_locking_ctx
+from deephaven.update_graph import auto_locking_ctx, UpdateGraph
 from deephaven.updateby import UpdateByOperation
 
 # Table
@@ -38,8 +38,7 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JPair = jpy.get_type("io.deephaven.api.agg.Pair")
-_JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
+_JPair = jpy.get_type("io.deephaven.api.Pair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
@@ -52,7 +51,6 @@ _JPartitionedTableProxy = jpy.get_type("io.deephaven.engine.table.PartitionedTab
 _JJoinMatch = jpy.get_type("io.deephaven.api.JoinMatch")
 _JJoinAddition = jpy.get_type("io.deephaven.api.JoinAddition")
 _JAsOfJoinRule = jpy.get_type("io.deephaven.api.AsOfJoinRule")
-_JReverseAsOfJoinRule = jpy.get_type("io.deephaven.api.ReverseAsOfJoinRule")
 _JTableOperations = jpy.get_type("io.deephaven.api.TableOperations")
 
 # Dynamic Query Scope
@@ -144,9 +142,8 @@ class _FilterOperationsRecorder(Protocol):
 
     def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
         """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
-        filters = to_sequence(filters)
         j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
-        return self.__class__(j_filter_ops_recorder.where(filters))
+        return self.__class__(j_filter_ops_recorder.where(and_(filters).j_filter))
 
 
 class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
@@ -248,12 +245,7 @@ class RollupTable(JObjectWrapper):
             DHError
         """
         try:
-            filters = to_sequence(filters)
-            if filters and isinstance(filters[0], str):
-                filters = Filter.from_(filters)
-            filters = j_array_list(filters)
-
-            return RollupTable(j_rollup_table=self.j_rollup_table.withFilters(filters),
+            return RollupTable(j_rollup_table=self.j_rollup_table.withFilter(and_(filters).j_filter),
                                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
@@ -345,12 +337,7 @@ class TreeTable(JObjectWrapper):
         """
 
         try:
-            filters = to_sequence(filters)
-            if filters and isinstance(filters[0], str):
-                filters = Filter.from_(filters)
-            filters = j_array_list(filters)
-
-            return TreeTable(j_tree_table=self.j_tree_table.withFilters(filters), id_col=self.id_col,
+            return TreeTable(j_tree_table=self.j_tree_table.withFilter(and_(filters).j_filter), id_col=self.id_col,
                              parent_col=self.parent_col)
         except Exception as e:
             raise DHError(e, "with_filters operation on TreeTable failed.") from e
@@ -466,8 +453,8 @@ def _query_scope_ctx():
     if j_py_script_session and (len(outer_frames) > i + 2 or function != "<module>"):
         scope_dict = caller_frame.f_globals.copy()
         scope_dict.update(caller_frame.f_locals)
+        j_py_script_session.pushScope(scope_dict)
         try:
-            j_py_script_session.pushScope(scope_dict)
             yield
         finally:
             j_py_script_session.popScope()
@@ -520,6 +507,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._update_graph = None
         self._is_flat = None
 
     def __repr__(self):
@@ -551,6 +539,13 @@ class Table(JObjectWrapper):
         return self._is_refreshing
 
     @property
+    def update_graph(self) -> UpdateGraph:
+        """The update graph of the table."""
+        if self._update_graph is None:
+            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
+        return self._update_graph
+
+    @property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
         if self._is_flat is None:
@@ -569,7 +564,7 @@ class Table(JObjectWrapper):
     @property
     def meta_table(self) -> Table:
         """The column definitions of the table in a Table form. """
-        return Table(j_table=self.j_table.getMeta())
+        return Table(j_table=self.j_table.meta())
 
     @property
     def j_object(self) -> jpy.JType:
@@ -922,7 +917,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(j_table=self.j_table.where(*filters))
+                return Table(j_table=self.j_table.where(and_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -968,12 +963,12 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
-    def where_one_of(self, filters: Union[str, Sequence[str]] = None) -> Table:
+    def where_one_of(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]] = None) -> Table:
         """The where_one_of method creates a new table containing rows from the source table, where the rows match at
         least one filter.
 
         Args:
-            filters (Union[str, Sequence[str]], optional): the filter condition expression(s), default is None
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition expression(s), default is None
 
         Returns:
             a new table
@@ -984,9 +979,7 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(
-                    j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
-                )
+                return Table(j_table=self.j_table.where(or_(filters).j_filter))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -1273,8 +1266,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -1303,8 +1296,8 @@ class Table(JObjectWrapper):
             table (Table): the right-table of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
@@ -1474,7 +1467,7 @@ class Table(JObjectWrapper):
 
     def group_by(self, by: Union[str, Sequence[str]] = None) -> Table:
         """The group_by method creates a new table containing grouping columns and grouped data, column content is
-        grouped into arrays.
+        grouped into vectors.
 
         Args:
             by (Union[str, Sequence[str]], optional): the group-by column name(s), default is None
@@ -2314,6 +2307,11 @@ class PartitionedTable(JObjectWrapper):
         return self._table
 
     @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table's update graph."""
+        return self.table.update_graph
+
+    @property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
         if self._is_refreshing is None:
@@ -2568,6 +2566,11 @@ class PartitionedTableProxy(JObjectWrapper):
     def is_refreshing(self) -> bool:
         """Whether this proxy represents a refreshing partitioned table."""
         return self.target.is_refreshing
+
+    @property
+    def update_graph(self) -> UpdateGraph:
+        """The underlying partitioned table proxy's update graph."""
+        return self.target.update_graph
 
     def __init__(self, j_pt_proxy):
         self.j_pt_proxy = jpy.cast(j_pt_proxy, _JPartitionedTableProxy)
@@ -3030,8 +3033,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
-                '<=' is used for the comparison.
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -3064,8 +3067,8 @@ class PartitionedTableProxy(JObjectWrapper):
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
                 columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
-                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
-                '>=' is used for the comparison.
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:

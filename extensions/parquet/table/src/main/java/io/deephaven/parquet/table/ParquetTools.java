@@ -14,9 +14,12 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
@@ -497,7 +500,7 @@ public class ParquetTools {
                         : "Read multiple parquet files with " + locationKeyFinder,
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
-                readInstructions.isRefreshing() ? UpdateGraphProcessor.DEFAULT : null);
+                readInstructions.isRefreshing() ? ExecutionContext.getContext().getUpdateGraph() : null);
     }
 
     /**
@@ -820,7 +823,7 @@ public class ParquetTools {
 
         // Ensure that the index column is consistently named
         if (!INDEX_COL_NAME.equals(indexColumnName)) {
-            tableToWrite = tableToWrite.renameColumns(new MatchPair(INDEX_COL_NAME, indexColumnName));
+            tableToWrite = tableToWrite.renameColumns(INDEX_COL_NAME, indexColumnName);
         }
 
         // If we know we're sorted, Great!

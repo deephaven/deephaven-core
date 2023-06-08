@@ -217,34 +217,34 @@ class Query(TableInterface):
         """
         return super().join(table, on, joins)
 
-    def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL) -> Query:
+    def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
         """Adds a as-of join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
             self
         """
-        return super().aj(table, on, joins, match_rule)
+        return super().aj(table, on, joins)
 
-    def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL) -> Query:
+    def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
         """Adds a reverse as-of join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
             self

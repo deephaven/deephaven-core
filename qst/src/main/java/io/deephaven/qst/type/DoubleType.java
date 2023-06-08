@@ -23,6 +23,11 @@ public abstract class DoubleType extends PrimitiveTypeBase<Double> {
     }
 
     @Override
+    public final Class<Double> boxedClass() {
+        return Double.class;
+    }
+
+    @Override
     public final NativeArrayType<double[], Double> arrayType() {
         return NativeArrayType.of(double[].class, this);
     }

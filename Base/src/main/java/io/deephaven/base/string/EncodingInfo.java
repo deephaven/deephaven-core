@@ -56,7 +56,8 @@ public enum EncodingInfo implements LogOutputAppendable {
     }
 
     /**
-     * Can this encoding info's charset be encoded or decoded by simple linear assignment of char->byte or byte->char.
+     * Can this encoding info's charset be encoded or decoded by simple linear assignment of char-&gt;byte or
+     * byte-&gt;char.
      * 
      * @return Whether this encoding info's charset is simple
      */
