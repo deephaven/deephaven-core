@@ -21,7 +21,7 @@ class SessionService:
         else:
             options = (('grpc.ssl_target_name_override', self.session.target_name_override))
         if self.session.use_tls:
-            credentials = ssl_channel_credentials(root_certificates=self.session.pem)
+            credentials = grpc.ssl_channel_credentials(root_certificates=self.session.pem)
             grpc_channel = grpc.secure_channel(target, credentials, options) 
         else:
             grpc_channel = grpc.insecure_channel(target)
