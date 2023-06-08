@@ -76,8 +76,8 @@ const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
 namespace {
-std::shared_ptr<grpc::ChannelCredentials> get_credentials(const bool use_tls, const std::string &pem) {
-  if (!use_tls) {
+std::shared_ptr<grpc::ChannelCredentials> get_credentials(const bool useTls, const std::string &pem) {
+  if (!useTls) {
     return grpc::InsecureChannelCredentials();
   }
   grpc::SslCredentialsOptions options;
@@ -90,28 +90,29 @@ std::shared_ptr<grpc::ChannelCredentials> get_credentials(const bool use_tls, co
 
 std::shared_ptr<Server> Server::createFromTarget(
       const std::string &target,
-      const std::string &authorizationValue,
-      const bool use_tls,
-      const std::string &pem,
-      const std::string &target_name_override
-) {
-  if (!use_tls && pem != "") {
-    throw std::runtime_error(
-        "Server::createFromTarget: use_tls is false but pem provided");
-  }
+      const std::string &authorizationValue) {
+  return createFromTarget(target, authorizationValue, ClientOptions::defaults());
+}
 
-  if (!use_tls && target_name_override != "") {
+std::shared_ptr<Server> Server::createFromTarget(
+      const std::string &target,
+      const std::string &authorizationValue,
+      const ClientOptions &copts) {
+  if (!copts.useTls() && copts.pem() != "") {
     throw std::runtime_error(
-       "Server::createFromTarget: use_tls is false but target_name_override provided");
+        "Server::createFromTarget: ClientOptions: useTls is false but pem provided");
   }
 
   grpc::ChannelArguments channel_args;
-  if (target_name_override != "") {
-    channel_args.SetSslTargetNameOverride(target_name_override);
+  for (const std::pair<std::string, int>& opt : copts.intOptions()) {
+    channel_args.SetInt(opt.first, opt.second);
+  }
+  for (const std::pair<std::string, std::string>& opt : copts.stringOptions()) {
+    channel_args.SetString(opt.first, opt.second);
   }
 
   auto channel = grpc::CreateCustomChannel(
-      target, get_credentials(use_tls, pem), channel_args);
+      target, get_credentials(copts.useTls(), copts.pem()), channel_args);
   auto as = ApplicationService::NewStub(channel);
   auto cs = ConsoleService::NewStub(channel);
   auto ss = SessionService::NewStub(channel);
@@ -119,18 +120,19 @@ std::shared_ptr<Server> Server::createFromTarget(
   auto cfs = ConfigService::NewStub(channel);
 
   // TODO(kosak): Warn about this string conversion or do something more general.
-  auto flightTarget = ((use_tls) ? "grpc+tls://" : "grpc://") + target;
+  auto flightTarget = ((copts.useTls()) ? "grpc+tls://" : "grpc://") + target;
   arrow::flight::Location location;
 
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
-    auto message = stringf("Location::Parse(%o) failed, error = %o", flightTarget, rc1.ToString());
+    auto message = stringf("Location::Parse(%o) failed, error = %o",
+                           flightTarget, rc1.ToString());
     throw std::runtime_error(message);
   }
 
   arrow::flight::FlightClientOptions options = arrow::flight::FlightClientOptions::Defaults();
-  if (pem != "") {
-    options.tls_root_certs = pem;
+  if (copts.pem() != "") {
+    options.tls_root_certs = copts.pem();
   }
 
   std::unique_ptr<arrow::flight::FlightClient> fc;

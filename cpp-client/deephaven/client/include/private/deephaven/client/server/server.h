@@ -67,6 +67,54 @@ public:
   Response response_;
 };
 
+class ClientOptions {
+public:
+  typedef std::vector<std::pair<std::string, int>> int_options_t;
+  typedef std::vector<std::pair<std::string, std::string>> string_options_t;
+public:
+  static ClientOptions defaults() {
+    return ClientOptions();
+  }
+
+  ClientOptions &setUseTls(const bool useTls) {
+    useTls_ = useTls;
+    return *this;
+  }
+
+  ClientOptions &setPem(const std::string &pem) {
+    pem_ = pem;
+    return *this;
+  }
+
+  ClientOptions &setIntOption(const std::string &opt, const int val) {
+    intOptions_.emplace_back(opt, val);
+    return *this;
+  }
+
+  ClientOptions &setStringOption(const std::string &opt, const std::string &val) {
+    stringOptions_.emplace_back(opt, val);
+    return *this;
+  }
+
+  bool useTls() const { return useTls_; }
+  const std::string &pem() const { return pem_; }
+  const int_options_t &intOptions() const { return intOptions_; }
+  const string_options_t &stringOptions() const { return stringOptions_; }
+private:
+  ClientOptions()
+    : useTls_(false)
+    , pem_("")
+    , intOptions_()
+    , stringOptions_()
+  {}
+
+private:
+  bool useTls_;
+  std::string pem_;
+  int_options_t intOptions_;
+  string_options_t stringOptions_;
+};
+
 class Server : public std::enable_shared_from_this<Server> {
   struct Private {
   };
@@ -99,10 +147,11 @@ class Server : public std::enable_shared_from_this<Server> {
 public:
   static std::shared_ptr<Server> createFromTarget(
       const std::string &target,
+      const std::string &authorizationValue);
+  static std::shared_ptr<Server> createFromTarget(
+      const std::string &target,
       const std::string &authorizationValue,
-      bool use_tls = false,
-      const std::string &pem = "",
-      const std::string &target_name_override = "");
+      const ClientOptions &client_options);
   Server(const Server &other) = delete;
   Server &operator=(const Server &other) = delete;
   Server(Private,
