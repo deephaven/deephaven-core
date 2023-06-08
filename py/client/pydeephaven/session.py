@@ -89,7 +89,8 @@ class Session:
 
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
                  never_timeout: bool = True, session_type: str = 'python',
-                 use_tls: bool = False, pem: bytes = None, client_opts: List[Tuple[str,Union[int|str]]] = None):
+                 use_tls: bool = False, pem: bytes = None,
+                 client_opts: List[Tuple[str,Union[int|str]]] = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -108,7 +109,10 @@ class Session:
                  connection and the use_tls argument should have been passed as True. Defaults to None
             client_opts: list of tuples for name and value of options to the underlying grpc channel creation.
                 Defaults to None.  See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list
-                of valid options. 
+                of valid options.
+                Example options:
+                  [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
+                    ('grpc.min_reconnect_backoff_ms', 2000) ]
 
         Raises:
             DHError

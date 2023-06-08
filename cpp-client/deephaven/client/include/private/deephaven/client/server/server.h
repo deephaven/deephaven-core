@@ -89,6 +89,8 @@ public:
 
   // See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for
   // a list of available options.
+  // Example:
+  //   copts.setStringOption("grpc.min_reconnect_backoff_ms", 2000)
   ClientOptions &setIntOption(const std::string &opt, const int val) {
     intOptions_.emplace_back(opt, val);
     return *this;
