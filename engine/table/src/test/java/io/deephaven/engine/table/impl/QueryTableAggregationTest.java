@@ -3767,7 +3767,6 @@ public class QueryTableAggregationTest {
             final Table result = table.aggBy(AggSum("Value"), "Symbol");
             TableTools.showWithRowSet(result);
 
-
             final long[] values = new long[result.intSize()];
             final MutableInt pos = new MutableInt();
             result.longColumnIterator("Value").forEachRemaining((long value) -> {
