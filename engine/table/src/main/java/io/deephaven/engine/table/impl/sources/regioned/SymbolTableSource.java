@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,4 +63,16 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * @return The symbol table
      */
     Table getSymbolTable(@NotNull QueryTable sourceTable, boolean useLookupCaching);
+
+    /**
+     * Check if the specified {@link ColumnSource} supports a symbol table for the entirety of the supplied
+     * {@link RowSet}.
+     *
+     * @param source the column source
+     * @param index the index for inspection.
+     * @return true if the column source can provide a complete symbol table for the provided index.
+     */
+    static boolean hasSymbolTable(@NotNull final ColumnSource<?> source, @NotNull final RowSet index) {
+        return source instanceof SymbolTableSource && ((SymbolTableSource<?>) source).hasSymbolTable(index);
+    }
 }

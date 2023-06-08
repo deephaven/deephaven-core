@@ -8,17 +8,16 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -28,14 +27,17 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.sources.TestColumnSource;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.parquet.table.ParquetTableWriter;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
@@ -46,15 +48,18 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.*;
 import org.junit.experimental.categories.Category;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -69,6 +74,7 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
@@ -3753,5 +3759,56 @@ public class QueryTableAggregationTest {
         });
         TestCase.assertEquals(1, aggregated.size());
         assertTableEquals(expectedEmpty, aggregated);
+    }
+
+    @Test
+    public void testSymbolTableBy() throws IOException {
+        diskBackedTestHarness((table) -> {
+            final Table result = table.aggBy(AggSum("Value"), "Symbol");
+            TableTools.showWithRowSet(result);
+
+
+            final long[] values = new long[result.intSize()];
+            final MutableInt pos = new MutableInt();
+            result.longColumnIterator("Value").forEachRemaining((long value) -> {
+                values[pos.getValue()] = value;
+                pos.increment();
+            });
+            assertArrayEquals(new long[] {0, 5, 17, 23}, values);
+        });
+    }
+
+    private void diskBackedTestHarness(Consumer<Table> testFunction) throws IOException {
+        final File directory = Files.createTempDirectory("QueryTableAggregationTest").toFile();
+
+        try {
+            final Table table = makeDiskTable(directory);
+
+            testFunction.accept(table);
+
+            table.close();
+        } finally {
+            FileUtils.deleteRecursively(directory);
+        }
+    }
+
+    @NotNull
+    private Table makeDiskTable(File directory) throws IOException {
+        final String[] syms = new String[] {"DragonFruit", "Apple", "Banana", "Cantaloupe",
+                "Apple", "Cantaloupe", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
+
+        final int[] values = new int[syms.length];
+        for (int ii = 0; ii < values.length; ii++) {
+            values[ii] = ii;
+        }
+
+        final TableDefaults result = testTable(stringCol("Symbol", syms),
+                intCol("Value", values));
+
+        final File outputFile = new File(directory, "disk_table" + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+
+        ParquetTools.writeTable(result, outputFile, result.getDefinition());
+
+        return ParquetTools.readTable(outputFile);
     }
 }
