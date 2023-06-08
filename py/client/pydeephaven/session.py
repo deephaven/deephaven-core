@@ -254,11 +254,11 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                scheme = "grpc+tls" if use_tls else "grpc"
+                scheme = "grpc+tls" if self.use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs = pem
+                    tls_root_certs = self.pem
                 )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
