@@ -159,11 +159,12 @@ public class StatsDriver extends TimedJob {
         if (Configuration.getInstance().getBoolean("allocation.stats.enabled")) {
             objectAllocation = new ObjectAllocationCollector();
         }
+        executionContext = ExecutionContext.getContext();
+
+        // now that the StatsDriver is completely constructed, we can schedule the first iteration
         if (Configuration.getInstance().getBoolean("statsdriver.enabled")) {
             schedule();
         }
-
-        executionContext = ExecutionContext.getContext();
     }
 
     public void timedOut() {
