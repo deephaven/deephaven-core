@@ -7,7 +7,7 @@ server."""
 import base64
 import os
 import threading
-from typing import List, Union, Tuple
+from typing import Dict, List, Union, Tuple
 
 import grpc
 import pyarrow as pa
@@ -55,9 +55,9 @@ class _DhClientAuthMiddleware(ClientMiddleware):
                 self._session._auth_token = auth_token
 
     def sending_headers(self):
-        return {
+        return {**{
             "authorization": self._session._auth_token
-        }
+        }, **self._session._extra_headers}
 
 
 class _DhClientAuthHandler(ClientAuthHandler):
@@ -90,7 +90,8 @@ class Session:
     def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
                  never_timeout: bool = True, session_type: str = 'python',
                  use_tls: bool = False, pem: bytes = None,
-                 client_opts: List[Tuple[str,Union[int,str]]] = None):
+                 client_opts: List[Tuple[str,Union[int,str]]] = None,
+                 extra_headers: Dict[bytes, bytes] = None):
         """Initializes a Session object that connects to the Deephaven server
 
         Args:
@@ -104,15 +105,18 @@ class Session:
                 authenticator, it must conform to the specific requirement of the authenticator
             never_timeout (bool): never allow the session to timeout, default is True
             session_type (str): the Deephaven session type. Defaults to 'python'
-            use_tls (bool): if True, use a TLS connection.  Defaults to None
-            pem (bytes): PEM encoded certificate to use for TLS connection. If not None implies use a TLS
-                 connection and the use_tls argument should have been passed as True. Defaults to None
-            client_opts: list of tuples for name and value of options to the underlying grpc channel creation.
-                Defaults to None.  See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list
-                of valid options.
+            use_tls (bool): if True, use a TLS connection.  Defaults to False
+            pem (bytes): PEM encoded certificate to use for TLS connection, or None to use system defaults.
+                 If not None implies use a TLS connection and the use_tls argument should have been passed
+                 as True. Defaults to None
+            client_opts (List[Tuple[str,Union[int,str]]): list of tuples for name and value of options to
+                the underlying grpc channel creation.  Defaults to empty.
+                See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of valid options.
                 Example options:
                   [ ('grpc.target_name_override', 'idonthaveadnsforthishost'),
                     ('grpc.min_reconnect_backoff_ms', 2000) ]
+            extra_headers (Dict[bytes, bytes]): additional headers (and values) to add to server requests.
+                Defaults to empty.
 
         Raises:
             DHError
@@ -129,11 +133,12 @@ class Session:
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
-        self.use_tls = use_tls
-        self.pem = pem
-        if self.pem is not None and not self.use_tls:
+        self._use_tls = use_tls
+        self._pem = pem
+        if self._pem is not None and not self._use_tls:
             raise DHError("use_tls is false but pem is not None")
-        self.client_opts = client_opts
+        self._client_opts = client_opts
+        self._extra_headers = extra_headers if extra_headers else {}
 
         self.is_connected = False
 
@@ -179,7 +184,10 @@ class Session:
 
     @property
     def grpc_metadata(self):
-        return [(b'authorization', self._auth_token)]
+        l =[(b'authorization', self._auth_token)]
+        if self._extra_headers:
+            l.append(list(tuple(self._extra_headers.items())))
+        return l
 
     @property
     def table_service(self) -> TableService:
@@ -257,12 +265,12 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                scheme = "grpc+tls" if self.use_tls else "grpc"
+                scheme = "grpc+tls" if self._use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
                     middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs = self.pem,
-                    generic_options = self.client_opts
+                    tls_root_certs = self._pem,
+                    generic_options = self._client_opts
                 )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
